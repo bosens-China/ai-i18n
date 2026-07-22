@@ -1,0 +1,64 @@
+{
+  "name": "@ai-i18n/vue",
+  "version": "0.0.0",
+  "description": "Vue 3 bindings and optional Vite extractor for ai-i18n.",
+  "keywords": ["i18n", "translation", "vite", "vue"],
+  "type": "module",
+  "sideEffects": false,
+  "files": [
+    "dist"
+  ],
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./vite": {
+      "types": "./dist/vite.d.ts",
+      "import": "./dist/vite.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "check": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@ai-i18n/core": "workspace:*"
+  },
+  "peerDependencies": {
+    "@ai-i18n/vite": "workspace:*",
+    "@vue/compiler-dom": "^3.5.0",
+    "@vue/compiler-sfc": "^3.5.0",
+    "vite": "^8.0.0",
+    "vue": "^3.5.0"
+  },
+  "peerDependenciesMeta": {
+    "@ai-i18n/vite": {
+      "optional": true
+    },
+    "@vue/compiler-dom": {
+      "optional": true
+    },
+    "@vue/compiler-sfc": {
+      "optional": true
+    },
+    "vite": {
+      "optional": true
+    }
+  },
+  "engines": {
+    "node": "^20.19.0 || >=22.12.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "devDependencies": {
+    "@ai-i18n/vite": "workspace:*",
+    "@vitejs/plugin-vue": "^6.0.8",
+    "@vue/compiler-dom": "^3.5.34",
+    "@vue/compiler-sfc": "^3.5.34",
+    "vue": "^3.5.0"
+  }
+}
