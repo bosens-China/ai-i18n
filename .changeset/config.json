@@ -1,0 +1,19 @@
+{
+  "changelog": "@changesets/cli/changelog",
+  "commit": false,
+  "fixed": [
+    [
+      "@ai-i18n/core",
+      "@ai-i18n/eslint-plugin",
+      "@ai-i18n/openai",
+      "@ai-i18n/react",
+      "@ai-i18n/vite",
+      "@ai-i18n/vue"
+    ]
+  ],
+  "linked": [],
+  "access": "public",
+  "baseBranch": "main",
+  "updateInternalDependencies": "patch",
+  "ignore": []
+}

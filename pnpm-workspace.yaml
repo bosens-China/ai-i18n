@@ -1,0 +1,20 @@
+packages:
+  - packages/*
+  - examples/*
+minimumReleaseAgeExclude:
+  - react-dom@19.2.8
+  - react@19.2.8
+  - '@yuku-analyzer/binding-darwin-arm64@0.7.3'
+  - '@yuku-analyzer/binding-darwin-x64@0.7.3'
+  - '@yuku-analyzer/binding-freebsd-x64@0.7.3'
+  - '@yuku-analyzer/binding-linux-arm-gnu@0.7.3'
+  - '@yuku-analyzer/binding-linux-arm-musl@0.7.3'
+  - '@yuku-analyzer/binding-linux-arm64-gnu@0.7.3'
+  - '@yuku-analyzer/binding-linux-arm64-musl@0.7.3'
+  - '@yuku-analyzer/binding-linux-x64-gnu@0.7.3'
+  - '@yuku-analyzer/binding-linux-x64-musl@0.7.3'
+  - '@yuku-analyzer/binding-win32-arm64@0.7.3'
+  - '@yuku-analyzer/binding-win32-x64@0.7.3'
+  - '@yuku-toolchain/types@0.7.3'
+  - yuku-analyzer@0.7.3
+  - yuku-ast@0.7.3
