@@ -1,0 +1,41 @@
+name: Yuku platform admission
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'packages/vite/**'
+      - 'pnpm-lock.yaml'
+      - '.github/workflows/yuku-platform.yml'
+
+jobs:
+  platform:
+    name: ${{ matrix.platform }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: linux-x64
+            os: ubuntu-24.04
+          - platform: linux-arm64
+            os: ubuntu-24.04-arm
+          - platform: windows-x64
+            os: windows-2025
+          - platform: windows-arm64
+            os: windows-11-arm
+          - platform: macos-x64
+            os: macos-15-intel
+          - platform: macos-arm64
+            os: macos-15
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - run: corepack enable
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @ai-i18n/vite build
+      - run: pnpm vitest run packages/vite/test/yuku-spike.test.ts
+      - run: pnpm benchmark:yuku
