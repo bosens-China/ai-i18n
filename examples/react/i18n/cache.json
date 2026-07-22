@@ -1,0 +1,37 @@
+{
+  "files": {
+    "src/App.tsx": {
+      "fingerprint": "sha256:c0d76ab7bc5e14e4c2f96cd89ab0428a94e6bba51d60dc9552d65f1d30c3ae54",
+      "messageIds": [
+        "Hook 与 Vite extractor 共享 Runtime",
+        "React 示例",
+        "语言"
+      ]
+    },
+    "src/main.tsx": {
+      "fingerprint": "sha256:b5bdea69e2c44230038ce799bfa18f29ff99702854b3e8c81f005c0cd0a06257",
+      "messageIds": []
+    }
+  },
+  "messages": {
+    "Hook 与 Vite extractor 共享 Runtime": {
+      "source": "Hook 与 Vite extractor 共享 Runtime",
+      "translations": {
+        "en-US": null
+      }
+    },
+    "React 示例": {
+      "source": "React 示例",
+      "translations": {
+        "en-US": null
+      }
+    },
+    "语言": {
+      "source": "语言",
+      "translations": {
+        "en-US": null
+      }
+    }
+  },
+  "version": 1
+}

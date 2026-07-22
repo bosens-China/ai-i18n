@@ -1,0 +1,12 @@
+{
+  "locale": {
+    "label": "中文",
+    "value": "zh-CN"
+  },
+  "messages": {
+    "Composition API 与 Vite extractor 共享 Runtime": "Composition API 与 Vite extractor 共享 Runtime",
+    "Vue 示例": "Vue 示例",
+    "语言": "语言"
+  },
+  "version": 1
+}

@@ -1,0 +1,45 @@
+{
+  "messages": [
+    {
+      "id": "Vanilla 示例",
+      "locations": [
+        {
+          "column": 10,
+          "line": 8
+        }
+      ],
+      "source": "Vanilla 示例",
+      "translations": {
+        "en-US": null
+      }
+    },
+    {
+      "id": "显式调用会被静态提取",
+      "locations": [
+        {
+          "column": 9,
+          "line": 9
+        }
+      ],
+      "source": "显式调用会被静态提取",
+      "translations": {
+        "en-US": null
+      }
+    },
+    {
+      "id": "语言",
+      "locations": [
+        {
+          "column": 8,
+          "line": 11
+        }
+      ],
+      "source": "语言",
+      "translations": {
+        "en-US": null
+      }
+    }
+  ],
+  "source": "src/main.ts",
+  "version": 1
+}

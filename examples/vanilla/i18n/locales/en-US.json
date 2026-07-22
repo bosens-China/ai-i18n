@@ -1,0 +1,12 @@
+{
+  "locale": {
+    "label": "English",
+    "value": "en-US"
+  },
+  "messages": {
+    "Vanilla 示例": null,
+    "显式调用会被静态提取": null,
+    "语言": null
+  },
+  "version": 1
+}

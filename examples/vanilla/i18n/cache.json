@@ -1,0 +1,33 @@
+{
+  "files": {
+    "src/main.ts": {
+      "fingerprint": "sha256:1522839953a99f26014522b2aed04383571b8eedc893498ed92283f7e98b7397",
+      "messageIds": [
+        "Vanilla 示例",
+        "显式调用会被静态提取",
+        "语言"
+      ]
+    }
+  },
+  "messages": {
+    "Vanilla 示例": {
+      "source": "Vanilla 示例",
+      "translations": {
+        "en-US": null
+      }
+    },
+    "显式调用会被静态提取": {
+      "source": "显式调用会被静态提取",
+      "translations": {
+        "en-US": null
+      }
+    },
+    "语言": {
+      "source": "语言",
+      "translations": {
+        "en-US": null
+      }
+    }
+  },
+  "version": 1
+}

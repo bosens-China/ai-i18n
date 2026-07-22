@@ -1,0 +1,14 @@
+{
+  "locale": {
+    "label": "English",
+    "value": "en-US"
+  },
+  "messages": {
+    "React 面板": null,
+    "Vue 面板": null,
+    "切换到中文": null,
+    "切换到英文": null,
+    "当前语言": null
+  },
+  "version": 1
+}

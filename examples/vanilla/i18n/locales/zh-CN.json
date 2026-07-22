@@ -1,0 +1,12 @@
+{
+  "locale": {
+    "label": "中文",
+    "value": "zh-CN"
+  },
+  "messages": {
+    "Vanilla 示例": "Vanilla 示例",
+    "显式调用会被静态提取": "显式调用会被静态提取",
+    "语言": "语言"
+  },
+  "version": 1
+}

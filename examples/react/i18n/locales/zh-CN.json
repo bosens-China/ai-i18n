@@ -1,0 +1,12 @@
+{
+  "locale": {
+    "label": "中文",
+    "value": "zh-CN"
+  },
+  "messages": {
+    "Hook 与 Vite extractor 共享 Runtime": "Hook 与 Vite extractor 共享 Runtime",
+    "React 示例": "React 示例",
+    "语言": "语言"
+  },
+  "version": 1
+}

@@ -1,0 +1,45 @@
+{
+  "messages": [
+    {
+      "id": "React 面板",
+      "locations": [
+        {
+          "column": 11,
+          "line": 8
+        }
+      ],
+      "source": "React 面板",
+      "translations": {
+        "en-US": null
+      }
+    },
+    {
+      "id": "切换到中文",
+      "locations": [
+        {
+          "column": 9,
+          "line": 13
+        }
+      ],
+      "source": "切换到中文",
+      "translations": {
+        "en-US": null
+      }
+    },
+    {
+      "id": "当前语言",
+      "locations": [
+        {
+          "column": 9,
+          "line": 10
+        }
+      ],
+      "source": "当前语言",
+      "translations": {
+        "en-US": null
+      }
+    }
+  ],
+  "source": "src/ReactPanel.tsx",
+  "version": 1
+}

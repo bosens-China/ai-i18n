@@ -1,0 +1,37 @@
+{
+  "files": {
+    "src/App.vue": {
+      "fingerprint": "sha256:d880ec2d73359c1f601c13127b11c3de35988c3d500934a7df52c8daef014eca",
+      "messageIds": [
+        "Composition API 与 Vite extractor 共享 Runtime",
+        "Vue 示例",
+        "语言"
+      ]
+    },
+    "src/main.ts": {
+      "fingerprint": "sha256:145a4c772e422d154a17807624626765a536c29d8722d58a00bd7fbfbddfdbea",
+      "messageIds": []
+    }
+  },
+  "messages": {
+    "Composition API 与 Vite extractor 共享 Runtime": {
+      "source": "Composition API 与 Vite extractor 共享 Runtime",
+      "translations": {
+        "en-US": null
+      }
+    },
+    "Vue 示例": {
+      "source": "Vue 示例",
+      "translations": {
+        "en-US": null
+      }
+    },
+    "语言": {
+      "source": "语言",
+      "translations": {
+        "en-US": null
+      }
+    }
+  },
+  "version": 1
+}

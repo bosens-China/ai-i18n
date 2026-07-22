@@ -1,0 +1,45 @@
+{
+  "messages": [
+    {
+      "id": "Composition API 与 Vite extractor 共享 Runtime",
+      "locations": [
+        {
+          "column": 10,
+          "line": 10
+        }
+      ],
+      "source": "Composition API 与 Vite extractor 共享 Runtime",
+      "translations": {
+        "en-US": null
+      }
+    },
+    {
+      "id": "Vue 示例",
+      "locations": [
+        {
+          "column": 11,
+          "line": 9
+        }
+      ],
+      "source": "Vue 示例",
+      "translations": {
+        "en-US": null
+      }
+    },
+    {
+      "id": "语言",
+      "locations": [
+        {
+          "column": 9,
+          "line": 12
+        }
+      ],
+      "source": "语言",
+      "translations": {
+        "en-US": null
+      }
+    }
+  ],
+  "source": "src/App.vue",
+  "version": 1
+}

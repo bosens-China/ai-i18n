@@ -1,0 +1,57 @@
+{
+  "files": {
+    "src/main.tsx": {
+      "fingerprint": "sha256:88c79304a16cd3fe993438cf1bea5857b2f857079f1a5600a9ec80889c1790c8",
+      "messageIds": []
+    },
+    "src/ReactPanel.tsx": {
+      "fingerprint": "sha256:ba6316ede86e414f32f81226f8a58a186efb2dc86bd40a7c9cb25063af8b1a3f",
+      "messageIds": [
+        "React 面板",
+        "切换到中文",
+        "当前语言"
+      ]
+    },
+    "src/VuePanel.vue": {
+      "fingerprint": "sha256:9717fd14a8b37a87e0ccc1f3713eaed500ba3a65bf75531eba096835b69dc341",
+      "messageIds": [
+        "Vue 面板",
+        "切换到英文",
+        "当前语言"
+      ]
+    }
+  },
+  "messages": {
+    "React 面板": {
+      "source": "React 面板",
+      "translations": {
+        "en-US": null
+      }
+    },
+    "Vue 面板": {
+      "source": "Vue 面板",
+      "translations": {
+        "en-US": null
+      }
+    },
+    "切换到中文": {
+      "source": "切换到中文",
+      "translations": {
+        "en-US": null
+      }
+    },
+    "切换到英文": {
+      "source": "切换到英文",
+      "translations": {
+        "en-US": null
+      }
+    },
+    "当前语言": {
+      "source": "当前语言",
+      "translations": {
+        "en-US": null
+      }
+    }
+  },
+  "version": 1
+}
