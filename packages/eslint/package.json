@@ -1,0 +1,33 @@
+{
+  "name": "@ai-i18n/eslint-plugin",
+  "version": "0.0.0",
+  "description": "ESLint 9 static-argument checks aligned with ai-i18n extraction semantics.",
+  "keywords": ["eslint", "eslintplugin", "i18n", "translation"],
+  "type": "module",
+  "sideEffects": false,
+  "files": ["dist"],
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "check": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "yuku-analyzer": "0.7.3"
+  },
+  "peerDependencies": {
+    "eslint": "^9.0.0"
+  },
+  "engines": {
+    "node": "^20.19.0 || >=22.12.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}
