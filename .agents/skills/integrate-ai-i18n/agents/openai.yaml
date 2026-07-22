@@ -1,0 +1,4 @@
+interface:
+  display_name: "接入 ai-i18n"
+  short_description: "为 Vite、Vue、React 与原生前端配置 ai-i18n"
+  default_prompt: "使用 $integrate-ai-i18n 为当前前端项目完成 ai-i18n 接入。"

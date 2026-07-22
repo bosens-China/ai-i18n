@@ -1,0 +1,4 @@
+interface:
+  display_name: "使用 ai-i18n MCP"
+  short_description: "分页查找缺失翻译并安全写回 extracted 文件"
+  default_prompt: "使用 $use-ai-i18n-mcp 查找并补全当前项目的缺失翻译。"
