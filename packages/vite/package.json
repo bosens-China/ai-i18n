@@ -1,0 +1,52 @@
+{
+  "name": "@ai-i18n/vite",
+  "version": "0.0.0",
+  "description": "Vite 8 static extraction and browser runtime plugin for ai-i18n.",
+  "keywords": ["i18n", "translation", "vite"],
+  "type": "module",
+  "sideEffects": false,
+  "files": [
+    "dist"
+  ],
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./client": {
+      "types": "./dist/client.d.ts",
+      "import": "./dist/client.js"
+    },
+    "./runtime": {
+      "types": "./dist/runtime.d.ts",
+      "import": "./dist/runtime.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "check": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@ai-i18n/core": "workspace:*",
+    "magic-string": "0.30.21",
+    "parse5": "8.0.0",
+    "yuku-analyzer": "0.7.3"
+  },
+  "peerDependencies": {
+    "vite": "^8.0.0"
+  },
+  "engines": {
+    "node": "^20.19.0 || >=22.12.0"
+  },
+  "devDependencies": {
+    "@babel/parser": "^7.29.3",
+    "@babel/traverse": "^7.29.0",
+    "@babel/types": "^7.29.0",
+    "@types/babel__traverse": "^7.28.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}
