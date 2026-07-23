@@ -40,6 +40,11 @@ For a mixed Vue/React app, read both framework references and register both extr
 
 Do not add a translator, model, API key, HTML extraction, cleanup override, global store, Vue plugin installation, or React provider unless the project actually requires it.
 
+When automatic AI translation is requested, keep model/network configuration inside the
+`openAI()` translator closure and batching inside `aiI18n({ provider })`; follow the defaults and
+local-service rules in [Vite configuration](references/vite.md). Never serialize API or LangSmith
+keys into browser modules or generated protocol files.
+
 ## Add ESLint checks only when requested
 
 - Install only `@ai-i18n/eslint-plugin` for ai-i18n semantics and expand `configs.recommended`.

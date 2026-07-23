@@ -47,6 +47,39 @@ Only include extractors used by the app. `html()` handles complete text bindings
 
 Framework extractors contribute Hook semantics to the complete JS/TS module graph, not only to `.vue` or JSX/TSX preprocessing. This allows Vue composables and React custom Hooks in plain `.ts` files to remain statically extractable.
 
+## Optional LangChain Provider
+
+Add `@ai-i18n/openai` only when automatic translation is required. Construct the translator in
+Vite config so secrets remain in Node:
+
+```ts
+import { openAI } from '@ai-i18n/openai'
+
+const translator = openAI({
+  baseURL: process.env.AI_BASE_URL!,
+  model: process.env.AI_MODEL!,
+  apiKey: process.env.AI_API_KEY,
+  systemPrompt: 'Translate product UI copy and preserve terminology.',
+  temperature: 1,
+  maxTokens: 4096,
+  timeoutMs: 120_000,
+  maxRetries: 3,
+})
+
+aiI18n({
+  sourceLang: 'zh-CN',
+  locales,
+  translator,
+  provider: { batchLength: 12_000, maxConcurrency: 5 },
+})
+```
+
+Treat `batchLength` as `JSON.stringify({ requests }).length`, not token count. A single oversized
+message forms its own batch. `apiKey` may be omitted for a local OpenAI-compatible endpoint;
+custom `headers` are supported. Pass `langSmith: { apiKey, project?, endpoint?, workspaceId? }`
+only when tracing is intended. A user `systemPrompt` replaces the default prompt body, while the
+Provider always appends its own JSON-only instruction and minimal example.
+
 ## Runtime and TypeScript
 
 The browser virtual module exports `t`, `setLang`, `getLang`, `getLangs`, and `subscribe`:

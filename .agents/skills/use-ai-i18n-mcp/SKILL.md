@@ -18,6 +18,8 @@ For a workspace rooted at the repository and a Vite app in `apps/web` using the 
 
 Require an existing `cache.json`. If the protocol files do not exist yet, run or ask the user to run the project's Vite Dev/Build command before continuing.
 Running `@ai-i18n/eslint-plugin` only validates static `t()` arguments; it never creates or reconciles these protocol files.
+The optional LangChain Provider's `batchLength` and `maxConcurrency` govern automatic model calls;
+they do not change MCP pagination limits, write batch limits, or this manual translation workflow.
 
 ## Run the workflow
 
