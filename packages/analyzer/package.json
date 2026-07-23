@@ -7,6 +7,17 @@
     "static-analysis",
     "translation"
   ],
+  "license": "MIT",
+  "author": "yliu",
+  "homepage": "https://github.com/bosens-China/ai-i18n#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bosens-China/ai-i18n.git",
+    "directory": "packages/analyzer"
+  },
+  "bugs": {
+    "url": "https://github.com/bosens-China/ai-i18n/issues"
+  },
   "type": "module",
   "sideEffects": false,
   "files": [
@@ -25,13 +36,12 @@
     }
   },
   "scripts": {
-    "build": "tsc -p tsconfig.json",
     "lint": "eslint .",
     "check": "tsc -p tsconfig.json --noEmit && pnpm lint",
     "test": "pnpm --dir ../.. exec vitest run packages/analyzer/test --config vitest.config.ts"
   },
   "dependencies": {
-    "@ai-i18n/core": "workspace:*",
+    "@ai-i18n/core": "workspace:^",
     "source-map-js": "1.2.1",
     "yuku-analyzer": "0.7.3"
   },
@@ -42,9 +52,6 @@
     "@vue/compiler-sfc": {
       "optional": true
     }
-  },
-  "engines": {
-    "node": "^20.19.0 || >=22.12.0"
   },
   "publishConfig": {
     "access": "public"

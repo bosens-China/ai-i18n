@@ -1,3 +1,4 @@
+import { createRequire } from 'node:module';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 import { z } from 'zod';
@@ -7,6 +8,10 @@ import {
   type TranslationItem,
 } from './project.js';
 
+const { version } = createRequire(import.meta.url)('../package.json') as {
+  version: string;
+};
+
 const DirectorySchema = z
   .string()
   .min(1)
@@ -15,7 +20,10 @@ const DirectorySchema = z
     'Final ai-i18n output directory relative to the MCP workspace root. Read the Vite config and combine its resolved root with aiI18n.directory first, for example "apps/web/i18n".',
   );
 const CursorSchema = z.string().min(1).max(4_096).optional();
-const LocationSchema = z.object({ line: z.number().int(), column: z.number().int() });
+const LocationSchema = z.object({
+  line: z.number().int(),
+  column: z.number().int(),
+});
 const FileItemSchema = z.object({
   file: z.string(),
   message_count: z.number().int(),
@@ -34,7 +42,10 @@ const TranslationItemSchema = z.object({
 });
 
 export function createAiI18nMcpServer(workspaceRoot: string): McpServer {
-  const server = new McpServer({ name: 'ai-i18n-mcp-server', version: '0.0.0' });
+  const server = new McpServer({
+    name: 'ai-i18n-mcp-server',
+    version,
+  });
   const project = new AiI18nProjectService(workspaceRoot);
 
   server.registerTool(
@@ -79,7 +90,10 @@ export function createAiI18nMcpServer(workspaceRoot: string): McpServer {
       annotations: readAnnotations,
     },
     async (input) => {
-      return callTool(() => project.listTranslations(input), formatTranslationSummary);
+      return callTool(
+        () => project.listTranslations(input),
+        formatTranslationSummary,
+      );
     },
   );
 

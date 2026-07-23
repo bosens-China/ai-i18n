@@ -18,3 +18,5 @@ minimumReleaseAgeExclude:
   - '@yuku-toolchain/types@0.7.3'
   - yuku-analyzer@0.7.3
   - yuku-ast@0.7.3
+  - '@publint/pack@0.1.6'
+  - publint@0.3.22

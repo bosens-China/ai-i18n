@@ -8,6 +8,17 @@
     "vite",
     "vue"
   ],
+  "license": "MIT",
+  "author": "yliu",
+  "homepage": "https://github.com/bosens-China/ai-i18n#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bosens-China/ai-i18n.git",
+    "directory": "packages/vue"
+  },
+  "bugs": {
+    "url": "https://github.com/bosens-China/ai-i18n/issues"
+  },
   "type": "module",
   "sideEffects": false,
   "files": [
@@ -26,16 +37,15 @@
     }
   },
   "scripts": {
-    "build": "tsc -p tsconfig.json",
     "lint": "eslint .",
     "check": "tsc -p tsconfig.json --noEmit && pnpm lint",
     "test": "pnpm --dir ../.. exec vitest run packages/vue/test --config vitest.config.ts"
   },
   "dependencies": {
-    "@ai-i18n/core": "workspace:*"
+    "@ai-i18n/core": "workspace:^"
   },
   "peerDependencies": {
-    "@ai-i18n/vite": "workspace:*",
+    "@ai-i18n/vite": "workspace:^",
     "@vue/compiler-dom": "^3.5.0",
     "@vue/compiler-sfc": "^3.5.0",
     "vite": "^8.0.0",
@@ -54,9 +64,6 @@
     "vite": {
       "optional": true
     }
-  },
-  "engines": {
-    "node": "^20.19.0 || >=22.12.0"
   },
   "publishConfig": {
     "access": "public"

@@ -8,6 +8,17 @@
     "i18n",
     "translation"
   ],
+  "license": "MIT",
+  "author": "yliu",
+  "homepage": "https://github.com/bosens-China/ai-i18n#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bosens-China/ai-i18n.git",
+    "directory": "packages/eslint"
+  },
+  "bugs": {
+    "url": "https://github.com/bosens-China/ai-i18n/issues"
+  },
   "type": "module",
   "sideEffects": false,
   "files": [
@@ -22,13 +33,12 @@
     }
   },
   "scripts": {
-    "build": "tsc -p tsconfig.json",
     "lint": "eslint .",
     "check": "tsc -p tsconfig.json --noEmit && pnpm lint",
     "test": "pnpm --dir ../.. exec vitest run packages/eslint/test --config vitest.config.ts"
   },
   "dependencies": {
-    "@ai-i18n/analyzer": "workspace:*"
+    "@ai-i18n/analyzer": "workspace:^"
   },
   "peerDependencies": {
     "@vue/compiler-sfc": "^3.5.0",
@@ -42,9 +52,6 @@
     "vue-eslint-parser": {
       "optional": true
     }
-  },
-  "engines": {
-    "node": "^20.19.0 || >=22.12.0"
   },
   "publishConfig": {
     "access": "public"

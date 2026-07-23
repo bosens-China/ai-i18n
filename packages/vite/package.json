@@ -7,6 +7,17 @@
     "translation",
     "vite"
   ],
+  "license": "MIT",
+  "author": "yliu",
+  "homepage": "https://github.com/bosens-China/ai-i18n#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bosens-China/ai-i18n.git",
+    "directory": "packages/vite"
+  },
+  "bugs": {
+    "url": "https://github.com/bosens-China/ai-i18n/issues"
+  },
   "type": "module",
   "sideEffects": false,
   "files": [
@@ -35,24 +46,20 @@
     }
   },
   "scripts": {
-    "build": "tsc -p tsconfig.json",
     "lint": "eslint .",
     "check": "tsc -p tsconfig.json --noEmit && pnpm lint",
     "test": "pnpm --dir ../.. exec vitest run packages/vite/test --config vitest.config.ts",
     "benchmark": "node benchmark/yuku-spike.mjs"
   },
   "dependencies": {
-    "@ai-i18n/analyzer": "workspace:*",
-    "@ai-i18n/core": "workspace:*",
+    "@ai-i18n/analyzer": "workspace:^",
+    "@ai-i18n/core": "workspace:^",
     "magic-string": "0.30.21",
     "parse5": "8.0.0",
     "yuku-analyzer": "0.7.3"
   },
   "peerDependencies": {
     "vite": "^8.0.0"
-  },
-  "engines": {
-    "node": "^20.19.0 || >=22.12.0"
   },
   "devDependencies": {
     "@babel/parser": "^7.29.3",

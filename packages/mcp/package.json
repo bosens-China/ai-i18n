@@ -7,6 +7,17 @@
     "mcp",
     "translation"
   ],
+  "license": "MIT",
+  "author": "yliu",
+  "homepage": "https://github.com/bosens-China/ai-i18n#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bosens-China/ai-i18n.git",
+    "directory": "packages/mcp"
+  },
+  "bugs": {
+    "url": "https://github.com/bosens-China/ai-i18n/issues"
+  },
   "type": "module",
   "files": [
     "dist"
@@ -23,13 +34,12 @@
     }
   },
   "scripts": {
-    "build": "tsc -p tsconfig.json",
     "lint": "eslint .",
     "check": "tsc -p tsconfig.json --noEmit && pnpm lint",
     "test": "pnpm --dir ../.. exec vitest run packages/mcp/test --config vitest.config.ts"
   },
   "dependencies": {
-    "@ai-i18n/core": "workspace:*",
+    "@ai-i18n/core": "workspace:^",
     "@modelcontextprotocol/sdk": "^1.29.0",
     "zod": "^4.0.0"
   },

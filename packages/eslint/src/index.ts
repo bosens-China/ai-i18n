@@ -1,10 +1,15 @@
+import { createRequire } from 'node:module';
 import type { ESLint } from 'eslint';
 import { tStaticArgs } from './rules/t-static-args.js';
+
+const { version } = createRequire(import.meta.url)('../package.json') as {
+  version: string;
+};
 
 const plugin: ESLint.Plugin = {
   meta: {
     name: '@ai-i18n/eslint-plugin',
-    version: '0.0.0',
+    version,
     namespace: 'ai-i18n',
   },
   rules: {

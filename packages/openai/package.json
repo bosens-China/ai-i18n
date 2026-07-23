@@ -7,6 +7,17 @@
     "openai",
     "translation"
   ],
+  "license": "MIT",
+  "author": "yliu",
+  "homepage": "https://github.com/bosens-China/ai-i18n#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bosens-China/ai-i18n.git",
+    "directory": "packages/openai"
+  },
+  "bugs": {
+    "url": "https://github.com/bosens-China/ai-i18n/issues"
+  },
   "type": "module",
   "sideEffects": false,
   "files": [
@@ -21,19 +32,15 @@
     }
   },
   "scripts": {
-    "build": "tsc -p tsconfig.json",
     "lint": "eslint .",
     "check": "tsc -p tsconfig.json --noEmit && pnpm lint",
     "test": "pnpm --dir ../.. exec vitest run packages/openai/test --config vitest.config.ts"
   },
   "dependencies": {
-    "@ai-i18n/core": "workspace:*",
+    "@ai-i18n/core": "workspace:^",
     "@langchain/core": "^1.2.3",
     "@langchain/openai": "^1.5.5",
     "langsmith": "^0.8.4"
-  },
-  "engines": {
-    "node": "^20.19.0 || >=22.12.0"
   },
   "publishConfig": {
     "access": "public"
