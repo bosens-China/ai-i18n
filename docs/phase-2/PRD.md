@@ -1,269 +1,305 @@
-# Phase 2 PRD：规模化增量与按需语言资产
+# Phase 2 PRD：增量构建、按需语言与有界缓存
 
 > 状态：Draft
 >
-> 前置条件：Phase 1 验收完成，并至少有一个真实 Vue 项目和一个 React/Vanilla 项目接入。
+> 前置条件：Phase 1 的默认协议、Runtime 和文件格式保持稳定。
 
 ## 1. 背景
 
-Phase 1 已建立以下稳定协议：
+Phase 1 已建立以下稳定能力：
 
-- Dev 渐进、Build 完整可达模块图。
-- 可提交的 Translation Memory cache。
+- Dev 渐进分析，Build 处理入口可达模块图。
+- 可提交到 Git 的 Translation Memory cache。
 - 按源码路径生成的 extracted 文件。
 - 按语言生成的 locales 文件。
-- 模块级注册携带全部配置语言。
-- 自动 Provider 防抖、批处理和缓存复用。
-- Vue、React、HTML extractor 组合。
+- 模块注册携带全部配置语言。
+- Provider 防抖、批处理、并发控制和缓存复用。
+- Vue、React、Vanilla 和 HTML extractor。
 
-Phase 2 不重做这些协议，只处理真实项目测量后出现的规模问题：单个 cache 文件过大、全部语言随模块加载造成的体积、Build Watch 失效范围、Provider 吞吐以及 Vite Bundled Dev 兼容。
+Phase 2 不重做上述能力。本阶段解决三个明确问题：
 
-## 2. 启动原则
+1. `vite build --watch` 每轮 Build 都会重建 ProjectState，无法复用上一轮分析状态。
+2. 模块注册携带全部语言，无法按语言加载，也无法声明资源加载优先级。
+3. Translation Memory 默认永久保留，但项目无法限制 `cache.json` 的最大条数或体积。
 
-Phase 2 的能力必须由真实数据触发，不因为“未来可能需要”而提前实现。
+本阶段不以性能 benchmark 为启动条件，也不建设性能测试体系。所有测试只验证行为、
+兼容性和数据安全。
 
-满足以下任一条件才启动对应项：
+## 2. 产品目标
 
-- `cache.json` 读写、Git diff 或合并冲突已成为实际瓶颈。
-- 全语言模块注册造成明确的网络、解析或内存问题。
-- 大项目单文件 HMR 重新分析范围不可接受。
-- Provider 批次吞吐或限流影响 Dev/Build。
-- 目标项目实际启用 Vite Bundled Dev。
-- Yuku native binding 或 AST transfer 被 profiler 证明为主要瓶颈。
+1. 让 `vite build --watch` 复用 ProjectState，并按正确的依赖闭包增量更新。
+2. 提供按 locale 加载的语言资产。
+3. 支持预加载、预取和完全按需加载三种资源提示。
+4. 允许限制 `cache.json` 的 message 数量或序列化体积。
+5. Cache 超限时只淘汰非活跃 Translation Memory，不删除活动翻译。
+6. 保持 Phase 1 默认模式和文件协议兼容。
 
-## 3. 产品目标
+## 3. 实现原则
 
-1. 在不破坏 Phase 1 schema 语义的前提下扩展可分片 cache。
-2. 支持真正按需加载的 locale 资产，而不是只把文件拆开后全部打包。
-3. 改善 `vite build --watch` 和大项目 Dev 的最小失效范围。
-4. 提供 Provider 并发、限流、重试和成本统计。
-5. 对 Vite Bundled Dev 建立实验兼容矩阵。
-6. 用 benchmark 决定是否需要更深的 native 优化。
+- 未配置 Phase 2 选项时，行为与 Phase 1 一致。
+- 只依赖 Vite 公开插件 API。
+- 相同输入生成稳定内容，不引入时间戳、运行次数或访问计数。
+- 活动翻译优先保证正确性，容量限制不能导致活动翻译丢失。
+- 资源提示是浏览器调度提示，不承诺资源一定在指定时间完成加载。
+- 不为了未来能力增加 cache 分片、native kernel 或额外 CLI。
 
 ## 4. 持续非目标
 
-Phase 2 仍然不包括：
+Phase 2 不包括：
 
+- 性能 benchmark、性能预算或 profiler 基础设施。
+- cache 分片或多个 Translation Memory 文件。
+- module group × locale 二维拆分。
+- Provider 成本统计或新的通用重试调度层。
+- Vite Full Bundle Mode 的正式兼容实现。
+- Rust、Zig、N-API 或其他 native extraction kernel。
 - SSR 或服务端请求级 locale。
 - 自动提取没有 `t()` 的普通 UI 文本。
 - 路由目录、`src/pages` 或框架路由器约定。
-- 扫描 Vite 入口不可达的全目录 CLI。
+- 扫描 Vite 入口不可达目录的 CLI。
 - sync、scan、generate 等独立命令。
-- 翻译管理后台。
-- 默认远程 Translation Memory 服务。
+- 翻译管理后台或默认远程 Translation Memory 服务。
 - Vite 7 或更低版本。
-- 没有 profiler 证据时自研 Rust parser。
 
-所有能力仍然只能由 `vite dev`、`vite build` 及其原生 watch 形态驱动。
+所有产品流程仍由 `vite dev`、`vite build` 和 `vite build --watch` 驱动。
 
-## 5. 基准与可观测性
+## 5. Build Watch 增量状态
 
-建立包含以下规模的 benchmark fixture：
+### 5.1 生命周期
 
-- 10,000 个受支持模块。
-- 5,000 个唯一 message IDs。
-- 5 个目标语言。
-- 重复 ID 跨 1、10、100 个模块分布。
-- JS/TS、React、Vue 混合模块。
+普通 `vite build` 继续使用新鲜 ProjectState，保证单次构建不继承其他构建的活动模块。
 
-记录：
+`vite build --watch` 在首轮构建时创建 ProjectState。后续重建复用该状态，不在每次
+`buildStart` 时执行全量 reset。
 
-- 冷启动初始化耗时。
-- cache hydrate、校验和写入耗时。
-- 单文件 source/extracted/locale 变化的失效闭包。
-- Yuku parse/analyze/AST transfer 各阶段耗时。
-- 模块注册代码体积和重复 message 体积。
-- setLang 耗时和内存。
-- Provider cache hit、batch 数、字符数、Token 估算、耗时、失败和重试。
+重新启动 Watch 进程时，插件继续从磁盘 cache 恢复 Translation Memory。分析状态允许重建，
+Translation Memory 不得丢失。
 
-统计默认只输出汇总，不包含完整业务文案、Prompt、API key 或 Provider 原始响应。
+### 5.2 失效规则
 
-## 6. Cache 规模化
+- source 变化：重新分析当前模块及必要的 reverse dependents。
+- 静态依赖变化：重新分析依赖该文件且提取结果可能变化的模块。
+- extracted 翻译变化：只合并 cache、locale 和 registration，不重新 parse source。
+- locale 文件变化：只恢复对应翻译并更新受影响的 registration。
+- source 删除：删除活动文件引用，并刷新必要的 dependents。
+- source 重命名：按删除旧模块和新增新模块处理，不重复请求已有 Translation Memory。
+- extractor、schema 或提取配置不兼容：重建分析状态，保留兼容的 Translation Memory。
 
-### 6.1 Phase 1 兼容
+Vite 配置文件及其依赖变化后，用户需要重启 `vite build --watch`。插件不在 Watch 进程内
+模拟 Vite 配置热重载。
 
-Phase 1 的单 `cache.json` 继续是默认稳定模式。只有测得读写或 Git 冲突问题后，才启用分片：
+### 5.3 写入与产物
 
-```text
-i18n/
-├── cache.json                 # index + schema + config fingerprint
-└── cache/
-    ├── messages-00.json
-    ├── messages-01.json
-    └── files.json
-```
+- 没有内容变化时，不重写 cache、extracted 或 locale 文件。
+- 没有 registration 变化时，生成内容保持稳定。
+- Watch 重建不得重复请求已有翻译。
+- 文件删除或重命名后，不保留错误的活动 module reference。
+- Build Watch 和普通 Build 使用相同的 schema、路径和冲突检测规则。
 
-### 6.2 分片原则
+## 6. Locale Lazy
 
-- message 按稳定 ID hash 前缀分片，不按 pages/route 分片。
-- 相同 ID 始终进入同一分片。
-- 分片数量固定且版本化，避免每次规模变化导致全量重排。
-- extracted 和 locales 对 Agent/项目的协议保持不变。
-- Phase 1 单文件 cache 可以自动升级；升级前必须保留备份或原子替换。
-- 不自动删除历史 Translation Memory。
+### 6.1 默认兼容
 
-### 6.3 Git 合并
+未配置 `loading` 时，继续使用 Phase 1 的全语言模块注册模式。现有项目无需修改配置，
+Runtime API 和文件协议保持不变。
 
-- 文件稳定排序。
-- 不保存时间戳和运行次数。
-- 相同 ID 的不同非空翻译仍然报冲突。
-- 可以提供文档化 merge driver，但不得要求用户安装额外 CLI 才能正常使用。
+### 6.2 配置
 
-## 7. 增量失效优化
-
-### 7.1 组合 fingerprint
-
-每个模块至少包含：
-
-- 文件内容 hash。
-- extractor 名称与版本。
-- schema 和 key 协议版本。
-- 影响提取的配置 hash。
-- 跨文件静态依赖 hash。
-
-### 7.2 规则
-
-- source 变化：重新分析当前模块。
-- 静态依赖变化：只重新分析 reverse dependents。
-- extracted 翻译变化：不重新 parse source，只更新对应 message/cache/locale/registration。
-- locale metadata 变化：只更新 Runtime manifest 和相关 locale 产物。
-- Provider 配置变化：不丢弃已有翻译，只影响后续 `null` 请求。
-- Yuku/extractor/schema 不兼容：失效相应分析结果，但保留可兼容 Translation Memory。
-
-### 7.3 Build Watch
-
-`vite build --watch` 必须复用同一 ProjectState 协议：
-
-- 不重复翻译 cache 已有值。
-- 没有 message 变化时不重写 locales。
-- 没有 registration payload 变化时不改变输出 chunk hash。
-- 文件删除和重命名不遗留活动引用。
-
-## 8. Locale 按需加载
-
-### 8.1 默认兼容
-
-Phase 1 的“模块携带全部语言”继续是默认稳定模式。
-
-### 8.2 Locale lazy 模式
-
-测得体积问题后提供：
+按 locale 加载使用以下配置：
 
 ```ts
 aiI18n({
   loading: {
     strategy: 'locale',
+    preload: ['en-US'],
+    prefetch: ['ja-JP'],
   },
-})
+});
 ```
 
-行为：
+配置规则：
 
-- source fallback 保持同步可用。
-- `setLang(value)` 动态加载目标 locale 资产。
-- 相同 locale 并发调用共享一个 Promise。
-- 加载失败保持当前语言或回退源语言，并返回可处理错误。
-- locale 资产遵守 Vite base 和构建 hash。
-- Dev 与 Build 使用相同 manifest 语义。
+- `preload` 和 `prefetch` 只能引用 `locales` 中已配置的目标语言。
+- source locale 不生成语言资产，也不能出现在任一列表中。
+- 同一 locale 同时出现在两个列表中时，配置校验失败。
+- `defaultLang` 不是 source locale 时，插件自动按 preload 语义启动加载。
+- `preload` 和 `prefetch` 中的重复 locale 需要去重。
 
-### 8.3 模块与语言二维拆分
+### 6.3 语言资产
 
-只有 locale lazy 仍无法满足大型动态应用时，才实验：
+- 每个目标 locale 生成独立的 Vite 语言模块。
+- Runtime 通过静态可分析的动态 import 加载语言模块。
+- 生产构建中的语言资产遵守 Vite `base`、内容 hash 和资源 URL 规则。
+- Dev 和 Build 使用相同的 locale manifest 语义。
+- source fallback 始终同步可用。
+- 语言资产只包含该 locale 的活动 messages。
+
+### 6.4 资源提示
+
+插件按以下方式处理语言资源：
+
+| 配置                                    | 浏览器提示      | 行为                         |
+| --------------------------------------- | --------------- | ---------------------------- |
+| 非 source 的 `defaultLang` 或 `preload` | `modulepreload` | 尽早下载并准备语言模块       |
+| `prefetch`                              | `prefetch`      | 以较低优先级提前缓存语言模块 |
+| 未配置                                  | 无 `<link>`     | 调用 `setLang()` 时才加载    |
+
+`modulepreload` 和 `prefetch` 只表达加载意图。浏览器可以根据网络、电量和自身调度策略调整
+实际优先级。插件不得把 prefetch 成功作为切换语言的前置条件。
+
+### 6.5 Runtime 行为
+
+- `setLang(sourceLang)` 同步切换到 source locale，不发起网络请求。
+- 目标 locale 已加载时，`setLang()` 直接切换并通知订阅者。
+- 目标 locale 未加载时，`setLang()` 等待对应语言模块。
+- 相同 locale 的并发加载共享一个 Promise。
+- 加载成功后再提交语言切换，避免半切换状态。
+- 加载失败时保持当前语言，并返回可处理的错误。
+- 缺失或为 `null` 的翻译继续回退 source。
+- 非 source 的 `defaultLang` 在 Runtime 初始化后自动开始加载。
+- 默认语言尚未加载完成时，`t()` 暂时返回 source；加载完成后通知订阅者更新。
+
+### 6.6 HMR
+
+- source message 变化时，只更新包含该 message 的语言资产和 registration。
+- extracted 翻译变化时，只更新对应 locale。
+- 已加载 locale 通过 HMR 替换数据。
+- 未加载 locale 只更新后续请求的资源，不触发无意义加载。
+- HMR 不重复注册 module，也不累计旧翻译。
+
+## 7. Cache 容量控制
+
+### 7.1 默认行为
+
+未配置容量限制时，`cache.json` 继续永久保留 Translation Memory。文件移动、删除和暂时不可达
+都不会自动删除历史翻译。
+
+本阶段继续使用单个 `cache.json`，不实现 cache 分片。
+
+### 7.2 配置
 
 ```ts
-loading: {
-  strategy: 'module-locale',
-}
+aiI18n({
+  cache: {
+    maxMessages: 20_000,
+    maxBytes: 10 * 1024 * 1024,
+  },
+});
 ```
 
-它会形成 module group × locale 资产矩阵，因此必须先证明：
+配置规则：
 
-- 请求数量可控。
-- shared message 归属确定。
-- 动态模块激活与 locale 加载顺序正确。
-- HMR 不重复请求或丢失 registration。
-- 不依赖 Vite 私有 API。
+- `maxMessages` 是 `cache.messages` 允许保留的最大条数。
+- `maxBytes` 是稳定序列化后整个 `cache.json` 的最大字节数。
+- 两项都省略时，不启用容量清理。
+- 两项同时配置时，任一限制超出都会启动清理。
+- 两项必须是正整数。
 
-该模式在真实项目验证前保持 experimental。
+### 7.3 活跃定义
 
-## 9. Provider 调度升级
+message 满足以下任一条件时视为活动：
 
-Phase 1 已有 debounce、batch 和 in-flight 去重。Phase 2 只在有实际限流问题时增加：
+- 当前 cache file record 的 `messageIds` 仍引用该 message。
+- 当前 ProjectState 中的活动模块仍引用该 message。
 
-- 最大并发批次数。
-- Provider 返回的 retry-after 处理。
-- 仅针对可重试错误的指数退避。
-- 单批次过大时的自适应拆分。
-- Build 总等待时间上限。
-- 可取消 Dev 过期请求。
-- Token/字符成本预算和只读统计。
+活动 message 及其翻译不得因容量限制被删除。
 
-约束：
+没有任何活动引用的 message 是非活跃 Translation Memory，可以在超限时删除。
 
-- 重试不得绕过 message ID/locale 去重。
-- 失败不得覆盖已有非空翻译。
-- 预算耗尽时保留 null 并按配置 warning/error。
-- 不在 cache 中保存完整 Prompt 或原始响应。
+### 7.4 淘汰规则
 
-## 10. Bundled Dev
+1. 先完成磁盘变更合并、缺失 source 清理和活动引用校准。
+2. 只有 cache 超出配置限制时才开始淘汰。
+3. 只选择非活跃 messages。
+4. 候选项按 message ID 升序稳定排序，并按该顺序删除。
+5. 持续删除，直到同时满足 `maxMessages` 和 `maxBytes`。
+6. 删除结果通过现有临时文件加 rename 的方式原子写入。
 
-Vite Bundled Dev 在官方仍为实验能力时，本项目只提供实验支持：
+容量控制不保存访问时间、运行次数或 LRU 计数，避免每次运行产生无意义 Git diff。
 
-| 模式 | 目标级别 |
-| --- | --- |
-| 普通 Vite Dev | Stable |
-| Vite Build | Stable |
-| Vite Build Watch | Stable |
-| Bundled Dev CSR | Experimental |
-| Bundled Dev SSR | Not supported |
+如果活动 messages 本身已超过限制，插件保留全部活动数据并输出 warning。容量限制是软上限，
+不能以破坏当前项目翻译为代价强制满足。
 
-要求：
+### 7.5 与现有清理配置的关系
 
-- virtual runtime/register 模块始终位于可达图。
-- 所有外部静态依赖通过公开 watch API 登记。
-- 不依赖 mixed module graph 或私有字段完成核心功能。
-- 缓存恢复后仍能重建文件写入副作用。
-- registration/locales 未变化时不触发无意义刷新。
-- 不兼容时输出明确 warning，不静默产生错误翻译。
+- `cleanup.orphanMessages: false`：默认保留全部历史；配置容量后只在超限时删除非活跃记录。
+- `cleanup.orphanMessages: true`：继续删除全部非活跃记录，优先级高于容量限制。
+- `cleanup.missingSourceFiles`：继续决定不存在的 source 是否从活动 file records 中移除。
 
-只有 Vite 发布稳定插件迁移指南且真实项目通过后，才提升为 Stable。
+## 8. Provider 现状
 
-## 11. Native 优化决策
+`@ai-i18n/openai` 已支持可配置的 `maxRetries`，默认值为 `3`。ProviderCoordinator 已支持
+防抖、按长度分批、最大并发批次数和 in-flight 去重。
 
-Phase 1 已优先采用 Yuku。Phase 2 只有 profiler 证明以下任一项为主要瓶颈时才继续 native 工作：
+Phase 2 不再增加第二层通用重试，避免 adapter 和 coordinator 同时重试同一批请求。Provider
+最终失败时继续保留 `null`，不得覆盖已有非空翻译。
 
-- AST 从 Zig/Rust 向 JS 传输。
-- JS 侧静态求值或 message extraction。
-- 大型 Vue template 中大量独立表达式分析。
+上述能力属于 Phase 1 回归边界，不作为 Phase 2 新功能。
 
-优化顺序：
+## 9. 观察项
 
-1. 减少重复 parse 和 AST materialization。
-2. 使用 Yuku analyzer 的原生语义查询返回更小结果。
-3. 批量处理 Vue template 表达式。
-4. 向 Yuku 上游贡献必要能力。
-5. 最后才评估窄 N-API native extraction kernel。
+### 9.1 Vite Full Bundle Mode
 
-即使需要 native kernel，Vite 生命周期、Vue compiler、文件协议和 Runtime 仍保留在 TypeScript，不将整个插件改写为 Rust。
+Vite Full Bundle Mode 保持观察状态。Vite 提供可用且稳定的公开插件迁移方案前，本项目不承诺
+兼容，不创建阻塞 Phase 2 的实现任务。
 
-## 12. Schema 与迁移
+现有代码继续避免依赖 Vite 私有字段，为未来兼容保留空间。
 
-- cache、extracted、locale 必须带 schema version。
-- Phase 1 文件必须自动迁移或给出明确错误，不能静默覆盖。
-- 未知更高版本 schema 必须停止写入。
-- Translation Memory 迁移优先于分析缓存；不可兼容分析记录可以重建，翻译不可丢失。
-- experimental loading 配置不纳入稳定兼容承诺，稳定后再遵守 semver。
+### 9.2 Native 插件
 
-## 13. 验收标准
+Rust 或其他 native extraction 方案等待 Vite 或 Rolldown 提供正式、稳定的 native 插件支持。
 
-- benchmark 可复现并记录真实硬件、Node、Vite、Yuku 版本。
-- 分片 cache 只在命中启动门槛时实现，并能无损迁移 Phase 1 数据。
-- 单文件变化只失效正确依赖闭包。
-- Build Watch 无 message 变化时不重写 locale 或改变相关 chunk hash。
-- locale lazy 模式只请求选择的目标语言。
-- locale 加载并发去重，失败时源语言 fallback 正确。
-- module-locale experimental 不依赖 pages 目录或 Vite 私有 API。
-- Provider 限流和重试不会重复收费或覆盖有效翻译。
-- Bundled Dev 兼容状态与 Vite 官方当前能力一致。
-- Phase 1 默认模式和文件协议保持兼容。
-- SSR、自动普通文本提取和额外 CLI 仍然不存在。
+在此之前：
+
+- 不设计自有 N-API extraction kernel。
+- 不把 Vite 生命周期、Vue compiler、Runtime 或文件协议迁入 Rust。
+- 不把 native 支持列入 Phase 2 验收条件。
+
+## 10. Schema 与兼容
+
+- Cache 继续使用 Phase 1 单文件 schema。
+- extracted 和 locale 持久化文件继续使用 Phase 1 schema。
+- Cache 容量控制不写入时间戳、活跃度或额外运行时 metadata。
+- Locale Lazy 可以增加 Runtime manifest，但不得静默改写现有持久化文件语义。
+- 未知更高版本 schema 继续停止写入。
+- Phase 1 示例和默认配置无需迁移。
+
+## 11. 验收标准
+
+### 11.1 Build Watch
+
+- 首轮 Build 后，后续 Watch 重建不全量 reset ProjectState。
+- source 变化只刷新当前模块及必要 dependents。
+- extracted 或 locale 变化不重新 parse source。
+- 删除和重命名不遗留活动引用。
+- 已有 Translation Memory 不重复请求 Provider。
+- 内容未变化时不重写文件或改变 registration 内容。
+
+### 11.2 Locale Lazy
+
+- `strategy: 'locale'` 只在需要时加载目标 locale。
+- 非 source 的 default/preload locale 生成正确的 `modulepreload` 提示。
+- prefetch locale 生成正确的 `prefetch` 提示。
+- 完全 lazy 的 locale 不产生资源提示。
+- 语言资产遵守 Vite `base` 和内容 hash。
+- 同 locale 并发加载共享一个 Promise。
+- 加载失败时保持当前语言。
+- source 和 `null` fallback 行为正确。
+- Vanilla、Vue、React 和 HTML 共用相同语义。
+
+### 11.3 Cache 容量
+
+- 默认配置继续永久保留 Translation Memory。
+- `maxMessages` 和 `maxBytes` 都能独立触发清理。
+- 同时配置两个限制时，输出同时满足两项。
+- 只删除非活跃 messages。
+- 活动数据超过限制时保留数据并 warning。
+- 清理结果稳定、原子且不包含活跃度 metadata。
+- 不创建 cache 分片文件。
+
+### 11.4 兼容与质量
+
+- Phase 1 默认模式、Runtime 和文件协议保持兼容。
+- `pnpm check`、`pnpm test` 和 `pnpm build` 通过。
+- 新增测试只验证功能、兼容性和数据安全，不新增性能 benchmark。
+- SSR、普通文本自动提取、全目录扫描和额外 CLI 仍然不存在。
