@@ -4,9 +4,11 @@
 
 ## 已通过
 
-- `pnpm check`：根目录及 9 个子 workspace 的 TypeScript、ESLint 检查通过。
+- `pnpm check`：根目录及各发布包 / 示例 workspace 的 TypeScript、ESLint 检查通过。
+- `pnpm docs:build`：`apps/docs`（Astro Starlight）构建通过。
 - `pnpm test`：20 个测试文件、137 个测试通过。
 - `pnpm build`：6 个发布包构建通过。
+- Workspace 共 10 个子包：6 发布包 + 3 示例 + 1 文档站。
 - 三个示例的真实 Vite Build 均通过。
 - `pnpm --filter @boses/vite benchmark`：Babel/Yuku 冷分析、热替换、200 模块 Build 图完成
   五轮对比。
@@ -42,6 +44,7 @@
 ## 仍需外部完成
 
 1. 使用已确认的 npm scope `@boses` 执行 Changesets alpha 流程并发布验证；当前未对外发布。
-2. 在仓库 Settings → Pages 将发布源设为 GitHub Actions，并确认 `pages.yml` 成功部署示例导航页。
+2. 在仓库 Settings → Pages 将发布源设为 GitHub Actions，并确认 `pages.yml` 成功部署
+   用户文档站（`apps/docs`）以及 `/examples/{vanilla,vue,react}`。
 
 以上两项完成前，`PRD 验收标准全部通过` 和 `发布 1.0.0-alpha` 保持未勾选。

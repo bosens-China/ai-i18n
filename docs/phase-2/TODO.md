@@ -151,6 +151,7 @@
 - [ ] 更新根 README 的 Phase 2 配置示例。
 - [ ] 更新 `@boses/vite` README 的 `loading` 配置。
 - [ ] 更新 `@boses/vite` README 的 `cache` 配置。
+- [ ] 更新 `apps/docs` 用户文档中的 Phase 2 配置与行为说明。
 - [ ] 说明 preload、prefetch 和完全 lazy 的区别。
 - [ ] 说明 prefetch 是浏览器提示，不保证完成时间。
 - [ ] 说明 Build Watch 遇到 Vite 配置变化时需要重启。

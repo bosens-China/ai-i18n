@@ -1,29 +1,30 @@
 # Yuku 准入 Spike
 
-> 日期：2026-07-22
+> 日期：2026-07-22（平台矩阵结论按 2026-07-23 ACCEPTANCE 回写）
 >
 > 候选版本：`yuku-analyzer@0.7.3`（精确锁定）
 >
-> 结论：采用 Yuku，保留跨平台 CI 准入门槛。
+> 结论：采用 Yuku。六平台 CI 矩阵已通过；Babel 基线仅保留为对照与 benchmark，不是默认回退路径。
 
 ## 边界
 
-内部适配层只暴露两个核心操作：
+内部适配层只暴露两个核心操作（签名以 `@boses/analyzer` 为准）：
 
 ```ts
-analyzeModule(code, id, analyzer?)
-extractMessages(module, runtimeModuleId?, translationHooks?)
+analyzeModule(code, id, analyzer?, lang?)
+extractMessages(module, runtimeModuleId?, translationHooks?, autoImportRuntime?)
 ```
 
-- `analyzeModule` 使用单文件 `analyze`，传入 `Analyzer` 时复用其 add/replace 状态。
+- `analyzeModule` 使用单文件 `analyze`，传入 `Analyzer` 时复用其 add/replace 状态；
+  可选 `lang` 指定解析语言。
 - `extractMessages` 识别最终解析到 `virtual:ai-i18n` 的 `t` import symbol，并在同一 AST
-  中按框架提供的声明式 Hook 规则识别解构后的 `t`。
+  中按框架提供的声明式 Hook 规则识别解构后的 `t`；`autoImportRuntime` 用于按需导入场景。
 - parser/analyzer 选择不进入公共配置。
 - Vite、文件写入、Provider 和 Runtime 注册不进入该适配层。
 
 ## 正确性结果
 
-`packages/vite/test/yuku-spike.test.ts` 共 14 个场景通过：
+`packages/vite/test/yuku-spike.test.ts` 覆盖多组场景（含 `it.each`），当前全部通过。主要覆盖：
 
 - 与旧 Babel extractor 对照：字符串、comment、局部 const、条件分支、静态 template literal。
 - JS、TS、JSX、TSX。
@@ -33,6 +34,7 @@ extractMessages(module, runtimeModuleId?, translationHooks?)
 - 跨文件静态 const definition。
 - 动态参数只产生 warning，不猜测结果。
 - Analyzer 同路径 add/replace 和 remove。
+- 词法遮蔽、`undefined` comment、未解析 import 的 pending warning。
 
 旧实现支持的全局 `t`、`useI18nText` tagged template 和任意普通字符串不属于新协议，因此不纳入结果一致性要求。
 
@@ -60,13 +62,16 @@ parser 准入，不替代真实项目的端到端性能数据。
 
 ## 平台状态
 
-- macOS arm64：安装、native binding 加载、测试和 benchmark 已通过。
-- macOS x64、Linux x64/arm64、Windows x64/arm64：包已提供对应 optional bindings，但尚未在本项目 CI 实际安装验证。
-- `.github/workflows/yuku-platform.yml` 已配置六个平台的真实安装、native binding 加载、
-  fixture 测试和 benchmark；必须等待各 runner 实际跑绿后才能勾选平台验收。
+六平台矩阵已在 CI 通过（详见 [ACCEPTANCE.md](./ACCEPTANCE.md)）：
 
-跨平台矩阵完成前不删除 Babel fixtures，也不把 Yuku 平台兼容标记为最终验收通过。
+- Linux、Windows、macOS 的 x64 / arm64，共 6 个 job。
+- 工作流：`.github/workflows/yuku-platform.yml`（`main` push、pull request、`workflow_dispatch`）。
+- 每个 job 执行真实安装、native binding 加载与 Yuku 准入测试。
+
+Babel fixtures / benchmark 基线保留作对照，不作为默认分析回退路径。若未来出现可复现的
+安装或正确性失败，再按 PRD 评估是否回退。
 
 ## 决策
 
-Yuku 在当前目标语义上通过正确性、semantic binding、跨文件链接和增量替换验证，并明显快于现有 Babel 基线。因此 `@boses/vite` 后续实现以 Yuku 为默认分析器；如果跨平台 CI 出现可复现的安装或正确性失败，再按 PRD 回退 Babel。
+Yuku 在当前目标语义上通过正确性、semantic binding、跨文件链接、增量替换与六平台 CI 验证，
+并明显快于现有 Babel 基线。`@boses/vite` 以 Yuku 为默认分析器。

@@ -146,7 +146,9 @@ type TranslationValue = string | null;
 │   ├── vanilla/
 │   ├── vue/
 │   └── react/
-├── docs/
+├── apps/
+│   └── docs/                  # @boses/docs，Astro Starlight 用户文档站
+├── docs/                      # 内部 PRD / TODO / 验收（见 docs/index.md）
 ├── package.json
 ├── pnpm-workspace.yaml
 └── pnpm-lock.yaml
@@ -740,6 +742,7 @@ Phase 1 明确只支持浏览器 Runtime：
 - 显式 `virtual:ai-i18n` import 在 auto import 开关之外始终可用。
 - TypeScript 声明文件和三种 ESLint globals preset 可用。
 - Vanilla、Vue、React 示例均能 dev、build 和切换语言。
+- 用户文档站（`apps/docs`）可构建；Pages 部署文档站，并将三示例挂到 `/examples/*`。
 - 三个 Pages 示例均展示当前语言、切换控件和随语言变化的非空翻译文案。
 - 三个 Pages 示例均通过 `html: true` 提取 `<title>`，并随语言切换更新文档标题。
 - SSR 明确标记为不支持。

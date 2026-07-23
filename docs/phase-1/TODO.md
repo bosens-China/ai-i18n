@@ -31,10 +31,11 @@
 - [x] 创建 `packages/core`、`packages/vite`、`packages/openai`。
 - [x] 创建 `packages/eslint`，迁移并发布现有 AI 静态检查。
 - [x] 创建 Vanilla、Vue、React examples workspace 节点。
+- [x] 创建 `apps/docs`（Astro Starlight）用户文档站，并纳入 pnpm workspace。
 - [x] 配置 ESM、类型声明、exports、files、MCP engines、publishConfig。
 - [x] 添加 MIT License、README、repository metadata。
 - [x] 建立 changeset 或等价发布流程。
-- [x] 聚合三个示例的 GitHub Pages 构建产物与导航页。
+- [x] Pages 构建用户文档站，并将三示例产物挂到 `/examples/*`（已移除根级 `examples/index.html` 导航页）。
 - [ ] 在 GitHub Pages 启用 GitHub Actions 发布源并完成首次部署验证。
 - [x] 发布包改为独立版本，并以 `workspace:^` 保留内部兼容 semver 范围。
 
