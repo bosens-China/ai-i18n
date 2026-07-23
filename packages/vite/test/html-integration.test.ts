@@ -56,7 +56,7 @@ describe('HTML extractor integration', () => {
           ],
           extractors: [html()],
           translator,
-          provider: { batchSize: 10, strict: true },
+          provider: { batchLength: 12_000, strict: true },
         }),
       ],
       build: { write: false },

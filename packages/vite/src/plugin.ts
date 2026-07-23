@@ -36,7 +36,7 @@ const TRANSLATION_UPDATE_EVENT = 'ai-i18n:update';
 
 export type AiI18nProviderOptions = Pick<
   ProviderCoordinatorOptions,
-  'debounceMs' | 'batchSize' | 'strict'
+  'debounceMs' | 'batchLength' | 'maxConcurrency' | 'strict'
 >;
 
 export interface AiI18nOptions {

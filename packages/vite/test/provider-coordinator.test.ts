@@ -38,13 +38,19 @@ describe('ProviderCoordinator', () => {
         value: `${request.locale}:${request.source}`,
       })),
     );
+    const firstRequest = translationRequest('一', 'en-US');
+    const secondRequest = translationRequest('二', 'en-US');
     const coordinator = new ProviderCoordinator(translator, {
       debounceMs: 60_000,
-      batchSize: 2,
+      batchLength: JSON.stringify({
+        requests: [firstRequest, secondRequest],
+      }).length,
     });
 
-    const first = coordinator.request(translationRequest('一', 'en-US'));
-    const second = coordinator.request(translationRequest('二', 'en-US'));
+    const first = coordinator.request(firstRequest);
+    expect(translator).not.toHaveBeenCalled();
+    const second = coordinator.request(secondRequest);
+    expect(translator).toHaveBeenCalledTimes(1);
     const third = coordinator.request(translationRequest('三', 'ja-JP'));
     await coordinator.flush();
 
@@ -63,13 +69,42 @@ describe('ProviderCoordinator', () => {
     ]);
   });
 
+  it('limits concurrent translation batches', async () => {
+    let active = 0;
+    let peak = 0;
+    const translator: Translator = vi.fn(async (requests) => {
+      active += 1;
+      peak = Math.max(peak, active);
+      await new Promise((resolve) => setTimeout(resolve, 10));
+      active -= 1;
+      return requests.map((request) => ({
+        messageId: request.messageId,
+        locale: request.locale,
+        value: request.source,
+      }));
+    });
+    const coordinator = new ProviderCoordinator(translator, {
+      batchLength: 1,
+      maxConcurrency: 2,
+    });
+    const pending = ['一', '二', '三', '四', '五'].map((source) =>
+      coordinator.request(translationRequest(source, 'en-US')),
+    );
+
+    await coordinator.flush();
+    await Promise.all(pending);
+
+    expect(translator).toHaveBeenCalledTimes(5);
+    expect(peak).toBe(2);
+  });
+
   it('keeps null and warns when provider results are invalid', async () => {
     const warning = vi.fn();
     const translator: Translator = async () => [
       { messageId: 'unexpected', locale: 'en-US', value: 'Wrong' },
     ];
     const coordinator = new ProviderCoordinator(translator, {
-      batchSize: 1,
+      batchLength: 1,
       onWarning: warning,
     });
 
@@ -87,7 +122,7 @@ describe('ProviderCoordinator', () => {
       async () => {
         throw new Error('sensitive provider response');
       },
-      { batchSize: 1, strict: true, onWarning: () => {} },
+      { batchLength: 1, strict: true, onWarning: () => {} },
     );
 
     await expect(
@@ -106,7 +141,7 @@ describe('ProviderCoordinator', () => {
           locale: request.locale,
           value: null,
         })),
-      { batchSize: 1, strict: true, onWarning: () => {} },
+      { batchLength: 1, strict: true, onWarning: () => {} },
     );
 
     await expect(
@@ -130,7 +165,7 @@ describe('ProviderCoordinator', () => {
           locale: request.locale,
           value: '',
         })),
-      { batchSize: 1, onResults },
+      { batchLength: 1, onResults },
     );
 
     const result = coordinator.request(translationRequest('空白', 'en-US'));

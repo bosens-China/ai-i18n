@@ -66,7 +66,7 @@ describe('@ai-i18n/vite plugin', () => {
     const { plugin, transform, hotSend, directory } = setupPlugin(
       [],
       undefined,
-      { ...options, translator, provider: { batchSize: 1 } },
+      { ...options, translator, provider: { batchLength: 1 } },
     );
 
     const transformed = await transform(

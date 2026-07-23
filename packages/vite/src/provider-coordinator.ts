@@ -7,7 +7,8 @@ import type {
 
 export interface ProviderCoordinatorOptions {
   debounceMs?: number;
-  batchSize?: number;
+  batchLength?: number;
+  maxConcurrency?: number;
   strict?: boolean;
   onResults?: (results: readonly TranslationResult[]) => void | Promise<void>;
   onWarning?: (message: string) => void;
@@ -18,11 +19,13 @@ interface PendingRequest {
   request: TranslationRequest;
   promise: Promise<TranslationValue>;
   resolve: (value: TranslationValue) => void;
+  serializedLength: number;
 }
 
 export class ProviderCoordinator {
   private readonly debounceMs: number;
-  private readonly batchSize: number;
+  private readonly batchLength: number;
+  private readonly maxConcurrency: number;
   private readonly strict: boolean;
   private readonly onResults?: ProviderCoordinatorOptions['onResults'];
   private readonly onWarning: (message: string) => void;
@@ -37,7 +40,11 @@ export class ProviderCoordinator {
     options: ProviderCoordinatorOptions = {},
   ) {
     this.debounceMs = nonNegativeNumber(options.debounceMs ?? 100, 'debounceMs');
-    this.batchSize = positiveInteger(options.batchSize ?? 50, 'batchSize');
+    this.batchLength = positiveInteger(options.batchLength ?? 12_000, 'batchLength');
+    this.maxConcurrency = positiveInteger(
+      options.maxConcurrency ?? 5,
+      'maxConcurrency',
+    );
     this.strict = options.strict ?? false;
     this.onResults = options.onResults;
     this.onWarning = options.onWarning ?? console.warn;
@@ -52,7 +59,13 @@ export class ProviderCoordinator {
     const promise = new Promise<TranslationValue>((done) => {
       resolve = done;
     });
-    const pending = { key, request, promise, resolve };
+    const pending = {
+      key,
+      request,
+      promise,
+      resolve,
+      serializedLength: JSON.stringify(request).length,
+    };
     this.active.set(key, pending);
 
     // Provider 按目标语言分批，避免一个批次混入多个目标语言。
@@ -60,9 +73,7 @@ export class ProviderCoordinator {
     localeQueue.set(key, pending);
     this.queued.set(request.locale, localeQueue);
 
-    if (localeQueue.size >= this.batchSize) {
-      this.dispatchFullBatches(request.locale);
-    }
+    this.dispatchReadyBatches();
     if (this.hasQueued()) this.schedule();
     else this.clearTimer();
     return promise;
@@ -89,23 +100,37 @@ export class ProviderCoordinator {
     }, this.debounceMs);
   }
 
-  private dispatchFullBatches(locale: string): void {
-    const queue = this.queued.get(locale);
-    while (queue && queue.size >= this.batchSize) {
-      this.dispatch(locale, this.batchSize);
+  private dispatchReadyBatches(): void {
+    for (const locale of [...this.queued.keys()]) {
+      let queue = this.queued.get(locale);
+      while (
+        queue &&
+        this.inFlight.size < this.maxConcurrency &&
+        batchPayloadLength(queue.values()) >= this.batchLength
+      ) {
+        this.dispatch(locale);
+        queue = this.queued.get(locale);
+      }
+      if (this.inFlight.size >= this.maxConcurrency) return;
     }
   }
 
   private dispatchAll(): void {
     for (const locale of [...this.queued.keys()]) {
-      while (this.queued.has(locale)) this.dispatch(locale, this.batchSize);
+      while (
+        this.inFlight.size < this.maxConcurrency &&
+        this.queued.has(locale)
+      ) {
+        this.dispatch(locale);
+      }
+      if (this.inFlight.size >= this.maxConcurrency) return;
     }
   }
 
-  private dispatch(locale: string, limit: number): void {
+  private dispatch(locale: string): void {
     const queue = this.queued.get(locale);
     if (!queue?.size) return;
-    const batch = [...queue.values()].slice(0, limit);
+    const batch = takeBatch(queue.values(), this.batchLength);
     for (const pending of batch) queue.delete(pending.key);
     if (!queue.size) this.queued.delete(locale);
     this.startBatch(batch);
@@ -117,6 +142,9 @@ export class ProviderCoordinator {
       for (const pending of batch) {
         if (this.active.get(pending.key) === pending) this.active.delete(pending.key);
       }
+      this.dispatchReadyBatches();
+      if (this.hasQueued()) this.schedule();
+      else this.clearTimer();
     });
     this.inFlight.add(task);
   }
@@ -154,6 +182,34 @@ export class ProviderCoordinator {
     if (this.timer) clearTimeout(this.timer);
     this.timer = undefined;
   }
+}
+
+const EMPTY_BATCH_LENGTH = JSON.stringify({ requests: [] }).length;
+
+function batchPayloadLength(requests: Iterable<PendingRequest>): number {
+  let length = EMPTY_BATCH_LENGTH;
+  let count = 0;
+  for (const request of requests) {
+    length += request.serializedLength + (count > 0 ? 1 : 0);
+    count += 1;
+  }
+  return length;
+}
+
+function takeBatch(
+  requests: Iterable<PendingRequest>,
+  limit: number,
+): PendingRequest[] {
+  const batch: PendingRequest[] = [];
+  let length = EMPTY_BATCH_LENGTH;
+  for (const request of requests) {
+    const nextLength = length + request.serializedLength + (batch.length ? 1 : 0);
+    if (batch.length && nextLength > limit) break;
+    batch.push(request);
+    length = nextLength;
+    if (length >= limit) break;
+  }
+  return batch;
 }
 
 function validateResults(

@@ -78,7 +78,7 @@ const LABEL = '标题'
           ],
           extractors: [vue()],
           translator,
-          provider: { batchSize: 10, strict: true },
+          provider: { batchLength: 12_000, strict: true },
         }),
       ],
       build: { write: false },

@@ -62,7 +62,7 @@ export function App() {
           ],
           extractors: [react()],
           translator,
-          provider: { batchSize: 10, strict: true },
+          provider: { batchLength: 12_000, strict: true },
         }),
       ],
       build: {
