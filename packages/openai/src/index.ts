@@ -1,137 +1,146 @@
+import { LangChainTracer } from '@langchain/core/tracers/tracer_langchain';
+import { ChatOpenAI } from '@langchain/openai';
+import { Client } from 'langsmith';
 import type {
   TranslationRequest,
   TranslationResult,
   Translator,
 } from '@ai-i18n/core';
 
+export interface LangSmithOptions {
+  apiKey: string;
+  project?: string;
+  endpoint?: string;
+  workspaceId?: string;
+}
+
 export interface OpenAIOptions {
   /** OpenAI-compatible API 根地址，例如 `https://example.com/v1`。 */
   baseURL: string;
   /** 模型名必须由使用者显式选择。 */
   model: string;
-  /** 翻译业务 Prompt 必须由使用者提供。 */
-  prompt: string;
-  /** 可从调用方自己的环境变量传入；Provider 不主动读取环境。 */
+  /** 本地无认证服务可省略；Provider 不主动读取宿主环境变量。 */
   apiKey?: string;
+  temperature?: number;
+  maxTokens?: number;
+  timeoutMs?: number;
+  maxRetries?: number;
   headers?: HeadersInit;
-  fetch?: typeof globalThis.fetch;
+  /** 覆盖默认翻译提示词；内部 JSON 输出约束始终追加在尾部。 */
+  systemPrompt?: string;
+  /** 传入即启用 LangSmith tracing。 */
+  langSmith?: LangSmithOptions;
 }
 
 interface TranslationPayload {
   translations: TranslationResult[];
 }
 
-const RESPONSE_SCHEMA = {
-  name: 'ai_i18n_translations',
-  strict: true,
-  schema: {
-    type: 'object',
-    properties: {
-      translations: {
-        type: 'array',
-        items: {
-          type: 'object',
-          properties: {
-            messageId: { type: 'string' },
-            locale: { type: 'string' },
-            value: { type: ['string', 'null'] },
-          },
-          required: ['messageId', 'locale', 'value'],
-          additionalProperties: false,
+const DEFAULT_SYSTEM_PROMPT =
+  '你是一名专业的软件界面本地化译者。请将每条 source 翻译为请求指定的 locale，并结合 comment 判断语境。保持占位符、变量插值、HTML、Markdown、ICU 语法、快捷键和产品名称不变，不要添加解释；无法可靠翻译时返回 null。';
+
+const JSON_OUTPUT_SUFFIX =
+  '请仅以 JSON 返回，不要使用 Markdown 代码块或添加解释。最小示例：{"translations":[{"messageId":"save","locale":"en-US","value":"Save"}]}';
+
+const TRANSLATION_SCHEMA = {
+  type: 'object',
+  properties: {
+    translations: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          messageId: { type: 'string' },
+          locale: { type: 'string' },
+          value: { type: ['string', 'null'] },
         },
+        required: ['messageId', 'locale', 'value'],
+        additionalProperties: false,
       },
     },
-    required: ['translations'],
-    additionalProperties: false,
   },
+  required: ['translations'],
+  additionalProperties: false,
 } as const;
 
 export function openAI(options: OpenAIOptions): Translator {
   const baseURL = requiredOption(options.baseURL, 'baseURL').replace(/\/+$/, '');
-  const model = requiredOption(options.model, 'model');
-  const prompt = requiredOption(options.prompt, 'prompt');
-  const fetcher = options.fetch ?? globalThis.fetch;
-  if (typeof fetcher !== 'function') {
-    throw new Error('[ai-i18n/openai] fetch is unavailable');
-  }
+  const modelName = requiredOption(options.model, 'model');
+  const basePrompt =
+    options.systemPrompt === undefined
+      ? DEFAULT_SYSTEM_PROMPT
+      : requiredOption(options.systemPrompt, 'systemPrompt');
+  const systemPrompt = `${basePrompt}\n\n${JSON_OUTPUT_SUFFIX}`;
+  const temperature = nonNegativeNumber(
+    options.temperature ?? 1,
+    'temperature',
+  );
+  const timeout = positiveInteger(options.timeoutMs ?? 120_000, 'timeoutMs');
+  const maxRetries = nonNegativeInteger(
+    options.maxRetries ?? 3,
+    'maxRetries',
+  );
+  const maxTokens = optionalPositiveInteger(options.maxTokens, 'maxTokens');
+  const headers = options.headers ? normalizeHeaders(options.headers) : undefined;
+  // 显式占位值可阻止 LangChain 把宿主 OPENAI_API_KEY 泄露给本地服务。
+  const apiKey = options.apiKey?.trim() || 'local-no-auth';
+  const callbacks = createLangSmithCallbacks(options.langSmith);
+
+  const model = new ChatOpenAI({
+    model: modelName,
+    apiKey,
+    temperature,
+    timeout,
+    maxRetries,
+    maxTokens,
+    useResponsesApi: false,
+    ...(callbacks ? { callbacks } : {}),
+    configuration: {
+      baseURL,
+      ...(headers ? { defaultHeaders: headers } : {}),
+    },
+  }).withStructuredOutput<TranslationPayload>(TRANSLATION_SCHEMA, {
+    name: 'ai_i18n_translations',
+    method: 'jsonSchema',
+    strict: true,
+  });
 
   return async (requests) => {
     if (requests.length === 0) return [];
 
-    const response = await fetcher(`${baseURL}/chat/completions`, {
-      method: 'POST',
-      headers: createHeaders(options),
-      body: JSON.stringify({
-        model,
-        messages: [
-          { role: 'system', content: prompt },
-          {
-            role: 'user',
-            content: JSON.stringify({ requests }),
-          },
-        ],
-        response_format: {
-          type: 'json_schema',
-          json_schema: RESPONSE_SCHEMA,
-        },
-      }),
-    });
-
-    if (!response.ok) {
-      throw new Error(
-        `[ai-i18n/openai] request failed with status ${response.status}`,
-      );
+    let payload: TranslationPayload;
+    try {
+      payload = await model.invoke([
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: JSON.stringify({ requests }) },
+      ]);
+    } catch (error) {
+      throw safeProviderError(error);
     }
-
-    const completion = await readJson(response, 'invalid JSON response');
-    const content = parseCompletion(completion);
-    const payload = parsePayload(content);
-    return validateResults(requests, payload.translations);
+    return validateResults(requests, parsePayload(payload));
   };
 }
 
-function createHeaders(options: OpenAIOptions): Headers {
-  const headers = new Headers(options.headers);
-  if (!headers.has('content-type')) {
-    headers.set('content-type', 'application/json');
-  }
-  const apiKey = options.apiKey?.trim();
-  if (apiKey && !headers.has('authorization')) {
-    headers.set('authorization', `Bearer ${apiKey}`);
-  }
-  return headers;
+function createLangSmithCallbacks(options: LangSmithOptions | undefined) {
+  if (!options) return undefined;
+  const client = new Client({
+    apiKey: requiredOption(options.apiKey, 'langSmith.apiKey'),
+    ...(optionalOption(options.endpoint) ? { apiUrl: options.endpoint!.trim() } : {}),
+    ...(optionalOption(options.workspaceId)
+      ? { workspaceId: options.workspaceId!.trim() }
+      : {}),
+  });
+  return [
+    new LangChainTracer({
+      client,
+      ...(optionalOption(options.project)
+        ? { projectName: options.project!.trim() }
+        : {}),
+    }),
+  ];
 }
 
-async function readJson(response: Response, reason: string): Promise<unknown> {
-  try {
-    return await response.json();
-  } catch {
-    throw new Error(`[ai-i18n/openai] ${reason}`);
-  }
-}
-
-function parseCompletion(value: unknown): string {
-  if (!isRecord(value) || !Array.isArray(value.choices)) {
-    throw new Error('[ai-i18n/openai] invalid completion response');
-  }
-  const first = value.choices[0];
-  if (
-    !isRecord(first) ||
-    !isRecord(first.message) ||
-    typeof first.message.content !== 'string'
-  ) {
-    throw new Error('[ai-i18n/openai] invalid completion response');
-  }
-  return first.message.content;
-}
-
-function parsePayload(content: string): TranslationPayload {
-  let value: unknown;
-  try {
-    value = JSON.parse(content);
-  } catch {
-    throw new Error('[ai-i18n/openai] invalid translation JSON');
-  }
+function parsePayload(value: unknown): readonly TranslationResult[] {
   if (
     !isRecord(value) ||
     !hasExactKeys(value, ['translations']) ||
@@ -139,7 +148,7 @@ function parsePayload(content: string): TranslationPayload {
   ) {
     throw new Error('[ai-i18n/openai] invalid translation payload');
   }
-  return { translations: value.translations as TranslationResult[] };
+  return value.translations as TranslationResult[];
 }
 
 function validateResults(
@@ -178,15 +187,64 @@ function validateResults(
   return requests.map((request) => received.get(requestKey(request))!);
 }
 
+function safeProviderError(error: unknown): Error {
+  if (isRecord(error) && typeof error.status === 'number') {
+    return new Error(
+      `[ai-i18n/openai] request failed with status ${error.status}`,
+    );
+  }
+  return new Error('[ai-i18n/openai] translation request failed');
+}
+
 function requestKey(value: Pick<TranslationRequest, 'messageId' | 'locale'>) {
   return `${value.messageId}\u0000${value.locale}`;
 }
 
 function requiredOption(value: string, name: string): string {
   const normalized = value?.trim();
-  if (!normalized) {
-    throw new Error(`[ai-i18n/openai] ${name} is required`);
+  if (!normalized) throw new Error(`[ai-i18n/openai] ${name} is required`);
+  return normalized;
+}
+
+function optionalOption(value: string | undefined): boolean {
+  return Boolean(value?.trim());
+}
+
+function nonNegativeNumber(value: number, name: string): number {
+  if (!Number.isFinite(value) || value < 0) {
+    throw new RangeError(`[ai-i18n/openai] ${name} must be non-negative`);
   }
+  return value;
+}
+
+function positiveInteger(value: number, name: string): number {
+  if (!Number.isInteger(value) || value <= 0) {
+    throw new RangeError(`[ai-i18n/openai] ${name} must be a positive integer`);
+  }
+  return value;
+}
+
+function nonNegativeInteger(value: number, name: string): number {
+  if (!Number.isInteger(value) || value < 0) {
+    throw new RangeError(
+      `[ai-i18n/openai] ${name} must be a non-negative integer`,
+    );
+  }
+  return value;
+}
+
+function optionalPositiveInteger(
+  value: number | undefined,
+  name: string,
+): number | undefined {
+  return value === undefined ? undefined : positiveInteger(value, name);
+}
+
+function normalizeHeaders(value: HeadersInit): Record<string, string> {
+  const normalized: Record<string, string> = {};
+  new Headers(value).forEach((headerValue, name) => {
+    normalized[name] = headerValue;
+  });
   return normalized;
 }
 

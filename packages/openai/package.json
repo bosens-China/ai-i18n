@@ -1,11 +1,17 @@
 {
   "name": "@ai-i18n/openai",
   "version": "0.0.0",
-  "description": "Fetch-based OpenAI-compatible translation provider for ai-i18n.",
-  "keywords": ["i18n", "openai", "translation"],
+  "description": "LangChain-based OpenAI-compatible translation provider for ai-i18n.",
+  "keywords": [
+    "i18n",
+    "openai",
+    "translation"
+  ],
   "type": "module",
   "sideEffects": false,
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
@@ -19,7 +25,10 @@
     "check": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@ai-i18n/core": "workspace:*"
+    "@ai-i18n/core": "workspace:*",
+    "@langchain/core": "^1.2.3",
+    "@langchain/openai": "^1.5.5",
+    "langsmith": "^0.8.4"
   },
   "engines": {
     "node": "^20.19.0 || >=22.12.0"

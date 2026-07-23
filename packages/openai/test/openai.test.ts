@@ -1,11 +1,12 @@
-import type { AddressInfo } from 'node:net';
 import { createServer, type IncomingMessage, type Server } from 'node:http';
-import { afterEach, describe, expect, it } from 'vitest';
+import type { AddressInfo } from 'node:net';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { openAI } from '../src/index';
 
 const servers: Server[] = [];
 
 afterEach(async () => {
+  vi.unstubAllEnvs();
   await Promise.all(
     servers.splice(0).map(
       (server) =>
@@ -17,65 +18,95 @@ afterEach(async () => {
 });
 
 describe('openAI', () => {
-  it('sends a structured batch with user configuration', async () => {
+  it('sends a structured batch with user configuration and the required suffix', async () => {
+    let captured: CapturedRequest | undefined;
+    const baseURL = await startServer(async (request, body) => {
+      captured = { request, body };
+      return completion(validPayload());
+    });
+    const translator = openAI({
+      baseURL: `${baseURL}/v1/`,
+      model: 'chosen-model',
+      systemPrompt: 'Translate product interface messages.',
+      apiKey: 'secret-key',
+      temperature: 0.25,
+      maxTokens: 1_024,
+      timeoutMs: 5_000,
+      maxRetries: 0,
+      headers: { 'x-provider-version': '2026-07-22' },
+    });
+
+    const results = await translator(translationRequests());
+
+    expect(results).toEqual(validPayload().translations);
+    expect(captured?.request.url).toBe('/v1/chat/completions');
+    expect(captured?.request.headers.authorization).toBe('Bearer secret-key');
+    expect(captured?.request.headers['x-provider-version']).toBe('2026-07-22');
+    expect(captured?.body).toMatchObject({
+      model: 'chosen-model',
+      temperature: 0.25,
+      max_tokens: 1_024,
+      messages: [{ role: 'system' }, { role: 'user' }],
+      response_format: {
+        type: 'json_schema',
+        json_schema: { name: 'ai_i18n_translations', strict: true },
+      },
+    });
+    const messages = captured?.body.messages as Array<{ content: string }>;
+    expect(messages[0]!.content).toMatch(
+      /^Translate product interface messages\.\n\n请仅以 JSON 返回/,
+    );
+    expect(messages[0]!.content).toContain(
+      '{"translations":[{"messageId":"save","locale":"en-US","value":"Save"}]}',
+    );
+    expect(JSON.parse(messages[1]!.content)).toEqual({
+      requests: translationRequests(),
+    });
+  });
+
+  it('uses safe defaults and does not leak an environment key to a local endpoint', async () => {
+    vi.stubEnv('OPENAI_API_KEY', 'must-not-leak');
     let captured: CapturedRequest | undefined;
     const baseURL = await startServer(async (request, body) => {
       captured = { request, body };
       return completion({
         translations: [
           { messageId: 'save', locale: 'en-US', value: 'Save' },
-          { messageId: 'save', locale: 'ja-JP', value: '保存' },
         ],
       });
     });
-    const translator = openAI({
-      baseURL: `${baseURL}/v1/`,
-      model: 'chosen-model',
-      prompt: 'Translate product interface messages.',
-      apiKey: 'secret-key',
-      headers: { 'x-provider-version': '2026-07-22' },
-    });
 
-    const results = await translator([
+    await openAI({ baseURL, model: 'local-model' })([
       { messageId: 'save', source: '保存', locale: 'en-US' },
-      {
-        messageId: 'save',
-        source: '保存',
-        comment: 'button',
-        locale: 'ja-JP',
-      },
     ]);
 
-    expect(results).toEqual([
-      { messageId: 'save', locale: 'en-US', value: 'Save' },
-      { messageId: 'save', locale: 'ja-JP', value: '保存' },
-    ]);
-    expect(captured?.request.url).toBe('/v1/chat/completions');
-    expect(captured?.request.headers.authorization).toBe('Bearer secret-key');
-    expect(captured?.request.headers['x-provider-version']).toBe('2026-07-22');
-    expect(captured?.body).toMatchObject({
-      model: 'chosen-model',
-      messages: [
-        { role: 'system', content: 'Translate product interface messages.' },
-        { role: 'user' },
-      ],
-      response_format: {
-        type: 'json_schema',
-        json_schema: { name: 'ai_i18n_translations', strict: true },
-      },
+    expect(captured?.request.headers.authorization).toBe(
+      'Bearer local-no-auth',
+    );
+    expect(captured?.body.temperature).toBe(1);
+    expect(
+      (captured?.body.messages as Array<{ content: string }>)[0]!.content,
+    ).toContain('你是一名专业的软件界面本地化译者');
+  });
+
+  it('applies the configured request timeout', async () => {
+    const baseURL = await startServer(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 50));
+      return completion({
+        translations: [
+          { messageId: 'save', locale: 'en-US', value: 'Save' },
+        ],
+      });
     });
-    const userMessage = (captured?.body.messages as Array<{ content: string }>)[1];
-    expect(JSON.parse(userMessage!.content)).toEqual({
-      requests: [
-        { messageId: 'save', source: '保存', locale: 'en-US' },
-        {
-          messageId: 'save',
-          source: '保存',
-          comment: 'button',
-          locale: 'ja-JP',
-        },
-      ],
-    });
+
+    await expect(
+      openAI({
+        baseURL,
+        model: 'timeout-model',
+        timeoutMs: 10,
+        maxRetries: 0,
+      })([{ messageId: 'save', source: '保存', locale: 'en-US' }]),
+    ).rejects.toThrow('[ai-i18n/openai] translation request failed');
   });
 
   it('rejects missing, duplicate, extra, and malformed results', async () => {
@@ -115,14 +146,14 @@ describe('openAI', () => {
   });
 
   it('does not request the service for an empty batch', async () => {
-    const translator = openAI({
-      ...validOptions('http://unused.invalid'),
-      fetch: async () => {
-        throw new Error('fetch should not run');
-      },
+    let requested = false;
+    const baseURL = await startServer(async () => {
+      requested = true;
+      return completion({ translations: [] });
     });
 
-    await expect(translator([])).resolves.toEqual([]);
+    await expect(openAI(validOptions(baseURL))([])).resolves.toEqual([]);
+    expect(requested).toBe(false);
   });
 
   it('reports HTTP and response shape failures without exposing response data', async () => {
@@ -141,19 +172,28 @@ describe('openAI', () => {
       openAI(validOptions(invalidURL))([
         { messageId: 'save', source: '保存', locale: 'en-US' },
       ]),
-    ).rejects.toThrow('[ai-i18n/openai] invalid completion response');
+    ).rejects.toThrow('[ai-i18n/openai] translation request failed');
   });
 
-  it('requires base URL, model, and business prompt', () => {
+  it('validates required and bounded configuration', () => {
     expect(() => openAI({ ...validOptions(), baseURL: ' ' })).toThrow(
       'baseURL is required',
     );
     expect(() => openAI({ ...validOptions(), model: ' ' })).toThrow(
       'model is required',
     );
-    expect(() => openAI({ ...validOptions(), prompt: ' ' })).toThrow(
-      'prompt is required',
+    expect(() => openAI({ ...validOptions(), systemPrompt: ' ' })).toThrow(
+      'systemPrompt is required',
     );
+    expect(() => openAI({ ...validOptions(), maxRetries: -1 })).toThrow(
+      'maxRetries must be a non-negative integer',
+    );
+    expect(() =>
+      openAI({
+        ...validOptions(),
+        langSmith: { apiKey: ' ' },
+      }),
+    ).toThrow('langSmith.apiKey is required');
   });
 });
 
@@ -164,17 +204,49 @@ interface CapturedRequest {
 
 interface MockResponse {
   status?: number;
+  headers?: Record<string, string>;
   body: unknown;
 }
 
 function validOptions(baseURL = 'http://localhost') {
-  return { baseURL, model: 'test-model', prompt: 'Translate.' };
+  return { baseURL, model: 'test-model', maxRetries: 0 };
+}
+
+function translationRequests() {
+  return [
+    { messageId: 'save', source: '保存', locale: 'en-US' },
+    {
+      messageId: 'save',
+      source: '保存',
+      comment: 'button',
+      locale: 'ja-JP',
+    },
+  ];
+}
+
+function validPayload() {
+  return {
+    translations: [
+      { messageId: 'save', locale: 'en-US', value: 'Save' },
+      { messageId: 'save', locale: 'ja-JP', value: '保存' },
+    ],
+  };
 }
 
 function completion(payload: unknown): MockResponse {
   return {
     body: {
-      choices: [{ message: { content: JSON.stringify(payload) } }],
+      id: 'chatcmpl-test',
+      object: 'chat.completion',
+      created: 0,
+      model: 'test-model',
+      choices: [
+        {
+          index: 0,
+          finish_reason: 'stop',
+          message: { role: 'assistant', content: JSON.stringify(payload) },
+        },
+      ],
     },
   };
 }
@@ -190,6 +262,9 @@ async function startServer(
     const result = await handler(request, body);
     response.statusCode = result.status ?? 200;
     response.setHeader('content-type', 'application/json');
+    for (const [name, value] of Object.entries(result.headers ?? {})) {
+      response.setHeader(name, value);
+    }
     response.end(JSON.stringify(result.body));
   });
   servers.push(server);
