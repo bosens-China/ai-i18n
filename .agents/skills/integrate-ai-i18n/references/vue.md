@@ -1,14 +1,12 @@
 # Vue 3 integration
 
-Use Vue 3 Composition API with `<script setup lang="ts">`. Install `@ai-i18n/vue` and `@ai-i18n/vite`; reuse the app's existing Vite Vue plugin and Vue compiler packages.
-
-Register the Vue extractor inside `aiI18n()` and keep the normal Vue plugin:
+Install `@ai-i18n/vite` and reuse Vue 3, `@vitejs/plugin-vue`, and `@vue/compiler-sfc`. Do not install
+a separate ai-i18n Vue binding.
 
 ```ts
 import { aiI18n } from '@ai-i18n/vite'
-import { vue as aiI18nVue } from '@ai-i18n/vue/vite'
-import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
+import { defineConfig } from 'vite'
 
 export default defineConfig({
   plugins: [
@@ -18,18 +16,20 @@ export default defineConfig({
         { value: 'zh-CN', label: '中文' },
         { value: 'en-US', label: 'English' },
       ],
-      extractors: [aiI18nVue()],
     }),
     vue(),
   ],
 })
 ```
 
-Use the Composition API binding directly; do not call `app.use()` and do not create a separate provider:
+The Vue plugin is detected from the final Vite plugin list. Set `framework: 'vue'` only when a custom
+plugin setup cannot be detected.
+
+Use Composition API with `<script setup lang="ts">`. Explicit import:
 
 ```vue
 <script setup lang="ts">
-import { useI18n } from '@ai-i18n/vue'
+import { useI18n } from 'virtual:ai-i18n'
 
 const { t, setLang, currentLang, langs } = useI18n()
 </script>
@@ -44,11 +44,13 @@ const { t, setLang, currentLang, langs } = useI18n()
 </template>
 ```
 
-`currentLang` and `langs` are readonly refs and are automatically unwrapped in templates. Access `.value` when consuming them in script. `setLang` is asynchronous.
+If `unplugin-auto-import` is registered, omit the `useI18n` import. ai-i18n injects it and generates
+its declaration; do not add it to the external plugin's imports list. Use `configs.vue` from
+`@ai-i18n/eslint-plugin` to declare the global and validate static arguments.
 
-The extractor recognizes the Hook binding in JS and TS composables as well as SFCs. Destructured aliases and `const i18n = useI18n(); i18n.t()` are supported. SFC analysis uses compiler-sfc bindings, so template aliases, `v-for`/slot locals, and separate `<script>`/`<script setup>` scopes are respected. External `<script src>` content is extracted as its own JS/TS file. Use `<script setup>` when template calls must bind to the Hook; calls inside a normal `<script>` are extracted, but Options API `setup()` return objects are not traced into the template. Ordinary template text is not guessed; keep every translated source and comment static.
+`currentLang` and `langs` are readonly refs and unwrap in templates. Access `.value` in script.
+The Hook works in SFCs, JS/TS composables, and Vue JSX/TSX. Add `@vitejs/plugin-vue-jsx` for JSX/TSX;
+it also identifies the build as Vue. Do not add a React Vite plugin to the same build.
 
-Vue JSX/TSX also uses this Hook binding, but its host transform must be routed through
-`@vitejs/plugin-vue-jsx`. In a mixed React/Vue project, give it an arbitrary include glob for the
-Vue files and let React handle the remainder; no framework filename suffix is required. Add
-`/* @jsxImportSource vue */` when the shared TypeScript config defaults to React.
+SFC analysis respects template aliases, `v-for`/slot locals, and separate `<script>` scopes. External
+`<script src>` content is extracted under its JS/TS file. Ordinary template text is not guessed.

@@ -1,6 +1,9 @@
 # Vanilla JavaScript and TypeScript integration
 
-Install `@ai-i18n/vite`, register `aiI18n()` using the shared Vite guidance, and import the browser runtime directly:
+Install `@ai-i18n/vite` and register `aiI18n()`. When no Vue or React Vite plugin is detected, the
+mode defaults to Vanilla.
+
+Explicit imports remain the simplest baseline:
 
 ```ts
 import { getLang, getLangs, setLang, subscribe, t } from 'virtual:ai-i18n'
@@ -11,13 +14,15 @@ function render() {
 
 render()
 subscribe(render)
-
-console.log(getLang(), getLangs())
 await setLang('en-US')
+console.log(getLang(), getLangs())
 ```
 
-Use the same imports in JavaScript, omitting TypeScript-only syntax. TypeScript projects must expose `@ai-i18n/vite/client` as described in the Vite reference.
+If `unplugin-auto-import` is already registered, these runtime APIs can be used without imports.
+ai-i18n injects them and generates `src/ai-i18n.d.ts`; do not add them to the external plugin's
+imports list. Use `configs.vanilla` from `@ai-i18n/eslint-plugin` for the matching globals.
 
-`t()` returns the value for the current runtime state; it cannot update DOM nodes that the application already rendered. Re-render from `subscribe()` after language or HMR translation updates, or use the application's existing reactive/rendering mechanism.
-
-Static extraction recognizes explicit calls bound to `virtual:ai-i18n`. It does not translate unrelated strings or dynamic `t(variable)` arguments. For JSX/TSX applications use the React reference instead. Add `html()` only when `index.html` itself contains supported translation bindings.
+Runtime state changes do not mutate existing DOM. Re-render from `subscribe()` after language or HMR
+updates. Static extraction ignores unrelated strings and dynamic `t(variable)` calls. Vanilla mode
+does not analyze JSX/TSX; select React or Vue mode for those file types. Use `html: true` only when
+`index.html` contains supported translation bindings.

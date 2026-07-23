@@ -9,9 +9,7 @@
 
 - `@ai-i18n/core`：框架无关 schema、Provider 类型和 Runtime。
 - `@ai-i18n/analyzer`：Vite 与 ESLint 共用的 Yuku 静态分析语义。
-- `@ai-i18n/vite`：Vite 8 主插件、Vanilla Runtime、HTML extractor。
-- `@ai-i18n/vue`：Vue 3 Composition API binding 和 `/vite` extractor。
-- `@ai-i18n/react`：React Hook 和 `/vite` extractor。
+- `@ai-i18n/vite`：Vite 8 主插件、三种框架模式、响应式 Hook、HTML 提取和浏览器 Runtime。
 - `@ai-i18n/openai`：基于 LangChain 的可选 OpenAI-compatible Provider。
 - `@ai-i18n/eslint-plugin`：提前报告无法静态求值的 `t()` 参数。
 - `@ai-i18n/mcp`：让 Agent 分页读取缺失翻译并安全写回 extracted 文件的本地 MCP server。
@@ -51,28 +49,46 @@ await setLang('en-US');
 Vite 配置可以直接导入 TypeScript 文件；插件通过 tsdown/Rolldown 发布为标准 ESM
 JavaScript 与类型声明，不会要求宿主在 Node 运行时直接执行包内 TypeScript 源码。
 
-### Vue、React 与 HTML
+### Vue、React 与自动导入
 
-框架 extractor 是显式组合的，并共享同一个 ProjectState、cache 和浏览器 Runtime：
+每个 Vite build 只选择一种模式：`vanilla`、`vue` 或 `react`。插件在
+`configResolved` 阶段读取最终插件列表：检测到 `vite:vue`/`vite:vue-jsx` 时使用 Vue，
+检测到 `vite:react*` 时使用 React，都没有时回落 Vanilla。配置 `framework` 可以强制覆盖
+推断；同一个 build 同时安装 Vue 与 React Vite 插件会直接报错。
 
 ```ts
-import { react } from '@ai-i18n/react/vite';
-import { aiI18n, html } from '@ai-i18n/vite';
-import { vue } from '@ai-i18n/vue/vite';
+import { aiI18n } from '@ai-i18n/vite';
+import vue from '@vitejs/plugin-vue';
 
-aiI18n({
-  sourceLang: 'zh-CN',
-  locales: [
-    { value: 'zh-CN', label: '中文' },
-    { value: 'en-US', label: 'English' },
+export default {
+  plugins: [
+    aiI18n({
+      sourceLang: 'zh-CN',
+      locales: [
+        { value: 'zh-CN', label: '中文' },
+        { value: 'en-US', label: 'English' },
+      ],
+      html: true,
+    }),
+    vue(),
   ],
-  extractors: [react(), vue(), html()],
-});
+};
 ```
 
-Vue 使用 `const { t } = useI18n()`，React 使用同名 Hook；HTML 只处理完整文本或白名单
-属性中的静态 `t('source', 'comment?')`。普通字符串、JSXText、Vue Text 和混合 HTML
-片段都不会被猜测提取。
+显式导入始终可用，Vue 和 React 都从同一个虚拟模块获取 Hook，不再书写框架包后缀：
+
+```ts
+import { useI18n } from 'virtual:ai-i18n';
+```
+
+如果最终插件列表包含 `unplugin-auto-import`，ai-i18n 会默认启用自己的按需导入，
+`useI18n()` 可以直接使用。这里外部插件只是明确的 DX 开关；真正插入
+`virtual:ai-i18n` import 的仍是 ai-i18n，因此无需把 `useI18n` 再写进 Auto Import 的
+`imports`。`autoImport: true` 或 `false` 可以强制覆盖检测结果。
+
+启用按需导入时，插件默认生成 `src/ai-i18n.d.ts`；ESLint 分别使用
+`aiI18n.configs.vanilla`、`.vue` 或 `.react` 声明相应只读全局。HTML 使用 `html: true`
+启用，也可传 `{ attributes: [...] }` 修改属性白名单。
 
 ### ESLint 静态检查
 
@@ -85,8 +101,8 @@ Vue Hook 以及框架中立的 JSX/TSX。Vue SFC 需要在宿主的 `vue-eslint-
 ## 提取语义
 
 - 只识别约定 Runtime 或框架 Hook binding 的显式 `t()`。
-- 注册 Vue/React extractor 后，Hook binding 会覆盖模块图中的 JS、TS、JSX、TSX，包含普通
-  `.ts` composable/custom Hook；既支持解构 alias，也支持 `const i18n = useI18n(); i18n.t()`。
+- Vue/React 模式下，Hook binding 会覆盖模块图中的 JS、TS、JSX、TSX，包含普通 `.ts`
+  composable/custom Hook；既支持解构 alias，也支持 `const i18n = useI18n(); i18n.t()`。
 - Vue SFC 通过 compiler-sfc 的真实 setup/template 作用域分析，尊重模板 alias、`v-for`
   局部变量和 `<script>`/`<script setup>` 隔离；外部 `<script src>` 按其 JS/TS 文件提取。
 - 参数必须能静态求值为字符串；动态或尚未解析的参数产生带位置的 warning。
@@ -99,19 +115,9 @@ Dev 是渐进式的：只有浏览器实际请求到的模块才会进入累计 
 才新增对应 extracted 文件。Build 使用全新的 ProjectState，跟随 Vite 的静态与动态 import
 处理完整入口可达模块图；两种模式都会更新 cache、extracted 和 locales。
 
-Vue JSX 与 React JSX 可以存在于同一项目，但同一个 JSX/TSX 文件只能属于一个框架。
-ai-i18n 按 Hook import binding 自动识别框架，不要求特殊文件名。宿主编译默认让 React
-处理未命中的 JSX；Vue-only 项目只启用 `@vitejs/plugin-vue-jsx`，混合项目只需给 Vue JSX
-插件配置任意 `include` glob，React 处理其余文件。JSX 标签本身不足以可靠判断 Runtime。
-
-```ts
-// Mixed：Vue glob 优先，未命中部分由 React fallback；文件名可以保持普通 .tsx。
-vueJsx({ include: '**/src/vue/**/*.{jsx,tsx}' });
-react();
-```
-
-Vue-only 项目只使用 `vueJsx()`，React-only 项目只使用 `react()`。没有框架 Hook、仅调用
-`virtual:ai-i18n` 的 JSX 文件不需要分类，因为两种 Runtime 的静态提取语义相同。
+Vue 模式支持 `.vue`、JS/TS 以及由 `@vitejs/plugin-vue-jsx` 编译的 JSX/TSX；React 模式
+支持 JS/TS/JSX/TSX。这里不再兼容同一个 Vite build 混用 Vue/React 语法。微前端场景应让
+每个子应用使用自己的 Vite 配置和 ai-i18n 状态，各自选择一种模式。
 
 ## 目录协议
 
@@ -189,11 +195,11 @@ pnpm build
 pnpm --filter @ai-i18n/vite benchmark
 ```
 
-`pnpm build` 使用 tsdown/Rolldown 构建八个公开包，并对真实 tarball 执行 publint 和
+`pnpm build` 使用 tsdown/Rolldown 构建六个公开包，并对真实 tarball 执行 publint 和
 Are the Types Wrong。发布使用 Changesets；每个包独立版本，内部运行时依赖以兼容 semver
 范围发布，`@ai-i18n/mcp` 也保持独立安装和发版。
 
-推送到 `main` 后，GitHub Pages workflow 会构建四个示例并发布
+推送到 `main` 后，GitHub Pages workflow 会构建三个示例并发布
 [`examples/index.html`](./examples/index.html) 作为导航页；需要先在仓库 Settings → Pages 中将
 发布源设为 GitHub Actions。
 
@@ -213,7 +219,7 @@ pnpm release
 检查，因此可直接用于没有 `dist` 的干净 clone；`pnpm release` 会继续执行测试，再由
 Changesets 使用 `alpha` dist-tag 发布。推送到
 `main` 后，Release workflow 会维护 Version Packages PR；合并后通过 npm Trusted
-Publishing 发布。仓库创建后，需要为八个包把 `bosens-China/ai-i18n` 和 `release.yml`
+Publishing 发布。仓库创建后，需要为六个包把 `bosens-China/ai-i18n` 和 `release.yml`
 登记为 Trusted Publisher。
 
 需求、架构和验收清单位于 [`docs/phase-1`](./docs/phase-1/)。

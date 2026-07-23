@@ -1,11 +1,9 @@
 # React integration
 
-Install `@ai-i18n/react` and `@ai-i18n/vite`; reuse the app's existing React Vite plugin. React 18.3 and React 19 are supported.
-
-Register the React extractor inside `aiI18n()`:
+Install `@ai-i18n/vite` and reuse React 18.3/19 plus the existing React Vite plugin. Do not install a
+separate ai-i18n React binding.
 
 ```ts
-import { react as aiI18nReact } from '@ai-i18n/react/vite'
 import { aiI18n } from '@ai-i18n/vite'
 import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vite'
@@ -18,43 +16,33 @@ export default defineConfig({
         { value: 'zh-CN', label: '中文' },
         { value: 'en-US', label: 'English' },
       ],
-      extractors: [aiI18nReact()],
     }),
     react(),
   ],
 })
 ```
 
-Call the hook inside a component. No React context provider is required:
+The React plugin is detected from the final Vite plugin list. Set `framework: 'react'` only for a
+custom plugin setup that cannot be detected.
+
+Explicit import:
 
 ```tsx
-import { useI18n } from '@ai-i18n/react'
+import { useI18n } from 'virtual:ai-i18n'
 
 export function SaveButton() {
   const { t, setLang, currentLang, langs } = useI18n()
-
-  return (
-    <>
-      <button>{t('保存', '按钮')}</button>
-      <select
-        value={currentLang}
-        onChange={(event) => void setLang(event.currentTarget.value)}
-      >
-        {langs.map((lang) => (
-          <option key={lang.value} value={lang.value}>{lang.label}</option>
-        ))}
-      </select>
-    </>
-  )
+  return <button onClick={() => void setLang('en-US')}>{t('保存', '按钮')}</button>
 }
 ```
 
-The hook subscribes through `useSyncExternalStore`, so language and translation updates re-render consumers. The extractor recognizes the Hook binding in JS, TS, JSX, and TSX, including custom Hooks in plain `.ts` files. Destructured aliases and `const i18n = useI18n(); i18n.t()` are supported. JSX text is not translated automatically; use static `t()` source and comment arguments.
+If `unplugin-auto-import` is registered, omit the import. ai-i18n injects it and generates the
+declaration; do not add it to the external plugin's imports list. Use `configs.react` from
+`@ai-i18n/eslint-plugin` to declare the global and validate static arguments.
 
-When a monorepo consumes a locally linked `@ai-i18n/react` package, ensure the binding and
-renderer resolve one React instance. If the linked package can resolve a separate React install,
-add `resolve: { dedupe: ['react', 'react-dom'] }` to the app's Vite config. A normal published
-installation with one peer-resolved React does not need this workspace safeguard.
+The Hook uses `useSyncExternalStore`, so language and translation updates re-render consumers. It is
+recognized in JS, TS, JSX, and TSX, including custom Hooks in `.ts`. JSX text is not translated
+automatically. Do not add Vue Vite plugins to the same build.
 
-In a mixed React/Vue JSX project, keep React as the fallback for files outside the Vue JSX plugin's
-explicit include glob. Do not require framework suffixes and do not compile one file with both runtimes.
+For locally linked workspaces, `resolve: { dedupe: ['react', 'react-dom'] }` can prevent a second React
+instance. A normal peer-resolved installation usually does not need this.

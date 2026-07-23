@@ -17,7 +17,8 @@
 - [x] 缺失翻译为 `null`，Runtime 回退源语言。
 - [x] Provider 在 Dev/Build 自动运行；Dev 防抖、批处理、非阻塞。
 - [x] 模块级注册携带全部配置语言。
-- [x] Vue、React、HTML 使用可组合 `extractors`。
+- [x] Vanilla、Vue、React 使用互斥框架模式，HTML 使用独立快捷选项。
+- [x] 框架与 auto import 默认值从最终 Vite 插件列表推断，并支持显式覆盖。
 - [x] 优先验证 Yuku，不自研 Rust parser。
 - [x] SSR 不支持。
 
@@ -27,13 +28,13 @@
 - [x] 重构根 `package.json` workspace scripts。
 - [x] 建立共享 TypeScript、ESLint、Vitest 配置。
 - [x] 生成并提交 `pnpm-lock.yaml`。
-- [x] 创建 `packages/core`、`packages/vite`、`packages/vue`、`packages/react`、`packages/openai`。
+- [x] 创建 `packages/core`、`packages/vite`、`packages/openai`。
 - [x] 创建 `packages/eslint`，迁移并发布现有 AI 静态检查。
-- [x] 创建 Vanilla、Vue、React、Mixed examples workspace 节点。
+- [x] 创建 Vanilla、Vue、React examples workspace 节点。
 - [x] 配置 ESM、类型声明、exports、files、MCP engines、publishConfig。
 - [x] 添加 MIT License、README、repository metadata。
 - [x] 建立 changeset 或等价发布流程。
-- [x] 聚合四个示例的 GitHub Pages 构建产物与导航页。
+- [x] 聚合三个示例的 GitHub Pages 构建产物与导航页。
 - [ ] 在 GitHub Pages 启用 GitHub Actions 发布源并完成首次部署验证。
 - [x] 发布包改为独立版本，并以 `workspace:^` 保留内部兼容 semver 范围。
 
@@ -165,9 +166,9 @@
 - [x] `cleanup.orphanMessages` 默认 false。
 - [x] 验证 cache 可直接提交且不包含绝对路径/时间戳/secret。
 
-## 8. HTML Extractor
+## 8. HTML 提取
 
-- [x] 从 `@ai-i18n/vite` 导出 `html()`。
+- [x] 通过 `html: true | options` 启用。
 - [x] 使用可靠 HTML parser，不用全局正则改写 DOM。
 - [x] 只识别完整文本节点 `t('source', 'comment?')`。
 - [x] 只识别完整可翻译属性值 `t('source', 'comment?')`。
@@ -184,10 +185,11 @@
 - [x] HTML Provider 完成后在 Dev 正确更新或 reload。
 - [x] 添加单入口、多入口、属性、转义和错误表达式测试。
 
-## 9. Vue Extractor 与 Runtime
+## 9. Vue 模式与 Runtime
 
-- [x] 创建 `@ai-i18n/vue/vite` extractor 入口。
-- [x] 创建 `@ai-i18n/vue` client 入口。
+- [x] 在 `@ai-i18n/vite` 内提供 Vue SFC 提取和响应式 Hook。
+- [x] 统一从 `virtual:ai-i18n` 显式导入 `useI18n`。
+- [x] 支持省略 import 的内部按需注入。
 - [x] 使用 `@vue/compiler-sfc` 拆分 SFC。
 - [x] script/script setup 复用 Yuku JS pipeline。
 - [x] 使用 `@vue/compiler-dom` 遍历模板表达式。
@@ -199,12 +201,13 @@
 - [x] 验证基础 Vite package 不 import Vue/compiler。
 - [x] 配置 Vue/compiler peer dependency。
 - [x] 验证与 `@vitejs/plugin-vue` 插件顺序。
+- [x] Vue 模式支持由 `@vitejs/plugin-vue-jsx` 编译的 JSX/TSX。
 
-## 10. React Extractor 与 Runtime
+## 10. React 模式与 Runtime
 
-- [x] 创建 `@ai-i18n/react/vite` extractor 入口。
-- [x] 创建 `@ai-i18n/react` client 入口。
-- [x] React extractor 向框架中立的 `.jsx`/`.tsx` 分析入口注册 Hook 语义。
+- [x] 在 `@ai-i18n/vite` 内提供 React Hook adapter。
+- [x] 统一从 `virtual:ai-i18n` 显式导入 `useI18n`。
+- [x] React 模式向 `.jsx`/`.tsx` 分析入口注册 Hook 语义。
 - [x] 复用同一次 Yuku AST/semantic 结果，不重复 parse。
 - [x] 只提取显式 `t()`，不提取 JSXText 或普通 props。
 - [x] 实现基于 `useSyncExternalStore` 的 `useI18n()`。
@@ -212,15 +215,17 @@
 - [x] 验证基础 Vite package 不 import React。
 - [x] 添加 React render、setLang、null fallback、HMR 测试。
 
-## 11. Extractor 组合
+## 11. 模式解析与 Auto Import
 
-- [x] 定义最小 Extractor contract，只允许识别/提取/映射源码。
-- [x] Base 统一负责文件、Provider、Runtime 和 HMR。
-- [x] 支持 `extractors: [react(), vue(), html()]`。
-- [x] 相同物理文件避免被多个 extractor 重复提取。
-- [x] Vue/React mixed example 共享同一 Runtime 和 cache。
-- [x] Vue/React JSX 按 import binding 自动分析；宿主以 React 为 fallback、Vue 用可选 glob 路由。
-- [x] client entry 与 `/vite` entry 保持依赖隔离。
+- [x] 未命中框架插件时默认 Vanilla。
+- [x] 从最终插件名检测 Vue 和 React 官方 Vite 插件。
+- [x] 显式 `framework` 覆盖单一框架推断。
+- [x] Vue/React 插件族同时存在时拒绝启动。
+- [x] 检测 `unplugin-auto-import` 后默认启用内部按需导入。
+- [x] `autoImport: true/false` 强制覆盖检测结果。
+- [x] 自动注入只处理未绑定调用，不覆盖局部同名 binding。
+- [x] 默认生成 `src/ai-i18n.d.ts`，并支持改路径或关闭。
+- [x] 提供 Vanilla、Vue、React ESLint globals preset。
 
 ## 12. OpenAI-compatible Provider
 
@@ -245,9 +250,9 @@
 - [x] 文件删除清理 extracted 但默认保留 Translation Memory。
 - [x] `null` 从任意切换历史稳定回退源语言。
 - [x] 全部语言随模块注册，不发起 locale 网络请求。
-- [x] Vanilla、Vue、React、Mixed 均通过 dev/build。
-- [x] Vanilla、Vue、React、Mixed Pages 示例展示当前语言、切换控件和非空翻译文案，并通过真实浏览器切换验证。
-- [x] 四个 Pages 示例均通过 `html()` 提取并切换 `<title>` 文案。
+- [x] Vanilla、Vue、React 均通过 dev/build。
+- [x] Vanilla、Vue、React Pages 示例展示当前语言、切换控件和非空翻译文案，并通过真实浏览器切换验证。
+- [x] 三个 Pages 示例均通过 `html: true` 提取并切换 `<title>` 文案。
 - [x] 明确验证 SSR 不受支持且不会共享全局状态。
 - [x] 测试 Windows 路径和 monorepo 非 cwd root。
 
@@ -270,6 +275,6 @@
 - [x] 不存在 `src/pages`、路由目录或业务默认值。
 - [x] 不存在独立 sync/scan CLI。
 - [x] cache/extracted/locales 在 Dev、Build、Agent 编辑和 Git 合并场景下不丢翻译。
-- [x] React/Vue extractors 可同时启用且只解析一次公共 JS AST。
+- [x] 每个 Vite build 只启用一种框架模式并复用一次公共 JS AST。
 - [x] HTML 构建初始文本和运行时切换都正确。
 - [x] 发布包没有跨层依赖泄漏。

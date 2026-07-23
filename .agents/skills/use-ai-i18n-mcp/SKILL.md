@@ -25,8 +25,8 @@ Require an existing `cache.json`. If the protocol files do not exist yet, run or
 Running `@ai-i18n/eslint-plugin` only validates static `t()` arguments; it never creates or reconciles these protocol files.
 The optional LangChain Provider's `batchLength` and `maxConcurrency` govern automatic model calls;
 they do not change MCP pagination limits, write batch limits, or this manual translation workflow.
-Mixed Vue/React JSX projects may produce ordinary `*.tsx.json` extracted files; JSX framework
-routing and filenames do not change MCP discovery, pagination, or write semantics.
+Vue and React modes may produce ordinary `*.tsx.json` extracted files. The framework selected for
+that Vite build does not change MCP discovery, pagination, or write semantics.
 
 ## Run the workflow
 
