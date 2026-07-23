@@ -186,14 +186,8 @@ const translator = openAI({
 pnpm check
 pnpm test
 pnpm build
-pnpm pack:check
-pnpm examples:check
-pnpm examples:pages
 pnpm --filter @ai-i18n/vite benchmark
 ```
-
-`pnpm examples:pages` 会把四个示例汇总到 `dist/pages`，用于 GitHub Pages 部署。部署完成后可从
-[示例导航页](https://bosens-China.github.io/ai-i18n/)进入 Vanilla、Vue、React 和 Mixed 示例。
 
 `pnpm build` 使用 tsdown/Rolldown 构建八个公开包，并对真实 tarball 执行 publint 和
 Are the Types Wrong。发布使用 Changesets；每个包独立版本，内部运行时依赖以兼容 semver
@@ -212,8 +206,8 @@ pnpm release
 ```
 
 `pnpm check` 会先构建 workspace 产物，再统一执行根目录和各 workspace 的 TypeScript、ESLint
-检查，因此可直接用于没有 `dist` 的干净 clone；`pnpm release` 会继续执行测试与发布包内容
-检查，再由 Changesets 使用 `alpha` dist-tag 发布。推送到
+检查，因此可直接用于没有 `dist` 的干净 clone；`pnpm release` 会继续执行测试，再由
+Changesets 使用 `alpha` dist-tag 发布。推送到
 `main` 后，Release workflow 会维护 Version Packages PR；合并后通过 npm Trusted
 Publishing 发布。仓库创建后，需要为八个包把 `bosens-China/ai-i18n` 和 `release.yml`
 登记为 Trusted Publisher。

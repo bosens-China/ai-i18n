@@ -7,9 +7,6 @@
 - `pnpm check`：根目录及 12 个 workspace 的 TypeScript、ESLint 检查通过。
 - `pnpm test`：20 个测试文件、128 个测试通过。
 - `pnpm build`：8 个发布包构建通过。
-- `pnpm pack:check`：8 个 tarball 的 exports 产物、README、文件白名单和客户端依赖边界通过。
-- `pnpm examples:check`：四个示例的 TypeScript、ESLint、生产构建与真实 Vite middleware
-  transform 通过。
 - `pnpm --filter @ai-i18n/vite benchmark`：Babel/Yuku 冷分析、热替换、200 模块 Build 图完成
   五轮对比。
 
@@ -31,13 +28,14 @@
 - HTML Build 初始翻译和 `setLang()` 后 text/attribute/comment DOM binding 更新已执行验证。
 - React/Vue 浏览器入口的发布 manifest 和 JS 不依赖 Vite、compiler 或 Yuku；相关能力仅由可选
   `/vite` peer 提供。
+- `@ai-i18n/mcp` 构建产物保留可执行 shebang/权限，并已由 SDK 客户端通过真实 stdio 子进程
+  完成初始化和三个工具的发现；发布 tarball 同时包含 bin、README、MIT License 与类型声明。
 
 ## 仍需外部完成
 
 1. 在真实 Git 仓库运行 `.github/workflows/yuku-platform.yml`，取得 macOS、Linux、Windows
    x64/arm64 六个平台全部通过的 CI 记录。当前尚未取得该 GitHub Actions 矩阵的实跑记录，
    本机只能证明 darwin-arm64。
-2. 由仓库所有者确认 License 和真实 repository URL，再同步到根目录及八个 package manifest。
-3. 确认 npm scope 权限和真实接入项目后，执行 Changesets alpha 流程并发布验证；当前未对外发布。
+2. 确认 npm scope 权限和真实接入项目后，执行 Changesets alpha 流程并发布验证；当前未对外发布。
 
-以上三项完成前，`PRD 验收标准全部通过`、`Yuku 平台验证` 和 `发布 1.0.0-alpha` 保持未勾选。
+以上两项完成前，`PRD 验收标准全部通过`、`Yuku 平台验证` 和 `发布 1.0.0-alpha` 保持未勾选。

@@ -30,9 +30,10 @@
 - [x] 创建 `packages/core`、`packages/vite`、`packages/vue`、`packages/react`、`packages/openai`。
 - [x] 创建 `packages/eslint`，迁移并发布现有 AI 静态检查。
 - [x] 创建 Vanilla、Vue、React、Mixed examples workspace 节点。
-- [x] 配置 ESM、类型声明、exports、files、engines、publishConfig。
-- [ ] 添加 License、README、repository metadata。
+- [x] 配置 ESM、类型声明、exports、files、MCP engines、publishConfig。
+- [x] 添加 MIT License、README、repository metadata。
 - [x] 建立 changeset 或等价发布流程。
+- [x] 发布包改为独立版本，并以 `workspace:^` 保留内部兼容 semver 范围。
 
 ## 2. Schema 与 Core
 
@@ -251,7 +252,8 @@
 - [x] `pnpm check`（TypeScript + ESLint）。
 - [x] `pnpm test`。
 - [x] `pnpm build`。
-- [x] `pnpm pack:check` 检查所有 package 内容。
+- [x] 使用 tsdown/Rolldown 构建，并在 tarball 上运行 publint 与 ATTW。
+- [x] 配置 Changesets Version Packages PR 与 npm Trusted Publishing workflow。
 - [x] README 记录目录协议、Git 提交策略和 Agent 工作流。
 - [x] README 记录 Dev 渐进/Build 完整语义。
 - [x] README 明确只支持显式 `t()`、浏览器 Runtime 和 Vite 8。
