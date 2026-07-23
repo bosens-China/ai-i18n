@@ -2,9 +2,15 @@
   "name": "@ai-i18n/mcp",
   "version": "0.0.0",
   "description": "Local MCP tools for reading and filling ai-i18n translation files.",
-  "keywords": ["i18n", "mcp", "translation"],
+  "keywords": [
+    "i18n",
+    "mcp",
+    "translation"
+  ],
   "type": "module",
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "bin": {
@@ -18,7 +24,9 @@
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "check": "tsc -p tsconfig.json --noEmit"
+    "lint": "eslint .",
+    "check": "tsc -p tsconfig.json --noEmit && pnpm lint",
+    "test": "pnpm --dir ../.. exec vitest run packages/mcp/test --config vitest.config.ts"
   },
   "dependencies": {
     "@ai-i18n/core": "workspace:*",

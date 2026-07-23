@@ -10,22 +10,22 @@
   "scripts": {
     "prepare": "husky",
     "build": "pnpm -r --filter './packages/*' --if-present run build",
-    "lint": "eslint packages scripts",
-    "check": "pnpm -r --filter './packages/*' --if-present run check",
+    "check": "tsc -p tsconfig.json && eslint \"*.config.{js,ts}\" scripts && pnpm -r --if-present run check",
     "test": "vitest run",
     "changeset": "changeset",
     "version-packages": "changeset version",
-    "release": "pnpm lint && pnpm check && pnpm test && pnpm build && changeset publish",
-    "benchmark:yuku": "node packages/vite/benchmark/yuku-spike.mjs",
+    "release": "pnpm check && pnpm test && pnpm pack:check && changeset publish",
     "pack:check": "pnpm build && node scripts/check-packages.mjs",
-    "examples:build": "pnpm build && pnpm -r --filter './examples/*' --if-present run build",
-    "examples:dev": "pnpm build && node scripts/check-examples.mjs"
+    "examples:check": "pnpm build && pnpm -r --filter './examples/*' run check && pnpm -r --filter './examples/*' run build && node scripts/check-examples.mjs"
   },
   "devDependencies": {
     "@changesets/cli": "^2.31.1",
     "@eslint/js": "^9.39.5",
     "@types/node": "^24.10.4",
     "eslint": "^9.39.5",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "eslint-plugin-react-refresh": "^0.5.3",
+    "eslint-plugin-vue": "^10.10.0",
     "globals": "^17.7.0",
     "husky": "^9.1.7",
     "lint-staged": "^16.1.2",

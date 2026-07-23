@@ -2,10 +2,16 @@
   "name": "@ai-i18n/core",
   "version": "0.0.0",
   "description": "Framework-independent schemas, provider contracts, and browser runtime for ai-i18n.",
-  "keywords": ["i18n", "translation", "vite"],
+  "keywords": [
+    "i18n",
+    "translation",
+    "vite"
+  ],
   "type": "module",
   "sideEffects": false,
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
@@ -16,7 +22,9 @@
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "check": "tsc -p tsconfig.json --noEmit"
+    "lint": "eslint .",
+    "check": "tsc -p tsconfig.json --noEmit && pnpm lint",
+    "test": "pnpm --dir ../.. exec vitest run packages/core/test --config vitest.config.ts"
   },
   "engines": {
     "node": "^20.19.0 || >=22.12.0"

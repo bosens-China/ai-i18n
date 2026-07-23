@@ -23,7 +23,9 @@
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "check": "tsc -p tsconfig.json --noEmit"
+    "lint": "eslint .",
+    "check": "tsc -p tsconfig.json --noEmit && pnpm lint",
+    "test": "pnpm --dir ../.. exec vitest run packages/eslint/test --config vitest.config.ts"
   },
   "dependencies": {
     "@ai-i18n/analyzer": "workspace:*"

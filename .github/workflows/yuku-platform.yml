@@ -36,6 +36,6 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm --filter @ai-i18n/vite build
+      - run: pnpm build
       - run: pnpm vitest run packages/vite/test/yuku-spike.test.ts
-      - run: pnpm benchmark:yuku
+      - run: pnpm --filter @ai-i18n/vite benchmark

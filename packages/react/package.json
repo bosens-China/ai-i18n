@@ -2,7 +2,12 @@
   "name": "@ai-i18n/react",
   "version": "0.0.0",
   "description": "React bindings and optional Vite extractor for ai-i18n.",
-  "keywords": ["i18n", "react", "translation", "vite"],
+  "keywords": [
+    "i18n",
+    "react",
+    "translation",
+    "vite"
+  ],
   "type": "module",
   "sideEffects": false,
   "files": [
@@ -22,7 +27,9 @@
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "check": "tsc -p tsconfig.json --noEmit"
+    "lint": "eslint .",
+    "check": "tsc -p tsconfig.json --noEmit && pnpm lint",
+    "test": "pnpm --dir ../.. exec vitest run packages/react/test --config vitest.config.ts"
   },
   "dependencies": {
     "@ai-i18n/core": "workspace:*"

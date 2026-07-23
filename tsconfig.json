@@ -4,6 +4,6 @@
     "types": ["node", "vitest"],
     "noEmit": true
   },
-  "files": [],
+  "include": ["*.config.ts"],
   "exclude": ["node_modules", "packages", "examples"]
 }
