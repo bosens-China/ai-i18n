@@ -246,6 +246,8 @@
 - [x] `null` 从任意切换历史稳定回退源语言。
 - [x] 全部语言随模块注册，不发起 locale 网络请求。
 - [x] Vanilla、Vue、React、Mixed 均通过 dev/build。
+- [x] Vanilla、Vue、React、Mixed Pages 示例展示当前语言、切换控件和非空翻译文案，并通过真实浏览器切换验证。
+- [x] 四个 Pages 示例均通过 `html()` 提取并切换 `<title>` 文案。
 - [x] 明确验证 SSR 不受支持且不会共享全局状态。
 - [x] 测试 Windows 路径和 monorepo 非 cwd root。
 

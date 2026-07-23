@@ -757,6 +757,8 @@ Phase 1 明确只支持浏览器 Runtime：
 - Vue/React JSX 可以按互斥 glob 共存且不要求框架文件后缀，单文件只允许一种 JSX Runtime。
 - Vue 与 React client 入口不把 Vite/compiler 代码打入浏览器。
 - Vanilla、Vue、React、Mixed 示例均能 dev、build 和切换语言。
+- Vanilla、Vue、React、Mixed Pages 示例均展示当前语言、切换控件和随语言变化的非空翻译文案。
+- 四个 Pages 示例均通过 `html()` 提取 `<title>`，并随语言切换更新文档标题。
 - SSR 明确标记为不支持。
 
 ## 17. 实现阶段不再需要产品确认的默认项
