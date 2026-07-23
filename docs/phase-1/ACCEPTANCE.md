@@ -9,6 +9,8 @@
 - `pnpm build`：8 个发布包构建通过。
 - `pnpm --filter @ai-i18n/vite benchmark`：Babel/Yuku 冷分析、热替换、200 模块 Build 图完成
   五轮对比。
+- GitHub Actions `Yuku platform admission #1`：提交 `1a68388` 通过 Linux、Windows、macOS
+  的 x64/arm64 六个平台矩阵，共 6 个 job，均执行 Yuku 准入测试。
 
 ## 关键回归证据
 
@@ -30,13 +32,12 @@
   `/vite` peer 提供。
 - `@ai-i18n/mcp` 构建产物保留可执行 shebang/权限，并已由 SDK 客户端通过真实 stdio 子进程
   完成初始化和三个工具的发现；发布 tarball 同时包含 bin、README、MIT License 与类型声明。
+- Yuku 平台矩阵首次通过 `workflow_dispatch` 手动运行。workflow 已补充 `main` 分支 push
+  触发，并继续保留手动触发和 pull request 触发。
 
 ## 仍需外部完成
 
-1. 在真实 Git 仓库运行 `.github/workflows/yuku-platform.yml`，取得 macOS、Linux、Windows
-   x64/arm64 六个平台全部通过的 CI 记录。当前尚未取得该 GitHub Actions 矩阵的实跑记录，
-   本机只能证明 darwin-arm64。
-2. 确认 npm scope 权限和真实接入项目后，执行 Changesets alpha 流程并发布验证；当前未对外发布。
-3. 在仓库 Settings → Pages 将发布源设为 GitHub Actions，并确认 `pages.yml` 成功部署示例导航页。
+1. 确认 npm scope 权限和真实接入项目后，执行 Changesets alpha 流程并发布验证；当前未对外发布。
+2. 在仓库 Settings → Pages 将发布源设为 GitHub Actions，并确认 `pages.yml` 成功部署示例导航页。
 
-以上三项完成前，`PRD 验收标准全部通过`、`Yuku 平台验证` 和 `发布 1.0.0-alpha` 保持未勾选。
+以上两项完成前，`PRD 验收标准全部通过` 和 `发布 1.0.0-alpha` 保持未勾选。

@@ -2,6 +2,12 @@ name: Yuku platform admission
 
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'packages/vite/**'
+      - 'pnpm-lock.yaml'
+      - '.github/workflows/yuku-platform.yml'
   pull_request:
     paths:
       - 'packages/vite/**'
@@ -29,11 +35,11 @@ jobs:
             os: macos-15
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
-      - run: corepack enable
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
         with:
-          node-version: 22
+          node-version: 24
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm build
