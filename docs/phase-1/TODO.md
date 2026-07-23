@@ -113,8 +113,9 @@
 - [x] 使用 `messageId + locale` 作为请求去重 key。
 - [x] 实现进程内 in-flight Promise 去重。
 - [x] 实现可配置 `debounceMs`，默认 100ms。
-- [x] 实现可配置 `batchSize`，默认 50。
-- [x] batch 满时立即 flush。
+- [x] 实现可配置 `batchLength`，默认按序列化请求字符长度 `12_000` 成批。
+- [x] batch length 达标时立即 flush，单条超限请求独立成批。
+- [x] 实现可配置 `maxConcurrency`，默认最多并发 5 个 Provider 批次。
 - [x] Provider 只接收 `null` 项。
 - [x] Dev transform 不等待 Provider 网络请求。
 - [x] Dev 翻译完成后更新 cache、重复 extracted、locales。
@@ -210,10 +211,12 @@
 ## 12. OpenAI-compatible Provider
 
 - [x] 创建可选 `@ai-i18n/openai` package。
-- [x] 使用标准 `fetch`，不引入 OpenAI SDK。
-- [x] 支持 base URL、model、headers、API key 配置。
-- [x] 支持结构化批次请求和严格结果校验。
-- [x] 不提供供应商、模型或业务 Prompt 默认值。
+- [x] 使用 LangChain `ChatOpenAI`，不让 Core/Vite 依赖 LangChain 或 OpenAI SDK。
+- [x] 支持 base URL、model、headers、可选 API key 和本地 OpenAI-compatible 服务。
+- [x] temperature 默认 1、超时默认 120 秒、重试默认 3，并支持可选 max tokens。
+- [x] 使用内部 JSON Schema 结构化输出并严格校验批次结果。
+- [x] 提供可覆盖的默认系统 Prompt，并固定追加纯 JSON 尾注和最小示例。
+- [x] 仅在显式注入配置时启用 LangSmith tracing。
 - [x] 添加 mock server 测试，不在 CI 请求真实服务。
 
 ## 13. 集成测试
@@ -222,7 +225,7 @@
 - [x] Dev 动态路由访问后渐进新增提取结果。
 - [x] Build 覆盖入口可达静态/动态模块。
 - [x] Dev 首屏不被 Provider 阻塞。
-- [x] Dev 防抖和 batch size 行为可测。
+- [x] Dev 防抖、batch length 和并发上限行为可测。
 - [x] Build 等待 Provider 并把结果写入当前注册数据/locales。
 - [x] 文件移动复用相同 message ID cache。
 - [x] 文件删除清理 extracted 但默认保留 Translation Memory。
