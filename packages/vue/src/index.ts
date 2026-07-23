@@ -1,4 +1,6 @@
+import type { I18nRuntime, LangOption } from '@ai-i18n/core';
 import { computed, readonly, shallowRef } from 'vue';
+import type { ComputedRef, DeepReadonly, ShallowRef } from 'vue';
 import {
   getLang,
   getLangs,
@@ -15,7 +17,12 @@ subscribe(() => {
   revision.value += 1;
 });
 
-export function useI18n() {
+export function useI18n(): {
+  t: I18nRuntime['t'];
+  setLang: I18nRuntime['setLang'];
+  currentLang: ComputedRef<string>;
+  langs: DeepReadonly<ShallowRef<readonly LangOption[]>>;
+} {
   const currentLang = computed(() => {
     trackRevision();
     return getLang();
