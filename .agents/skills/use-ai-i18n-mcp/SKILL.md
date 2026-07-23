@@ -7,6 +7,11 @@ description: Use the ai-i18n local MCP tools to locate files with missing transl
 
 Use the three ai-i18n tools in a read → translate → write → verify loop. Never scan or edit generated JSON manually when the MCP tools are available.
 
+`@ai-i18n/mcp` is an independently versioned Node package, not a Vite subpath. Register the package as
+a local stdio server with `npx -y @ai-i18n/mcp --root <workspace-root>`, or call its published
+`ai-i18n-mcp` executable when it is already installed. Honor the Node range declared by that package,
+and never write non-protocol output to the server's stdout.
+
 ## Establish the project path
 
 1. Identify the MCP workspace root from the MCP server registration. Do not assume it equals the Vite project root.

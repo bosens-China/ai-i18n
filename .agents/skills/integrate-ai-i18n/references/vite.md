@@ -2,6 +2,10 @@
 
 Use Vite 8 and a supported Node runtime (`^20.19.0` or `>=22.12.0`). Import `defineConfig` for typed configuration and register the main plugin once:
 
+Published ai-i18n packages contain standard ESM JavaScript and declarations. Consumers do not need
+`--configLoader runner` to execute package TypeScript, and the ai-i18n manifests do not duplicate
+Vite's own Node engine constraint. Treat Vite's runtime requirement as authoritative.
+
 ```ts
 import { aiI18n } from '@ai-i18n/vite'
 import { defineConfig } from 'vite'
