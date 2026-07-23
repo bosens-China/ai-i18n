@@ -48,8 +48,8 @@ console.log(getLangs());
 await setLang('en-US');
 ```
 
-Vite 配置可以直接导入 TypeScript 文件；插件发布产物仍是标准 ESM JavaScript 与类型声明，
-不会要求宿主在 Node 运行时直接执行包内 TypeScript 源码。
+Vite 配置可以直接导入 TypeScript 文件；插件通过 tsdown/Rolldown 发布为标准 ESM
+JavaScript 与类型声明，不会要求宿主在 Node 运行时直接执行包内 TypeScript 源码。
 
 ### Vue、React 与 HTML
 
@@ -188,10 +188,22 @@ pnpm test
 pnpm build
 pnpm pack:check
 pnpm examples:check
+pnpm examples:pages
 pnpm --filter @ai-i18n/vite benchmark
 ```
 
-发布使用 Changesets，八个公开包保持同一版本。首次 alpha 流程：
+`pnpm examples:pages` 会把四个示例汇总到 `dist/pages`，用于 GitHub Pages 部署。部署完成后可从
+[示例导航页](https://bosens-China.github.io/ai-i18n/)进入 Vanilla、Vue、React 和 Mixed 示例。
+
+`pnpm build` 使用 tsdown/Rolldown 构建八个公开包，并对真实 tarball 执行 publint 和
+Are the Types Wrong。发布使用 Changesets；每个包独立版本，内部运行时依赖以兼容 semver
+范围发布，`@ai-i18n/mcp` 也保持独立安装和发版。
+
+当前保持入口级打包，不启用 tsdown `unbundle`：`index`、`vite`、`bin` 等公开入口按
+`exports` 输出，内部模块继续由 Rolldown 合并。只有未来把内部目录设计成受支持的子路径 API
+时，才需要改为保留源码目录结构。
+
+首次进入 alpha 模式时执行：
 
 ```sh
 pnpm changeset pre enter alpha
@@ -199,8 +211,11 @@ pnpm version-packages
 pnpm release
 ```
 
-`pnpm check` 会统一执行根目录和各 workspace 的 TypeScript、ESLint 检查；`pnpm release`
-会继续执行测试、构建与发布包内容检查，再由 Changesets 使用 `alpha` dist-tag 发布。真实发布
-需要 npm 权限，并应在跨平台 CI 全部通过后执行。
+`pnpm check` 会先构建 workspace 产物，再统一执行根目录和各 workspace 的 TypeScript、ESLint
+检查，因此可直接用于没有 `dist` 的干净 clone；`pnpm release` 会继续执行测试与发布包内容
+检查，再由 Changesets 使用 `alpha` dist-tag 发布。推送到
+`main` 后，Release workflow 会维护 Version Packages PR；合并后通过 npm Trusted
+Publishing 发布。仓库创建后，需要为八个包把 `bosens-China/ai-i18n` 和 `release.yml`
+登记为 Trusted Publisher。
 
 需求、架构和验收清单位于 [`docs/phase-1`](./docs/phase-1/)。
