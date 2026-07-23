@@ -1,4 +1,4 @@
-import type { I18nRuntime, LangOption } from '@ai-i18n/core';
+import type { I18nRuntime, LangOption } from '@boses/core';
 import { computed, readonly, shallowRef } from 'vue';
 import type { ComputedRef, DeepReadonly, ShallowRef } from 'vue';
 

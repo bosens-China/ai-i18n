@@ -1,5 +1,5 @@
 {
-  "name": "@ai-i18n/openai",
+  "name": "@boses/openai",
   "version": "0.0.0",
   "description": "LangChain-based OpenAI-compatible translation provider for ai-i18n.",
   "keywords": [
@@ -37,7 +37,7 @@
     "test": "pnpm --dir ../.. exec vitest run packages/openai/test --config vitest.config.ts"
   },
   "dependencies": {
-    "@ai-i18n/core": "workspace:^",
+    "@boses/core": "workspace:^",
     "@langchain/core": "^1.2.3",
     "@langchain/openai": "^1.5.5",
     "langsmith": "^0.8.4"

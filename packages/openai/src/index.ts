@@ -5,7 +5,7 @@ import type {
   TranslationRequest,
   TranslationResult,
   Translator,
-} from '@ai-i18n/core';
+} from '@boses/core';
 
 export interface LangSmithOptions {
   apiKey: string;
@@ -64,7 +64,10 @@ const TRANSLATION_SCHEMA = {
 } as const;
 
 export function openAI(options: OpenAIOptions): Translator {
-  const baseURL = requiredOption(options.baseURL, 'baseURL').replace(/\/+$/, '');
+  const baseURL = requiredOption(options.baseURL, 'baseURL').replace(
+    /\/+$/,
+    '',
+  );
   const modelName = requiredOption(options.model, 'model');
   const basePrompt =
     options.systemPrompt === undefined
@@ -76,12 +79,11 @@ export function openAI(options: OpenAIOptions): Translator {
     'temperature',
   );
   const timeout = positiveInteger(options.timeoutMs ?? 120_000, 'timeoutMs');
-  const maxRetries = nonNegativeInteger(
-    options.maxRetries ?? 3,
-    'maxRetries',
-  );
+  const maxRetries = nonNegativeInteger(options.maxRetries ?? 3, 'maxRetries');
   const maxTokens = optionalPositiveInteger(options.maxTokens, 'maxTokens');
-  const headers = options.headers ? normalizeHeaders(options.headers) : undefined;
+  const headers = options.headers
+    ? normalizeHeaders(options.headers)
+    : undefined;
   // 显式占位值可阻止 LangChain 把宿主 OPENAI_API_KEY 泄露给本地服务。
   const apiKey = options.apiKey?.trim() || 'local-no-auth';
   const callbacks = createLangSmithCallbacks(options.langSmith);
@@ -125,7 +127,9 @@ function createLangSmithCallbacks(options: LangSmithOptions | undefined) {
   if (!options) return undefined;
   const client = new Client({
     apiKey: requiredOption(options.apiKey, 'langSmith.apiKey'),
-    ...(optionalOption(options.endpoint) ? { apiUrl: options.endpoint!.trim() } : {}),
+    ...(optionalOption(options.endpoint)
+      ? { apiUrl: options.endpoint!.trim() }
+      : {}),
     ...(optionalOption(options.workspaceId)
       ? { workspaceId: options.workspaceId!.trim() }
       : {}),

@@ -1,4 +1,4 @@
-# @ai-i18n/vite
+# @boses/vite
 
 Vite 8 的 ai-i18n 主插件。它在 Dev/Build 中提取显式 `t()`，维护可提交 Git 的
 `cache.json`、`extracted/**`、`locales/**`，并提供浏览器虚拟 Runtime。
@@ -12,7 +12,7 @@ JS、TS、JSX、TSX 默认进入框架中立的共享分析器；Vue/React extra
 未命中 Vue 范围的 JSX 交给 React。Vue-only 项目不启用 React 插件即可。
 
 ```ts
-import { aiI18n } from '@ai-i18n/vite';
+import { aiI18n } from '@boses/vite';
 
 aiI18n({
   sourceLang: 'zh-CN',

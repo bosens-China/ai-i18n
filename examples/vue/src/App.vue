@@ -12,7 +12,7 @@ const currentLanguageLabel = computed(
 <template>
   <main class="page-shell">
     <header class="hero">
-      <p class="eyebrow">@ai-i18n/vite · Vue reactive runtime</p>
+      <p class="eyebrow">@boses/vite · Vue reactive runtime</p>
       <h1>{{ t('Vue 示例') }}</h1>
       <p class="lede">
         {{ t('Composition API 与 Vite extractor 共享 Runtime') }}

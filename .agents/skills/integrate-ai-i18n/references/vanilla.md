@@ -1,6 +1,6 @@
 # Vanilla JavaScript and TypeScript integration
 
-Install `@ai-i18n/vite` and register `aiI18n()`. When no Vue or React Vite plugin is detected, the
+Install `@boses/vite` and register `aiI18n()`. When no Vue or React Vite plugin is detected, the
 mode defaults to Vanilla.
 
 Explicit imports remain the simplest baseline:
@@ -20,7 +20,7 @@ console.log(getLang(), getLangs())
 
 If `unplugin-auto-import` is already registered, these runtime APIs can be used without imports.
 ai-i18n injects them and generates `src/ai-i18n.d.ts`; do not add them to the external plugin's
-imports list. Use `configs.vanilla` from `@ai-i18n/eslint-plugin` for the matching globals.
+imports list. Use `configs.vanilla` from `@boses/eslint-plugin` for the matching globals.
 
 Runtime state changes do not mutate existing DOM. Re-render from `subscribe()` after language or HMR
 updates. Static extraction ignores unrelated strings and dynamic `t(variable)` calls. Vanilla mode

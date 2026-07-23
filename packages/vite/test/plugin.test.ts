@@ -1,7 +1,7 @@
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import type { TranslationResult, Translator } from '@ai-i18n/core';
+import type { TranslationResult, Translator } from '@boses/core';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { Plugin, ResolvedConfig } from 'vite';
 import { aiI18n, type AiI18nOptions } from '../src/index';
@@ -25,7 +25,7 @@ afterEach(async () => {
   );
 });
 
-describe('@ai-i18n/vite plugin', () => {
+describe('@boses/vite plugin', () => {
   it('injects a stable register import after shebang and directives', async () => {
     const { plugin, transform } = setupPlugin();
     const code = `#!/usr/bin/env node\n'use strict';\nimport { t as tr } from 'virtual:ai-i18n';\nconsole.log(tr('保存', '按钮'));`;

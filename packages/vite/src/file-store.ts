@@ -10,7 +10,7 @@ import {
   type ExtractedFileV1,
   type LangOption,
   type LocaleFileV1,
-} from '@ai-i18n/core';
+} from '@boses/core';
 import type { ProjectSnapshot } from './project-state.js';
 import {
   fileExists,
@@ -49,7 +49,10 @@ export class FileStore {
     );
   }
 
-  sync(snapshot: ProjectSnapshot, preferredSource?: string): Promise<CacheFileV1> {
+  sync(
+    snapshot: ProjectSnapshot,
+    preferredSource?: string,
+  ): Promise<CacheFileV1> {
     // 每次任务都从最新磁盘状态开始；失败不会阻塞后续写入任务。
     const task = this.queue.then(
       () => this.writeSnapshot(snapshot, preferredSource),
@@ -150,7 +153,9 @@ export class FileStore {
     const directory = path.join(this.directory, 'extracted');
     const files = await listJsonFiles(directory);
     return Promise.all(
-      files.map(async (file) => parseExtractedFile(await readJsonRequired(file))),
+      files.map(async (file) =>
+        parseExtractedFile(await readJsonRequired(file)),
+      ),
     );
   }
 
@@ -183,7 +188,9 @@ export class FileStore {
       }
     }
     let messages = overlayMessages(cache.messages, activeMessages, false);
-    const preferred = extractedFiles.find((file) => file.source === preferredSource);
+    const preferred = extractedFiles.find(
+      (file) => file.source === preferredSource,
+    );
     if (preferred) {
       messages = overlayMessages(
         messages,
@@ -237,9 +244,15 @@ export class FileStore {
     const directory = path.join(this.directory, 'locales');
     const expected = new Set<string>();
     for (const locale of locales) {
-      const file = path.join(directory, `${encodeURIComponent(locale.locale.value)}.json`);
+      const file = path.join(
+        directory,
+        `${encodeURIComponent(locale.locale.value)}.json`,
+      );
       expected.add(file);
-      await this.writeJson(file, hydrateLocale(locale, cacheMessages, this.options.sourceLang));
+      await this.writeJson(
+        file,
+        hydrateLocale(locale, cacheMessages, this.options.sourceLang),
+      );
     }
     for (const file of await listJsonFiles(directory)) {
       if (!expected.has(file)) await fs.rm(file, { force: true });
@@ -360,10 +373,16 @@ function overlayMessages(
       previous.source !== next.source ||
       (previous.comment ?? '') !== (next.comment ?? '')
     ) {
-      throw new Error(`[ai-i18n] message "${messageId}" has inconsistent metadata`);
+      throw new Error(
+        `[ai-i18n] message "${messageId}" has inconsistent metadata`,
+      );
     }
     for (const [locale, value] of Object.entries(next.translations)) {
-      if (value !== null || overwriteNull || !(locale in previous.translations)) {
+      if (
+        value !== null ||
+        overwriteNull ||
+        !(locale in previous.translations)
+      ) {
         previous.translations[locale] = value;
       }
     }
@@ -377,7 +396,9 @@ function withConflictFiles(
 ): unknown {
   if (!(error instanceof TranslationConflictError)) return error;
   const files = extractedFiles
-    .filter((file) => file.messages.some((message) => message.id === error.messageId))
+    .filter((file) =>
+      file.messages.some((message) => message.id === error.messageId),
+    )
     .map((file) => file.source);
   const locations = ['i18n/cache.json', ...new Set(files)].join(', ');
   return new Error(`${error.message}; files: ${locations}`);

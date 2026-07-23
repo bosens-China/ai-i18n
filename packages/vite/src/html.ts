@@ -1,6 +1,6 @@
 import MagicString from 'magic-string';
 import { parse, type DefaultTreeAdapterTypes } from 'parse5';
-import type { ModuleMessages } from '@ai-i18n/core';
+import type { ModuleMessages } from '@boses/core';
 import {
   AI_I18N_VIRTUAL_MODULE_ID,
   analyzeModule,
@@ -8,7 +8,12 @@ import {
   type ExtractedMessage,
 } from './yuku-analyzer.js';
 
-const DEFAULT_ATTRIBUTES = ['alt', 'aria-label', 'placeholder', 'title'] as const;
+const DEFAULT_ATTRIBUTES = [
+  'alt',
+  'aria-label',
+  'placeholder',
+  'title',
+] as const;
 const TEXT_MARKER = 'data-ai-i18n-text';
 const ATTRIBUTE_MARKER_PREFIX = 'data-ai-i18n-attr-';
 const COMMENT_MARKER_PREFIX = 'ai-i18n:';
@@ -72,7 +77,10 @@ export function transformHtml(
       const expression = node.value.trim();
       if (!looksLikeTranslation(expression)) return;
       const message = extractExpression(expression, filename);
-      const position = sourcePosition(source, location.startOffset + leading(node.value));
+      const position = sourcePosition(
+        source,
+        location.startOffset + leading(node.value),
+      );
       if (!message) {
         warnings.push({
           ...position,
@@ -85,14 +93,36 @@ export function transformHtml(
       const before = node.value.slice(0, leading(node.value));
       const after = node.value.slice(node.value.length - trailing(node.value));
       const replacement = `${before}${escapeText(initialValue)}${after}`;
-      if (parent.childNodes.length === 1 && parent.sourceCodeLocation?.startTag) {
+      if (
+        parent.childNodes.length === 1 &&
+        parent.sourceCodeLocation?.startTag
+      ) {
         const marker = encodeURIComponent(message.id);
-        insertAttribute(transformed, source, parent, `${TEXT_MARKER}="${marker}"`);
-        bindings.push({ kind: 'text', messageId: message.id, source: message.source, marker });
-        transformed.overwrite(location.startOffset, location.endOffset, replacement);
+        insertAttribute(
+          transformed,
+          source,
+          parent,
+          `${TEXT_MARKER}="${marker}"`,
+        );
+        bindings.push({
+          kind: 'text',
+          messageId: message.id,
+          source: message.source,
+          marker,
+        });
+        transformed.overwrite(
+          location.startOffset,
+          location.endOffset,
+          replacement,
+        );
       } else {
         const marker = String(commentMarker++);
-        bindings.push({ kind: 'comment', messageId: message.id, source: message.source, marker });
+        bindings.push({
+          kind: 'comment',
+          messageId: message.id,
+          source: message.source,
+          marker,
+        });
         transformed.overwrite(
           location.startOffset,
           location.endOffset,
@@ -109,7 +139,11 @@ export function transformHtml(
       if (!looksLikeTranslation(expression)) continue;
       const location = node.sourceCodeLocation?.attrs?.[attribute.name];
       if (!location) continue;
-      const valueRange = attributeValueRange(source, location.startOffset, location.endOffset);
+      const valueRange = attributeValueRange(
+        source,
+        location.startOffset,
+        location.endOffset,
+      );
       const position = sourcePosition(source, valueRange.start);
       const message = extractExpression(expression, filename);
       if (!message) {
@@ -142,7 +176,12 @@ export function transformHtml(
     }
   });
 
-  return { code: transformed.toString(), messages: [...messages.values()], warnings, bindings };
+  return {
+    code: transformed.toString(),
+    messages: [...messages.values()],
+    warnings,
+    bindings,
+  };
 }
 
 export function htmlBridgeCode(
@@ -188,7 +227,10 @@ if (import.meta.hot) {
 function extractExpression(expression: string, filename: string) {
   const prefix = `import { t } from ${JSON.stringify(AI_I18N_VIRTUAL_MODULE_ID)};\n`;
   try {
-    const module = analyzeModule(`${prefix}${expression}`, `${filename}?html-expression`);
+    const module = analyzeModule(
+      `${prefix}${expression}`,
+      `${filename}?html-expression`,
+    );
     const body = module.ast.body as Array<{
       type: string;
       start: number;
@@ -208,7 +250,9 @@ function extractExpression(expression: string, filename: string) {
       return null;
     }
     const result = extractMessages(module);
-    return !result.pending && !result.warnings.length && result.messages.length === 1
+    return !result.pending &&
+      !result.warnings.length &&
+      result.messages.length === 1
       ? result.messages[0]!
       : null;
   } catch {
@@ -239,7 +283,11 @@ function isTextNode(
 }
 
 function shouldSkipElement(element: DefaultTreeAdapterTypes.Element): boolean {
-  return element.tagName === 'script' || element.tagName === 'style' || element.tagName === 'template';
+  return (
+    element.tagName === 'script' ||
+    element.tagName === 'style' ||
+    element.tagName === 'template'
+  );
 }
 
 function insertAttribute(
@@ -250,7 +298,8 @@ function insertAttribute(
 ): void {
   const startTag = element.sourceCodeLocation?.startTag;
   if (!startTag) return;
-  const offset = startTag.endOffset - (source[startTag.endOffset - 2] === '/' ? 2 : 1);
+  const offset =
+    startTag.endOffset - (source[startTag.endOffset - 2] === '/' ? 2 : 1);
   transformed.appendLeft(offset, ` ${attribute}`);
 }
 
@@ -262,7 +311,10 @@ function attributeValueRange(source: string, start: number, end: number) {
   while (/\s/.test(raw[valueStart] ?? '')) valueStart += 1;
   const quote = raw[valueStart];
   if (quote === '"' || quote === "'") {
-    return { start: start + valueStart + 1, end: start + raw.lastIndexOf(quote) };
+    return {
+      start: start + valueStart + 1,
+      end: start + raw.lastIndexOf(quote),
+    };
   }
   let valueEnd = valueStart;
   while (valueEnd < raw.length && !/\s/.test(raw[valueEnd]!)) valueEnd += 1;
@@ -298,7 +350,10 @@ function looksLikeTranslation(value: string): boolean {
 }
 
 function escapeText(value: string): string {
-  return value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
 }
 
 function escapeAttribute(value: string): string {

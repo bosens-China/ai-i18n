@@ -1,5 +1,5 @@
 declare module 'virtual:ai-i18n' {
-  import type { I18nRuntime } from '@ai-i18n/core';
+  import type { I18nRuntime } from '@boses/core';
 
   export const t: I18nRuntime['t'];
   export const setLang: I18nRuntime['setLang'];

@@ -1,4 +1,4 @@
-import { aiI18n } from '@ai-i18n/vite';
+import { aiI18n } from '@boses/vite';
 import { defineConfig } from 'vite';
 
 export default defineConfig({

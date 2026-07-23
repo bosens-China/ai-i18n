@@ -5,7 +5,7 @@ import {
   parseExtractedFile,
   type CacheMessage,
   type ExtractedFileV1,
-} from '@ai-i18n/core';
+} from '@boses/core';
 import { paginate, type Page } from './pagination.js';
 import {
   listJsonFiles,
@@ -104,7 +104,9 @@ export class AiI18nProjectService {
       : project.extracted;
     const occurrences = collectOccurrences(project.extracted);
     const messageIds = new Set(
-      selected.flatMap(({ value }) => value.messages.map((message) => message.id)),
+      selected.flatMap(({ value }) =>
+        value.messages.map((message) => message.id),
+      ),
     );
     const items = [...messageIds]
       .map((messageId) => {
@@ -113,7 +115,10 @@ export class AiI18nProjectService {
         const selectedOccurrence = input.file
           ? matching.find((item) => item.file === input.file)!
           : matching[0]!;
-        const translations = filterTranslations(message.translations, input.locale);
+        const translations = filterTranslations(
+          message.translations,
+          input.locale,
+        );
         return {
           message_id: messageId,
           source: message.source,
@@ -141,7 +146,9 @@ export class AiI18nProjectService {
     );
   }
 
-  writeTranslations(input: WriteTranslationsInput): Promise<WriteTranslationsResult> {
+  writeTranslations(
+    input: WriteTranslationsInput,
+  ): Promise<WriteTranslationsResult> {
     const task = this.writeQueue.then(
       () => this.applyTranslations(input),
       () => this.applyTranslations(input),
@@ -196,7 +203,10 @@ export class AiI18nProjectService {
     }
 
     const applicable = input.translations.filter((update) => {
-      return project.messages[update.message_id]!.translations[update.locale] === null;
+      return (
+        project.messages[update.message_id]!.translations[update.locale] ===
+        null
+      );
     });
     for (const update of applicable) {
       const message = extracted.value.messages.find(
@@ -204,7 +214,8 @@ export class AiI18nProjectService {
       )!;
       message.translations[update.locale] = update.value;
     }
-    if (applicable.length) await writeJsonAtomic(extracted.path, extracted.value);
+    if (applicable.length)
+      await writeJsonAtomic(extracted.path, extracted.value);
     return {
       file: input.file,
       applied_count: applicable.length,
@@ -213,11 +224,16 @@ export class AiI18nProjectService {
   }
 
   private async load(i18nDirectory: string): Promise<LoadedProject> {
-    const directory = await resolveI18nDirectory(this.workspaceRoot, i18nDirectory);
+    const directory = await resolveI18nDirectory(
+      this.workspaceRoot,
+      i18nDirectory,
+    );
     const cache = parseCacheFile(
       await readJsonRequired(path.join(directory, 'cache.json')),
     );
-    const extractedPaths = await listJsonFiles(path.join(directory, 'extracted'));
+    const extractedPaths = await listJsonFiles(
+      path.join(directory, 'extracted'),
+    );
     const extracted = await Promise.all(
       extractedPaths.map(async (file) => ({
         path: file,
@@ -233,7 +249,10 @@ export class AiI18nProjectService {
         );
       }
       sources.add(item.value.source);
-      messages = mergeCacheMessages(messages, messagesFromExtracted(item.value));
+      messages = mergeCacheMessages(
+        messages,
+        messagesFromExtracted(item.value),
+      );
     }
     return {
       extracted,
@@ -247,7 +266,9 @@ export class AiI18nProjectService {
   }
 }
 
-function messagesFromExtracted(file: ExtractedFileV1): Record<string, CacheMessage> {
+function messagesFromExtracted(
+  file: ExtractedFileV1,
+): Record<string, CacheMessage> {
   return Object.fromEntries(
     file.messages.map((message) => [
       message.id,
@@ -272,13 +293,18 @@ function summarizeFile(
       locale,
     );
     for (const [targetLocale, value] of Object.entries(translations)) {
-      if (value === null) missingByLocale[targetLocale] = (missingByLocale[targetLocale] ?? 0) + 1;
+      if (value === null)
+        missingByLocale[targetLocale] =
+          (missingByLocale[targetLocale] ?? 0) + 1;
     }
   }
   return {
     file: file.source,
     message_count: file.messages.length,
-    missing_count: Object.values(missingByLocale).reduce((sum, count) => sum + count, 0),
+    missing_count: Object.values(missingByLocale).reduce(
+      (sum, count) => sum + count,
+      0,
+    ),
     missing_by_locale: missingByLocale,
   };
 }
@@ -296,15 +322,24 @@ function validateLocale(project: LoadedProject, locale?: string): void {
   }
 }
 
-function findExtracted(project: LoadedProject, source: string): LoadedExtracted {
-  const extracted = project.extracted.find((item) => item.value.source === source);
-  if (!extracted) throw new Error(`[ai-i18n/mcp] extracted source not found: "${source}"`);
+function findExtracted(
+  project: LoadedProject,
+  source: string,
+): LoadedExtracted {
+  const extracted = project.extracted.find(
+    (item) => item.value.source === source,
+  );
+  if (!extracted)
+    throw new Error(`[ai-i18n/mcp] extracted source not found: "${source}"`);
   return extracted;
 }
 
 function collectOccurrences(
   files: readonly LoadedExtracted[],
-): Map<string, Array<{ file: string; locations: Array<{ line: number; column: number }> }>> {
+): Map<
+  string,
+  Array<{ file: string; locations: Array<{ line: number; column: number }> }>
+> {
   const occurrences = new Map<
     string,
     Array<{ file: string; locations: Array<{ line: number; column: number }> }>

@@ -1,5 +1,5 @@
 {
-  "name": "@ai-i18n/analyzer",
+  "name": "@boses/analyzer",
   "version": "0.0.0",
   "description": "Shared Yuku-based static translation analysis for ai-i18n tooling.",
   "keywords": [
@@ -41,7 +41,7 @@
     "test": "pnpm --dir ../.. exec vitest run packages/analyzer/test --config vitest.config.ts"
   },
   "dependencies": {
-    "@ai-i18n/core": "workspace:^",
+    "@boses/core": "workspace:^",
     "source-map-js": "1.2.1",
     "yuku-analyzer": "0.7.3"
   },

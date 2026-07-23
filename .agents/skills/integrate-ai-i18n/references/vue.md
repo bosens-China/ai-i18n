@@ -1,10 +1,10 @@
 # Vue 3 integration
 
-Install `@ai-i18n/vite` and reuse Vue 3, `@vitejs/plugin-vue`, and `@vue/compiler-sfc`. Do not install
+Install `@boses/vite` and reuse Vue 3, `@vitejs/plugin-vue`, and `@vue/compiler-sfc`. Do not install
 a separate ai-i18n Vue binding.
 
 ```ts
-import { aiI18n } from '@ai-i18n/vite'
+import { aiI18n } from '@boses/vite'
 import vue from '@vitejs/plugin-vue'
 import { defineConfig } from 'vite'
 
@@ -46,7 +46,7 @@ const { t, setLang, currentLang, langs } = useI18n()
 
 If `unplugin-auto-import` is registered, omit the `useI18n` import. ai-i18n injects it and generates
 its declaration; do not add it to the external plugin's imports list. Use `configs.vue` from
-`@ai-i18n/eslint-plugin` to declare the global and validate static arguments.
+`@boses/eslint-plugin` to declare the global and validate static arguments.
 
 `currentLang` and `langs` are readonly refs and unwrap in templates. Access `.value` in script.
 The Hook works in SFCs, JS/TS composables, and Vue JSX/TSX. Add `@vitejs/plugin-vue-jsx` for JSX/TSX;

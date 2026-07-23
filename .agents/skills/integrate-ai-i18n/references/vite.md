@@ -3,7 +3,7 @@
 Use Vite 8 and a supported Node runtime (`^20.19.0` or `>=22.12.0`). Register the plugin once:
 
 ```ts
-import { aiI18n } from '@ai-i18n/vite'
+import { aiI18n } from '@boses/vite'
 import { defineConfig } from 'vite'
 
 export default defineConfig({
@@ -84,10 +84,10 @@ import { useI18n } from 'virtual:ai-i18n'
 
 ## Optional Provider
 
-Add `@ai-i18n/openai` only when automatic translation is required:
+Add `@boses/openai` only when automatic translation is required:
 
 ```ts
-import { openAI } from '@ai-i18n/openai'
+import { openAI } from '@boses/openai'
 
 const translator = openAI({
   baseURL: process.env.AI_BASE_URL!,

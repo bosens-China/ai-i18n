@@ -1,4 +1,4 @@
-# @ai-i18n/mcp
+# @boses/mcp
 
 本地 stdio MCP server，用于列出 ai-i18n 缺失翻译、读取具体文案，并安全填充
 `extracted/**` 中仍为 `null` 的翻译。
@@ -11,7 +11,7 @@ MCP 宿主可以直接执行 npm 包（alpha 阶段将版本标签替换为 `@al
 ```json
 {
   "command": "npx",
-  "args": ["-y", "@ai-i18n/mcp", "--root", "/workspace/repo"]
+  "args": ["-y", "@boses/mcp", "--root", "/workspace/repo"]
 }
 ```
 

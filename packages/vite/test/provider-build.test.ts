@@ -1,7 +1,7 @@
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import type { Translator } from '@ai-i18n/core';
+import type { Translator } from '@boses/core';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { build } from 'vite';
 import { aiI18n } from '../src';
@@ -17,7 +17,7 @@ afterEach(async () => {
   );
 });
 
-describe('@ai-i18n/vite provider build', () => {
+describe('@boses/vite provider build', () => {
   it('waits for static and dynamic module translations and writes files', async () => {
     const root = await fs.mkdtemp(path.join(os.tmpdir(), 'ai-i18n-vite-'));
     tempDirs.push(root);
@@ -51,8 +51,8 @@ describe('@ai-i18n/vite provider build', () => {
       logLevel: 'silent',
       resolve: {
         alias: {
-          '@ai-i18n/core': path.resolve('packages/core/src/index.ts'),
-          '@ai-i18n/vite/runtime': path.resolve('packages/vite/src/runtime.ts'),
+          '@boses/core': path.resolve('packages/core/src/index.ts'),
+          '@boses/vite/runtime': path.resolve('packages/vite/src/runtime.ts'),
           '@texts': path.join(root, 'src/texts.ts'),
         },
       },

@@ -41,7 +41,7 @@ extractMessages(module, runtimeModuleId?, translationHooks?)
 运行命令：
 
 ```sh
-pnpm --filter @ai-i18n/vite benchmark
+pnpm --filter @boses/vite benchmark
 ```
 
 环境：Apple M1 Pro、darwin-arm64、Node 26.5.0。单文件每轮执行 200 次；Build 使用
@@ -69,4 +69,4 @@ parser 准入，不替代真实项目的端到端性能数据。
 
 ## 决策
 
-Yuku 在当前目标语义上通过正确性、semantic binding、跨文件链接和增量替换验证，并明显快于现有 Babel 基线。因此 `@ai-i18n/vite` 后续实现以 Yuku 为默认分析器；如果跨平台 CI 出现可复现的安装或正确性失败，再按 PRD 回退 Babel。
+Yuku 在当前目标语义上通过正确性、semantic binding、跨文件链接和增量替换验证，并明显快于现有 Babel 基线。因此 `@boses/vite` 后续实现以 Yuku 为默认分析器；如果跨平台 CI 出现可复现的安装或正确性失败，再按 PRD 回退 Babel。

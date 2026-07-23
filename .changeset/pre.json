@@ -2,15 +2,15 @@
   "mode": "pre",
   "tag": "alpha",
   "initialVersions": {
-    "@ai-i18n/example-react": "0.0.0",
-    "@ai-i18n/example-vanilla": "0.0.0",
-    "@ai-i18n/example-vue": "0.0.0",
-    "@ai-i18n/analyzer": "0.0.0",
-    "@ai-i18n/core": "0.0.0",
-    "@ai-i18n/eslint-plugin": "0.0.0",
-    "@ai-i18n/mcp": "0.0.0",
-    "@ai-i18n/openai": "0.0.0",
-    "@ai-i18n/vite": "0.0.0"
+    "@boses/example-react": "0.0.0",
+    "@boses/example-vanilla": "0.0.0",
+    "@boses/example-vue": "0.0.0",
+    "@boses/analyzer": "0.0.0",
+    "@boses/core": "0.0.0",
+    "@boses/eslint-plugin": "0.0.0",
+    "@boses/mcp": "0.0.0",
+    "@boses/openai": "0.0.0",
+    "@boses/vite": "0.0.0"
   },
   "changesets": []
 }

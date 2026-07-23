@@ -1,4 +1,4 @@
-import type { LangOption, Translator } from '@ai-i18n/core';
+import type { LangOption, Translator } from '@boses/core';
 import type { AiI18nFramework } from './framework.js';
 import type { HtmlExtractorOptions } from './html.js';
 import type { ProviderCoordinatorOptions } from './provider-coordinator.js';

@@ -1,10 +1,10 @@
-# @ai-i18n/openai
+# @boses/openai
 
 基于 LangChain `ChatOpenAI` 的 OpenAI-compatible ai-i18n Provider。供应商、地址和模型必须
 显式配置；API key 可省略以连接本地服务。
 
 ```ts
-import { openAI } from '@ai-i18n/openai'
+import { openAI } from '@boses/openai';
 
 const translator = openAI({
   baseURL: process.env.AI_BASE_URL!,
@@ -22,7 +22,7 @@ const translator = openAI({
         project: 'ai-i18n',
       }
     : undefined,
-})
+});
 ```
 
 `temperature`、`timeoutMs`、`maxRetries` 默认分别为 `1`、`120_000`、`3`；`maxTokens`

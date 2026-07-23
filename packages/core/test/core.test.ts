@@ -16,7 +16,7 @@ const locales = [
   { value: 'en-US', label: 'English' },
 ];
 
-describe('@ai-i18n/core message IDs', () => {
+describe('@boses/core message IDs', () => {
   it('preserves source and normalizes optional comments', () => {
     expect(createMessageId(' 保存 ', '  按钮  ')).toBe(' 保存 #按钮');
     expect(createMessageId('保存', '   ')).toBe('保存');
@@ -29,7 +29,7 @@ describe('@ai-i18n/core message IDs', () => {
   });
 });
 
-describe('@ai-i18n/core schemas', () => {
+describe('@boses/core schemas', () => {
   it('accepts null and intentional empty translations', () => {
     expect(
       parseLocaleFile({
@@ -43,7 +43,9 @@ describe('@ai-i18n/core schemas', () => {
   it('reports unsupported schema versions clearly', () => {
     expect(() =>
       parseCacheFile({ version: 2, files: {}, messages: {} }),
-    ).toThrow(new AiI18nSchemaError('cache schema version must be 1; received 2'));
+    ).toThrow(
+      new AiI18nSchemaError('cache schema version must be 1; received 2'),
+    );
   });
 
   it('migrates legacy context metadata to comment', () => {
@@ -126,7 +128,7 @@ describe('@ai-i18n/core schemas', () => {
   });
 });
 
-describe('@ai-i18n/core runtime', () => {
+describe('@boses/core runtime', () => {
   it('registers all locales and falls back only for null or missing values', async () => {
     const runtime = createI18nRuntime({
       sourceLang: 'zh-CN',

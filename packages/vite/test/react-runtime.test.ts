@@ -1,4 +1,4 @@
-import { createI18nRuntime } from '@ai-i18n/core';
+import { createI18nRuntime } from '@boses/core';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';

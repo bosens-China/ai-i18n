@@ -228,7 +228,7 @@ message 满足以下任一条件时视为活动：
 
 ## 8. Provider 现状
 
-`@ai-i18n/openai` 已支持可配置的 `maxRetries`，默认值为 `3`。ProviderCoordinator 已支持
+`@boses/openai` 已支持可配置的 `maxRetries`，默认值为 `3`。ProviderCoordinator 已支持
 防抖、按长度分批、最大并发批次数和 in-flight 去重。
 
 Phase 2 不再增加第二层通用重试，避免 adapter 和 coordinator 同时重试同一批请求。Provider

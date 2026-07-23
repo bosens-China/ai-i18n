@@ -1,4 +1,4 @@
-import { createI18nRuntime } from '@ai-i18n/core';
+import { createI18nRuntime } from '@boses/core';
 import { computed } from 'vue';
 import { describe, expect, it } from 'vitest';
 import { createVueI18n } from '../src/vue';

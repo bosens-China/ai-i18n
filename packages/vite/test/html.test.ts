@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createI18nRuntime } from '@ai-i18n/core';
+import { createI18nRuntime } from '@boses/core';
 import { html, htmlBridgeCode, transformHtml } from '../src/html';
 
 describe('HTML extractor', () => {
@@ -23,7 +23,9 @@ describe('HTML extractor', () => {
     expect(result.code).toMatch(
       /<input placeholder="请输入" title="普通"\s+data-ai-i18n-attr-placeholder=/,
     );
-    expect(result.code).toContain("<script type=\"module\">t('脚本不处理')</script>");
+    expect(result.code).toContain(
+      '<script type="module">t(\'脚本不处理\')</script>',
+    );
     expect(result.code).toContain('<div>普通文本</div>');
     expect(result.warnings).toEqual([]);
   });
@@ -114,19 +116,27 @@ describe('HTML extractor', () => {
       ],
     });
     const text = { textContent: '' };
-    const attribute = { value: '', setAttribute: (_name: string, value: string) => {
-      attribute.value = value;
-    } };
+    const attribute = {
+      value: '',
+      setAttribute: (_name: string, value: string) => {
+        attribute.value = value;
+      },
+    };
     const commentText = { nodeType: 3, nodeValue: '' };
-    const commentBinding = extracted.bindings.find((binding) => binding.kind === 'comment')!;
-    const comments = [{
-      data: `ai-i18n:${commentBinding.marker}`,
-      nextSibling: commentText,
-    }];
+    const commentBinding = extracted.bindings.find(
+      (binding) => binding.kind === 'comment',
+    )!;
+    const comments = [
+      {
+        data: `ai-i18n:${commentBinding.marker}`,
+        nextSibling: commentText,
+      },
+    ];
     const document = {
       querySelectorAll(selector: string) {
         if (selector.includes('data-ai-i18n-text')) return [text];
-        if (selector.includes('data-ai-i18n-attr-placeholder')) return [attribute];
+        if (selector.includes('data-ai-i18n-attr-placeholder'))
+          return [attribute];
         return [];
       },
       createTreeWalker() {

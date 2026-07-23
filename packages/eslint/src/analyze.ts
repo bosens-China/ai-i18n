@@ -9,7 +9,7 @@ import {
   type ExtractWarningCode,
   type AnalysisLanguage,
   type TranslationHookBinding,
-} from '@ai-i18n/analyzer';
+} from '@boses/analyzer';
 import { createImportResolver } from './resolve-import.js';
 
 export interface StaticArgsWarning {

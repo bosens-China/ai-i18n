@@ -1,5 +1,5 @@
 {
-  "name": "@ai-i18n/core",
+  "name": "@boses/core",
   "version": "0.0.0",
   "description": "Framework-independent schemas, provider contracts, and browser runtime for ai-i18n.",
   "keywords": [

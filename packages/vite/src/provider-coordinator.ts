@@ -3,7 +3,7 @@ import type {
   TranslationResult,
   TranslationValue,
   Translator,
-} from '@ai-i18n/core';
+} from '@boses/core';
 
 export interface ProviderCoordinatorOptions {
   debounceMs?: number;
@@ -39,8 +39,14 @@ export class ProviderCoordinator {
     private readonly translator: Translator,
     options: ProviderCoordinatorOptions = {},
   ) {
-    this.debounceMs = nonNegativeNumber(options.debounceMs ?? 100, 'debounceMs');
-    this.batchLength = positiveInteger(options.batchLength ?? 12_000, 'batchLength');
+    this.debounceMs = nonNegativeNumber(
+      options.debounceMs ?? 100,
+      'debounceMs',
+    );
+    this.batchLength = positiveInteger(
+      options.batchLength ?? 12_000,
+      'batchLength',
+    );
     this.maxConcurrency = positiveInteger(
       options.maxConcurrency ?? 5,
       'maxConcurrency',
@@ -140,7 +146,8 @@ export class ProviderCoordinator {
     const task = this.runBatch(batch).finally(() => {
       this.inFlight.delete(task);
       for (const pending of batch) {
-        if (this.active.get(pending.key) === pending) this.active.delete(pending.key);
+        if (this.active.get(pending.key) === pending)
+          this.active.delete(pending.key);
       }
       this.dispatchReadyBatches();
       if (this.hasQueued()) this.schedule();
@@ -203,7 +210,8 @@ function takeBatch(
   const batch: PendingRequest[] = [];
   let length = EMPTY_BATCH_LENGTH;
   for (const request of requests) {
-    const nextLength = length + request.serializedLength + (batch.length ? 1 : 0);
+    const nextLength =
+      length + request.serializedLength + (batch.length ? 1 : 0);
     if (batch.length && nextLength > limit) break;
     batch.push(request);
     length = nextLength;
@@ -219,7 +227,10 @@ function validateResults(
   // 返回结果必须与请求一一对应，禁止额外、重复或缺失项污染缓存。
   if (!Array.isArray(results)) throw new Error('invalid translator result');
   const expected = new Map(
-    requests.map((request) => [requestKey(request.messageId, request.locale), request]),
+    requests.map((request) => [
+      requestKey(request.messageId, request.locale),
+      request,
+    ]),
   );
   const received = new Map<string, TranslationResult>();
   for (const result of results) {
@@ -237,8 +248,11 @@ function validateResults(
     }
     received.set(key, result);
   }
-  if (received.size !== expected.size) throw new Error('invalid translator result');
-  return requests.map((request) => received.get(requestKey(request.messageId, request.locale))!);
+  if (received.size !== expected.size)
+    throw new Error('invalid translator result');
+  return requests.map((request) =>
+    received.get(requestKey(request.messageId, request.locale))!,
+  );
 }
 
 function requestKey(messageId: string, locale: string): string {

@@ -1,5 +1,5 @@
 {
-  "name": "@ai-i18n/example-vanilla",
+  "name": "@boses/example-vanilla",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -11,7 +11,7 @@
     "preview": "vite preview"
   },
   "devDependencies": {
-    "@ai-i18n/vite": "workspace:*",
+    "@boses/vite": "workspace:*",
     "typescript": "~6.0.2",
     "vite": "^8.1.1"
   }

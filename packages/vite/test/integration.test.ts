@@ -15,9 +15,9 @@ const runtimeEntry = path.resolve('packages/vite/src/runtime.ts');
 
 afterEach(async () => {
   await Promise.all(
-    tempDirs.splice(0).map((directory) =>
-      fs.rm(directory, { recursive: true, force: true }),
-    ),
+    tempDirs
+      .splice(0)
+      .map((directory) => fs.rm(directory, { recursive: true, force: true })),
   );
 });
 
@@ -32,7 +32,7 @@ describe('Vite integration', () => {
       appType: 'custom',
       logLevel: 'silent',
       server: { middlewareMode: true },
-      resolve: { alias: { '@ai-i18n/vite/runtime': runtimeEntry } },
+      resolve: { alias: { '@boses/vite/runtime': runtimeEntry } },
       plugins: [plugin()],
     });
 
@@ -52,19 +52,23 @@ describe('Vite integration', () => {
 
   it('reuses translation memory after a source file moves', async () => {
     const root = await fixtureRoot();
-    await write(root, 'index.html', '<script type="module" src="/src/main.ts"></script>');
+    await write(
+      root,
+      'index.html',
+      '<script type="module" src="/src/main.ts"></script>',
+    );
     await write(root, 'src/main.ts', "import './old'");
     await write(root, 'src/old.ts', translatedModule('可移动文案'));
     await buildFixture(root);
 
-    const oldExtracted = path.join(
-      root,
-      'i18n/extracted/src/old.ts.json',
-    );
+    const oldExtracted = path.join(root, 'i18n/extracted/src/old.ts.json');
     const extracted = await readJson<ExtractedFile>(oldExtracted);
     extracted.messages[0]!.translations['en-US'] = 'Moved text';
     await fs.writeFile(oldExtracted, `${JSON.stringify(extracted, null, 2)}\n`);
-    await fs.rename(path.join(root, 'src/old.ts'), path.join(root, 'src/new.ts'));
+    await fs.rename(
+      path.join(root, 'src/old.ts'),
+      path.join(root, 'src/new.ts'),
+    );
     await write(root, 'src/main.ts', "import './new'");
 
     await buildFixture(root);
@@ -93,7 +97,11 @@ describe('Vite integration', () => {
 
     const workspace = await fixtureRoot();
     const root = path.join(workspace, 'apps/web');
-    await write(root, 'index.html', '<script type="module" src="/src/main.ts"></script>');
+    await write(
+      root,
+      'index.html',
+      '<script type="module" src="/src/main.ts"></script>',
+    );
     await write(root, 'src/main.ts', translatedModule('子项目'));
     await buildFixture(root);
 
@@ -109,10 +117,7 @@ interface ExtractedFile {
 
 interface CacheFile {
   files: Record<string, unknown>;
-  messages: Record<
-    string,
-    { translations: Record<string, string | null> }
-  >;
+  messages: Record<string, { translations: Record<string, string | null> }>;
 }
 
 function plugin() {
@@ -133,7 +138,7 @@ async function buildFixture(root: string) {
     root,
     configFile: false,
     logLevel: 'silent',
-    resolve: { alias: { '@ai-i18n/vite/runtime': runtimeEntry } },
+    resolve: { alias: { '@boses/vite/runtime': runtimeEntry } },
     plugins: [plugin()],
   });
 }
@@ -153,7 +158,9 @@ async function extractedSources(root: string) {
   const files = await fs.readdir(directory);
   const sources = await Promise.all(
     files.map(async (file) => {
-      const value = await readJson<{ source: string }>(path.join(directory, file));
+      const value = await readJson<{ source: string }>(
+        path.join(directory, file),
+      );
       return value.source;
     }),
   );

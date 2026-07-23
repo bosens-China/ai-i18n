@@ -1,4 +1,4 @@
-import type { ModuleMessages } from '@ai-i18n/core';
+import type { ModuleMessages } from '@boses/core';
 import type { AiI18nFramework } from './framework.js';
 import type { NormalizedAiI18nOptions } from './project-state.js';
 import { AI_I18N_VIRTUAL_MODULE_ID } from './yuku-analyzer.js';
@@ -11,13 +11,13 @@ export function runtimeCode(
   const adapter =
     framework === 'vanilla'
       ? ''
-      : `import { create${framework === 'vue' ? 'Vue' : 'React'}I18n } from '@ai-i18n/vite/${framework}';`;
+      : `import { create${framework === 'vue' ? 'Vue' : 'React'}I18n } from '@boses/vite/${framework}';`;
   const hook =
     framework === 'vanilla'
       ? ''
       : `export const useI18n = create${framework === 'vue' ? 'Vue' : 'React'}I18n(runtime);`;
   return `
-import { createI18nRuntime } from '@ai-i18n/vite/runtime';
+import { createI18nRuntime } from '@boses/vite/runtime';
 ${adapter}
 const runtime = createI18nRuntime(${JSON.stringify(options)});
 const activeModules = new Set();
