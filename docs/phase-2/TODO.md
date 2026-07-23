@@ -122,8 +122,7 @@
 
 ## 10. 质量检查
 
-- [ ] 运行 `pnpm lint`。
-- [ ] 运行 `pnpm check`。
+- [ ] 运行 `pnpm check`（TypeScript + ESLint）。
 - [ ] 运行 `pnpm test`。
 - [ ] 运行 `pnpm build`。
 - [ ] 运行全部 benchmark 并保存结果。

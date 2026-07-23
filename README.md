@@ -183,13 +183,12 @@ const translator = openAI({
 ## 开发与发布
 
 ```sh
-pnpm lint
 pnpm check
 pnpm test
 pnpm build
-pnpm examples:dev
-pnpm examples:build
-pnpm benchmark:yuku
+pnpm pack:check
+pnpm examples:check
+pnpm --filter @ai-i18n/vite benchmark
 ```
 
 发布使用 Changesets，八个公开包保持同一版本。首次 alpha 流程：
@@ -200,7 +199,8 @@ pnpm version-packages
 pnpm release
 ```
 
-`pnpm release` 会先执行 lint、类型检查、测试和构建，再由 Changesets 使用 `alpha` dist-tag
-发布。真实发布需要 npm 权限，并应在跨平台 CI 全部通过后执行。
+`pnpm check` 会统一执行根目录和各 workspace 的 TypeScript、ESLint 检查；`pnpm release`
+会继续执行测试、构建与发布包内容检查，再由 Changesets 使用 `alpha` dist-tag 发布。真实发布
+需要 npm 权限，并应在跨平台 CI 全部通过后执行。
 
 需求、架构和验收清单位于 [`docs/phase-1`](./docs/phase-1/)。

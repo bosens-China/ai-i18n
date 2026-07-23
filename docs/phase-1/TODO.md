@@ -248,11 +248,10 @@
 
 ## 14. 发布与质量
 
-- [x] `pnpm lint`。
-- [x] `pnpm check`。
+- [x] `pnpm check`（TypeScript + ESLint）。
 - [x] `pnpm test`。
 - [x] `pnpm build`。
-- [x] `pnpm pack` 检查所有 package 内容。
+- [x] `pnpm pack:check` 检查所有 package 内容。
 - [x] README 记录目录协议、Git 提交策略和 Agent 工作流。
 - [x] README 记录 Dev 渐进/Build 完整语义。
 - [x] README 明确只支持显式 `t()`、浏览器 Runtime 和 Vite 8。

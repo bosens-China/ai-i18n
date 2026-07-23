@@ -4,14 +4,14 @@
 
 ## 已通过
 
-- `pnpm lint`：通过。
-- `pnpm check`：8 个发布包 TypeScript 检查通过。
+- `pnpm check`：根目录及 12 个 workspace 的 TypeScript、ESLint 检查通过。
 - `pnpm test`：20 个测试文件、128 个测试通过。
 - `pnpm build`：8 个发布包构建通过。
 - `pnpm pack:check`：8 个 tarball 的 exports 产物、README、文件白名单和客户端依赖边界通过。
-- `pnpm examples:dev`：Vanilla、Vue、React、Mixed 的真实 Vite middleware transform 通过。
-- `pnpm examples:build`：四个示例生产构建通过。
-- `pnpm benchmark:yuku`：Babel/Yuku 冷分析、热替换、200 模块 Build 图完成五轮对比。
+- `pnpm examples:check`：四个示例的 TypeScript、ESLint、生产构建与真实 Vite middleware
+  transform 通过。
+- `pnpm --filter @ai-i18n/vite benchmark`：Babel/Yuku 冷分析、热替换、200 模块 Build 图完成
+  五轮对比。
 
 ## 关键回归证据
 

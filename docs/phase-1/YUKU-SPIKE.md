@@ -41,19 +41,19 @@ extractMessages(module, runtimeModuleId?, translationHooks?)
 运行命令：
 
 ```sh
-node packages/vite/benchmark/yuku-spike.mjs
+pnpm --filter @ai-i18n/vite benchmark
 ```
 
 环境：Apple M1 Pro、darwin-arm64、Node 26.5.0。单文件每轮执行 200 次；Build 使用
 200 个 TypeScript 模块、每轮完整 add/link/walk 10 次。以下为 5 轮中位数：
 
-| 操作 | 中位耗时 |
-| --- | ---: |
-| Babel cold parse + traverse | 31.77 ms |
-| Yuku cold analyze + semantic walk | 6.89 ms |
-| Yuku warm replace + semantic walk | 8.29 ms |
-| Babel Build 完整分析图 | 182.81 ms |
-| Yuku Build 完整分析图 | 52.16 ms |
+| 操作                              |  中位耗时 |
+| --------------------------------- | --------: |
+| Babel cold parse + traverse       |  31.77 ms |
+| Yuku cold analyze + semantic walk |   6.89 ms |
+| Yuku warm replace + semantic walk |   8.29 ms |
+| Babel Build 完整分析图            | 182.81 ms |
+| Yuku Build 完整分析图             |  52.16 ms |
 
 该 benchmark 固定比较 Babel/Yuku 分析边界，不包含 bundler、磁盘和 Provider 耗时；它用于
 parser 准入，不替代真实项目的端到端性能数据。
