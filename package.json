@@ -17,14 +17,11 @@
   "scripts": {
     "prepare": "husky",
     "build": "tsdown",
-    "check": "pnpm build && tsc -p tsconfig.json && eslint \"*.config.{js,ts}\" scripts && pnpm -r --if-present run check",
+    "check": "pnpm build && tsc -p tsconfig.json && eslint \"*.config.{js,ts}\" && pnpm -r --if-present run check",
     "test": "vitest run",
     "changeset": "changeset",
     "version-packages": "changeset version",
-    "release": "pnpm check && pnpm test && node scripts/check-packages.mjs && changeset publish",
-    "pack:check": "pnpm build && node scripts/check-packages.mjs",
-    "examples:check": "pnpm build && pnpm -r --filter './examples/*' run check && pnpm -r --filter './examples/*' run build && node scripts/check-examples.mjs",
-    "examples:pages": "pnpm build && node scripts/build-pages.mjs"
+    "release": "pnpm check && pnpm test && changeset publish"
   },
   "devDependencies": {
     "@arethetypeswrong/core": "0.18.5",
