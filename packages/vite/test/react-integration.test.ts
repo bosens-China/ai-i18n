@@ -5,8 +5,8 @@ import type { Translator } from '@ai-i18n/core';
 import reactPlugin from '@vitejs/plugin-react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { build } from 'vite';
-import { aiI18n } from '@ai-i18n/vite';
-import { react } from '../src/vite';
+import { aiI18n } from '../src';
+import { buildOutputItems } from './build-output';
 
 const tempDirs: string[] = [];
 
@@ -18,40 +18,37 @@ afterEach(async () => {
   );
 });
 
-describe('@ai-i18n/react Vite integration', () => {
-  it('builds TSX and writes translated protocol files', async () => {
-    const temporaryRoot = await fs.mkdtemp(
-      path.join(os.tmpdir(), 'ai-i18n-react-'),
+describe('React Vite integration', () => {
+  it('auto-detects React and extracts TS and TSX Hooks', async () => {
+    const root = await fs.realpath(
+      await fs.mkdtemp(path.join(os.tmpdir(), 'ai-i18n-react-')),
     );
-    const root = await fs.realpath(temporaryRoot);
     tempDirs.push(root);
     await fs.mkdir(path.join(root, 'src'));
     const entry = path.join(root, 'src/App.tsx');
     await fs.writeFile(
-      path.join(root, 'src/useLabels.ts'),
-      `import { useI18n } from '@ai-i18n/react';
-export function useLabels() {
-  const i18n = useI18n();
-  return i18n.t('组合 Hook');
+      path.join(root, 'src/useLabel.ts'),
+      `export function useLabel() {
+  const i18n = useI18n()
+  return i18n.t('React TS')
 }`,
     );
     await fs.writeFile(
       entry,
-      `import { useI18n } from '@ai-i18n/react';
-import { useLabels } from './useLabels';
+      `import { useLabel } from './useLabel'
 export function App() {
-  const { t } = useI18n();
-  const label = useLabels();
-  return <main title="普通属性"><h1>{t('标题')}</h1><p>{label}</p>普通 JSXText</main>;
+  const { t } = useI18n()
+  return <main><h1>{t('React TSX')}</h1><p>{useLabel()}</p></main>
 }`,
     );
-    const translator: Translator = vi.fn(async (requests) =>
+    const translator: Translator = vi.fn<Translator>(async (requests) =>
       requests.map((request) => ({
         messageId: request.messageId,
         locale: request.locale,
-        value: 'Title',
+        value: `EN:${request.source}`,
       })),
     );
+
     const output = await build({
       root,
       configFile: false,
@@ -60,11 +57,10 @@ export function App() {
         alias: {
           '@ai-i18n/core': path.resolve('packages/core/src/index.ts'),
           '@ai-i18n/vite/runtime': path.resolve('packages/vite/src/runtime.ts'),
-          '@ai-i18n/react': path.resolve('packages/react/src/index.ts'),
+          '@ai-i18n/vite/react': path.resolve('packages/vite/src/react.ts'),
         },
       },
       plugins: [
-        reactPlugin(),
         aiI18n({
           sourceLang: 'zh-CN',
           defaultLang: 'en-US',
@@ -72,10 +68,11 @@ export function App() {
             { value: 'zh-CN', label: '中文' },
             { value: 'en-US', label: 'English' },
           ],
-          extractors: [react()],
           translator,
           provider: { batchLength: 12_000, strict: true },
         }),
+        { name: 'unplugin-auto-import' },
+        reactPlugin(),
       ],
       build: {
         write: false,
@@ -85,28 +82,26 @@ export function App() {
         },
       },
     });
-    const code = (Array.isArray(output) ? output : [output])
-      .flatMap((item) => item.output)
-      .filter((item) => item.type === 'chunk')
-      .map((item) => item.code)
-      .join('\n');
+    const code = chunks(output);
 
-    expect(code).toContain('Title');
+    expect(code).toContain('EN:React TSX');
+    expect(code).toContain('EN:React TS');
     expect(translator).toHaveBeenCalled();
     expect(
       await readJson(path.join(root, 'i18n/extracted/src/App.tsx.json')),
-    ).toMatchObject({
-      source: 'src/App.tsx',
-      messages: [{ id: '标题', locations: [{ line: 6 }] }],
-    });
+    ).toMatchObject({ messages: [{ id: 'React TSX' }] });
     expect(
-      await readJson(path.join(root, 'i18n/extracted/src/useLabels.ts.json')),
-    ).toMatchObject({
-      source: 'src/useLabels.ts',
-      messages: [{ id: '组合 Hook', locations: [{ line: 4 }] }],
-    });
+      await readJson(path.join(root, 'i18n/extracted/src/useLabel.ts.json')),
+    ).toMatchObject({ messages: [{ id: 'React TS' }] });
   });
 });
+
+function chunks(output: Awaited<ReturnType<typeof build>>) {
+  return buildOutputItems(output)
+    .filter((item) => item.type === 'chunk')
+    .map((item) => item.code)
+    .join('\n');
+}
 
 async function readJson(file: string): Promise<Record<string, unknown>> {
   return JSON.parse(await fs.readFile(file, 'utf8')) as Record<string, unknown>;

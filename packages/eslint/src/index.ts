@@ -29,9 +29,42 @@ plugin.configs!.recommended = [
 
 plugin.configs!.vue = [
   {
-    files: ['**/*.vue'],
+    files: ['**/*.{js,mjs,cjs,ts,mts,cts,jsx,tsx,vue}'],
     plugins: { 'ai-i18n': plugin },
-    rules: { 'ai-i18n/t-static-args': 'error' },
+    languageOptions: { globals: { useI18n: 'readonly' } },
+    rules: {
+      'ai-i18n/t-static-args': ['error', { autoImport: true }],
+    },
+  },
+];
+
+plugin.configs!.react = [
+  {
+    files: ['**/*.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'],
+    plugins: { 'ai-i18n': plugin },
+    languageOptions: { globals: { useI18n: 'readonly' } },
+    rules: {
+      'ai-i18n/t-static-args': ['error', { autoImport: true }],
+    },
+  },
+];
+
+plugin.configs!.vanilla = [
+  {
+    files: ['**/*.{js,mjs,cjs,ts,mts,cts}'],
+    plugins: { 'ai-i18n': plugin },
+    languageOptions: {
+      globals: {
+        t: 'readonly',
+        setLang: 'readonly',
+        getLang: 'readonly',
+        getLangs: 'readonly',
+        subscribe: 'readonly',
+      },
+    },
+    rules: {
+      'ai-i18n/t-static-args': ['error', { autoImport: true }],
+    },
   },
 ];
 

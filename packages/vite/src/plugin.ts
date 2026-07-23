@@ -1,23 +1,29 @@
-import type { LangOption, Translator } from '@ai-i18n/core';
 import MagicString from 'magic-string';
 import type { NormalizedHotChannel, Plugin, ResolvedConfig } from 'vite';
-import type { SourceExtractor } from './extractor.js';
 import { FileStore } from './file-store.js';
 import {
+  extractFrameworkSource,
+  frameworkAutoImports,
+  frameworkTranslationHooks,
+  resolveAutoImport,
+  resolveFramework,
+  writeFrameworkTypes,
+  type AiI18nFramework,
+} from './framework.js';
+import {
+  html as createHtmlExtractor,
   htmlBridgeCode,
   isTransformedHtml,
   transformHtml,
   type HtmlExtractor,
 } from './html.js';
+import { createHotUpdateHandler } from './hot-update.js';
 import { ProjectState } from './project-state.js';
-import {
-  ProviderCoordinator,
-  type ProviderCoordinatorOptions,
-} from './provider-coordinator.js';
+import { ProviderCoordinator } from './provider-coordinator.js';
+import type { AiI18nOptions } from './options.js';
 import {
   normalizeOptions,
   normalizeRoot,
-  extractSource,
   registrationImportOffset,
   shouldIgnoreSource,
   sourceUpdateOptions,
@@ -27,46 +33,27 @@ import {
   runtimeCode,
   runtimeStubCode,
 } from './virtual-modules.js';
-import { AI_I18N_VIRTUAL_MODULE_ID } from './yuku-analyzer.js';
+import {
+  AI_I18N_VIRTUAL_MODULE_ID,
+  findUnboundCalls,
+} from './yuku-analyzer.js';
 
 const RESOLVED_RUNTIME_ID = `\0${AI_I18N_VIRTUAL_MODULE_ID}`;
 const REGISTER_PREFIX = `${AI_I18N_VIRTUAL_MODULE_ID}/register?module=`;
 const RESOLVED_REGISTER_PREFIX = `\0${REGISTER_PREFIX}`;
-const JS_TSX_RE = /\.(?:[cm]?js|[cm]?ts|jsx|tsx)(?:\?.*)?$/;
 const SOURCE_RE = /\.(?:[cm]?[jt]sx?|vue)(?:\?.*)?$/;
 const VIRTUAL_RE = /^virtual:ai-i18n(?:\/register\?module=.+)?$/;
 const RESOLVED_VIRTUAL_RE = /^\0virtual:ai-i18n(?:\/register\?module=.+)?$/;
 const TRANSLATION_UPDATE_EVENT = 'ai-i18n:update';
 
-export type AiI18nProviderOptions = Pick<
-  ProviderCoordinatorOptions,
-  'debounceMs' | 'batchLength' | 'maxConcurrency' | 'strict'
->;
-
-export interface AiI18nOptions {
-  sourceLang: string;
-  defaultLang?: string;
-  locales: readonly LangOption[];
-  translator?: Translator;
-  provider?: AiI18nProviderOptions;
-  directory?: string;
-  cleanup?: {
-    missingSourceFiles?: boolean;
-    orphanMessages?: boolean;
-  };
-  extractors?: readonly (HtmlExtractor | SourceExtractor)[];
-}
 export function aiI18n(options: AiI18nOptions): Plugin {
   const normalized = normalizeOptions(options);
-  const htmlExtractor = options.extractors?.find(
-    (extractor) => extractor.kind === 'html',
-  ) as HtmlExtractor | undefined;
-  const sourceExtractors = (options.extractors ?? []).filter(
-    (extractor): extractor is SourceExtractor => 'test' in extractor,
-  );
-  const translationHooks = sourceExtractors.flatMap(
-    (extractor) => extractor.translationHooks ?? [],
-  );
+  const htmlExtractor: HtmlExtractor | undefined = options.html
+    ? createHtmlExtractor(options.html === true ? {} : options.html)
+    : undefined;
+  let autoImport = options.autoImport ?? false;
+  let framework: AiI18nFramework = options.framework ?? 'vanilla';
+  let translationHooks = frameworkTranslationHooks(framework, autoImport);
   let config: ResolvedConfig | undefined;
   let state: ProjectState | undefined;
   let store: FileStore | undefined;
@@ -107,12 +94,28 @@ export function aiI18n(options: AiI18nOptions): Plugin {
     }
   }
 
+  const handleHotUpdate = createHotUpdateHandler({
+    sourcePattern: SOURCE_RE,
+    resolvedRegisterPrefix: RESOLVED_REGISTER_PREFIX,
+    ready: () => ready,
+    state: currentState,
+    store: currentStore,
+    framework: () => framework,
+    autoImport: () => autoImport,
+    translationHooks: () => translationHooks,
+    sendTranslationUpdates,
+    requestMissingTranslations,
+  });
+
   return {
     name: 'ai-i18n',
     enforce: 'pre',
 
     configResolved(resolved) {
       config = resolved;
+      framework = resolveFramework(resolved.plugins, options.framework);
+      autoImport = resolveAutoImport(resolved.plugins, options.autoImport);
+      translationHooks = frameworkTranslationHooks(framework, autoImport);
       state = new ProjectState(normalizeRoot(resolved.root), normalized);
       store = new FileStore({
         root: normalizeRoot(resolved.root),
@@ -122,7 +125,10 @@ export function aiI18n(options: AiI18nOptions): Plugin {
         cleanupMissingSourceFiles: options.cleanup?.missingSourceFiles ?? true,
         cleanupOrphanMessages: options.cleanup?.orphanMessages ?? false,
       });
-      ready = store.load().then((cache) => {
+      ready = Promise.all([
+        store.load(),
+        writeFrameworkTypes(resolved.root, framework, autoImport, options.dts),
+      ]).then(([cache]) => {
         currentState().hydrateCache(cache);
       });
       if (options.translator) {
@@ -170,10 +176,12 @@ export function aiI18n(options: AiI18nOptions): Plugin {
               '[ai-i18n] SSR runtime is not supported; injection skipped.',
             );
           }
-          return id === RESOLVED_RUNTIME_ID ? runtimeStubCode() : 'export {}';
+          return id === RESOLVED_RUNTIME_ID
+            ? runtimeStubCode(framework)
+            : 'export {}';
         }
         if (id === RESOLVED_RUNTIME_ID) {
-          return runtimeCode(normalized, TRANSLATION_UPDATE_EVENT);
+          return runtimeCode(normalized, TRANSLATION_UPDATE_EVENT, framework);
         }
         await ready;
         if (config?.command === 'build') await coordinator?.flush();
@@ -191,12 +199,7 @@ export function aiI18n(options: AiI18nOptions): Plugin {
       filter: { id: SOURCE_RE },
       async handler(code, id, transformOptions) {
         if (shouldIgnoreSource(id)) return null;
-        const extraction = extractSource(
-          code,
-          id,
-          sourceExtractors,
-          JS_TSX_RE.test(id),
-        );
+        const extraction = await extractFrameworkSource(code, id, framework);
         if (extraction === null) return null;
         if (transformOptions?.ssr || this.environment.name !== 'client') {
           if (!warnedSsr) {
@@ -214,7 +217,12 @@ export function aiI18n(options: AiI18nOptions): Plugin {
         let update = project.update(
           extraction?.analysisCode ?? code,
           id,
-          sourceUpdateOptions(extraction, code, translationHooks),
+          sourceUpdateOptions(
+            extraction,
+            code,
+            translationHooks,
+            autoImport && framework === 'vanilla',
+          ),
         );
         if (!update) return null;
         const { moduleId } = update;
@@ -250,7 +258,12 @@ export function aiI18n(options: AiI18nOptions): Plugin {
           update = project.update(
             extraction?.analysisCode ?? code,
             id,
-            sourceUpdateOptions(extraction, code, translationHooks),
+            sourceUpdateOptions(
+              extraction,
+              code,
+              translationHooks,
+              autoImport && framework === 'vanilla',
+            ),
           )!;
         }
         const { result } = update;
@@ -264,17 +277,43 @@ export function aiI18n(options: AiI18nOptions): Plugin {
         const cache = await currentStore().sync(project.snapshot());
         project.hydrateCache(cache);
         requestMissingTranslations([moduleId]);
-        if (!result.messages.length && !result.pending) return null;
+        const currentModule = project.analyzer.module(moduleId)!;
+        // 只注入没有本地 symbol 的调用，避免覆盖用户自己的同名函数。
+        const unboundCalls = autoImport
+          ? new Set(
+              findUnboundCalls(
+                currentModule,
+                new Set(frameworkAutoImports(framework)),
+              ),
+            )
+          : new Set<string>();
+        const autoImports = frameworkAutoImports(framework).filter((name) =>
+          unboundCalls.has(name),
+        );
+        const needsRegistration = Boolean(
+          result.messages.length || result.pending,
+        );
+        if (!needsRegistration && !autoImports.length) return null;
 
-        const importId = `${REGISTER_PREFIX}${encodeURIComponent(moduleId)}`;
-        const currentModule = project.analyzer.module(moduleId);
+        const imports = [
+          ...(autoImports.length
+            ? [
+                `import { ${autoImports.join(', ')} } from ${JSON.stringify(AI_I18N_VIRTUAL_MODULE_ID)};`,
+              ]
+            : []),
+          ...(needsRegistration
+            ? [
+                `import ${JSON.stringify(`${REGISTER_PREFIX}${encodeURIComponent(moduleId)}`)};`,
+              ]
+            : []),
+        ];
         const registration = extraction?.registration;
         const offset =
           registration?.offset ??
           registrationImportOffset(code, currentModule?.ast.body ?? []);
         const injected = registration
-          ? `${registration.prefix ?? ''}import ${JSON.stringify(importId)};\n${registration.suffix ?? ''}`
-          : `${offset ? '\n' : ''}import ${JSON.stringify(importId)};\n`;
+          ? `${registration.prefix ?? ''}${imports.join('\n')}\n${registration.suffix ?? ''}`
+          : `${offset ? '\n' : ''}${imports.join('\n')}\n`;
         const transformed = new MagicString(code, { filename: id });
         transformed.appendLeft(offset, injected);
         return {
@@ -346,68 +385,7 @@ export function aiI18n(options: AiI18nOptions): Plugin {
       },
     },
 
-    async hotUpdate(options) {
-      if (this.environment.name !== 'client') return;
-      const project = currentState();
-      await ready;
-      const fileStore = currentStore();
-      if (fileStore.manages(options.file)) {
-        const content = await options.read();
-        if (fileStore.isOwnWrite(options.file, content)) return [];
-        const preferredSource = fileStore.extractedSource(options.file);
-        const affected = project.hydrateCache(
-          await fileStore.load(preferredSource),
-        );
-        const reconciled = await fileStore.sync(
-          project.snapshot(),
-          preferredSource,
-        );
-        const updated = [...affected, ...project.hydrateCache(reconciled)];
-        sendTranslationUpdates(updated);
-        requestMissingTranslations(updated);
-        return [];
-      }
-      if (!SOURCE_RE.test(options.file)) return;
-      const moduleId = project.normalizeId(options.file);
-      if (!moduleId) return;
-      const code = options.type === 'delete' ? undefined : await options.read();
-      const extraction =
-        code === undefined
-          ? undefined
-          : extractSource(
-              code,
-              options.file,
-              sourceExtractors,
-              JS_TSX_RE.test(options.file),
-            );
-      if (extraction === null) return;
-      const affected =
-        options.type === 'delete'
-          ? project.remove(options.file)
-          : (project.update(
-              extraction?.analysisCode ?? code!,
-              options.file,
-              sourceUpdateOptions(extraction, code!, translationHooks),
-            )?.affectedModuleIds ?? []);
-      const cache = await currentStore().sync(project.snapshot());
-      project.hydrateCache(cache);
-      const registers = affected
-        .map((affectedId) =>
-          this.environment.moduleGraph.getModuleById(
-            `${RESOLVED_REGISTER_PREFIX}${encodeURIComponent(affectedId)}`,
-          ),
-        )
-        .filter((module) => module !== undefined);
-      for (const register of registers) {
-        this.environment.moduleGraph.invalidateModule(
-          register,
-          new Set(),
-          options.timestamp,
-          true,
-        );
-      }
-      return registers.length ? [...options.modules, ...registers] : undefined;
-    },
+    hotUpdate: handleHotUpdate,
   };
 }
 

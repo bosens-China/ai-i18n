@@ -3,6 +3,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
+import { afterEach, expect, test } from 'vitest';
 import { AiI18nProjectService } from '../src/project';
 import { createAiI18nMcpServer } from '../src/server';
 
@@ -10,9 +11,9 @@ const tempDirectories: string[] = [];
 
 afterEach(async () => {
   await Promise.all(
-    tempDirectories.splice(0).map((directory) =>
-      fs.rm(directory, { recursive: true, force: true }),
-    ),
+    tempDirectories
+      .splice(0)
+      .map((directory) => fs.rm(directory, { recursive: true, force: true })),
   );
 });
 
@@ -88,11 +89,18 @@ test('fills null values atomically and refuses conflicting overwrites', async ()
         { message_id: '退出', locale: 'ja-JP', value: '' },
       ],
     }),
-  ).resolves.toEqual({ file: 'src/home.ts', applied_count: 2, unchanged_count: 0 });
+  ).resolves.toEqual({
+    file: 'src/home.ts',
+    applied_count: 2,
+    unchanged_count: 0,
+  });
 
-  const extracted = JSON.parse(
-    await fs.readFile(extractedPath, 'utf8'),
-  ) as { messages: Array<{ id: string; translations: Record<string, string | null> }> };
+  const extracted = JSON.parse(await fs.readFile(extractedPath, 'utf8')) as {
+    messages: Array<{
+      id: string;
+      translations: Record<string, string | null>;
+    }>;
+  };
   expect(extracted.messages[0]?.translations['en-US']).toBe('Save');
   expect(extracted.messages[1]?.translations['ja-JP']).toBe('');
 
@@ -113,7 +121,10 @@ test('rejects paths outside the workspace and unknown source files', async () =>
     service.listFiles({ i18n_directory: '../outside', limit: 50 }),
   ).rejects.toThrow('must not contain ".."');
   await expect(
-    service.listFiles({ i18n_directory: path.resolve(root, 'apps/web/i18n'), limit: 50 }),
+    service.listFiles({
+      i18n_directory: path.resolve(root, 'apps/web/i18n'),
+      limit: 50,
+    }),
   ).rejects.toThrow('must be relative');
   await expect(
     service.listTranslations({
@@ -139,7 +150,8 @@ test('registers callable MCP tools with defaults and structured output', async (
   const root = await fixture();
   const server = createAiI18nMcpServer(root);
   const client = new Client({ name: 'ai-i18n-mcp-test', version: '0.0.0' });
-  const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
+  const [clientTransport, serverTransport] =
+    InMemoryTransport.createLinkedPair();
   await Promise.all([
     client.connect(clientTransport),
     server.connect(serverTransport),
@@ -157,7 +169,10 @@ test('registers callable MCP tools with defaults and structured output', async (
       arguments: { i18n_directory: 'apps/web/i18n', file: 'src/home.ts' },
     });
     expect(result.isError).not.toBe(true);
-    expect(result.structuredContent).toMatchObject({ total_count: 2, count: 2 });
+    expect(result.structuredContent).toMatchObject({
+      total_count: 2,
+      count: 2,
+    });
   } finally {
     await clientTransport.close();
     await server.close();
@@ -174,7 +189,10 @@ async function fixture(): Promise<string> {
     JSON.stringify({
       version: 1,
       files: {
-        'src/home.ts': { fingerprint: 'sha256:test', messageIds: ['保存', '退出'] },
+        'src/home.ts': {
+          fingerprint: 'sha256:test',
+          messageIds: ['保存', '退出'],
+        },
       },
       messages: {
         保存: {

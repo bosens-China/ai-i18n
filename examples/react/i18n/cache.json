@@ -7,7 +7,7 @@
       ]
     },
     "src/App.tsx": {
-      "fingerprint": "sha256:7229e0b26903d47963cb233b2bf59e7895c4b07f236c9be6e0878612d02dc343",
+      "fingerprint": "sha256:07cb538c5217a2ab8ae3bf6c48eb29ba085dafe18da1a3ac4cbe7a725f6e138d",
       "messageIds": [
         "交互式语言切换演示",
         "切换后，这段文案会立即更新。",

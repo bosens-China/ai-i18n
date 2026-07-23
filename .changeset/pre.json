@@ -2,7 +2,6 @@
   "mode": "pre",
   "tag": "alpha",
   "initialVersions": {
-    "@ai-i18n/example-mixed": "0.0.0",
     "@ai-i18n/example-react": "0.0.0",
     "@ai-i18n/example-vanilla": "0.0.0",
     "@ai-i18n/example-vue": "0.0.0",
@@ -11,9 +10,7 @@
     "@ai-i18n/eslint-plugin": "0.0.0",
     "@ai-i18n/mcp": "0.0.0",
     "@ai-i18n/openai": "0.0.0",
-    "@ai-i18n/react": "0.0.0",
-    "@ai-i18n/vite": "0.0.0",
-    "@ai-i18n/vue": "0.0.0"
+    "@ai-i18n/vite": "0.0.0"
   },
   "changesets": []
 }

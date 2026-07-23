@@ -58,6 +58,7 @@ export class ProjectState {
     string,
     readonly TranslationHookBinding[]
   >();
+  private readonly autoImportRuntime = new Set<string>();
 
   constructor(
     readonly root: string,
@@ -91,6 +92,7 @@ export class ProjectState {
       analysisLang?: AnalysisLanguage;
       mapLocation?: (location: SourceLocation) => SourceLocation;
       translationHooks?: readonly TranslationHookBinding[];
+      autoImportRuntime?: boolean;
     } = {},
   ): ProjectUpdate | null {
     const moduleId = this.normalizeId(id);
@@ -111,6 +113,8 @@ export class ProjectState {
     } else {
       this.translationHooks.delete(moduleId);
     }
+    if (options.autoImportRuntime) this.autoImportRuntime.add(moduleId);
+    else this.autoImportRuntime.delete(moduleId);
     const affectedModuleIds = this.refresh(moduleId);
     return {
       moduleId,
@@ -146,6 +150,7 @@ export class ProjectState {
     this.fingerprints.delete(moduleId);
     this.locationMappers.delete(moduleId);
     this.translationHooks.delete(moduleId);
+    this.autoImportRuntime.delete(moduleId);
     const affected = dependents.flatMap((dependent) => this.refresh(dependent));
     return [...new Set([moduleId, ...affected])];
   }
@@ -175,6 +180,7 @@ export class ProjectState {
     this.fingerprints.clear();
     this.locationMappers.clear();
     this.translationHooks.clear();
+    this.autoImportRuntime.clear();
   }
 
   hydrateCache(cache: CacheFileV1): string[] {
@@ -345,6 +351,7 @@ export class ProjectState {
         module,
         undefined,
         this.translationHooks.get(moduleId),
+        this.autoImportRuntime.has(moduleId),
       );
       const mapLocation = this.locationMappers.get(moduleId);
       this.modules.set(

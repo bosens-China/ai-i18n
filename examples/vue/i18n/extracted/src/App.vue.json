@@ -4,8 +4,8 @@
       "id": "Composition API 与 Vite extractor 共享 Runtime",
       "locations": [
         {
-          "column": 25,
-          "line": 16
+          "column": 11,
+          "line": 18
         }
       ],
       "source": "Composition API 与 Vite extractor 共享 Runtime",
@@ -18,7 +18,7 @@
       "locations": [
         {
           "column": 13,
-          "line": 15
+          "line": 16
         }
       ],
       "source": "Vue 示例",
@@ -31,7 +31,7 @@
       "locations": [
         {
           "column": 44,
-          "line": 19
+          "line": 22
         }
       ],
       "source": "交互式语言切换演示",
@@ -44,7 +44,7 @@
       "locations": [
         {
           "column": 15,
-          "line": 32
+          "line": 35
         }
       ],
       "source": "切换语言",
@@ -57,7 +57,7 @@
       "locations": [
         {
           "column": 16,
-          "line": 50
+          "line": 53
         }
       ],
       "source": "响应式文案会随语言立即更新",
@@ -70,7 +70,7 @@
       "locations": [
         {
           "column": 15,
-          "line": 22
+          "line": 25
         }
       ],
       "source": "当前语言",
@@ -83,7 +83,7 @@
       "locations": [
         {
           "column": 15,
-          "line": 48
+          "line": 51
         }
       ],
       "source": "文案变化",
@@ -96,7 +96,7 @@
       "locations": [
         {
           "column": 19,
-          "line": 51
+          "line": 54
         }
       ],
       "source": "模板会自动响应 Runtime 状态。",
@@ -109,7 +109,7 @@
       "locations": [
         {
           "column": 19,
-          "line": 34
+          "line": 37
         }
       ],
       "source": "语言",

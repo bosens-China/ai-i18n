@@ -2,11 +2,7 @@ import fs from 'node:fs';
 import type { LangOption } from '@ai-i18n/core';
 import { normalizePath } from 'vite';
 import type { NormalizedAiI18nOptions } from './project-state.js';
-import type {
-  SourceExtraction,
-  SourceExtractor,
-  TranslationHookBinding,
-} from './extractor.js';
+import type { SourceExtraction, TranslationHookBinding } from './extractor.js';
 
 export function normalizeOptions(options: {
   sourceLang: string;
@@ -62,17 +58,6 @@ export function registrationImportOffset(
   return offset;
 }
 
-export function extractSource(
-  code: string,
-  id: string,
-  extractors: readonly SourceExtractor[],
-  isDefaultSource: boolean,
-): SourceExtraction | null | undefined {
-  const extractor = extractors.find((candidate) => candidate.test(id));
-  if (extractor) return extractor.extract(code, id);
-  return isDefaultSource ? undefined : null;
-}
-
 export function shouldIgnoreSource(id: string): boolean {
   const query = id.includes('?')
     ? new URLSearchParams(id.slice(id.indexOf('?') + 1))
@@ -92,17 +77,17 @@ export function shouldIgnoreSource(id: string): boolean {
 export function sourceUpdateOptions(
   extraction: SourceExtraction | undefined,
   sourceCode: string,
-  globalTranslationHooks: readonly TranslationHookBinding[] = [],
+  translationHooks: readonly TranslationHookBinding[] = [],
+  autoImportRuntime = false,
 ) {
-  const translationHooks = [
-    ...globalTranslationHooks,
-    ...(extraction?.translationHooks ?? []),
-  ];
-  if (!extraction && !translationHooks.length) return undefined;
+  if (!extraction && !translationHooks.length && !autoImportRuntime) {
+    return undefined;
+  }
   return {
     sourceCode,
     analysisLang: extraction?.analysisLang,
     mapLocation: extraction?.mapLocation,
     translationHooks,
+    autoImportRuntime,
   };
 }

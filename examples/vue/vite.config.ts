@@ -1,6 +1,6 @@
-import { aiI18n, html } from '@ai-i18n/vite';
-import { vue as aiI18nVue } from '@ai-i18n/vue/vite';
+import { aiI18n } from '@ai-i18n/vite';
 import { defineConfig } from 'vite';
+import AutoImport from 'unplugin-auto-import/vite';
 import vue from '@vitejs/plugin-vue';
 
 export default defineConfig({
@@ -11,8 +11,9 @@ export default defineConfig({
         { value: 'zh-CN', label: '中文' },
         { value: 'en-US', label: 'English' },
       ],
-      extractors: [aiI18nVue(), html()],
+      html: true,
     }),
+    AutoImport({ imports: ['vue'], dts: false }),
     vue(),
   ],
 });

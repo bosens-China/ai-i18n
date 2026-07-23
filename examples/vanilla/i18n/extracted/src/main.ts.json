@@ -31,7 +31,7 @@
       "locations": [
         {
           "column": 17,
-          "line": 47
+          "line": 50
         }
       ],
       "source": "切换后，这段文案会立即更新。",
@@ -70,7 +70,7 @@
       "locations": [
         {
           "column": 16,
-          "line": 45
+          "line": 48
         }
       ],
       "source": "文案变化",
@@ -96,7 +96,7 @@
       "locations": [
         {
           "column": 20,
-          "line": 48
+          "line": 51
         }
       ],
       "source": "订阅 Runtime 后重新渲染原生 DOM。",

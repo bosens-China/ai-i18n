@@ -5,7 +5,7 @@
       "locations": [
         {
           "column": 49,
-          "line": 17
+          "line": 15
         }
       ],
       "source": "交互式语言切换演示",
@@ -18,7 +18,7 @@
       "locations": [
         {
           "column": 19,
-          "line": 50
+          "line": 48
         }
       ],
       "source": "切换后，这段文案会立即更新。",
@@ -31,7 +31,7 @@
       "locations": [
         {
           "column": 15,
-          "line": 30
+          "line": 28
         }
       ],
       "source": "切换语言",
@@ -44,7 +44,7 @@
       "locations": [
         {
           "column": 15,
-          "line": 20
+          "line": 18
         }
       ],
       "source": "当前语言",
@@ -57,7 +57,7 @@
       "locations": [
         {
           "column": 15,
-          "line": 47
+          "line": 45
         }
       ],
       "source": "文案变化",
@@ -70,7 +70,7 @@
       "locations": [
         {
           "column": 9,
-          "line": 57
+          "line": 55
         }
       ],
       "source": "由 useI18n 实时订阅 Runtime",
@@ -83,7 +83,7 @@
       "locations": [
         {
           "column": 16,
-          "line": 49
+          "line": 47
         }
       ],
       "source": "让产品自然地说每一种语言",
@@ -96,7 +96,7 @@
       "locations": [
         {
           "column": 13,
-          "line": 11
+          "line": 9
         }
       ],
       "source": "语言切换，应该一眼可见",
@@ -109,7 +109,7 @@
       "locations": [
         {
           "column": 11,
-          "line": 13
+          "line": 11
         }
       ],
       "source": "这个示例把当前语言、切换动作和文案变化放在同一个视图里。",

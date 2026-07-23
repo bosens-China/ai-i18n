@@ -20,6 +20,7 @@ export interface TranslationHookBinding {
   module: string;
   hook: string;
   property: string;
+  autoImport?: boolean;
 }
 
 export interface SourceLocation {
@@ -67,6 +68,7 @@ export function extractMessages(
   module: Module,
   runtimeModuleId = AI_I18N_VIRTUAL_MODULE_ID,
   translationHooks: readonly TranslationHookBinding[] = [],
+  autoImportRuntime = false,
 ): ExtractResult {
   const messages = new Map<string, ExtractedMessage>();
   const warnings: ExtractWarning[] = module.diagnostics.map((diagnostic) => ({
@@ -107,7 +109,11 @@ export function extractMessages(
     translationObjects,
   );
 
-  if (!translateSymbols.size && !translationObjects.size) {
+  if (
+    !translateSymbols.size &&
+    !translationObjects.size &&
+    !autoImportRuntime
+  ) {
     return { messages: [], warnings, pending };
   }
 
@@ -120,6 +126,7 @@ export function extractMessages(
           translateSymbols,
           translationObjects,
           valueWrappers,
+          autoImportRuntime,
         )
       ) {
         return;
@@ -174,6 +181,13 @@ function collectHookTranslationSymbols(
 ): void {
   if (!bindings.length) return;
   const hookProperties = new Map<YukuSymbol, Set<string>>();
+  const autoImports = new Map<string, Set<string>>();
+  for (const binding of bindings) {
+    if (!binding.autoImport) continue;
+    const properties = autoImports.get(binding.hook) ?? new Set<string>();
+    properties.add(binding.property);
+    autoImports.set(binding.hook, properties);
+  }
   for (const item of module.imports) {
     if (item.typeOnly || !item.local) continue;
     for (const binding of bindings) {
@@ -184,7 +198,7 @@ function collectHookTranslationSymbols(
       hookProperties.set(item.local, properties);
     }
   }
-  if (!hookProperties.size) return;
+  if (!hookProperties.size && !autoImports.size) return;
 
   module.walk({
     VariableDeclarator(node) {
@@ -197,7 +211,7 @@ function collectHookTranslationSymbols(
       const hookSymbol = module.symbolOf(node.init.callee);
       const properties = hookSymbol
         ? hookProperties.get(hookSymbol)
-        : undefined;
+        : autoImports.get(node.init.callee.name);
       if (!properties) return;
       if (node.id.type === 'Identifier') {
         const symbol = module.symbolOf(node.id);
@@ -226,7 +240,16 @@ function isTranslationCallee(
   translateSymbols: ReadonlySet<YukuSymbol>,
   translationObjects: ReadonlyMap<YukuSymbol, ReadonlySet<string>>,
   valueWrappers: ReadonlySet<YukuSymbol>,
+  autoImportRuntime: boolean,
 ): boolean {
+  if (
+    autoImportRuntime &&
+    node.type === 'Identifier' &&
+    node.name === 't' &&
+    !module.symbolOf(node)
+  ) {
+    return true;
+  }
   const symbol = valueSymbol(node, module, valueWrappers);
   if (symbol && translateSymbols.has(symbol)) return true;
   if (node.type !== 'MemberExpression') return false;
@@ -244,6 +267,25 @@ function isTranslationCallee(
       ? node.property.name
       : null;
   return property !== null && properties.has(property);
+}
+
+export function findUnboundCalls(
+  module: Module,
+  names: ReadonlySet<string>,
+): string[] {
+  const found = new Set<string>();
+  module.walk({
+    CallExpression(node) {
+      if (
+        node.callee.type === 'Identifier' &&
+        names.has(node.callee.name) &&
+        !module.symbolOf(node.callee)
+      ) {
+        found.add(node.callee.name);
+      }
+    },
+  });
+  return [...found];
 }
 
 /** Vue 编译模板时会生成 `_unref(t)(...)`，这里透传到真正的 Hook symbol。 */

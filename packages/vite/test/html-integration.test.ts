@@ -4,21 +4,24 @@ import path from 'node:path';
 import type { Translator } from '@ai-i18n/core';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { build } from 'vite';
-import { aiI18n, html } from '../src';
+import { aiI18n } from '../src';
+import { buildOutputItems } from './build-output';
 
 const tempDirs: string[] = [];
 
 afterEach(async () => {
   await Promise.all(
-    tempDirs.splice(0).map((directory) =>
-      fs.rm(directory, { recursive: true, force: true }),
-    ),
+    tempDirs
+      .splice(0)
+      .map((directory) => fs.rm(directory, { recursive: true, force: true })),
   );
 });
 
 describe('HTML extractor integration', () => {
   it('transforms a Vite HTML entry and writes translated protocol files', async () => {
-    const temporaryRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'ai-i18n-html-'));
+    const temporaryRoot = await fs.mkdtemp(
+      path.join(os.tmpdir(), 'ai-i18n-html-'),
+    );
     const root = await fs.realpath(temporaryRoot);
     tempDirs.push(root);
     await fs.mkdir(path.join(root, 'src'));
@@ -28,7 +31,7 @@ describe('HTML extractor integration', () => {
        <body><input placeholder="t('请输入')"><script type="module" src="/src/main.ts"></script></body></html>`,
     );
     await fs.writeFile(path.join(root, 'src/main.ts'), 'console.log("ready")');
-    const translator: Translator = vi.fn(async (requests) =>
+    const translator: Translator = vi.fn<Translator>(async (requests) =>
       requests.map((request) => ({
         messageId: request.messageId,
         locale: request.locale,
@@ -54,24 +57,25 @@ describe('HTML extractor integration', () => {
             { value: 'zh-CN', label: '中文' },
             { value: 'en-US', label: 'English' },
           ],
-          extractors: [html()],
+          html: true,
           translator,
           provider: { batchLength: 12_000, strict: true },
         }),
       ],
       build: { write: false },
     });
-    const outputs = Array.isArray(output) ? output : [output];
-    const htmlAsset = outputs
-      .flatMap((item) => item.output)
-      .find((item) => item.type === 'asset' && item.fileName === 'index.html');
-    const clientCode = outputs
-      .flatMap((item) => item.output)
+    const outputItems = buildOutputItems(output);
+    const htmlAsset = outputItems.find(
+      (item) => item.type === 'asset' && item.fileName === 'index.html',
+    );
+    const clientCode = outputItems
       .filter((item) => item.type === 'chunk')
       .map((item) => item.code)
       .join('\n');
     expect(htmlAsset?.type).toBe('asset');
-    const builtHtml = String(htmlAsset && 'source' in htmlAsset ? htmlAsset.source : '');
+    const builtHtml = String(
+      htmlAsset && 'source' in htmlAsset ? htmlAsset.source : '',
+    );
 
     expect(builtHtml).toContain('data-ai-i18n-text=');
     expect(builtHtml).toContain('data-ai-i18n-attr-placeholder=');
@@ -82,24 +86,36 @@ describe('HTML extractor integration', () => {
     expect(clientCode).toContain('请输入');
     expect(clientCode).toContain('Type here');
     expect(translator).toHaveBeenCalled();
-    expect(await readJson(path.join(root, 'i18n/extracted/index.html.json'))).toMatchObject({
+    expect(
+      await readJson(path.join(root, 'i18n/extracted/index.html.json')),
+    ).toMatchObject({
       source: 'index.html',
       messages: [
         { id: '请输入', translations: { 'en-US': 'Type here' } },
         { id: '首页', translations: { 'en-US': 'Home' } },
       ],
     });
-    expect(await readJson(path.join(root, 'i18n/locales/en-US.json'))).toMatchObject({
+    expect(
+      await readJson(path.join(root, 'i18n/locales/en-US.json')),
+    ).toMatchObject({
       messages: { 首页: 'Home', 请输入: 'Type here' },
     });
   });
 
   it('keeps multiple HTML entries isolated', async () => {
-    const temporaryRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'ai-i18n-html-'));
+    const temporaryRoot = await fs.mkdtemp(
+      path.join(os.tmpdir(), 'ai-i18n-html-'),
+    );
     const root = await fs.realpath(temporaryRoot);
     tempDirs.push(root);
-    await fs.writeFile(path.join(root, 'index.html'), `<title>t('首页')</title>`);
-    await fs.writeFile(path.join(root, 'admin.html'), `<title>t('管理')</title>`);
+    await fs.writeFile(
+      path.join(root, 'index.html'),
+      `<title>t('首页')</title>`,
+    );
+    await fs.writeFile(
+      path.join(root, 'admin.html'),
+      `<title>t('管理')</title>`,
+    );
 
     const output = await build({
       root,
@@ -115,7 +131,7 @@ describe('HTML extractor integration', () => {
         aiI18n({
           sourceLang: 'zh-CN',
           locales: [{ value: 'zh-CN', label: '中文' }],
-          extractors: [html()],
+          html: true,
         }),
       ],
       build: {
@@ -128,21 +144,25 @@ describe('HTML extractor integration', () => {
         },
       },
     });
-    const assets = (Array.isArray(output) ? output : [output])
-      .flatMap((item) => item.output)
-      .filter((item) => item.type === 'asset');
+    const assets = buildOutputItems(output).filter(
+      (item) => item.type === 'asset',
+    );
 
-    expect(assets.find((item) => item.fileName === 'index.html')?.source).toContain(
-      'data-ai-i18n-text=',
-    );
-    expect(assets.find((item) => item.fileName === 'admin.html')?.source).toContain(
-      'data-ai-i18n-text=',
-    );
-    expect(await readJson(path.join(root, 'i18n/extracted/index.html.json'))).toMatchObject({
+    expect(
+      assets.find((item) => item.fileName === 'index.html')?.source,
+    ).toContain('data-ai-i18n-text=');
+    expect(
+      assets.find((item) => item.fileName === 'admin.html')?.source,
+    ).toContain('data-ai-i18n-text=');
+    expect(
+      await readJson(path.join(root, 'i18n/extracted/index.html.json')),
+    ).toMatchObject({
       source: 'index.html',
       messages: [{ id: '首页' }],
     });
-    expect(await readJson(path.join(root, 'i18n/extracted/admin.html.json'))).toMatchObject({
+    expect(
+      await readJson(path.join(root, 'i18n/extracted/admin.html.json')),
+    ).toMatchObject({
       source: 'admin.html',
       messages: [{ id: '管理' }],
     });

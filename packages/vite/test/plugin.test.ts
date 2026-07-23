@@ -3,8 +3,8 @@ import os from 'node:os';
 import path from 'node:path';
 import type { TranslationResult, Translator } from '@ai-i18n/core';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import type { ResolvedConfig } from 'vite';
-import { aiI18n, type AiI18nOptions, type SourceExtractor } from '../src/index';
+import type { Plugin, ResolvedConfig } from 'vite';
+import { aiI18n, type AiI18nOptions } from '../src/index';
 
 const tempDirs: string[] = [];
 let unitDirectoryIndex = 0;
@@ -53,7 +53,7 @@ describe('@ai-i18n/vite plugin', () => {
 
   it('translates in the background and sends a targeted runtime update', async () => {
     let finish!: () => void;
-    const translator: Translator = vi.fn(
+    const translator: Translator = vi.fn<Translator>(
       (requests) =>
         new Promise<TranslationResult[]>((resolve) => {
           finish = () =>
@@ -169,56 +169,119 @@ describe('@ai-i18n/vite plugin', () => {
     ).toBeNull();
   });
 
-  it('analyzes JSX and TSX as framework-neutral source files', async () => {
-    const { transform } = setupPlugin();
-    const jsx = await transform(
-      "import { t } from 'virtual:ai-i18n'; export const view = <p>{t('JSX 文案')}</p>",
-      '/workspace/src/View.jsx',
+  it('auto-imports the Vanilla runtime without changing local bindings', async () => {
+    const { transform } = setupPlugin([], undefined, options, [
+      { name: 'unplugin-auto-import' },
+    ]);
+    const result = await transform(
+      "t('自动导入'); setLang('en-US')",
+      '/workspace/src/main.ts',
     );
-    const tsx = await transform(
-      "import { t } from 'virtual:ai-i18n'; export const view = <p>{t('TSX 文案')}</p>",
+
+    expect(result?.code).toContain(
+      'import { t, setLang } from "virtual:ai-i18n";',
+    );
+    expect(result?.code).toContain('register?module=src%2Fmain.ts');
+  });
+
+  it('keeps auto import disabled when the host plugin is absent', async () => {
+    const { transform } = setupPlugin();
+    await expect(
+      transform("t('需要显式导入')", '/workspace/src/main.ts'),
+    ).resolves.toBeNull();
+  });
+
+  it('allows auto import detection to be forced in either direction', async () => {
+    const forcedOn = setupPlugin([], undefined, {
+      ...options,
+      autoImport: true,
+    });
+    expect(
+      await forcedOn.transform("t('强制开启')", '/workspace/src/forced-on.ts'),
+    ).not.toBeNull();
+
+    const forcedOff = setupPlugin(
+      [],
+      undefined,
+      { ...options, autoImport: false },
+      [{ name: 'unplugin-auto-import' }],
+    );
+    await expect(
+      forcedOff.transform("t('强制关闭')", '/workspace/src/forced-off.ts'),
+    ).resolves.toBeNull();
+  });
+
+  it('does not treat JSX as Vanilla source', async () => {
+    const { transform } = setupPlugin();
+    await expect(
+      transform(
+        "export const view = <p>{t('JSX 文案')}</p>",
+        '/workspace/src/View.jsx',
+      ),
+    ).resolves.toBeNull();
+  });
+
+  it('detects Vue JSX and auto-imports its Hook', async () => {
+    const { transform } = setupPlugin([], undefined, options, [
+      { name: 'vite:vue' },
+      { name: 'vite:vue-jsx' },
+      { name: 'unplugin-auto-import' },
+    ]);
+    const vue = await transform(
+      `const { t } = useI18n()
+export const View = () => <p>{t('Vue JSX')}</p>`,
       '/workspace/src/View.tsx',
     );
 
-    expect(jsx?.code).toContain('register?module=src%2FView.jsx');
-    expect(tsx?.code).toContain('register?module=src%2FView.tsx');
+    expect(vue?.code).toContain('import { useI18n } from "virtual:ai-i18n";');
+    expect(vue?.code).toContain('register?module=src%2FView.tsx');
   });
 
-  it('distinguishes Vue and React JSX Hooks by import binding', async () => {
-    const { transform } = setupPlugin([], undefined, {
-      ...options,
-      extractors: [
-        hookSemantics('vue', '@ai-i18n/vue'),
-        hookSemantics('react', '@ai-i18n/react'),
-      ],
-    });
+  it('keeps the explicit Hook import when auto import is disabled', async () => {
+    const { transform } = setupPlugin([], undefined, options, [
+      { name: 'vite:vue' },
+    ]);
     const vue = await transform(
-      `import { useI18n } from '@ai-i18n/vue'
+      `import { useI18n } from 'virtual:ai-i18n'
 const { t } = useI18n()
-export const View = () => <p>{t('Vue JSX')}</p>`,
-      '/workspace/src/FeatureA.tsx',
-    );
-    const react = await transform(
-      `import { useI18n } from '@ai-i18n/react'
-const { t } = useI18n()
-export const View = () => <p>{t('React JSX')}</p>`,
-      '/workspace/src/FeatureB.tsx',
+export const label = t('显式 Hook')`,
+      '/workspace/src/useLabel.ts',
     );
 
-    expect(vue?.code).toContain('register?module=src%2FFeatureA.tsx');
-    expect(react?.code).toContain('register?module=src%2FFeatureB.tsx');
+    expect(vue?.code).toContain("import { useI18n } from 'virtual:ai-i18n'");
+    expect(vue?.code).not.toContain(
+      'import { useI18n } from "virtual:ai-i18n";',
+    );
+    expect(vue?.code).toContain('register?module=src%2FuseLabel.ts');
+  });
+
+  it('detects React JSX and auto-imports its Hook', async () => {
+    const { transform } = setupPlugin([], undefined, options, [
+      { name: 'vite:react-babel' },
+      { name: 'unplugin-auto-import' },
+    ]);
+    const react = await transform(
+      `const { t } = useI18n()
+export const View = () => <p>{t('React JSX')}</p>`,
+      '/workspace/src/View.tsx',
+    );
+
+    expect(react?.code).toContain('import { useI18n } from "virtual:ai-i18n";');
+    expect(react?.code).toContain('register?module=src%2FView.tsx');
   });
 
   it('reports dynamic arguments with source locations', async () => {
     const warnings: unknown[] = [];
-    const { transform } = setupPlugin(warnings);
+    const { transform } = setupPlugin(warnings, undefined, options, [
+      { name: 'unplugin-auto-import' },
+    ]);
     const result = await transform(
-      "import { t } from 'virtual:ai-i18n';\nt(props.label)",
+      't(props.label)',
       '/workspace/src/dynamic.ts',
     );
-    expect(result).toBeNull();
+    expect(result?.code).toContain('import { t } from "virtual:ai-i18n";');
     expect(warnings).toMatchObject([
-      { id: '/workspace/src/dynamic.ts', loc: { line: 2, column: 0 } },
+      { id: '/workspace/src/dynamic.ts', loc: { line: 1, column: 0 } },
     ]);
   });
 
@@ -357,18 +420,6 @@ export const View = () => <p>{t('React JSX')}</p>`,
   });
 });
 
-function hookSemantics(kind: string, module: string): SourceExtractor {
-  return {
-    kind,
-    translationHooks: [{ module, hook: 'useI18n', property: 't' }],
-    test: () => false,
-    extract: (code) => ({
-      analysisCode: code,
-      mapLocation: (location) => location,
-    }),
-  };
-}
-
 function setupPlugin(
   warnings: unknown[] = [],
   resolve: (
@@ -376,6 +427,7 @@ function setupPlugin(
     importer: string,
   ) => Promise<{ id: string; external?: boolean } | null> = async () => null,
   pluginOptions: AiI18nOptions = options,
+  vitePlugins: Plugin[] = [],
 ) {
   const directory = path.join(
     os.tmpdir(),
@@ -384,6 +436,7 @@ function setupPlugin(
   tempDirs.push(directory);
   const plugin = aiI18n({
     ...pluginOptions,
+    dts: false,
     directory,
     cleanup: {
       ...pluginOptions.cleanup,
@@ -393,7 +446,8 @@ function setupPlugin(
   callHook<void>(plugin.configResolved, {
     root: '/workspace',
     command: 'serve',
-  } as ResolvedConfig);
+    plugins: vitePlugins,
+  } as unknown as ResolvedConfig);
   const handler = objectHandler<
     (
       this: unknown,

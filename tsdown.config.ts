@@ -2,7 +2,7 @@ import { defineConfig } from 'tsdown';
 
 export default defineConfig({
   workspace: { include: 'packages/*' },
-  entry: ['src/{index,vite,vue,client,runtime,bin}.ts'],
+  entry: ['src/{index,vite,vue,react,client,runtime,bin}.ts'],
   format: 'esm',
   platform: 'neutral',
   target: 'es2022',

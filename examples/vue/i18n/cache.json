@@ -7,7 +7,7 @@
       ]
     },
     "src/App.vue": {
-      "fingerprint": "sha256:395bf86b7f977278de7f074b3993377ef4f2d4d2bf1c8e30a6abda67edf21f6d",
+      "fingerprint": "sha256:5c7b146cadffd95947f35ae88089a9bfa654333787325903ba8138fc5fc08b7a",
       "messageIds": [
         "Composition API 与 Vite extractor 共享 Runtime",
         "Vue 示例",

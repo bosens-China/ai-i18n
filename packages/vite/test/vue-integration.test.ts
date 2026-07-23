@@ -3,10 +3,11 @@ import os from 'node:os';
 import path from 'node:path';
 import type { Translator } from '@ai-i18n/core';
 import vuePlugin from '@vitejs/plugin-vue';
+import vueJsx from '@vitejs/plugin-vue-jsx';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { build } from 'vite';
-import { aiI18n } from '@ai-i18n/vite';
-import { vue } from '../src/vite';
+import { aiI18n } from '../src';
+import { buildOutputItems } from './build-output';
 
 const tempDirs: string[] = [];
 
@@ -18,12 +19,11 @@ afterEach(async () => {
   );
 });
 
-describe('@ai-i18n/vue Vite integration', () => {
-  it('builds after the extractor and writes SFC protocol files', async () => {
-    const temporaryRoot = await fs.mkdtemp(
-      path.join(os.tmpdir(), 'ai-i18n-vue-'),
+describe('Vue Vite integration', () => {
+  it('auto-detects Vue and extracts SFC, TS, and TSX calls', async () => {
+    const root = await fs.realpath(
+      await fs.mkdtemp(path.join(os.tmpdir(), 'ai-i18n-vue-')),
     );
-    const root = await fs.realpath(temporaryRoot);
     tempDirs.push(root);
     await fs.mkdir(path.join(root, 'src'));
     await fs.writeFile(
@@ -35,45 +35,41 @@ describe('@ai-i18n/vue Vite integration', () => {
       "import { createApp } from 'vue'; import App from './App.vue'; createApp(App).mount('#app');",
     );
     await fs.writeFile(
-      path.join(root, 'src/External.vue'),
-      `<script lang="ts" src="./external.ts"></script>
-<template><p>{{ label }}</p></template>`,
+      path.join(root, 'src/useLabel.ts'),
+      `export function useLabel() {
+  const i18n = useI18n()
+  return i18n.t('Vue TS')
+}`,
     );
     await fs.writeFile(
-      path.join(root, 'src/external.ts'),
-      `import { useI18n } from '@ai-i18n/vue'
-export default {
+      path.join(root, 'src/VueJsxPanel.tsx'),
+      `import { defineComponent } from 'vue'
+export default defineComponent({
   setup() {
-    const i18n = useI18n()
-    return { label: i18n.t('外部脚本') }
+    const { t } = useI18n()
+    return () => <p>{t('Vue TSX')}</p>
   },
-}`,
+})`,
     );
     await fs.writeFile(
       path.join(root, 'src/App.vue'),
       `<script setup lang="ts">
-import { useI18n } from '@ai-i18n/vue'
-import External from './External.vue'
+import VueJsxPanel from './VueJsxPanel'
+import { useLabel } from './useLabel'
 const { t } = useI18n()
-const LABEL = '标题'
+const label = useLabel()
 </script>
 <template>
-  <h1>{{ t(LABEL) }}</h1>
-  <input :placeholder="t('请输入')">
-  <External />
-  <p>普通文本</p>
+  <h1>{{ t('Vue SFC') }}</h1>
+  <p>{{ label }}</p>
+  <VueJsxPanel />
 </template>`,
     );
-    const translator: Translator = vi.fn(async (requests) =>
+    const translator: Translator = vi.fn<Translator>(async (requests) =>
       requests.map((request) => ({
         messageId: request.messageId,
         locale: request.locale,
-        value:
-          request.source === '标题'
-            ? 'Title'
-            : request.source === '外部脚本'
-              ? 'External'
-              : 'Type here',
+        value: `EN:${request.source}`,
       })),
     );
 
@@ -85,14 +81,10 @@ const LABEL = '标题'
         alias: {
           '@ai-i18n/core': path.resolve('packages/core/src/index.ts'),
           '@ai-i18n/vite/runtime': path.resolve('packages/vite/src/runtime.ts'),
-          '@ai-i18n/vue': path.resolve('packages/vue/src/index.ts'),
-          vue: path.resolve(
-            'packages/vue/node_modules/vue/dist/vue.runtime.esm-bundler.js',
-          ),
+          '@ai-i18n/vite/vue': path.resolve('packages/vite/src/vue.ts'),
         },
       },
       plugins: [
-        vuePlugin(),
         aiI18n({
           sourceLang: 'zh-CN',
           defaultLang: 'en-US',
@@ -100,41 +92,46 @@ const LABEL = '标题'
             { value: 'zh-CN', label: '中文' },
             { value: 'en-US', label: 'English' },
           ],
-          extractors: [vue()],
           translator,
           provider: { batchLength: 12_000, strict: true },
         }),
+        { name: 'unplugin-auto-import' },
+        vuePlugin(),
+        vueJsx(),
       ],
-      build: { write: false },
+      build: {
+        write: false,
+        rollupOptions: {
+          external: /^vue(?:\/.*)?$/,
+        },
+      },
     });
-    const code = (Array.isArray(output) ? output : [output])
-      .flatMap((item) => item.output)
-      .filter((item) => item.type === 'chunk')
-      .map((item) => item.code)
-      .join('\n');
+    const code = chunks(output);
 
-    expect(code).toContain('Title');
-    expect(code).toContain('Type here');
-    expect(code).toContain('External');
-    expect(code).not.toContain('静态属性不提取');
+    expect(code).toContain('EN:Vue SFC');
+    expect(code).toContain('EN:Vue TS');
+    expect(code).toContain('EN:Vue TSX');
     expect(translator).toHaveBeenCalled();
     expect(
       await readJson(path.join(root, 'i18n/extracted/src/App.vue.json')),
-    ).toMatchObject({
-      source: 'src/App.vue',
-      messages: [
-        { id: '标题', locations: [{ line: 8 }] },
-        { id: '请输入', locations: [{ line: 9 }] },
-      ],
-    });
+    ).toMatchObject({ messages: [{ id: 'Vue SFC' }] });
     expect(
-      await readJson(path.join(root, 'i18n/extracted/src/external.ts.json')),
-    ).toMatchObject({
-      source: 'src/external.ts',
-      messages: [{ id: '外部脚本', locations: [{ line: 5 }] }],
-    });
+      await readJson(path.join(root, 'i18n/extracted/src/useLabel.ts.json')),
+    ).toMatchObject({ messages: [{ id: 'Vue TS' }] });
+    expect(
+      await readJson(
+        path.join(root, 'i18n/extracted/src/VueJsxPanel.tsx.json'),
+      ),
+    ).toMatchObject({ messages: [{ id: 'Vue TSX' }] });
   });
 });
+
+function chunks(output: Awaited<ReturnType<typeof build>>) {
+  return buildOutputItems(output)
+    .filter((item) => item.type === 'chunk')
+    .map((item) => item.code)
+    .join('\n');
+}
 
 async function readJson(file: string): Promise<Record<string, unknown>> {
   return JSON.parse(await fs.readFile(file, 'utf8')) as Record<string, unknown>;

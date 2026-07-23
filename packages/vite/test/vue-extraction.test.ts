@@ -1,18 +1,20 @@
 import { describe, expect, it } from 'vitest';
-import { analyzeModule, extractMessages } from '@ai-i18n/vite';
-import { vue } from '../src/vite';
+import { analyzeModule, extractMessages } from '../src';
+import {
+  extractFrameworkSource,
+  frameworkTranslationHooks,
+} from '../src/framework';
 
-describe('@ai-i18n/vue/vite', () => {
-  it('extracts bound script and template calls with original SFC locations', () => {
+describe('Vue source extraction', () => {
+  it('extracts script and template calls with original SFC locations', async () => {
     const source = `<script lang="ts">
 import { t as tr } from 'virtual:ai-i18n'
 export const scriptText = tr('脚本文案')
 </script>
 <script setup lang="ts">
-import { useI18n as useLocale } from '@ai-i18n/vue'
 const LABEL = '标题'
-const { t: translate } = useLocale()
-const i18n = useLocale()
+const { t: translate } = useI18n()
+const i18n = useI18n()
 const hookText = translate('Hook 文案')
 </script>
 <template>
@@ -20,8 +22,11 @@ const hookText = translate('Hook 文案')
   <p :title="i18n.t('提示')">普通文本</p>
   <span title="t('静态属性不提取')">普通 t('文本不提取')</span>
 </template>`;
-    const extractor = vue();
-    const extraction = extractor.extract(source, '/workspace/src/App.vue');
+    const extraction = (await extractFrameworkSource(
+      source,
+      '/workspace/src/App.vue',
+      'vue',
+    ))!;
     const result = extractMessages(
       analyzeModule(
         extraction.analysisCode,
@@ -30,7 +35,7 @@ const hookText = translate('Hook 文案')
         extraction.analysisLang,
       ),
       undefined,
-      extractor.translationHooks,
+      frameworkTranslationHooks('vue', true),
     );
     const messages = result.messages.map((message) => ({
       ...message,
@@ -52,9 +57,8 @@ const hookText = translate('Hook 文案')
     expect(extraction.registration?.offset).toBe(source.indexOf('\n'));
   });
 
-  it('respects template aliases and local shadowing', () => {
+  it('respects template aliases and local shadowing', async () => {
     const source = `<script setup lang="ts">
-import { useI18n } from '@ai-i18n/vue'
 const { t: translate } = useI18n()
 const items = [() => 'local']
 </script>
@@ -64,8 +68,11 @@ const items = [() => 'local']
   <p v-for="translate in items">{{ translate('循环局部不提取') }}</p>
   <Panel v-slot="{ translate }">{{ translate('插槽局部不提取') }}</Panel>
 </template>`;
-    const extractor = vue();
-    const extraction = extractor.extract(source, '/workspace/src/Scope.vue');
+    const extraction = (await extractFrameworkSource(
+      source,
+      '/workspace/src/Scope.vue',
+      'vue',
+    ))!;
     const result = extractMessages(
       analyzeModule(
         extraction.analysisCode,
@@ -74,7 +81,7 @@ const items = [() => 'local']
         extraction.analysisLang,
       ),
       undefined,
-      extractor.translationHooks,
+      frameworkTranslationHooks('vue', true),
     );
 
     expect(result.warnings).toEqual([]);
@@ -83,18 +90,20 @@ const items = [() => 'local']
     ]);
   });
 
-  it('keeps script and script-setup bindings in their actual scopes', () => {
+  it('keeps script and script-setup bindings in their actual scopes', async () => {
     const source = `<script lang="ts">
 const LABEL = '普通脚本'
 </script>
 <script setup lang="ts">
-import { useI18n } from '@ai-i18n/vue'
 const { t } = useI18n()
 const LABEL = 'setup 脚本'
 </script>
 <template>{{ t(LABEL) }}</template>`;
-    const extractor = vue();
-    const extraction = extractor.extract(source, '/workspace/src/Dual.vue');
+    const extraction = (await extractFrameworkSource(
+      source,
+      '/workspace/src/Dual.vue',
+      'vue',
+    ))!;
     const result = extractMessages(
       analyzeModule(
         extraction.analysisCode,
@@ -103,20 +112,21 @@ const LABEL = 'setup 脚本'
         extraction.analysisLang,
       ),
       undefined,
-      extractor.translationHooks,
+      frameworkTranslationHooks('vue', true),
     );
 
     expect(result.warnings).toEqual([]);
     expect(result.messages).toMatchObject([{ source: 'setup 脚本' }]);
   });
 
-  it('creates a script setup block when an SFC has no writable script', () => {
-    const extraction = vue().extract(
+  it('creates a script setup block when an SFC has no writable script', async () => {
+    const extraction = await extractFrameworkSource(
       `<template>{{ t('空脚本') }}</template>`,
       '/workspace/src/Empty.vue',
+      'vue',
     );
 
-    expect(extraction.registration).toEqual({
+    expect(extraction?.registration).toEqual({
       offset: 0,
       prefix: '<script setup>\n',
       suffix: '</script>\n',

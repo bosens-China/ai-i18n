@@ -9,7 +9,7 @@ afterEach(() => {
 describe('ProviderCoordinator', () => {
   it('uses the default debounce and reuses the same pending request', async () => {
     vi.useFakeTimers();
-    const translator: Translator = vi.fn(async (requests) =>
+    const translator: Translator = vi.fn<Translator>(async (requests) =>
       requests.map((request) => ({
         messageId: request.messageId,
         locale: request.locale,
@@ -31,7 +31,7 @@ describe('ProviderCoordinator', () => {
   });
 
   it('flushes a full batch immediately and keeps locales separate', async () => {
-    const translator: Translator = vi.fn(async (requests) =>
+    const translator: Translator = vi.fn<Translator>(async (requests) =>
       requests.map((request) => ({
         messageId: request.messageId,
         locale: request.locale,
@@ -59,10 +59,12 @@ describe('ProviderCoordinator', () => {
     await expect(third).resolves.toBe('ja-JP:三');
     expect(translator).toHaveBeenCalledTimes(2);
     expect(
-      vi.mocked(translator).mock.calls.map(([requests]) => [
-        requests.length,
-        ...new Set(requests.map((request) => request.locale)),
-      ]),
+      vi
+        .mocked(translator)
+        .mock.calls.map(([requests]) => [
+          requests.length,
+          ...new Set(requests.map((request) => request.locale)),
+        ]),
     ).toEqual([
       [2, 'en-US'],
       [1, 'ja-JP'],
@@ -72,7 +74,7 @@ describe('ProviderCoordinator', () => {
   it('limits concurrent translation batches', async () => {
     let active = 0;
     let peak = 0;
-    const translator: Translator = vi.fn(async (requests) => {
+    const translator: Translator = vi.fn<Translator>(async (requests) => {
       active += 1;
       peak = Math.max(peak, active);
       await new Promise((resolve) => setTimeout(resolve, 10));

@@ -4,6 +4,7 @@ import {
   AI_I18N_VIRTUAL_MODULE_ID,
   Analyzer,
   extractMessages,
+  findUnboundCalls,
   type Module,
   type ExtractWarningCode,
   type AnalysisLanguage,
@@ -18,16 +19,12 @@ export interface StaticArgsWarning {
   message: string;
 }
 
-const TRANSLATION_HOOKS: readonly TranslationHookBinding[] = [
-  { module: '@ai-i18n/vue', hook: 'useI18n', property: 't' },
-  { module: '@ai-i18n/react', hook: 'useI18n', property: 't' },
-];
-
 export function analyzeStaticArgs(
   code: string,
   filename: string,
   tsconfigPath?: string,
   lang?: AnalysisLanguage,
+  autoImport = false,
 ): StaticArgsWarning[] {
   const resolve = createImportResolver(tsconfigPath);
   const analyzer = new Analyzer({ resolve });
@@ -37,13 +34,14 @@ export function analyzeStaticArgs(
   );
   const entryPath = normalizeFilename(filename);
   const entry = analyzer.addFile(entryPath, code, lang ? { lang } : undefined);
-  if (!hasTranslationCandidate(entry)) return [];
+  if (!hasTranslationCandidate(entry, autoImport)) return [];
   loadDependencies(analyzer, entry, resolve);
   analyzer.link();
   return extractMessages(
     entry,
     AI_I18N_VIRTUAL_MODULE_ID,
-    TRANSLATION_HOOKS,
+    translationHooks(autoImport),
+    autoImport,
   ).warnings.map(({ code: warningCode, line, column, message }) => ({
     code: warningCode,
     line,
@@ -52,10 +50,28 @@ export function analyzeStaticArgs(
   }));
 }
 
-function hasTranslationCandidate(module: Module): boolean {
-  return module.imports.some(
-    (item) => !item.typeOnly && (item.name === 't' || item.name === 'useI18n'),
+function hasTranslationCandidate(module: Module, autoImport: boolean): boolean {
+  return (
+    module.imports.some(
+      (item) =>
+        !item.typeOnly && (item.name === 't' || item.name === 'useI18n'),
+    ) ||
+    (autoImport &&
+      findUnboundCalls(module, new Set(['t', 'useI18n'])).length > 0)
   );
+}
+
+function translationHooks(
+  autoImport: boolean,
+): readonly TranslationHookBinding[] {
+  return [
+    {
+      module: AI_I18N_VIRTUAL_MODULE_ID,
+      hook: 'useI18n',
+      property: 't',
+      autoImport,
+    },
+  ];
 }
 
 function loadDependencies(

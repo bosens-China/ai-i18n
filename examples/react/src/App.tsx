@@ -1,5 +1,3 @@
-import { useI18n } from '@ai-i18n/react';
-
 function App() {
   const { t, setLang, currentLang, langs } = useI18n();
   const currentLanguage = langs.find(({ value }) => value === currentLang);
@@ -7,7 +5,7 @@ function App() {
   return (
     <main className="page-shell">
       <header className="hero">
-        <p className="eyebrow">@ai-i18n/react · live runtime</p>
+        <p className="eyebrow">@ai-i18n/vite · React live runtime</p>
         <h1>{t('语言切换，应该一眼可见')}</h1>
         <p className="lede">
           {t('这个示例把当前语言、切换动作和文案变化放在同一个视图里。')}

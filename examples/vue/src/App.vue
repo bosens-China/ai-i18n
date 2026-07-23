@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { useI18n } from '@ai-i18n/vue';
 import { computed } from 'vue';
 
 const { t, setLang, currentLang, langs } = useI18n();
@@ -13,7 +12,7 @@ const currentLanguageLabel = computed(
 <template>
   <main class="page-shell">
     <header class="hero">
-      <p class="eyebrow">@ai-i18n/vue · reactive runtime</p>
+      <p class="eyebrow">@ai-i18n/vite · Vue reactive runtime</p>
       <h1>{{ t('Vue 示例') }}</h1>
       <p class="lede">
         {{ t('Composition API 与 Vite extractor 共享 Runtime') }}

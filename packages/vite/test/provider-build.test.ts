@@ -5,14 +5,15 @@ import type { Translator } from '@ai-i18n/core';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { build } from 'vite';
 import { aiI18n } from '../src';
+import { buildOutputItems } from './build-output';
 
 const tempDirs: string[] = [];
 
 afterEach(async () => {
   await Promise.all(
-    tempDirs.splice(0).map((directory) =>
-      fs.rm(directory, { recursive: true, force: true }),
-    ),
+    tempDirs
+      .splice(0)
+      .map((directory) => fs.rm(directory, { recursive: true, force: true })),
   );
 });
 
@@ -37,7 +38,7 @@ describe('@ai-i18n/vite provider build', () => {
       `import { t } from 'virtual:ai-i18n'; console.log(t('懒加载'));`,
     );
 
-    const translator: Translator = vi.fn(async (requests) =>
+    const translator: Translator = vi.fn<Translator>(async (requests) =>
       requests.map((request) => ({
         messageId: request.messageId,
         locale: request.locale,
@@ -73,10 +74,9 @@ describe('@ai-i18n/vite provider build', () => {
         lib: { entry: path.join(root, 'src/main.ts'), formats: ['es'] },
       },
     });
-    const outputs = Array.isArray(output) ? output : [output];
-    const chunks = outputs
-      .flatMap((item) => item.output)
-      .filter((item) => item.type === 'chunk');
+    const chunks = buildOutputItems(output).filter(
+      (item) => item.type === 'chunk',
+    );
     const code = chunks.map((item) => item.code).join('\n');
 
     expect(code).toContain('src/main.ts');
@@ -97,7 +97,9 @@ describe('@ai-i18n/vite provider build', () => {
         懒加载: { translations: { 'en-US': 'Lazy' } },
       },
     });
-    expect(await readJson(path.join(root, 'i18n/locales/en-US.json'))).toMatchObject({
+    expect(
+      await readJson(path.join(root, 'i18n/locales/en-US.json')),
+    ).toMatchObject({
       messages: { 首页: 'Home', 懒加载: 'Lazy' },
     });
   });

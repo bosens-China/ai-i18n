@@ -4,6 +4,7 @@ import { createVueAnalysisSource } from '../vue-sfc.js';
 
 interface RuleOptions {
   tsconfigPath?: string;
+  autoImport?: boolean;
 }
 
 export const tStaticArgs: Rule.RuleModule = {
@@ -15,7 +16,10 @@ export const tStaticArgs: Rule.RuleModule = {
     schema: [
       {
         type: 'object',
-        properties: { tsconfigPath: { type: 'string' } },
+        properties: {
+          tsconfigPath: { type: 'string' },
+          autoImport: { type: 'boolean' },
+        },
         additionalProperties: false,
       },
     ],
@@ -48,6 +52,7 @@ export const tStaticArgs: Rule.RuleModule = {
             context.filename,
             options.tsconfigPath,
             source.lang,
+            options.autoImport,
           );
           warnings = warnings.map((warning) => ({
             ...warning,

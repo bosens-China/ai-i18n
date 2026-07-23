@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { ESLint, RuleTester } from 'eslint';
+import { ESLint, RuleTester, type Linter } from 'eslint';
 import tseslint from 'typescript-eslint';
 import vueParser from 'vue-eslint-parser';
 import { describe, expect, it } from 'vitest';
@@ -56,8 +56,29 @@ describe('ai-i18n/t-static-args', () => {
     ]);
     expect(plugin.configs?.vue).toEqual([
       expect.objectContaining({
-        files: ['**/*.vue'],
-        rules: { 'ai-i18n/t-static-args': 'error' },
+        files: ['**/*.{js,mjs,cjs,ts,mts,cts,jsx,tsx,vue}'],
+        languageOptions: { globals: { useI18n: 'readonly' } },
+        rules: {
+          'ai-i18n/t-static-args': ['error', { autoImport: true }],
+        },
+      }),
+    ]);
+    expect(plugin.configs?.react).toEqual([
+      expect.objectContaining({
+        languageOptions: { globals: { useI18n: 'readonly' } },
+        rules: {
+          'ai-i18n/t-static-args': ['error', { autoImport: true }],
+        },
+      }),
+    ]);
+    expect(plugin.configs?.vanilla).toEqual([
+      expect.objectContaining({
+        languageOptions: {
+          globals: expect.objectContaining({ t: 'readonly' }),
+        },
+        rules: {
+          'ai-i18n/t-static-args': ['error', { autoImport: true }],
+        },
       }),
     ]);
   });
@@ -72,22 +93,20 @@ describe('ai-i18n/t-static-args', () => {
     };
     const code = [
       '<script setup>',
-      "import { useI18n } from '@ai-i18n/vue'",
+      "import { useI18n } from 'virtual:ai-i18n'",
       'const { t } = useI18n()',
       '</script>',
       '<template>{{ t(props.label) }}</template>',
     ].join('\n');
+    const recommended = plugin.configs!.recommended! as Linter.Config[];
+    const vue = plugin.configs!.vue! as Linter.Config[];
     const withoutVue = new ESLint({
       overrideConfigFile: true,
-      overrideConfig: [vueLanguage, ...plugin.configs!.recommended!],
+      overrideConfig: [vueLanguage, ...recommended],
     });
     const withVue = new ESLint({
       overrideConfigFile: true,
-      overrideConfig: [
-        vueLanguage,
-        ...plugin.configs!.recommended!,
-        ...plugin.configs!.vue!,
-      ],
+      overrideConfig: [vueLanguage, ...recommended, ...vue],
     });
 
     const [defaultResult] = await withoutVue.lintText(code, {
@@ -118,6 +137,10 @@ describe('ai-i18n/t-static-args', () => {
         filename: path.join(sourceRoot, 'other.ts'),
       },
       {
+        code: 't(props.label)',
+        filename: path.join(sourceRoot, 'unrelated-global.ts'),
+      },
+      {
         code: "import { t } from 'virtual:ai-i18n'; function run(t: (value: string) => string) { t(value) }; t('外层')",
         filename: path.join(sourceRoot, 'shadow.ts'),
       },
@@ -131,20 +154,22 @@ describe('ai-i18n/t-static-args', () => {
         filename: path.join(sourceRoot, 're-export.ts'),
       },
       {
-        code: "import { useI18n } from '@ai-i18n/vue'; const { t } = useI18n(); t('Vue 静态文案')",
+        code: "import { useI18n } from 'virtual:ai-i18n'; const { t } = useI18n(); t('Vue 静态文案')",
         filename: path.join(sourceRoot, 'vue-hook.ts'),
       },
       {
-        code: "import { useI18n } from '@ai-i18n/vue'; const { t } = useI18n(); export const View = () => <p>{t('Vue JSX')}</p>",
+        code: "const { t } = useI18n(); export const View = () => <p>{t('Vue JSX')}</p>",
         filename: path.join(sourceRoot, 'View.tsx'),
+        options: [{ autoImport: true }],
       },
       {
-        code: "import { useI18n as useTranslation } from '@ai-i18n/react'; const { t: tr } = useTranslation(); tr('React 静态文案')",
+        code: "import { useI18n as useTranslation } from 'virtual:ai-i18n'; const { t: tr } = useTranslation(); tr('React 静态文案')",
         filename: path.join(sourceRoot, 'react-hook.tsx'),
       },
       {
-        code: "import { useI18n } from '@ai-i18n/react'; const i18n = useI18n(); i18n.t('成员调用'); i18n['t']('计算成员')",
+        code: "const i18n = useI18n(); i18n.t('成员调用'); i18n['t']('计算成员')",
         filename: path.join(sourceRoot, 'react-object-hook.tsx'),
+        options: [{ autoImport: true }],
       },
       {
         code: "import { t } from 'virtual:ai-i18n'; t('保存', undefined)",
@@ -179,23 +204,26 @@ describe('ai-i18n/t-static-args', () => {
         errors: [{ messageId: 'dynamicArg' }],
       },
       {
-        code: "import { useI18n } from '@ai-i18n/vue'; const { t } = useI18n(); t(props.label)",
+        code: 'const { t } = useI18n(); t(props.label)',
         filename: path.join(sourceRoot, 'vue-hook-dynamic.ts'),
+        options: [{ autoImport: true }],
         errors: [{ messageId: 'dynamicArg' }],
       },
       {
-        code: "import { useI18n } from '@ai-i18n/vue'; const { t } = useI18n(); export const View = () => <p>{t(props.label)}</p>",
+        code: 'const { t } = useI18n(); export const View = () => <p>{t(props.label)}</p>',
         filename: path.join(sourceRoot, 'View.vue-dynamic.tsx'),
+        options: [{ autoImport: true }],
         errors: [{ messageId: 'dynamicArg' }],
       },
       {
-        code: "import { useI18n as useTranslation } from '@ai-i18n/react'; const { t: tr } = useTranslation(); tr(props.label)",
+        code: "import { useI18n as useTranslation } from 'virtual:ai-i18n'; const { t: tr } = useTranslation(); tr(props.label)",
         filename: path.join(sourceRoot, 'react-hook-dynamic.tsx'),
         errors: [{ messageId: 'dynamicArg' }],
       },
       {
-        code: "import { useI18n } from '@ai-i18n/react'; const i18n = useI18n(); i18n.t(props.label)",
+        code: 'const i18n = useI18n(); i18n.t(props.label)',
         filename: path.join(sourceRoot, 'react-object-hook-dynamic.tsx'),
+        options: [{ autoImport: true }],
         errors: [{ messageId: 'dynamicArg' }],
       },
     ],
@@ -206,7 +234,7 @@ describe('ai-i18n/t-static-args', () => {
       {
         code: [
           '<script setup lang="ts">',
-          "import { useI18n } from '@ai-i18n/vue'",
+          "import { useI18n } from 'virtual:ai-i18n'",
           'const { t } = useI18n()',
           '</script>',
           "<template><button :title=\"t('保存')\">{{ t('提交') }}</button></template>",
@@ -224,7 +252,7 @@ describe('ai-i18n/t-static-args', () => {
       {
         code: [
           '<script setup lang="ts">',
-          "import { useI18n } from '@ai-i18n/vue'",
+          "import { useI18n } from 'virtual:ai-i18n'",
           'const { t: translate } = useI18n()',
           'const items = [() => props.label]',
           '</script>',
@@ -240,7 +268,7 @@ describe('ai-i18n/t-static-args', () => {
       {
         code: [
           '<script setup lang="ts">',
-          "import { useI18n } from '@ai-i18n/vue'",
+          "import { useI18n } from 'virtual:ai-i18n'",
           'const { t } = useI18n()',
           't(props.label)',
           '</script>',
@@ -251,7 +279,7 @@ describe('ai-i18n/t-static-args', () => {
       {
         code: [
           '<script setup lang="ts">',
-          "import { useI18n } from '@ai-i18n/vue'",
+          "import { useI18n } from 'virtual:ai-i18n'",
           'const { t: tr } = useI18n()',
           '</script>',
           '<template>',
@@ -264,7 +292,7 @@ describe('ai-i18n/t-static-args', () => {
       {
         code: [
           '<script setup lang="ts">',
-          "import { useI18n } from '@ai-i18n/vue'",
+          "import { useI18n } from 'virtual:ai-i18n'",
           'const i18n = useI18n()',
           '</script>',
           '<template>{{ i18n.t(props.label) }}</template>',

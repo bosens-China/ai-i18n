@@ -1,4 +1,4 @@
-import { aiI18n, html } from '@ai-i18n/vite';
+import { aiI18n } from '@ai-i18n/vite';
 import { defineConfig } from 'vite';
 
 export default defineConfig({
@@ -9,7 +9,7 @@ export default defineConfig({
         { value: 'zh-CN', label: '中文' },
         { value: 'en-US', label: 'English' },
       ],
-      extractors: [html()],
+      html: true,
     }),
   ],
 });
