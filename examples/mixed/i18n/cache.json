@@ -1,7 +1,7 @@
 {
   "files": {
     "src/main.tsx": {
-      "fingerprint": "sha256:a13793c7c4ba1574bd802d5b0f5a116224a09c549e4004ea106ed0f5a6d25dd7",
+      "fingerprint": "sha256:d218a341f4120672654dff78dde2e07b58c813c4c8629c7f95fb288c77b6687a",
       "messageIds": []
     },
     "src/ReactPanel.tsx": {
@@ -9,7 +9,7 @@
       "messageIds": ["React 面板", "切换到中文", "当前语言"]
     },
     "src/vue/VueJsxPanel.tsx": {
-      "fingerprint": "sha256:acdc5c6b5ba08eb8e812955fc8574a964245c1d633b191567f60d8c39e1d7c2e",
+      "fingerprint": "sha256:fcc308e80ea7839d1dd26a18e634db2e7cf72703143ebd39049241744362a952",
       "messageIds": ["Vue JSX 面板", "切换到英文", "当前语言"]
     },
     "src/VuePanel.vue": {
