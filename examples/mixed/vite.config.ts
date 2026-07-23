@@ -1,5 +1,5 @@
 import { react as aiI18nReact } from '@ai-i18n/react/vite';
-import { aiI18n } from '@ai-i18n/vite';
+import { aiI18n, html } from '@ai-i18n/vite';
 import { vue as aiI18nVue } from '@ai-i18n/vue/vite';
 import react from '@vitejs/plugin-react';
 import vue from '@vitejs/plugin-vue';
@@ -14,7 +14,7 @@ export default defineConfig({
         { value: 'zh-CN', label: '中文' },
         { value: 'en-US', label: 'English' },
       ],
-      extractors: [aiI18nVue(), aiI18nReact()],
+      extractors: [aiI18nVue(), aiI18nReact(), html()],
     }),
     vue(),
     // Vue JSX 只声明自己的目录；其余 JSX 由 React 默认处理，无需特殊文件后缀。

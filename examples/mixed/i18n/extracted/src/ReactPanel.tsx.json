@@ -1,42 +1,42 @@
 {
   "messages": [
     {
-      "id": "React 面板",
+      "id": "三个框架共享同一份 Runtime 状态",
+      "locations": [
+        {
+          "column": 12,
+          "line": 11
+        }
+      ],
+      "source": "三个框架共享同一份 Runtime 状态",
+      "translations": {
+        "en-US": "Three frameworks share the same Runtime state"
+      }
+    },
+    {
+      "id": "任意入口切换，所有面板同时更新。",
+      "locations": [
+        {
+          "column": 15,
+          "line": 12
+        }
+      ],
+      "source": "任意入口切换，所有面板同时更新。",
+      "translations": {
+        "en-US": "Switch anywhere and every panel updates together."
+      }
+    },
+    {
+      "id": "文案变化",
       "locations": [
         {
           "column": 11,
-          "line": 8
+          "line": 9
         }
       ],
-      "source": "React 面板",
+      "source": "文案变化",
       "translations": {
-        "en-US": null
-      }
-    },
-    {
-      "id": "切换到中文",
-      "locations": [
-        {
-          "column": 9,
-          "line": 13
-        }
-      ],
-      "source": "切换到中文",
-      "translations": {
-        "en-US": null
-      }
-    },
-    {
-      "id": "当前语言",
-      "locations": [
-        {
-          "column": 9,
-          "line": 10
-        }
-      ],
-      "source": "当前语言",
-      "translations": {
-        "en-US": null
+        "en-US": "Copy changes"
       }
     }
   ],

@@ -4,6 +4,7 @@ import { createApp } from 'vue';
 import { ReactPanel } from './ReactPanel';
 import { VueJsxPanel } from './vue/VueJsxPanel';
 import VuePanel from './VuePanel.vue';
+import './style.css';
 
 createApp(VuePanel).mount('#vue-root');
 createApp(VueJsxPanel).mount('#vue-jsx-root');

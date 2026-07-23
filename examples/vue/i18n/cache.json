@@ -1,10 +1,22 @@
 {
   "files": {
+    "index.html": {
+      "fingerprint": "sha256:658950ea26fb1a392a331238bd902cbb81fb95aa0d622de0a9add1309051ccf6",
+      "messageIds": [
+        "ai-i18n Vue 示例"
+      ]
+    },
     "src/App.vue": {
-      "fingerprint": "sha256:d880ec2d73359c1f601c13127b11c3de35988c3d500934a7df52c8daef014eca",
+      "fingerprint": "sha256:395bf86b7f977278de7f074b3993377ef4f2d4d2bf1c8e30a6abda67edf21f6d",
       "messageIds": [
         "Composition API 与 Vite extractor 共享 Runtime",
         "Vue 示例",
+        "交互式语言切换演示",
+        "切换语言",
+        "响应式文案会随语言立即更新",
+        "当前语言",
+        "文案变化",
+        "模板会自动响应 Runtime 状态。",
         "语言"
       ]
     },
@@ -14,22 +26,64 @@
     }
   },
   "messages": {
+    "ai-i18n Vue 示例": {
+      "source": "ai-i18n Vue 示例",
+      "translations": {
+        "en-US": "ai-i18n Vue demo"
+      }
+    },
     "Composition API 与 Vite extractor 共享 Runtime": {
       "source": "Composition API 与 Vite extractor 共享 Runtime",
       "translations": {
-        "en-US": null
+        "en-US": "Composition API and the Vite extractor share one Runtime"
       }
     },
     "Vue 示例": {
       "source": "Vue 示例",
       "translations": {
-        "en-US": null
+        "en-US": "Vue demo"
+      }
+    },
+    "交互式语言切换演示": {
+      "source": "交互式语言切换演示",
+      "translations": {
+        "en-US": "Interactive language switch demo"
+      }
+    },
+    "切换语言": {
+      "source": "切换语言",
+      "translations": {
+        "en-US": "Switch language"
+      }
+    },
+    "响应式文案会随语言立即更新": {
+      "source": "响应式文案会随语言立即更新",
+      "translations": {
+        "en-US": "Reactive copy updates immediately with the language"
+      }
+    },
+    "当前语言": {
+      "source": "当前语言",
+      "translations": {
+        "en-US": "Current language"
+      }
+    },
+    "文案变化": {
+      "source": "文案变化",
+      "translations": {
+        "en-US": "Copy changes"
+      }
+    },
+    "模板会自动响应 Runtime 状态。": {
+      "source": "模板会自动响应 Runtime 状态。",
+      "translations": {
+        "en-US": "The template reacts to Runtime state automatically."
       }
     },
     "语言": {
       "source": "语言",
       "translations": {
-        "en-US": null
+        "en-US": "Language"
       }
     }
   },

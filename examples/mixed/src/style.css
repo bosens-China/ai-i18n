@@ -1,7 +1,7 @@
 :root {
   font-family: Inter, 'PingFang SC', 'Microsoft YaHei', sans-serif;
-  color: #2d2b25;
-  background: #f6f0e3;
+  color: #28233b;
+  background: #f1eff8;
   font-synthesis: none;
 }
 
@@ -9,33 +9,32 @@ body {
   margin: 0;
   min-width: 320px;
   background:
-    linear-gradient(135deg, rgba(224, 157, 41, 0.12) 25%, transparent 25%) 0 0 /
-      32px 32px,
-    #f6f0e3;
-}
-
-#app {
-  min-height: 100vh;
+    radial-gradient(
+      circle at 88% 14%,
+      rgba(122, 88, 204, 0.16),
+      transparent 24rem
+    ),
+    #f1eff8;
 }
 
 .page-shell {
   box-sizing: border-box;
-  width: min(1080px, 100%);
+  width: min(1120px, 100%);
   min-height: 100vh;
   margin: 0 auto;
   padding: clamp(3rem, 8vw, 6.5rem) clamp(1.25rem, 5vw, 4rem) 2.5rem;
 }
 
 .hero {
-  max-width: 700px;
+  max-width: 760px;
 }
 
 .eyebrow {
   width: fit-content;
   margin: 0 0 1.25rem;
   padding: 0.45rem 0.7rem;
-  border: 1px solid #b39a6d;
-  color: #745018;
+  border: 1px solid #a79cc3;
+  color: #59418d;
   font-family: 'SFMono-Regular', Consolas, monospace;
   font-size: 0.75rem;
   letter-spacing: 0.06em;
@@ -43,18 +42,18 @@ body {
 
 h1 {
   margin: 0;
-  color: #332e24;
+  color: #28233b;
   font-family: 'Avenir Next', 'PingFang SC', sans-serif;
-  font-size: clamp(3rem, 8vw, 6rem);
+  font-size: clamp(2.8rem, 7.5vw, 5.8rem);
   font-weight: 650;
   letter-spacing: -0.055em;
-  line-height: 0.95;
+  line-height: 0.96;
 }
 
 .lede {
   max-width: 620px;
   margin: 1.5rem 0 0;
-  color: #6d6250;
+  color: #686079;
   font-size: clamp(1rem, 2vw, 1.2rem);
   line-height: 1.7;
 }
@@ -63,34 +62,40 @@ h1 {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   margin-top: clamp(3rem, 8vw, 5.5rem);
-  border: 1px solid #b39a6d;
-  background: rgba(255, 252, 245, 0.86);
-  box-shadow: 12px 12px 0 #332e24;
+  border: 1px solid #a79cc3;
+  background: rgba(255, 255, 255, 0.76);
+  box-shadow: 12px 12px 0 #28233b;
 }
 
-.demo-step {
-  display: grid;
-  grid-template-rows: auto auto 1fr;
-  gap: 1.5rem;
-  min-height: 240px;
-  padding: clamp(1.25rem, 3vw, 2rem);
-  border-right: 1px solid #b39a6d;
+.demo-grid > div {
+  min-width: 0;
+  border-right: 1px solid #a79cc3;
 }
 
-.demo-step:last-child {
+.demo-grid > div:last-child {
   border-right: 0;
 }
 
+.demo-step {
+  box-sizing: border-box;
+  display: grid;
+  grid-template-rows: auto auto 1fr;
+  gap: 1.5rem;
+  min-height: 250px;
+  height: 100%;
+  padding: clamp(1.25rem, 3vw, 2rem);
+}
+
 .step-number {
-  color: #c87512;
+  color: #7654c9;
   font-family: 'SFMono-Regular', Consolas, monospace;
   font-size: 0.75rem;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.04em;
 }
 
 h2 {
   margin: 0;
-  color: #332e24;
+  color: #28233b;
   font-family: 'Avenir Next', 'PingFang SC', sans-serif;
   font-size: 1.1rem;
   font-weight: 650;
@@ -109,8 +114,8 @@ h2 {
   width: 0.75rem;
   height: 0.75rem;
   border-radius: 50%;
-  background: #e09d29;
-  box-shadow: 0 0 0 5px rgba(224, 157, 41, 0.2);
+  background: #42b883;
+  box-shadow: 0 0 0 5px rgba(66, 184, 131, 0.18);
 }
 
 .locale-readout strong {
@@ -118,45 +123,56 @@ h2 {
 }
 
 .locale-readout code {
-  color: #7e725e;
+  color: #746d83;
   font-size: 0.8rem;
 }
 
-.language-control {
+.language-switcher {
   align-self: end;
   display: grid;
+  grid-template-columns: repeat(2, 1fr);
   gap: 0.5rem;
-  color: #7e725e;
-  font-size: 0.8rem;
 }
 
-select {
-  width: 100%;
-  border: 1px solid #9f8557;
-  border-radius: 0;
-  background: #fffdf8;
-  color: #332e24;
+button {
+  border: 1px solid #8f80b4;
+  background: transparent;
+  color: #3f345d;
   font: inherit;
-  font-size: 1rem;
   font-weight: 650;
   padding: 0.8rem 1rem;
+  cursor: pointer;
+  transition:
+    background 160ms ease,
+    color 160ms ease,
+    transform 160ms ease;
 }
 
-select:focus-visible {
+button:hover {
+  transform: translateY(-2px);
+}
+
+button[aria-pressed='true'] {
+  border-color: #7654c9;
+  background: #7654c9;
+  color: #fff;
+}
+
+button:focus-visible {
   outline: 3px solid #e09d29;
   outline-offset: 3px;
 }
 
 .result-step {
-  background: #332e24;
+  background: #28233b;
 }
 
 .result-step .step-number {
-  color: #ffc766;
+  color: #bda6f6;
 }
 
 .result-step h2 {
-  color: #fff3d8;
+  color: #eee9ff;
 }
 
 .translation-output {
@@ -175,7 +191,7 @@ select:focus-visible {
 .translation-output span {
   display: block;
   margin-top: 0.75rem;
-  color: #d7c7a8;
+  color: #bbb1d3;
   font-size: 0.9rem;
   line-height: 1.5;
 }
@@ -183,16 +199,25 @@ select:focus-visible {
 @media (max-width: 760px) {
   .demo-grid {
     grid-template-columns: 1fr;
-    box-shadow: 7px 7px 0 #332e24;
+    box-shadow: 7px 7px 0 #28233b;
+  }
+
+  .demo-grid > div {
+    border-right: 0;
+    border-bottom: 1px solid #a79cc3;
+  }
+
+  .demo-grid > div:last-child {
+    border-bottom: 0;
   }
 
   .demo-step {
     min-height: 180px;
-    border-right: 0;
-    border-bottom: 1px solid #b39a6d;
   }
+}
 
-  .demo-step:last-child {
-    border-bottom: 0;
+@media (prefers-reduced-motion: reduce) {
+  button {
+    transition: none;
   }
 }

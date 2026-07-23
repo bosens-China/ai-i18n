@@ -1,15 +1,23 @@
 <script setup lang="ts">
-import { useI18n } from '@ai-i18n/vue'
+import { useI18n } from '@ai-i18n/vue';
+import { computed } from 'vue';
 
-const { t, setLang, currentLang } = useI18n()
+const { t, currentLang, langs } = useI18n();
+const currentLanguageLabel = computed(
+  () =>
+    langs.value.find(({ value }) => value === currentLang.value)?.label ??
+    currentLang.value,
+);
 </script>
 
 <template>
-  <section>
-    <h2>{{ t('Vue 面板') }}</h2>
-    <p>{{ t('当前语言') }}：{{ currentLang }}</p>
-    <button type="button" @click="setLang('en-US')">
-      {{ t('切换到英文') }}
-    </button>
+  <section class="demo-step">
+    <span class="step-number">01 · Vue SFC</span>
+    <h2>{{ t('当前语言') }}</h2>
+    <div class="locale-readout" aria-live="polite">
+      <span class="status-dot" aria-hidden="true"></span>
+      <strong>{{ currentLanguageLabel }}</strong>
+      <code>{{ currentLang }}</code>
+    </div>
   </section>
 </template>

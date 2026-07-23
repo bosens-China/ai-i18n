@@ -4,8 +4,15 @@
     "value": "zh-CN"
   },
   "messages": {
+    "ai-i18n Vue 示例": "ai-i18n Vue 示例",
     "Composition API 与 Vite extractor 共享 Runtime": "Composition API 与 Vite extractor 共享 Runtime",
     "Vue 示例": "Vue 示例",
+    "交互式语言切换演示": "交互式语言切换演示",
+    "切换语言": "切换语言",
+    "响应式文案会随语言立即更新": "响应式文案会随语言立即更新",
+    "当前语言": "当前语言",
+    "文案变化": "文案变化",
+    "模板会自动响应 Runtime 状态。": "模板会自动响应 Runtime 状态。",
     "语言": "语言"
   },
   "version": 1

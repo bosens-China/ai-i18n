@@ -4,39 +4,117 @@
       "id": "Vanilla 示例",
       "locations": [
         {
-          "column": 10,
-          "line": 8
+          "column": 14,
+          "line": 15
         }
       ],
       "source": "Vanilla 示例",
       "translations": {
-        "en-US": null
+        "en-US": "Vanilla demo"
+      }
+    },
+    {
+      "id": "交互式语言切换演示",
+      "locations": [
+        {
+          "column": 47,
+          "line": 19
+        }
+      ],
+      "source": "交互式语言切换演示",
+      "translations": {
+        "en-US": "Interactive language switch demo"
+      }
+    },
+    {
+      "id": "切换后，这段文案会立即更新。",
+      "locations": [
+        {
+          "column": 17,
+          "line": 47
+        }
+      ],
+      "source": "切换后，这段文案会立即更新。",
+      "translations": {
+        "en-US": "This copy updates immediately after switching."
+      }
+    },
+    {
+      "id": "切换语言",
+      "locations": [
+        {
+          "column": 16,
+          "line": 32
+        }
+      ],
+      "source": "切换语言",
+      "translations": {
+        "en-US": "Switch language"
+      }
+    },
+    {
+      "id": "当前语言",
+      "locations": [
+        {
+          "column": 16,
+          "line": 22
+        }
+      ],
+      "source": "当前语言",
+      "translations": {
+        "en-US": "Current language"
+      }
+    },
+    {
+      "id": "文案变化",
+      "locations": [
+        {
+          "column": 16,
+          "line": 45
+        }
+      ],
+      "source": "文案变化",
+      "translations": {
+        "en-US": "Copy changes"
       }
     },
     {
       "id": "显式调用会被静态提取",
       "locations": [
         {
-          "column": 9,
-          "line": 9
+          "column": 26,
+          "line": 16
         }
       ],
       "source": "显式调用会被静态提取",
       "translations": {
-        "en-US": null
+        "en-US": "Explicit calls are extracted statically"
+      }
+    },
+    {
+      "id": "订阅 Runtime 后重新渲染原生 DOM。",
+      "locations": [
+        {
+          "column": 20,
+          "line": 48
+        }
+      ],
+      "source": "订阅 Runtime 后重新渲染原生 DOM。",
+      "translations": {
+        "en-US": "Subscribe to the Runtime to re-render the native DOM."
       }
     },
     {
       "id": "语言",
       "locations": [
         {
-          "column": 8,
-          "line": 11
+          "column": 20,
+          "line": 34
         }
       ],
       "source": "语言",
       "translations": {
-        "en-US": null
+        "en-US": "Language"
       }
     }
   ],

@@ -1,31 +1,85 @@
 {
   "files": {
+    "index.html": {
+      "fingerprint": "sha256:611fb51e4022502fb2248496649f9be660134798c0c5398b352def39d9cd5cde",
+      "messageIds": [
+        "ai-i18n Vanilla 示例"
+      ]
+    },
     "src/main.ts": {
-      "fingerprint": "sha256:1522839953a99f26014522b2aed04383571b8eedc893498ed92283f7e98b7397",
+      "fingerprint": "sha256:52e7c2e1f93c18170823f64f1f556a406d38b23de40091d102b04d38011f0538",
       "messageIds": [
         "Vanilla 示例",
+        "交互式语言切换演示",
+        "切换后，这段文案会立即更新。",
+        "切换语言",
+        "当前语言",
+        "文案变化",
         "显式调用会被静态提取",
+        "订阅 Runtime 后重新渲染原生 DOM。",
         "语言"
       ]
     }
   },
   "messages": {
+    "ai-i18n Vanilla 示例": {
+      "source": "ai-i18n Vanilla 示例",
+      "translations": {
+        "en-US": "ai-i18n Vanilla demo"
+      }
+    },
     "Vanilla 示例": {
       "source": "Vanilla 示例",
       "translations": {
-        "en-US": null
+        "en-US": "Vanilla demo"
+      }
+    },
+    "交互式语言切换演示": {
+      "source": "交互式语言切换演示",
+      "translations": {
+        "en-US": "Interactive language switch demo"
+      }
+    },
+    "切换后，这段文案会立即更新。": {
+      "source": "切换后，这段文案会立即更新。",
+      "translations": {
+        "en-US": "This copy updates immediately after switching."
+      }
+    },
+    "切换语言": {
+      "source": "切换语言",
+      "translations": {
+        "en-US": "Switch language"
+      }
+    },
+    "当前语言": {
+      "source": "当前语言",
+      "translations": {
+        "en-US": "Current language"
+      }
+    },
+    "文案变化": {
+      "source": "文案变化",
+      "translations": {
+        "en-US": "Copy changes"
       }
     },
     "显式调用会被静态提取": {
       "source": "显式调用会被静态提取",
       "translations": {
-        "en-US": null
+        "en-US": "Explicit calls are extracted statically"
+      }
+    },
+    "订阅 Runtime 后重新渲染原生 DOM。": {
+      "source": "订阅 Runtime 后重新渲染原生 DOM。",
+      "translations": {
+        "en-US": "Subscribe to the Runtime to re-render the native DOM."
       }
     },
     "语言": {
       "source": "语言",
       "translations": {
-        "en-US": null
+        "en-US": "Language"
       }
     }
   },

@@ -1,11 +1,23 @@
 {
   "files": {
-    "src/App.tsx": {
-      "fingerprint": "sha256:c0d76ab7bc5e14e4c2f96cd89ab0428a94e6bba51d60dc9552d65f1d30c3ae54",
+    "index.html": {
+      "fingerprint": "sha256:87f673b5fd3b9a5f60274811ea113e8ac9e3fc65781cfc85d13b0e0c81f39a51",
       "messageIds": [
-        "Hook 与 Vite extractor 共享 Runtime",
-        "React 示例",
-        "语言"
+        "ai-i18n React 示例"
+      ]
+    },
+    "src/App.tsx": {
+      "fingerprint": "sha256:7229e0b26903d47963cb233b2bf59e7895c4b07f236c9be6e0878612d02dc343",
+      "messageIds": [
+        "交互式语言切换演示",
+        "切换后，这段文案会立即更新。",
+        "切换语言",
+        "当前语言",
+        "文案变化",
+        "由 useI18n 实时订阅 Runtime",
+        "让产品自然地说每一种语言",
+        "语言切换，应该一眼可见",
+        "这个示例把当前语言、切换动作和文案变化放在同一个视图里。"
       ]
     },
     "src/main.tsx": {
@@ -14,6 +26,12 @@
     }
   },
   "messages": {
+    "ai-i18n React 示例": {
+      "source": "ai-i18n React 示例",
+      "translations": {
+        "en-US": "ai-i18n React demo"
+      }
+    },
     "Hook 与 Vite extractor 共享 Runtime": {
       "source": "Hook 与 Vite extractor 共享 Runtime",
       "translations": {
@@ -26,10 +44,64 @@
         "en-US": null
       }
     },
+    "交互式语言切换演示": {
+      "source": "交互式语言切换演示",
+      "translations": {
+        "en-US": "Interactive language switching demo"
+      }
+    },
+    "切换后，这段文案会立即更新。": {
+      "source": "切换后，这段文案会立即更新。",
+      "translations": {
+        "en-US": "This copy updates as soon as you switch languages."
+      }
+    },
+    "切换语言": {
+      "source": "切换语言",
+      "translations": {
+        "en-US": "Switch language"
+      }
+    },
+    "当前语言": {
+      "source": "当前语言",
+      "translations": {
+        "en-US": "Current language"
+      }
+    },
+    "文案变化": {
+      "source": "文案变化",
+      "translations": {
+        "en-US": "Translated copy"
+      }
+    },
+    "由 useI18n 实时订阅 Runtime": {
+      "source": "由 useI18n 实时订阅 Runtime",
+      "translations": {
+        "en-US": "useI18n subscribes to Runtime updates in real time"
+      }
+    },
+    "让产品自然地说每一种语言": {
+      "source": "让产品自然地说每一种语言",
+      "translations": {
+        "en-US": "Help your product speak every language naturally"
+      }
+    },
     "语言": {
       "source": "语言",
       "translations": {
         "en-US": null
+      }
+    },
+    "语言切换，应该一眼可见": {
+      "source": "语言切换，应该一眼可见",
+      "translations": {
+        "en-US": "Language switching should be instantly visible"
+      }
+    },
+    "这个示例把当前语言、切换动作和文案变化放在同一个视图里。": {
+      "source": "这个示例把当前语言、切换动作和文案变化放在同一个视图里。",
+      "translations": {
+        "en-US": "This demo puts the current language, switch controls, and live copy in one view."
       }
     }
   },

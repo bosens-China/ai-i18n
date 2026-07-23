@@ -4,39 +4,117 @@
       "id": "Composition API 与 Vite extractor 共享 Runtime",
       "locations": [
         {
-          "column": 10,
-          "line": 10
+          "column": 25,
+          "line": 16
         }
       ],
       "source": "Composition API 与 Vite extractor 共享 Runtime",
       "translations": {
-        "en-US": null
+        "en-US": "Composition API and the Vite extractor share one Runtime"
       }
     },
     {
       "id": "Vue 示例",
       "locations": [
         {
-          "column": 11,
-          "line": 9
+          "column": 13,
+          "line": 15
         }
       ],
       "source": "Vue 示例",
       "translations": {
-        "en-US": null
+        "en-US": "Vue demo"
+      }
+    },
+    {
+      "id": "交互式语言切换演示",
+      "locations": [
+        {
+          "column": 44,
+          "line": 19
+        }
+      ],
+      "source": "交互式语言切换演示",
+      "translations": {
+        "en-US": "Interactive language switch demo"
+      }
+    },
+    {
+      "id": "切换语言",
+      "locations": [
+        {
+          "column": 15,
+          "line": 32
+        }
+      ],
+      "source": "切换语言",
+      "translations": {
+        "en-US": "Switch language"
+      }
+    },
+    {
+      "id": "响应式文案会随语言立即更新",
+      "locations": [
+        {
+          "column": 16,
+          "line": 50
+        }
+      ],
+      "source": "响应式文案会随语言立即更新",
+      "translations": {
+        "en-US": "Reactive copy updates immediately with the language"
+      }
+    },
+    {
+      "id": "当前语言",
+      "locations": [
+        {
+          "column": 15,
+          "line": 22
+        }
+      ],
+      "source": "当前语言",
+      "translations": {
+        "en-US": "Current language"
+      }
+    },
+    {
+      "id": "文案变化",
+      "locations": [
+        {
+          "column": 15,
+          "line": 48
+        }
+      ],
+      "source": "文案变化",
+      "translations": {
+        "en-US": "Copy changes"
+      }
+    },
+    {
+      "id": "模板会自动响应 Runtime 状态。",
+      "locations": [
+        {
+          "column": 19,
+          "line": 51
+        }
+      ],
+      "source": "模板会自动响应 Runtime 状态。",
+      "translations": {
+        "en-US": "The template reacts to Runtime state automatically."
       }
     },
     {
       "id": "语言",
       "locations": [
         {
-          "column": 9,
-          "line": 12
+          "column": 19,
+          "line": 34
         }
       ],
       "source": "语言",
       "translations": {
-        "en-US": null
+        "en-US": "Language"
       }
     }
   ],

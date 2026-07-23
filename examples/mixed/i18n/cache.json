@@ -1,57 +1,122 @@
 {
   "files": {
+    "index.html": {
+      "fingerprint": "sha256:5e4ef22459be27864573590713879ea03e2d0a26b399a6226cfbe1d43f384613",
+      "messageIds": [
+        "ai-i18n Mixed 示例",
+        "Vue、Vue JSX 与 React 共享同一次语言切换。",
+        "一个 Runtime，三种渲染方式",
+        "混合框架语言切换演示"
+      ]
+    },
     "src/main.tsx": {
-      "fingerprint": "sha256:d218a341f4120672654dff78dde2e07b58c813c4c8629c7f95fb288c77b6687a",
+      "fingerprint": "sha256:b5e6409e9b386dc898a126dffc5948b4f33db4428af8ed8a6f52aa02456d09b1",
       "messageIds": []
     },
     "src/ReactPanel.tsx": {
-      "fingerprint": "sha256:ba6316ede86e414f32f81226f8a58a186efb2dc86bd40a7c9cb25063af8b1a3f",
-      "messageIds": ["React 面板", "切换到中文", "当前语言"]
+      "fingerprint": "sha256:7599dad18b75e06eb4859257856dd562c829ae5bd7cfb21c3b2e735dccb2afce",
+      "messageIds": [
+        "三个框架共享同一份 Runtime 状态",
+        "任意入口切换，所有面板同时更新。",
+        "文案变化"
+      ]
     },
     "src/vue/VueJsxPanel.tsx": {
-      "fingerprint": "sha256:fcc308e80ea7839d1dd26a18e634db2e7cf72703143ebd39049241744362a952",
-      "messageIds": ["Vue JSX 面板", "切换到英文", "当前语言"]
+      "fingerprint": "sha256:4469d2cdcd8fce6e1f4a7617b6bfd4366ae97514d98b0ef4288a2fc7e078e62a",
+      "messageIds": [
+        "切换语言"
+      ]
     },
     "src/VuePanel.vue": {
-      "fingerprint": "sha256:9717fd14a8b37a87e0ccc1f3713eaed500ba3a65bf75531eba096835b69dc341",
-      "messageIds": ["Vue 面板", "切换到英文", "当前语言"]
+      "fingerprint": "sha256:ebe14e8710d4630bda3e7e48856fdfc3c9b0ca35faa73100e4804179632cd2a0",
+      "messageIds": [
+        "当前语言"
+      ]
     }
   },
   "messages": {
+    "ai-i18n Mixed 示例": {
+      "source": "ai-i18n Mixed 示例",
+      "translations": {
+        "en-US": "ai-i18n Mixed demo"
+      }
+    },
     "React 面板": {
       "source": "React 面板",
       "translations": {
-        "en-US": null
+        "en-US": "React panel"
       }
     },
     "Vue JSX 面板": {
       "source": "Vue JSX 面板",
       "translations": {
-        "en-US": null
+        "en-US": "Vue JSX panel"
       }
     },
     "Vue 面板": {
       "source": "Vue 面板",
       "translations": {
-        "en-US": null
+        "en-US": "Vue panel"
+      }
+    },
+    "Vue、Vue JSX 与 React 共享同一次语言切换。": {
+      "source": "Vue、Vue JSX 与 React 共享同一次语言切换。",
+      "translations": {
+        "en-US": "Vue, Vue JSX, and React share the same language switch."
+      }
+    },
+    "一个 Runtime，三种渲染方式": {
+      "source": "一个 Runtime，三种渲染方式",
+      "translations": {
+        "en-US": "One Runtime, three rendering modes"
+      }
+    },
+    "三个框架共享同一份 Runtime 状态": {
+      "source": "三个框架共享同一份 Runtime 状态",
+      "translations": {
+        "en-US": "Three frameworks share the same Runtime state"
+      }
+    },
+    "任意入口切换，所有面板同时更新。": {
+      "source": "任意入口切换，所有面板同时更新。",
+      "translations": {
+        "en-US": "Switch anywhere and every panel updates together."
       }
     },
     "切换到中文": {
       "source": "切换到中文",
       "translations": {
-        "en-US": null
+        "en-US": "Switch to Chinese"
       }
     },
     "切换到英文": {
       "source": "切换到英文",
       "translations": {
-        "en-US": null
+        "en-US": "Switch to English"
+      }
+    },
+    "切换语言": {
+      "source": "切换语言",
+      "translations": {
+        "en-US": "Switch language"
       }
     },
     "当前语言": {
       "source": "当前语言",
       "translations": {
-        "en-US": null
+        "en-US": "Current language"
+      }
+    },
+    "文案变化": {
+      "source": "文案变化",
+      "translations": {
+        "en-US": "Copy changes"
+      }
+    },
+    "混合框架语言切换演示": {
+      "source": "混合框架语言切换演示",
+      "translations": {
+        "en-US": "Mixed-framework language switch demo"
       }
     }
   },

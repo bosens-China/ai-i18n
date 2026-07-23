@@ -1,40 +1,232 @@
 :root {
-  font-family: system-ui, sans-serif;
-  color: #1f2937;
-  background: #f8fafc;
+  font-family: Inter, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  color: #18212b;
+  background: #eaf1f4;
+  font-synthesis: none;
 }
 
 body {
   margin: 0;
+  min-width: 320px;
+  background:
+    linear-gradient(rgba(18, 63, 73, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(18, 63, 73, 0.06) 1px, transparent 1px), #eaf1f4;
+  background-size: 32px 32px;
 }
 
 #root {
   min-height: 100vh;
 }
 
-#center {
+.page-shell {
   box-sizing: border-box;
+  width: min(1120px, 100%);
   min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 1.25rem;
-  padding: 2rem;
-  text-align: center;
+  margin: 0 auto;
+  padding: clamp(3rem, 9vw, 7rem) clamp(1.25rem, 5vw, 4rem) 2.5rem;
 }
 
-h1,
-p {
+.hero {
+  max-width: 760px;
+}
+
+.eyebrow {
+  width: fit-content;
+  margin: 0 0 1.25rem;
+  padding: 0.45rem 0.7rem;
+  border: 1px solid #91aeb5;
+  color: #123f49;
+  font-family: 'SFMono-Regular', Consolas, monospace;
+  font-size: 0.75rem;
+  letter-spacing: 0.06em;
+}
+
+h1 {
+  max-width: 700px;
   margin: 0;
+  color: #123f49;
+  font-family: 'Avenir Next', 'PingFang SC', sans-serif;
+  font-size: clamp(2.6rem, 7vw, 5.7rem);
+  font-weight: 650;
+  letter-spacing: -0.055em;
+  line-height: 0.98;
 }
 
-label {
+.lede {
+  max-width: 620px;
+  margin: 1.5rem 0 0;
+  color: #4c6269;
+  font-size: clamp(1rem, 2vw, 1.2rem);
+  line-height: 1.7;
+}
+
+.demo-grid {
   display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  margin-top: clamp(3rem, 8vw, 6rem);
+  border: 1px solid #91aeb5;
+  background: rgba(255, 255, 255, 0.72);
+  box-shadow: 12px 12px 0 #123f49;
+}
+
+.demo-step {
+  grid-column: span 4;
+  display: grid;
+  grid-template-rows: auto auto 1fr;
+  gap: 1.5rem;
+  min-height: 250px;
+  padding: clamp(1.25rem, 3vw, 2rem);
+  border-right: 1px solid #91aeb5;
+}
+
+.demo-step:last-child {
+  border-right: 0;
+}
+
+.step-number {
+  color: #2f69ff;
+  font-family: 'SFMono-Regular', Consolas, monospace;
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+}
+
+h2 {
+  margin: 0;
+  color: #123f49;
+  font-family: 'Avenir Next', 'PingFang SC', sans-serif;
+  font-size: 1.1rem;
+  font-weight: 650;
+}
+
+.locale-readout {
+  align-self: end;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.35rem 0.65rem;
+  align-items: center;
+}
+
+.status-dot {
+  grid-row: span 2;
+  width: 0.75rem;
+  height: 0.75rem;
+  border-radius: 50%;
+  background: #f2a93b;
+  box-shadow: 0 0 0 5px rgba(242, 169, 59, 0.18);
+}
+
+.locale-readout strong {
+  color: #18212b;
+  font-size: 1.6rem;
+}
+
+.locale-readout code {
+  color: #667a80;
+  font-size: 0.8rem;
+}
+
+.language-switcher {
+  align-self: end;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
   gap: 0.5rem;
 }
 
-select {
+button {
+  border: 1px solid #76969e;
+  background: transparent;
+  color: #123f49;
   font: inherit;
-  padding: 0.5rem 0.75rem;
+  font-weight: 650;
+  padding: 0.8rem 1rem;
+  cursor: pointer;
+  transition:
+    background 160ms ease,
+    color 160ms ease,
+    transform 160ms ease;
+}
+
+button:hover {
+  transform: translateY(-2px);
+}
+
+button[aria-pressed='true'] {
+  border-color: #2f69ff;
+  background: #2f69ff;
+  color: #fff;
+}
+
+button:focus-visible {
+  outline: 3px solid #f2a93b;
+  outline-offset: 3px;
+}
+
+.result-step {
+  background: #123f49;
+}
+
+.result-step .step-number {
+  color: #76b2ff;
+}
+
+.result-step h2 {
+  color: #d7e9ee;
+}
+
+.translation-output {
+  align-self: end;
+  color: #fff;
+}
+
+.translation-output p {
+  margin: 0;
+  font-family: 'Avenir Next', 'PingFang SC', sans-serif;
+  font-size: clamp(1.45rem, 3vw, 2rem);
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.translation-output span {
+  display: block;
+  margin-top: 0.75rem;
+  color: #a8c5cc;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.runtime-note {
+  display: flex;
+  gap: 0.6rem;
+  align-items: center;
+  margin-top: 2rem;
+  color: #526970;
+  font-family: 'SFMono-Regular', Consolas, monospace;
+  font-size: 0.78rem;
+}
+
+.runtime-note span {
+  color: #2f69ff;
+}
+
+@media (max-width: 760px) {
+  .demo-grid {
+    box-shadow: 7px 7px 0 #123f49;
+  }
+
+  .demo-step {
+    grid-column: 1 / -1;
+    min-height: 190px;
+    border-right: 0;
+    border-bottom: 1px solid #91aeb5;
+  }
+
+  .demo-step:last-child {
+    border-bottom: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  button {
+    transition: none;
+  }
 }

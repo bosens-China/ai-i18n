@@ -1,5 +1,5 @@
-import { aiI18n } from '@ai-i18n/vite'
-import { defineConfig } from 'vite'
+import { aiI18n, html } from '@ai-i18n/vite';
+import { defineConfig } from 'vite';
 
 export default defineConfig({
   plugins: [
@@ -9,6 +9,7 @@ export default defineConfig({
         { value: 'zh-CN', label: '中文' },
         { value: 'en-US', label: 'English' },
       ],
+      extractors: [html()],
     }),
   ],
-})
+});

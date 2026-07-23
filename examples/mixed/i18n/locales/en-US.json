@@ -4,12 +4,15 @@
     "value": "en-US"
   },
   "messages": {
-    "React 面板": null,
-    "Vue JSX 面板": null,
-    "Vue 面板": null,
-    "切换到中文": null,
-    "切换到英文": null,
-    "当前语言": null
+    "ai-i18n Mixed 示例": "ai-i18n Mixed demo",
+    "Vue、Vue JSX 与 React 共享同一次语言切换。": "Vue, Vue JSX, and React share the same language switch.",
+    "一个 Runtime，三种渲染方式": "One Runtime, three rendering modes",
+    "三个框架共享同一份 Runtime 状态": "Three frameworks share the same Runtime state",
+    "任意入口切换，所有面板同时更新。": "Switch anywhere and every panel updates together.",
+    "切换语言": "Switch language",
+    "当前语言": "Current language",
+    "文案变化": "Copy changes",
+    "混合框架语言切换演示": "Mixed-framework language switch demo"
   },
   "version": 1
 }

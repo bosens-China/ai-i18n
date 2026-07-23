@@ -1,19 +1,19 @@
 {
   "messages": [
     {
-      "id": "当前语言",
+      "id": "ai-i18n Vue 示例",
       "locations": [
         {
           "column": 11,
-          "line": 14
+          "line": 6
         }
       ],
-      "source": "当前语言",
+      "source": "ai-i18n Vue 示例",
       "translations": {
-        "en-US": "Current language"
+        "en-US": "ai-i18n Vue demo"
       }
     }
   ],
-  "source": "src/VuePanel.vue",
+  "source": "index.html",
   "version": 1
 }

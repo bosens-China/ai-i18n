@@ -4,9 +4,16 @@
     "value": "en-US"
   },
   "messages": {
-    "Hook 与 Vite extractor 共享 Runtime": null,
-    "React 示例": null,
-    "语言": null
+    "ai-i18n React 示例": "ai-i18n React demo",
+    "交互式语言切换演示": "Interactive language switching demo",
+    "切换后，这段文案会立即更新。": "This copy updates as soon as you switch languages.",
+    "切换语言": "Switch language",
+    "当前语言": "Current language",
+    "文案变化": "Translated copy",
+    "由 useI18n 实时订阅 Runtime": "useI18n subscribes to Runtime updates in real time",
+    "让产品自然地说每一种语言": "Help your product speak every language naturally",
+    "语言切换，应该一眼可见": "Language switching should be instantly visible",
+    "这个示例把当前语言、切换动作和文案变化放在同一个视图里。": "This demo puts the current language, switch controls, and live copy in one view."
   },
   "version": 1
 }

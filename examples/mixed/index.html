@@ -3,12 +3,22 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>ai-i18n Mixed</title>
+    <title>t('ai-i18n Mixed 示例')</title>
   </head>
   <body>
-    <div id="vue-root"></div>
-    <div id="vue-jsx-root"></div>
-    <div id="react-root"></div>
+    <main class="page-shell">
+      <header class="hero">
+        <p class="eyebrow">@ai-i18n · mixed runtime</p>
+        <h1>t('一个 Runtime，三种渲染方式')</h1>
+        <p class="lede">t('Vue、Vue JSX 与 React 共享同一次语言切换。')</p>
+      </header>
+
+      <section class="demo-grid" aria-label="t('混合框架语言切换演示')">
+        <div id="vue-root"></div>
+        <div id="vue-jsx-root"></div>
+        <div id="react-root"></div>
+      </section>
+    </main>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
