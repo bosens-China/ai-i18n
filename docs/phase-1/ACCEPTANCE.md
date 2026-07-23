@@ -37,5 +37,6 @@
    x64/arm64 六个平台全部通过的 CI 记录。当前尚未取得该 GitHub Actions 矩阵的实跑记录，
    本机只能证明 darwin-arm64。
 2. 确认 npm scope 权限和真实接入项目后，执行 Changesets alpha 流程并发布验证；当前未对外发布。
+3. 在仓库 Settings → Pages 将发布源设为 GitHub Actions，并确认 `pages.yml` 成功部署示例导航页。
 
-以上两项完成前，`PRD 验收标准全部通过`、`Yuku 平台验证` 和 `发布 1.0.0-alpha` 保持未勾选。
+以上三项完成前，`PRD 验收标准全部通过`、`Yuku 平台验证` 和 `发布 1.0.0-alpha` 保持未勾选。

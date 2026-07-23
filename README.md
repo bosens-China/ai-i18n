@@ -193,6 +193,10 @@ pnpm --filter @ai-i18n/vite benchmark
 Are the Types Wrong。发布使用 Changesets；每个包独立版本，内部运行时依赖以兼容 semver
 范围发布，`@ai-i18n/mcp` 也保持独立安装和发版。
 
+推送到 `main` 后，GitHub Pages workflow 会构建四个示例并发布
+[`examples/index.html`](./examples/index.html) 作为导航页；需要先在仓库 Settings → Pages 中将
+发布源设为 GitHub Actions。
+
 当前保持入口级打包，不启用 tsdown `unbundle`：`index`、`vite`、`bin` 等公开入口按
 `exports` 输出，内部模块继续由 Rolldown 合并。只有未来把内部目录设计成受支持的子路径 API
 时，才需要改为保留源码目录结构。

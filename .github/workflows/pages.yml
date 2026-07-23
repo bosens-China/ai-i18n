@@ -26,12 +26,20 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm build
-      - run: pnpm -r --filter './examples/*' run check
-      - run: node scripts/build-pages.mjs
+      - run: |
+          for example in vanilla vue react mixed; do
+            pnpm --dir "examples/$example" exec vite build --base=./
+          done
+      - run: |
+          mkdir -p site
+          cp examples/index.html site/index.html
+          for example in vanilla vue react mixed; do
+            cp -R "examples/$example/dist" "site/$example"
+          done
       - uses: actions/configure-pages@v6
       - uses: actions/upload-pages-artifact@v5
         with:
-          path: dist/pages
+          path: site
 
   deploy:
     needs: build
