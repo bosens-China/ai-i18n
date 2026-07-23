@@ -17,6 +17,8 @@
   "scripts": {
     "prepare": "husky",
     "build": "tsdown",
+    "docs:dev": "pnpm --filter @boses/docs dev",
+    "docs:build": "pnpm --filter @boses/docs build",
     "check": "pnpm build && tsc -p tsconfig.json && eslint \"*.config.{js,ts}\" && pnpm -r --if-present run check",
     "test": "vitest run",
     "changeset": "changeset",

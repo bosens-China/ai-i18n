@@ -1,0 +1,40 @@
+---
+title: ai-i18n
+description: 面向 Vite 8 的浏览器端 AI 国际化插件
+template: splash
+hero:
+  tagline: 源码只写显式 t()。Vite 在 Dev 与 Build 期间提取文案，可选调用 AI Provider，并生成可提交 Git 的 Translation Memory。
+  actions:
+    - text: 快速上手
+      link: /getting-started/
+      icon: right-arrow
+    - text: 在线演示
+      link: /demo/
+      icon: external
+      variant: minimal
+---
+
+import { Card, CardGrid } from '@astrojs/starlight/components';
+
+## 文档导航
+
+<CardGrid>
+  <Card title="快速上手" icon="rocket">
+    安装插件、写第一句 `t()`，并了解适用边界。
+  </Card>
+  <Card title="框架上手" icon="puzzle">
+    Vanilla、Vue 和 React 的接入方式与自动导入。
+  </Card>
+  <Card title="配置与 API" icon="setting">
+    `aiI18n()` 配置项与 Runtime API。
+  </Card>
+  <Card title="文件与工作流" icon="document">
+    `i18n/` 协议文件、Git 提交与 Agent 协作。
+  </Card>
+  <Card title="AI 翻译" icon="approve-check">
+    接入 `@boses/openai` 或其他 Provider。
+  </Card>
+  <Card title="AI 工具接入" icon="laptop">
+    安装 Agent skills，并用 MCP 补齐缺失翻译。
+  </Card>
+</CardGrid>

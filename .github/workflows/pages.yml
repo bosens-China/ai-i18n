@@ -1,4 +1,4 @@
-name: Deploy examples to GitHub Pages
+name: Deploy docs and examples to GitHub Pages
 
 on:
   push:
@@ -26,15 +26,22 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm build
-      - run: |
-          for example in vanilla vue react mixed; do
+      - name: Build docs site
+        run: pnpm --filter @boses/docs build
+        env:
+          DEPLOY_TARGET: pages
+      - name: Build examples
+        run: |
+          for example in vanilla vue react; do
             pnpm --dir "examples/$example" exec vite build --base=./
           done
-      - run: |
+      - name: Assemble Pages artifact
+        run: |
           mkdir -p site
-          cp examples/index.html site/index.html
-          for example in vanilla vue react mixed; do
-            cp -R "examples/$example/dist" "site/$example"
+          cp -R apps/docs/dist/. site/
+          for example in vanilla vue react; do
+            mkdir -p "site/examples/$example"
+            cp -R "examples/$example/dist/." "site/examples/$example/"
           done
       - uses: actions/configure-pages@v6
       - uses: actions/upload-pages-artifact@v5

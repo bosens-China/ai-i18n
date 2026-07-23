@@ -1,0 +1,15 @@
+---
+title: 在线演示
+description: 嵌入 Vanilla、Vue、React 示例应用
+---
+
+import DemoFrame from '../../components/DemoFrame.astro';
+
+示例仍是独立 Vite 应用（`examples/*`），由文档站嵌入展示。文档站本身不挂载
+`@boses/vite`，因此可以同时展示三种框架模式。
+
+本地预览文档时，需要先构建 examples，或访问已部署的 GitHub Pages。
+
+<DemoFrame framework="vanilla" title="Vanilla" />
+<DemoFrame framework="vue" title="Vue" />
+<DemoFrame framework="react" title="React" />
