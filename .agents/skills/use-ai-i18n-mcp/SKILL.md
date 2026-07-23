@@ -79,6 +79,10 @@ Re-run `ai_i18n_list_translations` for every written file and requested locale w
 
 When Vite Dev is running, it reconciles the write automatically. Otherwise tell the user to run the next Vite Dev/Build command so `cache.json`, duplicate extracted occurrences, and `locales/**` are synchronized. Do not manually synchronize those derived files.
 
+Translation completion does not make previously rendered imperative DOM reactive. For Vanilla
+applications, separately confirm that the host subscribes to Runtime updates and re-renders;
+the MCP tools only maintain translation protocol data.
+
 ## Handle common failures
 
 - **Directory not found**: recompute Vite root plus `directory`; do not search arbitrary temporary folders.

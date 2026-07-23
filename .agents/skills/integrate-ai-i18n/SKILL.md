@@ -69,3 +69,5 @@ keys into browser modules or generated protocol files.
 ## Verify and report
 
 Check package installation, Vite config syntax, virtual-module typing, one runtime translation call, and generated protocol files. State explicitly when SSR, dynamic messages, untranslated routes not visited in Dev, or modules unreachable from Build remain outside the verified scope.
+For imperative Vanilla DOM, also verify that `setLang()` triggers a subscriber-driven re-render;
+changing the Runtime state alone does not update nodes that were already rendered.

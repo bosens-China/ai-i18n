@@ -51,5 +51,10 @@ export function SaveButton() {
 
 The hook subscribes through `useSyncExternalStore`, so language and translation updates re-render consumers. The extractor recognizes the Hook binding in JS, TS, JSX, and TSX, including custom Hooks in plain `.ts` files. Destructured aliases and `const i18n = useI18n(); i18n.t()` are supported. JSX text is not translated automatically; use static `t()` source and comment arguments.
 
+When a monorepo consumes a locally linked `@ai-i18n/react` package, ensure the binding and
+renderer resolve one React instance. If the linked package can resolve a separate React install,
+add `resolve: { dedupe: ['react', 'react-dom'] }` to the app's Vite config. A normal published
+installation with one peer-resolved React does not need this workspace safeguard.
+
 In a mixed React/Vue JSX project, keep React as the fallback for files outside the Vue JSX plugin's
 explicit include glob. Do not require framework suffixes and do not compile one file with both runtimes.
