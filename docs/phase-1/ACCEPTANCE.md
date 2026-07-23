@@ -1,22 +1,31 @@
 # Phase 1 验收记录
 
-> 更新日期：2026-07-22
+> 更新日期：2026-07-23
 
 ## 已通过
 
 - `pnpm lint`：通过。
-- `pnpm check`：6 个发布包 TypeScript 检查通过。
-- `pnpm test`：17 个测试文件、88 个测试通过。
-- `pnpm build`：6 个发布包构建通过。
-- `pnpm pack:check`：6 个 tarball 的 exports 产物、README、文件白名单和客户端依赖边界通过。
+- `pnpm check`：8 个发布包 TypeScript 检查通过。
+- `pnpm test`：20 个测试文件、128 个测试通过。
+- `pnpm build`：8 个发布包构建通过。
+- `pnpm pack:check`：8 个 tarball 的 exports 产物、README、文件白名单和客户端依赖边界通过。
 - `pnpm examples:dev`：Vanilla、Vue、React、Mixed 的真实 Vite middleware transform 通过。
 - `pnpm examples:build`：四个示例生产构建通过。
 - `pnpm benchmark:yuku`：Babel/Yuku 冷分析、热替换、200 模块 Build 图完成五轮对比。
 
 ## 关键回归证据
 
-- React/Vue 用声明式 Hook binding 规则复用 ProjectState 中唯一一次 Yuku JS AST；ESLint 同步识别
-  两种 `useI18n()` binding；Vue 模板只复用 Vue compiler 表达式 AST 做映射，再进入一次共享 Yuku 分析。
+- React/Vue Hook binding 覆盖 JS、TS、JSX、TSX，支持解构 alias 与 `i18n.t()`；普通
+  composable/custom Hook 和 Vue 外部 `<script src>` 已通过真实 Vite Build 回归。
+- Vite 与 ESLint 共同消费 `@ai-i18n/analyzer`；成员调用、`undefined` comment、动态参数和
+  unresolved 诊断不再各自维护，Vue SFC 也共用 compiler-sfc 分析与 source map。
+- Mixed 示例使用自然 `.tsx` 文件名，仅以 Vue 目录 glob 覆盖默认 React fallback，同时完成
+  Vue SFC、Vue JSX、React JSX 的 Dev middleware 与生产 Build 验证。
+- Vue SFC 使用 compiler-sfc 合并 script/setup 与 inline template，再用 source map 回到 SFC
+  原始位置；模板 alias、局部 shadow 和双 script 作用域已覆盖。
+- `undefined` comment 按省略处理；未解析静态依赖在保持 pending 的同时输出带位置 warning。
+- JS/TS 词法遮蔽、`.mjs/.mts`、CommonJS `require()` 负向边界、TS wrapper、computed member、
+  Vue slot scope 和 SFC line/column 映射已补充专项回归。
 - Dev 渐进访问、Build 静态/动态入口、文件移动/删除、Windows 路径、monorepo 非 cwd root 已覆盖。
 - Agent 编辑、重复 ID 同步、cache 历史保留、orphan 同进程清理、Git 合并后兼容编辑合并和非空冲突拒绝覆盖已覆盖。
 - HTML Build 初始翻译和 `setLang()` 后 text/attribute/comment DOM binding 更新已执行验证。
@@ -28,7 +37,7 @@
 1. 在真实 Git 仓库运行 `.github/workflows/yuku-platform.yml`，取得 macOS、Linux、Windows
    x64/arm64 六个平台全部通过的 CI 记录。当前尚未取得该 GitHub Actions 矩阵的实跑记录，
    本机只能证明 darwin-arm64。
-2. 由仓库所有者确认 License 和真实 repository URL，再同步到根目录及六个 package manifest。
+2. 由仓库所有者确认 License 和真实 repository URL，再同步到根目录及八个 package manifest。
 3. 确认 npm scope 权限和真实接入项目后，执行 Changesets alpha 流程并发布验证；当前未对外发布。
 
 以上三项完成前，`PRD 验收标准全部通过`、`Yuku 平台验证` 和 `发布 1.0.0-alpha` 保持未勾选。

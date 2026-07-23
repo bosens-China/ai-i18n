@@ -56,6 +56,7 @@
 
 - [x] 安装并锁定 `yuku-analyzer` 候选版本。
 - [x] 实现内部 `analyzeModule` / `extractMessages` 窄边界。
+- [x] 抽出 `@ai-i18n/analyzer`，由 Vite 与 ESLint 共享 binding、静态求值和诊断语义。
 - [x] 将现有 Babel fixtures 同时跑 Babel 与 Yuku，对比提取结果。
 - [x] 覆盖 JS、TS、JSX、TSX、decorators、template literal。
 - [x] 覆盖 import alias、re-export、dynamic import、跨文件静态常量。
@@ -70,10 +71,15 @@
 
 - [x] 创建 `@ai-i18n/vite` 插件入口。
 - [x] 在 `configResolved` 后基于 Vite root 归一化路径。
-- [x] 使用 hook filters 限定默认 JS/TS。
+- [x] 使用 hook filters 限定默认 JS/TS/JSX/TSX，并让 JSX 入口保持框架中立。
 - [x] 识别来自约定虚拟模块的 `t` binding 和 alias。
+- [x] React/Vue Hook binding 覆盖普通 JS/TS composable/custom Hook。
+- [x] 支持 Hook 解构 alias 与 `i18n.t()` 成员调用。
+- [x] Vue SFC 使用 compiler-sfc 真实 setup/template 作用域和 source map。
+- [x] Vue 外部 `<script src>` 作为独立 JS/TS 模块提取。
 - [x] 拒绝其他来源的同名 `t()`。
 - [x] 对动态参数输出带文件位置的 warning。
+- [x] 对尚未解析的静态依赖输出 warning 并保持 pending，支持省略式 `undefined` comment。
 - [x] 使用 `this.resolve` 解析 alias 和跨文件 import。
 - [x] 使用 `this.addWatchFile` 登记额外静态依赖。
 - [x] 建立 Dev 累计 ProjectState。
@@ -105,6 +111,10 @@
 - [x] 将旧版 `t-static-args` 迁入 `packages/eslint`，移除根私有包导出。
 - [x] 对齐 Vite/Yuku 的 `t()` binding、alias、跨文件常量和动态参数语义。
 - [x] 提供 ESLint flat config 使用方式，但不默认侵入宿主规则集。
+- [x] 默认用一条规则覆盖 Vanilla、React 和普通 TypeScript 中的 Vue Hook。
+- [x] ESLint 与 Vite 共用 Hook 成员调用、`undefined` comment 和动态参数诊断语义。
+- [x] 提供可选 `configs.vue`，检查 Vue SFC script、script setup 和模板表达式。
+- [x] Vue SFC 由宿主 `vue-eslint-parser` 接入，并与 Vite 共用 compiler-sfc 分析结果和位置映射。
 - [x] 将规则测试迁入 `packages/eslint/test` 并接入 workspace scripts。
 
 ## 6. Provider Coordinator
@@ -191,7 +201,7 @@
 
 - [x] 创建 `@ai-i18n/react/vite` extractor 入口。
 - [x] 创建 `@ai-i18n/react` client 入口。
-- [x] React extractor 扩展 `.jsx`/`.tsx` filter。
+- [x] React extractor 向框架中立的 `.jsx`/`.tsx` 分析入口注册 Hook 语义。
 - [x] 复用同一次 Yuku AST/semantic 结果，不重复 parse。
 - [x] 只提取显式 `t()`，不提取 JSXText 或普通 props。
 - [x] 实现基于 `useSyncExternalStore` 的 `useI18n()`。
@@ -206,6 +216,7 @@
 - [x] 支持 `extractors: [react(), vue(), html()]`。
 - [x] 相同物理文件避免被多个 extractor 重复提取。
 - [x] Vue/React mixed example 共享同一 Runtime 和 cache。
+- [x] Vue/React JSX 按 import binding 自动分析；宿主以 React 为 fallback、Vue 用可选 glob 路由。
 - [x] client entry 与 `/vite` entry 保持依赖隔离。
 
 ## 12. OpenAI-compatible Provider
