@@ -1,29 +1,31 @@
 {
   "files": {
     "src/main.tsx": {
-      "fingerprint": "sha256:88c79304a16cd3fe993438cf1bea5857b2f857079f1a5600a9ec80889c1790c8",
+      "fingerprint": "sha256:a13793c7c4ba1574bd802d5b0f5a116224a09c549e4004ea106ed0f5a6d25dd7",
       "messageIds": []
     },
     "src/ReactPanel.tsx": {
       "fingerprint": "sha256:ba6316ede86e414f32f81226f8a58a186efb2dc86bd40a7c9cb25063af8b1a3f",
-      "messageIds": [
-        "React 面板",
-        "切换到中文",
-        "当前语言"
-      ]
+      "messageIds": ["React 面板", "切换到中文", "当前语言"]
+    },
+    "src/vue/VueJsxPanel.tsx": {
+      "fingerprint": "sha256:acdc5c6b5ba08eb8e812955fc8574a964245c1d633b191567f60d8c39e1d7c2e",
+      "messageIds": ["Vue JSX 面板", "切换到英文", "当前语言"]
     },
     "src/VuePanel.vue": {
       "fingerprint": "sha256:9717fd14a8b37a87e0ccc1f3713eaed500ba3a65bf75531eba096835b69dc341",
-      "messageIds": [
-        "Vue 面板",
-        "切换到英文",
-        "当前语言"
-      ]
+      "messageIds": ["Vue 面板", "切换到英文", "当前语言"]
     }
   },
   "messages": {
     "React 面板": {
       "source": "React 面板",
+      "translations": {
+        "en-US": null
+      }
+    },
+    "Vue JSX 面板": {
+      "source": "Vue JSX 面板",
       "translations": {
         "en-US": null
       }

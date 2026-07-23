@@ -1,0 +1,45 @@
+{
+  "messages": [
+    {
+      "id": "Vue JSX 面板",
+      "locations": [
+        {
+          "column": 11,
+          "line": 10
+        }
+      ],
+      "source": "Vue JSX 面板",
+      "translations": {
+        "en-US": null
+      }
+    },
+    {
+      "id": "切换到英文",
+      "locations": [
+        {
+          "column": 9,
+          "line": 15
+        }
+      ],
+      "source": "切换到英文",
+      "translations": {
+        "en-US": null
+      }
+    },
+    {
+      "id": "当前语言",
+      "locations": [
+        {
+          "column": 9,
+          "line": 12
+        }
+      ],
+      "source": "当前语言",
+      "translations": {
+        "en-US": null
+      }
+    }
+  ],
+  "source": "src/vue/VueJsxPanel.tsx",
+  "version": 1
+}
