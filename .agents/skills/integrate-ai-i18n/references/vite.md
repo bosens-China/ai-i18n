@@ -45,7 +45,40 @@ aiI18n({
 
 Only include extractors used by the app. `html()` handles complete text bindings and, by default, `alt`, `aria-label`, `placeholder`, and `title`; pass `html({ attributes: [...] })` only to change that allowlist.
 
-Framework extractors contribute Hook semantics to the complete JS/TS module graph, not only to `.vue` or JSX/TSX preprocessing. This allows Vue composables and React custom Hooks in plain `.ts` files to remain statically extractable.
+JS, TS, JSX, and TSX enter the framework-neutral analyzer by default. Framework extractors
+contribute Hook semantics to that complete module graph, while the Vue extractor additionally
+normalizes SFCs. This allows Vue composables and React custom Hooks in plain `.ts` files to remain
+statically extractable.
+
+When Vue JSX and React JSX coexist, keep the host transforms mutually exclusive:
+
+```ts
+import { react as aiI18nReact } from '@ai-i18n/react/vite'
+import { aiI18n } from '@ai-i18n/vite'
+import { vue as aiI18nVue } from '@ai-i18n/vue/vite'
+import reactPlugin from '@vitejs/plugin-react'
+import vuePlugin from '@vitejs/plugin-vue'
+import vueJsx from '@vitejs/plugin-vue-jsx'
+import { defineConfig } from 'vite'
+
+export default defineConfig({
+  plugins: [
+    aiI18n({
+      sourceLang: 'zh-CN',
+      locales,
+      extractors: [aiI18nVue(), aiI18nReact()],
+    }),
+    vuePlugin(),
+    vueJsx({ include: '**/src/vue/**/*.{jsx,tsx}' }),
+    reactPlugin(),
+  ],
+})
+```
+
+The Vue include may be any glob and does not impose a filename convention. Use
+`/* @jsxImportSource vue */` when a shared tsconfig defaults JSX types to React, or split the two
+file sets into separate TypeScript project configs. React handles the unmatched fallback. Never
+let one JSX/TSX file use both runtimes.
 
 ## Optional LangChain Provider
 

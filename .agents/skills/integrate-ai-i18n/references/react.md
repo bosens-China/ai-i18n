@@ -50,3 +50,6 @@ export function SaveButton() {
 ```
 
 The hook subscribes through `useSyncExternalStore`, so language and translation updates re-render consumers. The extractor recognizes the Hook binding in JS, TS, JSX, and TSX, including custom Hooks in plain `.ts` files. Destructured aliases and `const i18n = useI18n(); i18n.t()` are supported. JSX text is not translated automatically; use static `t()` source and comment arguments.
+
+In a mixed React/Vue JSX project, keep React as the fallback for files outside the Vue JSX plugin's
+explicit include glob. Do not require framework suffixes and do not compile one file with both runtimes.

@@ -28,6 +28,9 @@ Always read [Vite configuration](references/vite.md). Then read only the referen
 - Plain `.js` or `.ts`: [Vanilla integration](references/vanilla.md)
 
 For a mixed Vue/React app, read both framework references and register both extractors in one `aiI18n()` instance. Never create one ai-i18n project state per framework.
+If both frameworks author JSX/TSX, do not require framework-specific filenames. Let React handle
+the unmatched default and give the Vue JSX plugin an explicit include glob for its files. A single
+file must never be compiled by both runtimes. ai-i18n distinguishes Hooks by their import binding.
 
 ## Implement the smallest complete setup
 
@@ -56,7 +59,7 @@ keys into browser modules or generated protocol files.
 
 - Use explicit `t()` calls; ordinary strings, Vue text nodes, JSX text, and mixed HTML fragments are not guessed.
 - Keep the source and optional comment statically evaluable. Dynamic arguments produce warnings and are not extracted.
-- Registering a Vue or React extractor enables its Hook binding in plain JS/TS modules too, including composables and custom Hooks. Destructured aliases and `const i18n = useI18n(); i18n.t()` are supported.
+- JS/TS/JSX/TSX enter the shared analyzer independently of framework syntax transforms. Registering a Vue or React extractor enables its Hook binding across that graph, including composables and custom Hooks. Destructured aliases and `const i18n = useI18n(); i18n.t()` are supported.
 - Vue SFC extraction follows compiler-sfc bindings and local template scopes. External `<script src>` content is extracted under the external JS/TS file, not the `.vue` wrapper.
 - Treat an unbound `undefined` comment as omitted. An unresolved imported constant remains pending and also emits a warning until its dependency is analyzed.
 - Treat the optional comment as message identity and disambiguation, not translator-only prose.
