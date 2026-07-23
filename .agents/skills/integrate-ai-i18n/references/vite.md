@@ -45,6 +45,8 @@ aiI18n({
 
 Only include extractors used by the app. `html()` handles complete text bindings and, by default, `alt`, `aria-label`, `placeholder`, and `title`; pass `html({ attributes: [...] })` only to change that allowlist.
 
+Framework extractors contribute Hook semantics to the complete JS/TS module graph, not only to `.vue` or JSX/TSX preprocessing. This allows Vue composables and React custom Hooks in plain `.ts` files to remain statically extractable.
+
 ## Runtime and TypeScript
 
 The browser virtual module exports `t`, `setLang`, `getLang`, `getLangs`, and `subscribe`:

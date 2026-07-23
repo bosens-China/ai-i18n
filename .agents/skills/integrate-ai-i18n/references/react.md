@@ -49,4 +49,4 @@ export function SaveButton() {
 }
 ```
 
-The hook subscribes through `useSyncExternalStore`, so language and translation updates re-render consumers. Prefer the exact `const { t } = useI18n()` convention. JSX text is not translated automatically; use static `t()` source and comment arguments.
+The hook subscribes through `useSyncExternalStore`, so language and translation updates re-render consumers. The extractor recognizes the Hook binding in JS, TS, JSX, and TSX, including custom Hooks in plain `.ts` files. Destructured aliases and `const i18n = useI18n(); i18n.t()` are supported. JSX text is not translated automatically; use static `t()` source and comment arguments.

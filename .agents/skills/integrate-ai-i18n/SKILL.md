@@ -1,6 +1,6 @@
 ---
 name: integrate-ai-i18n
-description: Integrate ai-i18n into Vite 8 browser projects and configure its static extraction runtime for Vue 3, React 18/19, or vanilla JavaScript and TypeScript. Use when installing or registering @ai-i18n/vite, adding framework extractors, importing virtual:ai-i18n or useI18n, configuring locale output directories and virtual-module types, migrating an existing Vite app, or diagnosing an incomplete ai-i18n setup.
+description: Integrate ai-i18n into Vite 8 browser projects and configure its static extraction runtime for Vue 3, React 18/19, or vanilla JavaScript and TypeScript. Use when installing or registering @ai-i18n/vite, adding framework extractors, importing virtual:ai-i18n or useI18n, enabling optional ESLint static checks, configuring locale output directories and virtual-module types, migrating an existing Vite app, or diagnosing an incomplete ai-i18n setup.
 ---
 
 # Integrate ai-i18n
@@ -40,10 +40,20 @@ For a mixed Vue/React app, read both framework references and register both extr
 
 Do not add a translator, model, API key, HTML extraction, cleanup override, global store, Vue plugin installation, or React provider unless the project actually requires it.
 
+## Add ESLint checks only when requested
+
+- Install only `@ai-i18n/eslint-plugin` for ai-i18n semantics and expand `configs.recommended`.
+- For `.vue` files, preserve the host's `vue-eslint-parser` setup and additionally expand `configs.vue`.
+- Do not enable `configs.vue` for React or Vanilla projects, and do not treat React Hooks, React Refresh, or general Vue rules as part of ai-i18n.
+- The shared rule checks static `t()` arguments; it does not replace Vite extraction or generate protocol files.
+
 ## Preserve extraction semantics
 
 - Use explicit `t()` calls; ordinary strings, Vue text nodes, JSX text, and mixed HTML fragments are not guessed.
 - Keep the source and optional comment statically evaluable. Dynamic arguments produce warnings and are not extracted.
+- Registering a Vue or React extractor enables its Hook binding in plain JS/TS modules too, including composables and custom Hooks. Destructured aliases and `const i18n = useI18n(); i18n.t()` are supported.
+- Vue SFC extraction follows compiler-sfc bindings and local template scopes. External `<script src>` content is extracted under the external JS/TS file, not the `.vue` wrapper.
+- Treat an unbound `undefined` comment as omitted. An unresolved imported constant remains pending and also emits a warning until its dependency is analyzed.
 - Treat the optional comment as message identity and disambiguation, not translator-only prose.
 - Expect missing targets to be stored as `null` and runtime lookup to fall back to source text.
 - Commit `cache.json`, `extracted/**`, and `locales/**` together after Vite has reconciled them.

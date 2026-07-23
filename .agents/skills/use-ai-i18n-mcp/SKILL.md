@@ -17,6 +17,7 @@ Use the three ai-i18n tools in a read → translate → write → verify loop. N
 For a workspace rooted at the repository and a Vite app in `apps/web` using the defaults, pass `apps/web/i18n`. Never pass an absolute path or a path containing `..`. If the final directory is outside the MCP workspace root, stop and explain that the server root must be widened or changed.
 
 Require an existing `cache.json`. If the protocol files do not exist yet, run or ask the user to run the project's Vite Dev/Build command before continuing.
+Running `@ai-i18n/eslint-plugin` only validates static `t()` arguments; it never creates or reconciles these protocol files.
 
 ## Run the workflow
 
