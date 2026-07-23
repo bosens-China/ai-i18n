@@ -2,7 +2,11 @@ import fs from 'node:fs';
 import type { LangOption } from '@ai-i18n/core';
 import { normalizePath } from 'vite';
 import type { NormalizedAiI18nOptions } from './project-state.js';
-import type { SourceExtraction, SourceExtractor } from './extractor.js';
+import type {
+  SourceExtraction,
+  SourceExtractor,
+  TranslationHookBinding,
+} from './extractor.js';
 
 export function normalizeOptions(options: {
   sourceLang: string;
@@ -70,22 +74,35 @@ export function extractSource(
 }
 
 export function shouldIgnoreSource(id: string): boolean {
+  const query = id.includes('?')
+    ? new URLSearchParams(id.slice(id.indexOf('?') + 1))
+    : null;
+  const isVueSubmodule = Boolean(query?.has('vue') && query.has('type'));
+  const isExternalVueScript =
+    isVueSubmodule &&
+    query?.get('type') === 'script' &&
+    query.get('src') === 'true';
   return (
     id.includes('/node_modules/') ||
     id.includes('?html-proxy') ||
-    id.includes('?vue&type=')
+    (isVueSubmodule && !isExternalVueScript)
   );
 }
 
 export function sourceUpdateOptions(
   extraction: SourceExtraction | undefined,
   sourceCode: string,
+  globalTranslationHooks: readonly TranslationHookBinding[] = [],
 ) {
-  return extraction
-    ? {
-        sourceCode,
-        mapLocation: extraction.mapLocation,
-        translationHooks: extraction.translationHooks,
-      }
-    : undefined;
+  const translationHooks = [
+    ...globalTranslationHooks,
+    ...(extraction?.translationHooks ?? []),
+  ];
+  if (!extraction && !translationHooks.length) return undefined;
+  return {
+    sourceCode,
+    analysisLang: extraction?.analysisLang,
+    mapLocation: extraction?.mapLocation,
+    translationHooks,
+  };
 }

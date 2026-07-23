@@ -4,7 +4,7 @@ import path from 'node:path';
 import type { TranslationResult, Translator } from '@ai-i18n/core';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { ResolvedConfig } from 'vite';
-import { aiI18n, type AiI18nOptions } from '../src/index';
+import { aiI18n, type AiI18nOptions, type SourceExtractor } from '../src/index';
 
 const tempDirs: string[] = [];
 let unitDirectoryIndex = 0;
@@ -19,9 +19,9 @@ const options = {
 
 afterEach(async () => {
   await Promise.all(
-    tempDirs.splice(0).map((directory) =>
-      fs.rm(directory, { recursive: true, force: true }),
-    ),
+    tempDirs
+      .splice(0)
+      .map((directory) => fs.rm(directory, { recursive: true, force: true })),
   );
 });
 
@@ -42,7 +42,10 @@ describe('@ai-i18n/vite plugin', () => {
     const registerId = 'virtual:ai-i18n/register?module=src%2Fmain.ts';
     const resolved = callHook<string | undefined>(plugin.resolveId, registerId);
     expect(resolved).toBe(`\0${registerId}`);
-    const registration = await callHook<Promise<string>>(plugin.load, resolved!);
+    const registration = await callHook<Promise<string>>(
+      plugin.load,
+      resolved!,
+    );
     expect(registration).toContain('"zh-CN":{"保存#按钮":"保存"}');
     expect(registration).toContain('"en-US":{"保存#按钮":null}');
     expect(registration).toContain('import.meta.hot.dispose');
@@ -90,7 +93,9 @@ describe('@ai-i18n/vite plugin', () => {
         },
       });
     });
-    expect(await readJson(path.join(directory, 'locales/en-US.json'))).toMatchObject({
+    expect(
+      await readJson(path.join(directory, 'locales/en-US.json')),
+    ).toMatchObject({
       messages: { 保存: 'Save' },
     });
 
@@ -98,16 +103,18 @@ describe('@ai-i18n/vite plugin', () => {
       directory,
       'extracted/src/provider.ts.json',
     );
-    const hotUpdate = objectHandler<(
-      this: unknown,
-      options: {
-        type: 'update';
-        file: string;
-        timestamp: number;
-        modules: unknown[];
-        read: () => Promise<string>;
-      },
-    ) => Promise<unknown[] | undefined>>(plugin.hotUpdate);
+    const hotUpdate = objectHandler<
+      (
+        this: unknown,
+        options: {
+          type: 'update';
+          file: string;
+          timestamp: number;
+          modules: unknown[];
+          read: () => Promise<string>;
+        },
+      ) => Promise<unknown[] | undefined>
+    >(plugin.hotUpdate);
     const generated = await fs.readFile(extractedFile, 'utf8');
     hotSend.mockClear();
     await expect(
@@ -155,8 +162,51 @@ describe('@ai-i18n/vite plugin', () => {
   it('does not change modules without an imported t call', async () => {
     const { transform } = setupPlugin();
     expect(
-      await transform('const t = (value) => value; t("ignored")', '/workspace/src/plain.ts'),
+      await transform(
+        'const t = (value) => value; t("ignored")',
+        '/workspace/src/plain.ts',
+      ),
     ).toBeNull();
+  });
+
+  it('analyzes JSX and TSX as framework-neutral source files', async () => {
+    const { transform } = setupPlugin();
+    const jsx = await transform(
+      "import { t } from 'virtual:ai-i18n'; export const view = <p>{t('JSX 文案')}</p>",
+      '/workspace/src/View.jsx',
+    );
+    const tsx = await transform(
+      "import { t } from 'virtual:ai-i18n'; export const view = <p>{t('TSX 文案')}</p>",
+      '/workspace/src/View.tsx',
+    );
+
+    expect(jsx?.code).toContain('register?module=src%2FView.jsx');
+    expect(tsx?.code).toContain('register?module=src%2FView.tsx');
+  });
+
+  it('distinguishes Vue and React JSX Hooks by import binding', async () => {
+    const { transform } = setupPlugin([], undefined, {
+      ...options,
+      extractors: [
+        hookSemantics('vue', '@ai-i18n/vue'),
+        hookSemantics('react', '@ai-i18n/react'),
+      ],
+    });
+    const vue = await transform(
+      `import { useI18n } from '@ai-i18n/vue'
+const { t } = useI18n()
+export const View = () => <p>{t('Vue JSX')}</p>`,
+      '/workspace/src/FeatureA.tsx',
+    );
+    const react = await transform(
+      `import { useI18n } from '@ai-i18n/react'
+const { t } = useI18n()
+export const View = () => <p>{t('React JSX')}</p>`,
+      '/workspace/src/FeatureB.tsx',
+    );
+
+    expect(vue?.code).toContain('register?module=src%2FFeatureA.tsx');
+    expect(react?.code).toContain('register?module=src%2FFeatureB.tsx');
   });
 
   it('reports dynamic arguments with source locations', async () => {
@@ -180,16 +230,18 @@ describe('@ai-i18n/vite plugin', () => {
     );
     const register = { id: '\0virtual:ai-i18n/register?module=src%2Fhot.ts' };
     const invalidateModule = vi.fn();
-    const hotUpdate = objectHandler<(
-      this: unknown,
-      options: {
-        type: 'update';
-        file: string;
-        timestamp: number;
-        modules: unknown[];
-        read: () => Promise<string>;
-      },
-    ) => Promise<unknown[] | undefined>>(plugin.hotUpdate);
+    const hotUpdate = objectHandler<
+      (
+        this: unknown,
+        options: {
+          type: 'update';
+          file: string;
+          timestamp: number;
+          modules: unknown[];
+          read: () => Promise<string>;
+        },
+      ) => Promise<unknown[] | undefined>
+    >(plugin.hotUpdate);
     const result = await hotUpdate.call(
       {
         environment: {
@@ -219,10 +271,12 @@ describe('@ai-i18n/vite plugin', () => {
   });
 
   it('invalidates importer registration when an imported constant changes', async () => {
-    const { plugin, transform } = setupPlugin([], async (specifier, importer) =>
-      specifier === './texts' && importer === '/workspace/src/main.ts'
-        ? { id: '/workspace/src/texts.ts' }
-        : null,
+    const { plugin, transform } = setupPlugin(
+      [],
+      async (specifier, importer) =>
+        specifier === './texts' && importer === '/workspace/src/main.ts'
+          ? { id: '/workspace/src/texts.ts' }
+          : null,
     );
     await transform("export const LABEL = 'before'", '/workspace/src/texts.ts');
     await transform(
@@ -232,16 +286,18 @@ describe('@ai-i18n/vite plugin', () => {
 
     const register = { id: '\0virtual:ai-i18n/register?module=src%2Fmain.ts' };
     const invalidateModule = vi.fn();
-    const hotUpdate = objectHandler<(
-      this: unknown,
-      options: {
-        type: 'update';
-        file: string;
-        timestamp: number;
-        modules: unknown[];
-        read: () => Promise<string>;
-      },
-    ) => Promise<unknown[] | undefined>>(plugin.hotUpdate);
+    const hotUpdate = objectHandler<
+      (
+        this: unknown,
+        options: {
+          type: 'update';
+          file: string;
+          timestamp: number;
+          modules: unknown[];
+          read: () => Promise<string>;
+        },
+      ) => Promise<unknown[] | undefined>
+    >(plugin.hotUpdate);
     const result = await hotUpdate.call(
       {
         environment: {
@@ -282,17 +338,15 @@ describe('@ai-i18n/vite plugin', () => {
       ),
     ).resolves.toBeNull();
 
-    const runtimeId = callHook<string>(
-      plugin.resolveId,
-      'virtual:ai-i18n',
-    );
-    const load = objectHandler<(
-      this: unknown,
-      id: string,
-      options: { ssr: boolean },
-    ) => Promise<string>>(plugin.load);
+    const runtimeId = callHook<string>(plugin.resolveId, 'virtual:ai-i18n');
+    const load = objectHandler<
+      (this: unknown, id: string, options: { ssr: boolean }) => Promise<string>
+    >(plugin.load);
     const stub = await load.call(
-      { environment: { name: 'ssr' }, warn: (value: unknown) => warnings.push(value) },
+      {
+        environment: { name: 'ssr' },
+        warn: (value: unknown) => warnings.push(value),
+      },
       runtimeId,
       { ssr: true },
     );
@@ -301,8 +355,19 @@ describe('@ai-i18n/vite plugin', () => {
     expect(stub).not.toContain('createI18nRuntime');
     expect(warnings).toHaveLength(1);
   });
-
 });
+
+function hookSemantics(kind: string, module: string): SourceExtractor {
+  return {
+    kind,
+    translationHooks: [{ module, hook: 'useI18n', property: 't' }],
+    test: () => false,
+    extract: (code) => ({
+      analysisCode: code,
+      mapLocation: (location) => location,
+    }),
+  };
+}
 
 function setupPlugin(
   warnings: unknown[] = [],
@@ -329,12 +394,14 @@ function setupPlugin(
     root: '/workspace',
     command: 'serve',
   } as ResolvedConfig);
-  const handler = objectHandler<(
-    this: unknown,
-    code: string,
-    id: string,
-    options?: { ssr?: boolean },
-  ) => Promise<{ code: string; map: unknown } | null>>(plugin.transform);
+  const handler = objectHandler<
+    (
+      this: unknown,
+      code: string,
+      id: string,
+      options?: { ssr?: boolean },
+    ) => Promise<{ code: string; map: unknown } | null>
+  >(plugin.transform);
   const hotSend = vi.fn();
   const context = {
     environment: { name: 'client', hot: { send: hotSend } },
@@ -362,7 +429,9 @@ function objectHandler<T>(hook: unknown): T {
 
 function callHook<T>(hook: unknown, ...args: unknown[]): T {
   const handler =
-    typeof hook === 'function' ? hook : objectHandler<(...values: unknown[]) => T>(hook);
+    typeof hook === 'function'
+      ? hook
+      : objectHandler<(...values: unknown[]) => T>(hook);
   return handler.apply(
     {
       environment: { name: 'client' },

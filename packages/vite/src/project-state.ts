@@ -15,7 +15,11 @@ import {
 import { normalizePath } from 'vite';
 import { Analyzer, analyzeModule, extractMessages } from './yuku-analyzer.js';
 import type { ExtractResult, ExtractedMessage } from './yuku-analyzer.js';
-import type { SourceLocation, TranslationHookBinding } from './extractor.js';
+import type {
+  AnalysisLanguage,
+  SourceLocation,
+  TranslationHookBinding,
+} from './extractor.js';
 
 export interface NormalizedAiI18nOptions {
   sourceLang: string;
@@ -67,7 +71,8 @@ export class ProjectState {
 
   normalizeId(id: string): string | null {
     const cleanId = normalizePath(id.split('?')[0]!.replaceAll('\\', '/'));
-    if (cleanId.includes('/node_modules/') || cleanId.startsWith('\0')) return null;
+    if (cleanId.includes('/node_modules/') || cleanId.startsWith('\0'))
+      return null;
     const cleanRoot = normalizePath(this.root.replaceAll('\\', '/'));
     if (WINDOWS_ABSOLUTE_RE.test(cleanId)) {
       const relative = path.posix.relative(cleanRoot, cleanId);
@@ -83,13 +88,14 @@ export class ProjectState {
     id: string,
     options: {
       sourceCode?: string;
+      analysisLang?: AnalysisLanguage;
       mapLocation?: (location: SourceLocation) => SourceLocation;
       translationHooks?: readonly TranslationHookBinding[];
     } = {},
   ): ProjectUpdate | null {
     const moduleId = this.normalizeId(id);
     if (!moduleId) return null;
-    analyzeModule(code, moduleId, this.analyzer);
+    analyzeModule(code, moduleId, this.analyzer, options.analysisLang);
     this.seen.add(moduleId);
     this.fingerprints.set(
       moduleId,
@@ -144,7 +150,11 @@ export class ProjectState {
     return [...new Set([moduleId, ...affected])];
   }
 
-  setResolution(importer: string, specifier: string, resolvedId: string): boolean {
+  setResolution(
+    importer: string,
+    specifier: string,
+    resolvedId: string,
+  ): boolean {
     const importerId = this.normalizeId(importer);
     const targetId = this.normalizeId(resolvedId);
     if (!importerId || !targetId) return false;
@@ -169,10 +179,7 @@ export class ProjectState {
 
   hydrateCache(cache: CacheFileV1): string[] {
     const changedIds = new Set<string>();
-    const nextTranslations = new Map<
-      string,
-      Map<string, TranslationValue>
-    >();
+    const nextTranslations = new Map<string, Map<string, TranslationValue>>();
     for (const [messageId, message] of Object.entries(cache.messages)) {
       for (const [locale, value] of Object.entries(message.translations)) {
         const translations = nextTranslations.get(locale) ?? new Map();
@@ -210,7 +217,8 @@ export class ProjectState {
         .filter(
           (locale) =>
             locale.value !== this.options.sourceLang &&
-            (this.translations.get(locale.value)?.get(message.id) ?? null) === null,
+            (this.translations.get(locale.value)?.get(message.id) ?? null) ===
+              null,
         )
         .map((locale) => ({
           messageId: message.id,
@@ -226,11 +234,7 @@ export class ProjectState {
     for (const result of results) {
       const translations = this.translations.get(result.locale) ?? new Map();
       const current = translations.get(result.messageId);
-      if (
-        current != null &&
-        result.value != null &&
-        current !== result.value
-      ) {
+      if (current != null && result.value != null && current !== result.value) {
         throw new TranslationConflictError(result.messageId, result.locale);
       }
       if (result.value === null || current === result.value) continue;
@@ -353,7 +357,9 @@ export class ProjectState {
     return affected;
   }
 
-  private targetTranslations(messageId: string): Record<string, TranslationValue> {
+  private targetTranslations(
+    messageId: string,
+  ): Record<string, TranslationValue> {
     return Object.fromEntries(
       this.options.locales
         .filter((locale) => locale.value !== this.options.sourceLang)

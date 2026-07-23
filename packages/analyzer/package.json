@@ -1,11 +1,10 @@
 {
-  "name": "@ai-i18n/eslint-plugin",
+  "name": "@ai-i18n/analyzer",
   "version": "0.0.0",
-  "description": "ESLint 9 static-argument checks aligned with ai-i18n extraction semantics.",
+  "description": "Shared Yuku-based static translation analysis for ai-i18n tooling.",
   "keywords": [
-    "eslint",
-    "eslintplugin",
     "i18n",
+    "static-analysis",
     "translation"
   ],
   "type": "module",
@@ -19,6 +18,10 @@
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
+    },
+    "./vue": {
+      "types": "./dist/vue.d.ts",
+      "import": "./dist/vue.js"
     }
   },
   "scripts": {
@@ -26,18 +29,15 @@
     "check": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@ai-i18n/analyzer": "workspace:*"
+    "@ai-i18n/core": "workspace:*",
+    "source-map-js": "1.2.1",
+    "yuku-analyzer": "0.7.3"
   },
   "peerDependencies": {
-    "@vue/compiler-sfc": "^3.5.0",
-    "eslint": "^9.0.0",
-    "vue-eslint-parser": "^10.0.0"
+    "@vue/compiler-sfc": "^3.5.0"
   },
   "peerDependenciesMeta": {
     "@vue/compiler-sfc": {
-      "optional": true
-    },
-    "vue-eslint-parser": {
       "optional": true
     }
   },
@@ -48,7 +48,6 @@
     "access": "public"
   },
   "devDependencies": {
-    "@vue/compiler-sfc": "^3.5.34",
-    "vue-eslint-parser": "^10.4.1"
+    "@vue/compiler-sfc": "^3.5.34"
   }
 }

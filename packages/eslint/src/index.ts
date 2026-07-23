@@ -16,6 +16,15 @@ const plugin: ESLint.Plugin = {
 // 规则集必须由使用者显式引入，不会修改宿主项目的 ESLint 配置。
 plugin.configs!.recommended = [
   {
+    ignores: ['**/*.vue'],
+    plugins: { 'ai-i18n': plugin },
+    rules: { 'ai-i18n/t-static-args': 'error' },
+  },
+];
+
+plugin.configs!.vue = [
+  {
+    files: ['**/*.vue'],
     plugins: { 'ai-i18n': plugin },
     rules: { 'ai-i18n/t-static-args': 'error' },
   },

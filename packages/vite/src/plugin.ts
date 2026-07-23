@@ -22,13 +22,17 @@ import {
   shouldIgnoreSource,
   sourceUpdateOptions,
 } from './plugin-utils.js';
-import { registerCode, runtimeCode, runtimeStubCode } from './virtual-modules.js';
+import {
+  registerCode,
+  runtimeCode,
+  runtimeStubCode,
+} from './virtual-modules.js';
 import { AI_I18N_VIRTUAL_MODULE_ID } from './yuku-analyzer.js';
 
 const RESOLVED_RUNTIME_ID = `\0${AI_I18N_VIRTUAL_MODULE_ID}`;
 const REGISTER_PREFIX = `${AI_I18N_VIRTUAL_MODULE_ID}/register?module=`;
 const RESOLVED_REGISTER_PREFIX = `\0${REGISTER_PREFIX}`;
-const JS_TS_RE = /\.(?:[cm]?js|[cm]?ts)(?:\?.*)?$/;
+const JS_TSX_RE = /\.(?:[cm]?js|[cm]?ts|jsx|tsx)(?:\?.*)?$/;
 const SOURCE_RE = /\.(?:[cm]?[jt]sx?|vue)(?:\?.*)?$/;
 const VIRTUAL_RE = /^virtual:ai-i18n(?:\/register\?module=.+)?$/;
 const RESOLVED_VIRTUAL_RE = /^\0virtual:ai-i18n(?:\/register\?module=.+)?$/;
@@ -52,7 +56,6 @@ export interface AiI18nOptions {
   };
   extractors?: readonly (HtmlExtractor | SourceExtractor)[];
 }
-
 export function aiI18n(options: AiI18nOptions): Plugin {
   const normalized = normalizeOptions(options);
   const htmlExtractor = options.extractors?.find(
@@ -60,6 +63,9 @@ export function aiI18n(options: AiI18nOptions): Plugin {
   ) as HtmlExtractor | undefined;
   const sourceExtractors = (options.extractors ?? []).filter(
     (extractor): extractor is SourceExtractor => 'test' in extractor,
+  );
+  const translationHooks = sourceExtractors.flatMap(
+    (extractor) => extractor.translationHooks ?? [],
   );
   let config: ResolvedConfig | undefined;
   let state: ProjectState | undefined;
@@ -75,7 +81,8 @@ export function aiI18n(options: AiI18nOptions): Plugin {
   }
 
   function currentStore() {
-    if (!store) throw new Error('[ai-i18n] file store used before configResolved');
+    if (!store)
+      throw new Error('[ai-i18n] file store used before configResolved');
     return store;
   }
 
@@ -159,7 +166,9 @@ export function aiI18n(options: AiI18nOptions): Plugin {
         if (loadOptions?.ssr || this.environment.name !== 'client') {
           if (!warnedSsr) {
             warnedSsr = true;
-            this.warn('[ai-i18n] SSR runtime is not supported; injection skipped.');
+            this.warn(
+              '[ai-i18n] SSR runtime is not supported; injection skipped.',
+            );
           }
           return id === RESOLVED_RUNTIME_ID ? runtimeStubCode() : 'export {}';
         }
@@ -186,7 +195,7 @@ export function aiI18n(options: AiI18nOptions): Plugin {
           code,
           id,
           sourceExtractors,
-          JS_TS_RE.test(id),
+          JS_TSX_RE.test(id),
         );
         if (extraction === null) return null;
         if (transformOptions?.ssr || this.environment.name !== 'client') {
@@ -205,7 +214,7 @@ export function aiI18n(options: AiI18nOptions): Plugin {
         let update = project.update(
           extraction?.analysisCode ?? code,
           id,
-          sourceUpdateOptions(extraction, code),
+          sourceUpdateOptions(extraction, code, translationHooks),
         );
         if (!update) return null;
         const { moduleId } = update;
@@ -216,7 +225,11 @@ export function aiI18n(options: AiI18nOptions): Plugin {
             const resolved = await this.resolve(imported.specifier, id, {
               skipSelf: true,
             });
-            if (resolved && !resolved.external && !resolved.id.startsWith('\0')) {
+            if (
+              resolved &&
+              !resolved.external &&
+              !resolved.id.startsWith('\0')
+            ) {
               this.addWatchFile(resolved.id);
               analysisChanged =
                 project.setResolution(id, imported.specifier, resolved.id) ||
@@ -237,7 +250,7 @@ export function aiI18n(options: AiI18nOptions): Plugin {
           update = project.update(
             extraction?.analysisCode ?? code,
             id,
-            sourceUpdateOptions(extraction, code),
+            sourceUpdateOptions(extraction, code, translationHooks),
           )!;
         }
         const { result } = update;
@@ -256,10 +269,9 @@ export function aiI18n(options: AiI18nOptions): Plugin {
         const importId = `${REGISTER_PREFIX}${encodeURIComponent(moduleId)}`;
         const currentModule = project.analyzer.module(moduleId);
         const registration = extraction?.registration;
-        const offset = registration?.offset ?? registrationImportOffset(
-          code,
-          currentModule?.ast.body ?? [],
-        );
+        const offset =
+          registration?.offset ??
+          registrationImportOffset(code, currentModule?.ast.body ?? []);
         const injected = registration
           ? `${registration.prefix ?? ''}import ${JSON.stringify(importId)};\n${registration.suffix ?? ''}`
           : `${offset ? '\n' : ''}import ${JSON.stringify(importId)};\n`;
@@ -322,7 +334,11 @@ export function aiI18n(options: AiI18nOptions): Plugin {
             {
               tag: 'script',
               attrs: { type: 'module' },
-              children: htmlBridgeCode(update.moduleId, messages, result.bindings),
+              children: htmlBridgeCode(
+                update.moduleId,
+                messages,
+                result.bindings,
+              ),
               injectTo: 'body',
             },
           ],
@@ -346,10 +362,7 @@ export function aiI18n(options: AiI18nOptions): Plugin {
           project.snapshot(),
           preferredSource,
         );
-        const updated = [
-          ...affected,
-          ...project.hydrateCache(reconciled),
-        ];
+        const updated = [...affected, ...project.hydrateCache(reconciled)];
         sendTranslationUpdates(updated);
         requestMissingTranslations(updated);
         return [];
@@ -358,9 +371,15 @@ export function aiI18n(options: AiI18nOptions): Plugin {
       const moduleId = project.normalizeId(options.file);
       if (!moduleId) return;
       const code = options.type === 'delete' ? undefined : await options.read();
-      const extraction = code === undefined
-        ? undefined
-        : extractSource(code, options.file, sourceExtractors, JS_TS_RE.test(options.file));
+      const extraction =
+        code === undefined
+          ? undefined
+          : extractSource(
+              code,
+              options.file,
+              sourceExtractors,
+              JS_TSX_RE.test(options.file),
+            );
       if (extraction === null) return;
       const affected =
         options.type === 'delete'
@@ -368,9 +387,8 @@ export function aiI18n(options: AiI18nOptions): Plugin {
           : (project.update(
               extraction?.analysisCode ?? code!,
               options.file,
-              sourceUpdateOptions(extraction, code!),
-            )
-              ?.affectedModuleIds ?? []);
+              sourceUpdateOptions(extraction, code!, translationHooks),
+            )?.affectedModuleIds ?? []);
       const cache = await currentStore().sync(project.snapshot());
       project.hydrateCache(cache);
       const registers = affected

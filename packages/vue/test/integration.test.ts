@@ -12,15 +12,17 @@ const tempDirs: string[] = [];
 
 afterEach(async () => {
   await Promise.all(
-    tempDirs.splice(0).map((directory) =>
-      fs.rm(directory, { recursive: true, force: true }),
-    ),
+    tempDirs
+      .splice(0)
+      .map((directory) => fs.rm(directory, { recursive: true, force: true })),
   );
 });
 
 describe('@ai-i18n/vue Vite integration', () => {
   it('builds after the extractor and writes SFC protocol files', async () => {
-    const temporaryRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'ai-i18n-vue-'));
+    const temporaryRoot = await fs.mkdtemp(
+      path.join(os.tmpdir(), 'ai-i18n-vue-'),
+    );
     const root = await fs.realpath(temporaryRoot);
     tempDirs.push(root);
     await fs.mkdir(path.join(root, 'src'));
@@ -33,15 +35,32 @@ describe('@ai-i18n/vue Vite integration', () => {
       "import { createApp } from 'vue'; import App from './App.vue'; createApp(App).mount('#app');",
     );
     await fs.writeFile(
+      path.join(root, 'src/External.vue'),
+      `<script lang="ts" src="./external.ts"></script>
+<template><p>{{ label }}</p></template>`,
+    );
+    await fs.writeFile(
+      path.join(root, 'src/external.ts'),
+      `import { useI18n } from '@ai-i18n/vue'
+export default {
+  setup() {
+    const i18n = useI18n()
+    return { label: i18n.t('外部脚本') }
+  },
+}`,
+    );
+    await fs.writeFile(
       path.join(root, 'src/App.vue'),
       `<script setup lang="ts">
 import { useI18n } from '@ai-i18n/vue'
+import External from './External.vue'
 const { t } = useI18n()
 const LABEL = '标题'
 </script>
 <template>
   <h1>{{ t(LABEL) }}</h1>
   <input :placeholder="t('请输入')">
+  <External />
   <p>普通文本</p>
 </template>`,
     );
@@ -49,7 +68,12 @@ const LABEL = '标题'
       requests.map((request) => ({
         messageId: request.messageId,
         locale: request.locale,
-        value: request.source === '标题' ? 'Title' : 'Type here',
+        value:
+          request.source === '标题'
+            ? 'Title'
+            : request.source === '外部脚本'
+              ? 'External'
+              : 'Type here',
       })),
     );
 
@@ -91,6 +115,7 @@ const LABEL = '标题'
 
     expect(code).toContain('Title');
     expect(code).toContain('Type here');
+    expect(code).toContain('External');
     expect(code).not.toContain('静态属性不提取');
     expect(translator).toHaveBeenCalled();
     expect(
@@ -98,9 +123,15 @@ const LABEL = '标题'
     ).toMatchObject({
       source: 'src/App.vue',
       messages: [
-        { id: '标题', locations: [{ line: 7 }] },
-        { id: '请输入', locations: [{ line: 8 }] },
+        { id: '标题', locations: [{ line: 8 }] },
+        { id: '请输入', locations: [{ line: 9 }] },
       ],
+    });
+    expect(
+      await readJson(path.join(root, 'i18n/extracted/src/external.ts.json')),
+    ).toMatchObject({
+      source: 'src/external.ts',
+      messages: [{ id: '外部脚本', locations: [{ line: 5 }] }],
     });
   });
 });

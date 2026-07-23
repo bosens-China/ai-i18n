@@ -14,6 +14,7 @@ export type { AiI18nOptions, AiI18nProviderOptions } from './plugin.js';
 export { html } from './html.js';
 export type { HtmlExtractor, HtmlExtractorOptions } from './html.js';
 export type {
+  AnalysisLanguage,
   RegistrationInsertion,
   SourceExtraction,
   SourceExtractor,

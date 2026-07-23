@@ -40,9 +40,14 @@ describe('Yuku admission spike', () => {
 
   it.each([
     ['fixture.js', "import { t } from 'virtual:ai-i18n'; t('js')"],
+    ['fixture.mjs', "import { t } from 'virtual:ai-i18n'; t('mjs')"],
     [
       'fixture.ts',
       "import { t } from 'virtual:ai-i18n'; const value: string = t('ts')",
+    ],
+    [
+      'fixture.mts',
+      "import { t } from 'virtual:ai-i18n'; const value: string = t('mts')",
     ],
     [
       'fixture.jsx',
@@ -66,6 +71,19 @@ describe('Yuku admission spike', () => {
     expect(extractMessages(module).messages).toHaveLength(1);
   });
 
+  it.each(['fixture.cjs', 'fixture.cts'])(
+    'does not guess CommonJS require bindings in %s',
+    (id) => {
+      const module = analyzeModule(
+        "const { t } = require('virtual:ai-i18n'); t('不提取')",
+        id,
+      );
+
+      expect(module.diagnostics).toEqual([]);
+      expect(extractMessages(module).messages).toEqual([]);
+    },
+  );
+
   it('requires t to resolve to the configured virtual module and supports aliases', () => {
     const module = analyzeModule(
       `
@@ -76,8 +94,41 @@ describe('Yuku admission spike', () => {
       `,
       'bindings.ts',
     );
-    expect(extractMessages(module).messages.map((message) => message.source)).toEqual([
-      '提取',
+    expect(
+      extractMessages(module).messages.map((message) => message.source),
+    ).toEqual(['提取']);
+  });
+
+  it('uses symbol identity when function and block bindings shadow t', () => {
+    const module = analyzeModule(
+      `import { t } from 'virtual:ai-i18n';
+t('外层提取');
+function render(t) { t('参数遮蔽不提取') }
+{ const t = (value) => value; t('块级遮蔽不提取') }`,
+      'shadowing.js',
+    );
+    const result = extractMessages(module);
+
+    expect(result.warnings).toEqual([]);
+    expect(result.messages.map((message) => message.source)).toEqual([
+      '外层提取',
+    ]);
+  });
+
+  it.each([
+    ['(LABEL)', 'parenthesized expression'],
+    ['LABEL as string', 'TypeScript as expression'],
+    ['<string>LABEL', 'TypeScript type assertion'],
+    ['LABEL!', 'TypeScript non-null expression'],
+  ])('extracts through %s (%s)', (expression) => {
+    const module = analyzeModule(
+      `import { t } from 'virtual:ai-i18n'; const LABEL = '静态包装'; t(${expression})`,
+      'wrappers.ts',
+    );
+
+    expect(module.diagnostics).toEqual([]);
+    expect(extractMessages(module).messages).toMatchObject([
+      { id: '静态包装', source: '静态包装' },
     ]);
   });
 
@@ -95,11 +146,7 @@ describe('Yuku admission spike', () => {
       AI_I18N_VIRTUAL_MODULE_ID,
       analyzer,
     );
-    analyzeModule(
-      "export { t } from 'virtual:ai-i18n'",
-      'bridge.ts',
-      analyzer,
-    );
+    analyzeModule("export { t } from 'virtual:ai-i18n'", 'bridge.ts', analyzer);
     analyzeModule("export const LABEL = '跨文件'", 'texts.ts', analyzer);
     const module = analyzeModule(
       "import { t as tr } from './bridge'; import { LABEL } from './texts'; tr(LABEL)",
@@ -134,6 +181,32 @@ describe('Yuku admission spike', () => {
       warnings: [{ file: 'dynamic.ts', line: 2, column: 0 }],
     });
   });
+
+  it('treats an unbound undefined comment as omitted', () => {
+    const module = analyzeModule(
+      "import { t } from 'virtual:ai-i18n';\nt('保存', undefined)",
+      'undefined-comment.ts',
+    );
+
+    expect(extractMessages(module)).toMatchObject({
+      messages: [{ id: '保存', source: '保存' }],
+      warnings: [],
+      pending: false,
+    });
+  });
+
+  it('warns while an imported const is still unresolved', () => {
+    const module = analyzeModule(
+      "import { t } from 'virtual:ai-i18n'; import { LABEL } from './labels'; t(LABEL)",
+      'pending.ts',
+    );
+
+    expect(extractMessages(module)).toMatchObject({
+      messages: [],
+      warnings: [{ file: 'pending.ts', line: 1 }],
+      pending: true,
+    });
+  });
 });
 
 function extractWithBabel(code: string) {
@@ -155,7 +228,10 @@ function extractWithBabel(code: string) {
       }
     },
     CallExpression(path) {
-      if (path.node.callee.type !== 'Identifier' || path.node.callee.name !== 't') {
+      if (
+        path.node.callee.type !== 'Identifier' ||
+        path.node.callee.name !== 't'
+      ) {
         return;
       }
       const sources = babelStrings(path.node.arguments[0], constants);
@@ -183,7 +259,11 @@ function babelStrings(
       return [node.value];
     case 'TemplateLiteral':
       return node.expressions.length === 0
-        ? [node.quasis.map((quasi) => quasi.value.cooked ?? quasi.value.raw).join('')]
+        ? [
+            node.quasis
+              .map((quasi) => quasi.value.cooked ?? quasi.value.raw)
+              .join(''),
+          ]
         : [];
     case 'Identifier': {
       if (seen.has(node.name)) return [];

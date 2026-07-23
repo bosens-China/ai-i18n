@@ -2,11 +2,17 @@
   "name": "@ai-i18n/vite",
   "version": "0.0.0",
   "description": "Vite 8 static extraction and browser runtime plugin for ai-i18n.",
-  "keywords": ["i18n", "translation", "vite"],
+  "keywords": [
+    "i18n",
+    "translation",
+    "vite"
+  ],
   "type": "module",
   "sideEffects": false,
   "files": [
-    "dist"
+    "dist",
+    "analyzer.d.ts",
+    "analyzer.js"
   ],
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -14,6 +20,10 @@
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
+    },
+    "./analyzer": {
+      "types": "./analyzer.d.ts",
+      "import": "./analyzer.js"
     },
     "./client": {
       "types": "./dist/client.d.ts",
@@ -29,6 +39,7 @@
     "check": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
+    "@ai-i18n/analyzer": "workspace:*",
     "@ai-i18n/core": "workspace:*",
     "magic-string": "0.30.21",
     "parse5": "8.0.0",

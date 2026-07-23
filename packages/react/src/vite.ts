@@ -7,13 +7,13 @@ export interface ReactExtractor extends SourceExtractor {
 export function react(): ReactExtractor {
   return {
     kind: 'react',
+    translationHooks: [
+      { module: '@ai-i18n/react', hook: 'useI18n', property: 't' },
+    ],
     test: (id) => /\.[jt]sx$/.test(id),
     extract: (code) => ({
       analysisCode: code,
       mapLocation: (location) => location,
-      translationHooks: [
-        { module: '@ai-i18n/react', hook: 'useI18n', property: 't' },
-      ],
     }),
   };
 }

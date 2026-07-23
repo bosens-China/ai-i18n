@@ -12,25 +12,37 @@ const tempDirs: string[] = [];
 
 afterEach(async () => {
   await Promise.all(
-    tempDirs.splice(0).map((directory) =>
-      fs.rm(directory, { recursive: true, force: true }),
-    ),
+    tempDirs
+      .splice(0)
+      .map((directory) => fs.rm(directory, { recursive: true, force: true })),
   );
 });
 
 describe('@ai-i18n/react Vite integration', () => {
   it('builds TSX and writes translated protocol files', async () => {
-    const temporaryRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'ai-i18n-react-'));
+    const temporaryRoot = await fs.mkdtemp(
+      path.join(os.tmpdir(), 'ai-i18n-react-'),
+    );
     const root = await fs.realpath(temporaryRoot);
     tempDirs.push(root);
     await fs.mkdir(path.join(root, 'src'));
     const entry = path.join(root, 'src/App.tsx');
     await fs.writeFile(
+      path.join(root, 'src/useLabels.ts'),
+      `import { useI18n } from '@ai-i18n/react';
+export function useLabels() {
+  const i18n = useI18n();
+  return i18n.t('组合 Hook');
+}`,
+    );
+    await fs.writeFile(
       entry,
       `import { useI18n } from '@ai-i18n/react';
+import { useLabels } from './useLabels';
 export function App() {
   const { t } = useI18n();
-  return <main title="普通属性"><h1>{t('标题')}</h1>普通 JSXText</main>;
+  const label = useLabels();
+  return <main title="普通属性"><h1>{t('标题')}</h1><p>{label}</p>普通 JSXText</main>;
 }`,
     );
     const translator: Translator = vi.fn(async (requests) =>
@@ -85,7 +97,13 @@ export function App() {
       await readJson(path.join(root, 'i18n/extracted/src/App.tsx.json')),
     ).toMatchObject({
       source: 'src/App.tsx',
-      messages: [{ id: '标题', locations: [{ line: 4 }] }],
+      messages: [{ id: '标题', locations: [{ line: 6 }] }],
+    });
+    expect(
+      await readJson(path.join(root, 'i18n/extracted/src/useLabels.ts.json')),
+    ).toMatchObject({
+      source: 'src/useLabels.ts',
+      messages: [{ id: '组合 Hook', locations: [{ line: 4 }] }],
     });
   });
 });
