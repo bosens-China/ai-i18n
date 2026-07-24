@@ -1,5 +1,54 @@
 {
   "messages": {
+    "当前语言": {
+      "sourceLang": "zh-CN",
+      "translations": {
+        "en-US": "Current language",
+        "ja-JP": "現在の言語"
+      }
+    },
+    "交互式语言切换演示": {
+      "sourceLang": "zh-CN",
+      "translations": {
+        "en-US": "Interactive language switch demo",
+        "ja-JP": "インタラクティブ言語切り替えデモ"
+      }
+    },
+    "模板会自动响应 Runtime 状态。": {
+      "sourceLang": "zh-CN",
+      "translations": {
+        "en-US": "The template reacts to Runtime state automatically.",
+        "ja-JP": "テンプレートは Runtime の状態に自動的に反応します。"
+      }
+    },
+    "切换语言": {
+      "sourceLang": "zh-CN",
+      "translations": {
+        "en-US": "Switch language",
+        "ja-JP": "言語切り替え"
+      }
+    },
+    "文案变化": {
+      "sourceLang": "zh-CN",
+      "translations": {
+        "en-US": "Copy changes",
+        "ja-JP": "テキストの変化"
+      }
+    },
+    "响应式文案会随语言立即更新": {
+      "sourceLang": "zh-CN",
+      "translations": {
+        "en-US": "Reactive copy updates immediately with the language",
+        "ja-JP": "リアクティブなテキストは言語に合わせて即座に更新されます"
+      }
+    },
+    "语言": {
+      "sourceLang": "zh-CN",
+      "translations": {
+        "en-US": "Language",
+        "ja-JP": "言語"
+      }
+    },
     "ai-i18n Vue 示例": {
       "sourceLang": "zh-CN",
       "translations": {
@@ -19,55 +68,6 @@
       "translations": {
         "en-US": "Vue demo",
         "ja-JP": "Vue デモ"
-      }
-    },
-    "交互式语言切换演示": {
-      "sourceLang": "zh-CN",
-      "translations": {
-        "en-US": "Interactive language switch demo",
-        "ja-JP": "インタラクティブ言語切り替えデモ"
-      }
-    },
-    "切换语言": {
-      "sourceLang": "zh-CN",
-      "translations": {
-        "en-US": "Switch language",
-        "ja-JP": "言語切り替え"
-      }
-    },
-    "响应式文案会随语言立即更新": {
-      "sourceLang": "zh-CN",
-      "translations": {
-        "en-US": "Reactive copy updates immediately with the language",
-        "ja-JP": "リアクティブなテキストは言語に合わせて即座に更新されます"
-      }
-    },
-    "当前语言": {
-      "sourceLang": "zh-CN",
-      "translations": {
-        "en-US": "Current language",
-        "ja-JP": "現在の言語"
-      }
-    },
-    "文案变化": {
-      "sourceLang": "zh-CN",
-      "translations": {
-        "en-US": "Copy changes",
-        "ja-JP": "テキストの変化"
-      }
-    },
-    "模板会自动响应 Runtime 状态。": {
-      "sourceLang": "zh-CN",
-      "translations": {
-        "en-US": "The template reacts to Runtime state automatically.",
-        "ja-JP": "テンプレートは Runtime の状態に自動的に反応します。"
-      }
-    },
-    "语言": {
-      "sourceLang": "zh-CN",
-      "translations": {
-        "en-US": "Language",
-        "ja-JP": "言語"
       }
     }
   },

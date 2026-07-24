@@ -12,22 +12,11 @@ const currentLanguageLabel = computed(
 <template>
   <main class="demo-app">
     <header class="demo-header">
-      <p class="demo-eyebrow">useI18n · Vue 3</p>
-      <h1>{{ t('Vue 示例') }}</h1>
-    </header>
-
-    <section class="demo-panel" :aria-label="t('交互式语言切换演示')">
-      <article class="demo-card">
-        <span class="demo-label">{{ t('当前语言') }}</span>
-        <div class="locale-readout" aria-live="polite">
-          <span class="status-dot" aria-hidden="true"></span>
-          <strong>{{ currentLanguageLabel }}</strong>
-          <code>{{ currentLang }}</code>
-        </div>
-      </article>
-
-      <article class="demo-card">
-        <span class="demo-label">{{ t('切换语言') }}</span>
+      <div class="header-titles">
+        <p class="demo-eyebrow">useI18n · Vue 3</p>
+        <h1>{{ t('Vue 示例') }}</h1>
+      </div>
+      <div class="header-controls">
         <label class="language-control">
           <span class="sr-only">{{ t('语言') }}</span>
           <select
@@ -39,6 +28,17 @@ const currentLanguageLabel = computed(
             </option>
           </select>
         </label>
+      </div>
+    </header>
+
+    <section class="demo-panel" :aria-label="t('交互式语言切换演示')">
+      <article class="demo-card">
+        <span class="demo-label">{{ t('当前语言') }}</span>
+        <div class="locale-readout" aria-live="polite">
+          <span class="status-dot" aria-hidden="true"></span>
+          <strong>{{ currentLanguageLabel }}</strong>
+          <code>{{ currentLang }}</code>
+        </div>
       </article>
 
       <article class="demo-card demo-card--highlight">

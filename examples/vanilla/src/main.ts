@@ -11,8 +11,23 @@ function render() {
   app.innerHTML = `
     <main class="demo-app">
       <header class="demo-header">
-        <p class="demo-eyebrow">virtual:ai-i18n</p>
-        <h1>${t('Vanilla 示例')}</h1>
+        <div class="header-titles">
+          <p class="demo-eyebrow">virtual:ai-i18n</p>
+          <h1>${t('Vanilla 示例')}</h1>
+        </div>
+        <div class="header-controls">
+          <label class="language-control">
+            <span class="sr-only">${t('语言')}</span>
+            <select id="language">
+              ${langs
+                .map(
+                  ({ value, label }) =>
+                    `<option value="${value}">${label}</option>`,
+                )
+                .join('')}
+            </select>
+          </label>
+        </div>
       </header>
 
       <section class="demo-panel" aria-label="${t('交互式语言切换演示')}">
@@ -25,20 +40,7 @@ function render() {
           </div>
         </article>
 
-        <article class="demo-card">
-          <span class="demo-label">${t('切换语言')}</span>
-          <label class="language-control">
-            <span class="sr-only">${t('语言')}</span>
-            <select id="language">
-              ${langs
-                .map(
-                  ({ value, label }) =>
-                    `<option value="${value}">${label}</option>`,
-                )
-                .join('')}
-            </select>
-          </label>
-        </article>
+
 
         <article class="demo-card demo-card--highlight">
           <span class="demo-label">${t('文案变化')}</span>

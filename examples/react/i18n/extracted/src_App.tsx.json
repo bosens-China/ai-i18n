@@ -1,29 +1,16 @@
 {
   "messages": [
     {
-      "id": "React 示例",
+      "id": "当前语言",
       "locations": [
         {
-          "column": 13,
-          "line": 9
+          "column": 40,
+          "line": 31
         }
       ],
-      "source": "React 示例",
+      "source": "当前语言",
       "translations": {
-        "en-US": "React demo"
-      }
-    },
-    {
-      "id": "useI18n 实时订阅 Runtime 并重渲染。",
-      "locations": [
-        {
-          "column": 19,
-          "line": 42
-        }
-      ],
-      "source": "useI18n 实时订阅 Runtime 并重渲染。",
-      "translations": {
-        "en-US": "useI18n subscribes to the Runtime and re-renders in real time."
+        "en-US": "Current language"
       }
     },
     {
@@ -31,7 +18,7 @@
       "locations": [
         {
           "column": 50,
-          "line": 12
+          "line": 29
         }
       ],
       "source": "交互式语言切换演示",
@@ -44,7 +31,7 @@
       "locations": [
         {
           "column": 16,
-          "line": 41
+          "line": 42
         }
       ],
       "source": "切换后，这段文案会立即更新。",
@@ -53,42 +40,55 @@
       }
     },
     {
-      "id": "切换语言",
-      "locations": [
-        {
-          "column": 40,
-          "line": 23
-        }
-      ],
-      "source": "切换语言",
-      "translations": {
-        "en-US": "Switch language"
-      }
-    },
-    {
-      "id": "当前语言",
-      "locations": [
-        {
-          "column": 40,
-          "line": 14
-        }
-      ],
-      "source": "当前语言",
-      "translations": {
-        "en-US": "Current language"
-      }
-    },
-    {
       "id": "文案变化",
       "locations": [
         {
           "column": 40,
-          "line": 39
+          "line": 40
         }
       ],
       "source": "文案变化",
       "translations": {
         "en-US": "Translated copy"
+      }
+    },
+    {
+      "id": "语言",
+      "locations": [
+        {
+          "column": 39,
+          "line": 14
+        }
+      ],
+      "source": "语言",
+      "translations": {
+        "en-US": null
+      }
+    },
+    {
+      "id": "React 示例",
+      "locations": [
+        {
+          "column": 15,
+          "line": 10
+        }
+      ],
+      "source": "React 示例",
+      "translations": {
+        "en-US": "React demo"
+      }
+    },
+    {
+      "id": "useI18n 实时订阅 Runtime 并重渲染。",
+      "locations": [
+        {
+          "column": 19,
+          "line": 43
+        }
+      ],
+      "source": "useI18n 实时订阅 Runtime 并重渲染。",
+      "translations": {
+        "en-US": "useI18n subscribes to the Runtime and re-renders in real time."
       }
     }
   ],

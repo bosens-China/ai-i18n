@@ -1,15 +1,15 @@
 {
   "messages": {
-    "ai-i18n Vanilla 示例": {
+    "当前语言": {
       "sourceLang": "zh-CN",
       "translations": {
-        "en-US": "ai-i18n Vanilla demo"
+        "en-US": "Current language"
       }
     },
-    "Vanilla 示例": {
+    "订阅 Runtime 后重新渲染原生 DOM。": {
       "sourceLang": "zh-CN",
       "translations": {
-        "en-US": "Vanilla demo"
+        "en-US": "Subscribe to the Runtime to re-render the native DOM."
       }
     },
     "交互式语言切换演示": {
@@ -30,12 +30,6 @@
         "en-US": "Switch language"
       }
     },
-    "当前语言": {
-      "sourceLang": "zh-CN",
-      "translations": {
-        "en-US": "Current language"
-      }
-    },
     "文案变化": {
       "sourceLang": "zh-CN",
       "translations": {
@@ -48,16 +42,22 @@
         "en-US": "Explicit calls are extracted statically"
       }
     },
-    "订阅 Runtime 后重新渲染原生 DOM。": {
-      "sourceLang": "zh-CN",
-      "translations": {
-        "en-US": "Subscribe to the Runtime to re-render the native DOM."
-      }
-    },
     "语言": {
       "sourceLang": "zh-CN",
       "translations": {
         "en-US": "Language"
+      }
+    },
+    "ai-i18n Vanilla 示例": {
+      "sourceLang": "zh-CN",
+      "translations": {
+        "en-US": "ai-i18n Vanilla demo"
+      }
+    },
+    "Vanilla 示例": {
+      "sourceLang": "zh-CN",
+      "translations": {
+        "en-US": "Vanilla demo"
       }
     }
   },

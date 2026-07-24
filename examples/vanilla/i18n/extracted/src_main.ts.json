@@ -1,16 +1,29 @@
 {
   "messages": [
     {
-      "id": "Vanilla 示例",
+      "id": "当前语言",
       "locations": [
         {
-          "column": 14,
-          "line": 15
+          "column": 37,
+          "line": 35
         }
       ],
-      "source": "Vanilla 示例",
+      "source": "当前语言",
       "translations": {
-        "en-US": "Vanilla demo"
+        "en-US": "Current language"
+      }
+    },
+    {
+      "id": "订阅 Runtime 后重新渲染原生 DOM。",
+      "locations": [
+        {
+          "column": 20,
+          "line": 49
+        }
+      ],
+      "source": "订阅 Runtime 后重新渲染原生 DOM。",
+      "translations": {
+        "en-US": "Subscribe to the Runtime to re-render the native DOM."
       }
     },
     {
@@ -18,7 +31,7 @@
       "locations": [
         {
           "column": 48,
-          "line": 18
+          "line": 33
         }
       ],
       "source": "交互式语言切换演示",
@@ -31,7 +44,7 @@
       "locations": [
         {
           "column": 17,
-          "line": 46
+          "line": 48
         }
       ],
       "source": "切换后，这段文案会立即更新。",
@@ -40,37 +53,11 @@
       }
     },
     {
-      "id": "切换语言",
-      "locations": [
-        {
-          "column": 37,
-          "line": 29
-        }
-      ],
-      "source": "切换语言",
-      "translations": {
-        "en-US": "Switch language"
-      }
-    },
-    {
-      "id": "当前语言",
-      "locations": [
-        {
-          "column": 37,
-          "line": 20
-        }
-      ],
-      "source": "当前语言",
-      "translations": {
-        "en-US": "Current language"
-      }
-    },
-    {
       "id": "文案变化",
       "locations": [
         {
           "column": 37,
-          "line": 44
+          "line": 46
         }
       ],
       "source": "文案变化",
@@ -79,29 +66,29 @@
       }
     },
     {
-      "id": "订阅 Runtime 后重新渲染原生 DOM。",
-      "locations": [
-        {
-          "column": 20,
-          "line": 47
-        }
-      ],
-      "source": "订阅 Runtime 后重新渲染原生 DOM。",
-      "translations": {
-        "en-US": "Subscribe to the Runtime to re-render the native DOM."
-      }
-    },
-    {
       "id": "语言",
       "locations": [
         {
           "column": 36,
-          "line": 31
+          "line": 20
         }
       ],
       "source": "语言",
       "translations": {
         "en-US": "Language"
+      }
+    },
+    {
+      "id": "Vanilla 示例",
+      "locations": [
+        {
+          "column": 16,
+          "line": 16
+        }
+      ],
+      "source": "Vanilla 示例",
+      "translations": {
+        "en-US": "Vanilla demo"
       }
     }
   ],

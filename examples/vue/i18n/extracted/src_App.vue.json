@@ -1,67 +1,11 @@
 {
   "messages": [
     {
-      "id": "Vue 示例",
-      "locations": [
-        {
-          "column": 13,
-          "line": 16
-        }
-      ],
-      "source": "Vue 示例",
-      "translations": {
-        "en-US": "Vue demo",
-        "ja-JP": "Vue デモ"
-      }
-    },
-    {
-      "id": "交互式语言切换演示",
-      "locations": [
-        {
-          "column": 45,
-          "line": 19
-        }
-      ],
-      "source": "交互式语言切换演示",
-      "translations": {
-        "en-US": "Interactive language switch demo",
-        "ja-JP": "インタラクティブ言語切り替えデモ"
-      }
-    },
-    {
-      "id": "切换语言",
-      "locations": [
-        {
-          "column": 36,
-          "line": 30
-        }
-      ],
-      "source": "切换语言",
-      "translations": {
-        "en-US": "Switch language",
-        "ja-JP": "言語切り替え"
-      }
-    },
-    {
-      "id": "响应式文案会随语言立即更新",
-      "locations": [
-        {
-          "column": 16,
-          "line": 47
-        }
-      ],
-      "source": "响应式文案会随语言立即更新",
-      "translations": {
-        "en-US": "Reactive copy updates immediately with the language",
-        "ja-JP": "リアクティブなテキストは言語に合わせて即座に更新されます"
-      }
-    },
-    {
       "id": "当前语言",
       "locations": [
         {
           "column": 36,
-          "line": 21
+          "line": 36
         }
       ],
       "source": "当前语言",
@@ -71,17 +15,17 @@
       }
     },
     {
-      "id": "文案变化",
+      "id": "交互式语言切换演示",
       "locations": [
         {
-          "column": 36,
-          "line": 45
+          "column": 45,
+          "line": 34
         }
       ],
-      "source": "文案变化",
+      "source": "交互式语言切换演示",
       "translations": {
-        "en-US": "Copy changes",
-        "ja-JP": "テキストの変化"
+        "en-US": "Interactive language switch demo",
+        "ja-JP": "インタラクティブ言語切り替えデモ"
       }
     },
     {
@@ -99,17 +43,59 @@
       }
     },
     {
+      "id": "文案变化",
+      "locations": [
+        {
+          "column": 36,
+          "line": 45
+        }
+      ],
+      "source": "文案变化",
+      "translations": {
+        "en-US": "Copy changes",
+        "ja-JP": "テキストの変化"
+      }
+    },
+    {
+      "id": "响应式文案会随语言立即更新",
+      "locations": [
+        {
+          "column": 16,
+          "line": 47
+        }
+      ],
+      "source": "响应式文案会随语言立即更新",
+      "translations": {
+        "en-US": "Reactive copy updates immediately with the language",
+        "ja-JP": "リアクティブなテキストは言語に合わせて即座に更新されます"
+      }
+    },
+    {
       "id": "语言",
       "locations": [
         {
           "column": 35,
-          "line": 32
+          "line": 21
         }
       ],
       "source": "语言",
       "translations": {
         "en-US": "Language",
         "ja-JP": "言語"
+      }
+    },
+    {
+      "id": "Vue 示例",
+      "locations": [
+        {
+          "column": 15,
+          "line": 17
+        }
+      ],
+      "source": "Vue 示例",
+      "translations": {
+        "en-US": "Vue demo",
+        "ja-JP": "Vue デモ"
       }
     }
   ],
