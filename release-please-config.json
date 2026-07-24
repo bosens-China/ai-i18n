@@ -1,0 +1,28 @@
+{
+  "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
+  "bootstrap-sha": "2aa72173f517b361fc43f539255b0ead2f39416f",
+  "release-type": "node",
+  "versioning": "prerelease",
+  "prerelease": true,
+  "plugins": ["node-workspace"],
+  "packages": {
+    "packages/analyzer": {
+      "prerelease-type": "alpha"
+    },
+    "packages/core": {
+      "prerelease-type": "alpha"
+    },
+    "packages/eslint": {
+      "prerelease-type": "alpha"
+    },
+    "packages/mcp": {
+      "prerelease-type": "alpha"
+    },
+    "packages/openai": {
+      "prerelease-type": "alpha"
+    },
+    "packages/vite": {
+      "prerelease-type": "alpha"
+    }
+  }
+}

@@ -6,6 +6,7 @@ on:
 
 permissions:
   contents: write
+  issues: write
   pull-requests: write
   id-token: write
 
@@ -17,22 +18,39 @@ jobs:
   release:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
+      - uses: googleapis/release-please-action@v4
+        id: release
         with:
-          fetch-depth: 0
+          token: ${{ secrets.RELEASE_PLEASE_TOKEN || secrets.GITHUB_TOKEN }}
+      - uses: actions/checkout@v7
+        if: steps.release.outputs.releases_created == 'true'
       - uses: pnpm/action-setup@v6
+        if: steps.release.outputs.releases_created == 'true'
       - uses: actions/setup-node@v7
+        if: steps.release.outputs.releases_created == 'true'
         with:
           node-version: 24
           registry-url: https://registry.npmjs.org
           package-manager-cache: false
       - run: npm install --global npm@11.17.0
+        if: steps.release.outputs.releases_created == 'true'
       - run: pnpm install --frozen-lockfile
-      - uses: changesets/action@v1
-        with:
-          version: pnpm version-packages
-          publish: pnpm release
-          commit: 'chore: version packages'
-          title: 'chore: version packages'
+        if: steps.release.outputs.releases_created == 'true'
+      - run: pnpm check
+        if: steps.release.outputs.releases_created == 'true'
+      - run: pnpm test
+        if: steps.release.outputs.releases_created == 'true'
+      - name: Publish released packages
+        if: steps.release.outputs.releases_created == 'true'
+        shell: bash
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASED_PATHS: ${{ steps.release.outputs.paths_released }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/npm-pack"
+          node -e 'for (const path of JSON.parse(process.env.RELEASED_PATHS)) console.log(path)' |
+            while IFS= read -r package_path; do
+              pack_json=$(pnpm --dir "$package_path" pack --json --pack-destination "$RUNNER_TEMP/npm-pack")
+              tarball=$(printf '%s' "$pack_json" | node -e "let input=''; process.stdin.on('data', chunk => input += chunk).on('end', () => process.stdout.write(JSON.parse(input).filename))")
+              dist_tag=$(node -p "const version = require('./$package_path/package.json').version; version.includes('-') ? version.split('-')[1].split('.')[0] : 'latest'")
+              npm publish "$tarball" --access public --tag "$dist_tag"
+            done

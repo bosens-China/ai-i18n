@@ -23,14 +23,10 @@
     "docs:dev": "pnpm build && turbo run dev --filter='@ai-i18n/docs' --filter='@ai-i18n/example-*'",
     "docs:build": "pnpm examples:build && pnpm --filter @ai-i18n/docs build",
     "check": "pnpm build && tsc -p tsconfig.json && eslint \"*.config.{js,ts}\" && pnpm -r --if-present run check",
-    "test": "vitest run",
-    "changeset": "changeset",
-    "version-packages": "changeset version",
-    "release": "pnpm check && pnpm test && changeset publish"
+    "test": "vitest run"
   },
   "devDependencies": {
     "@arethetypeswrong/core": "0.18.5",
-    "@changesets/cli": "^2.31.1",
     "@eslint/js": "^9.39.5",
     "@types/node": "^24.10.4",
     "eslint": "^9.39.5",
