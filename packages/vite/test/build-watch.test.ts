@@ -91,7 +91,7 @@ console.log(t(LABEL));`;
     try {
       await waitForBuild(watcher, observations, 0);
       addFile.mockClear();
-      const extractedPath = path.join(root, 'i18n/extracted/src/main.ts.json');
+      const extractedPath = path.join(root, 'i18n/extracted/src_main.ts.json');
       const extracted = await readJson<ExtractedFile>(extractedPath);
       extracted.messages[0]!.translations['en-US'] = 'Home';
       await rebuild(watcher, observations, () =>
@@ -148,7 +148,7 @@ console.log(t(LABEL));`;
       expect(translator).toHaveBeenCalledTimes(1);
       expect(
         await readJson<ExtractedFile>(
-          path.join(root, 'i18n/extracted/src/new.ts.json'),
+          path.join(root, 'i18n/extracted/src_new.ts.json'),
         ),
       ).toMatchObject({
         messages: [{ translations: { 'en-US': 'Moved text' } }],
@@ -156,7 +156,7 @@ console.log(t(LABEL));`;
 
       await rebuild(watcher, observations, () => fs.rm(oldSource));
       await expect(
-        fs.access(path.join(root, 'i18n/extracted/src/old.ts.json')),
+        fs.access(path.join(root, 'i18n/extracted/src_old.ts.json')),
       ).rejects.toMatchObject({ code: 'ENOENT' });
 
       await rebuild(watcher, observations, () =>
@@ -168,7 +168,7 @@ console.log(t(LABEL));`;
       const locale = await readJson<LocaleFile>(
         path.join(root, 'i18n/locales/en-US.json'),
       );
-      expect(cache.files).toHaveProperty('src/new.ts');
+      expect(cache).not.toHaveProperty('files');
       expect(cache.messages['可移动文案']?.translations['en-US']).toBe(
         'Moved text',
       );
@@ -202,7 +202,6 @@ interface LocaleFile {
 }
 
 interface CacheFile {
-  files: Record<string, unknown>;
   messages: Record<string, { translations: Record<string, string | null> }>;
 }
 
@@ -324,8 +323,7 @@ async function protocolModifiedTimes(
 ): Promise<Record<string, bigint>> {
   const files = [
     'i18n/cache.json',
-    'i18n/extracted/src/main.ts.json',
-    'i18n/locales/zh-CN.json',
+    'i18n/extracted/src_main.ts.json',
     'i18n/locales/en-US.json',
   ];
   return Object.fromEntries(

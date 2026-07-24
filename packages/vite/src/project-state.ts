@@ -1,7 +1,7 @@
 import path from 'node:path';
 import {
   TranslationConflictError,
-  type CacheFileV1,
+  type CacheFileV2,
   type LangOption,
   type ModuleMessages,
   type TranslationRequest,
@@ -226,7 +226,7 @@ export class ProjectState {
     this.autoImportRuntime.clear();
   }
 
-  hydrateCache(cache: CacheFileV1): string[] {
+  hydrateCache(cache: CacheFileV2): string[] {
     const changedIds = new Set<string>();
     const nextTranslations = new Map<string, Map<string, TranslationValue>>();
     for (const [messageId, message] of Object.entries(cache.messages)) {
@@ -303,7 +303,6 @@ export class ProjectState {
   snapshot(): ProjectSnapshot {
     return createProjectSnapshot(
       this.modules,
-      this.fingerprints,
       this.translations,
       this.seen,
       this.options,

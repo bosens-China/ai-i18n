@@ -122,14 +122,14 @@ const label = useLabel()
     expect(localeChunk?.fileName).toMatch(/^assets\/en-US-/);
     expect(translator).toHaveBeenCalled();
     expect(
-      await readJson(path.join(root, 'i18n/extracted/src/App.vue.json')),
+      await readJson(path.join(root, 'i18n/extracted/src_App.vue.json')),
     ).toMatchObject({ messages: [{ id: 'Vue SFC' }] });
     expect(
-      await readJson(path.join(root, 'i18n/extracted/src/useLabel.ts.json')),
+      await readJson(path.join(root, 'i18n/extracted/src_useLabel.ts.json')),
     ).toMatchObject({ messages: [{ id: 'Vue TS' }] });
     expect(
       await readJson(
-        path.join(root, 'i18n/extracted/src/VueJsxPanel.tsx.json'),
+        path.join(root, 'i18n/extracted/src_VueJsxPanel.tsx.json'),
       ),
     ).toMatchObject({ messages: [{ id: 'Vue TSX' }] });
   });

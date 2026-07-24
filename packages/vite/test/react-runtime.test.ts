@@ -70,4 +70,38 @@ describe('React runtime adapter', () => {
     );
     expect(loader).toHaveBeenCalledOnce();
   });
+
+  it('invalidates translation calls cached by React Compiler', async () => {
+    const runtime = createI18nRuntime({
+      sourceLang: 'zh-CN',
+      defaultLang: 'zh-CN',
+      locales: [
+        { value: 'zh-CN', label: '中文' },
+        { value: 'en-US', label: 'English' },
+      ],
+    });
+    runtime.registerModule('App.tsx', {
+      'zh-CN': { 标题: '标题' },
+      'en-US': { 标题: 'Title' },
+    });
+    const useI18n = createReactI18n(runtime);
+    let cachedT: ReturnType<typeof useI18n>['t'] | undefined;
+    let cachedText = '';
+    const CompilerCachedView = () => {
+      const { t } = useI18n();
+      if (cachedT !== t) {
+        cachedT = t;
+        cachedText = t('标题');
+      }
+      return createElement('span', null, cachedText);
+    };
+
+    expect(renderToStaticMarkup(createElement(CompilerCachedView))).toBe(
+      '<span>标题</span>',
+    );
+    await runtime.setLang('en-US');
+    expect(renderToStaticMarkup(createElement(CompilerCachedView))).toBe(
+      '<span>Title</span>',
+    );
+  });
 });

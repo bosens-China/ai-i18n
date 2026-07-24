@@ -23,8 +23,11 @@ export interface AiI18nOptions {
   framework?: AiI18nFramework;
   autoImport?: boolean;
   dts?: string | false;
+  /** 源文案的语言；用于 fallback，不会生成对应的 locale 文件。 */
   sourceLang: string;
+  /** Runtime 初始语言；省略时继承 sourceLang。 */
   defaultLang?: string;
+  /** Runtime 可切换的语言列表，需要包含 sourceLang 与 defaultLang。 */
   locales: readonly LangOption[];
   loading?: AiI18nLocaleLoadingOptions;
   cache?: AiI18nCacheOptions;

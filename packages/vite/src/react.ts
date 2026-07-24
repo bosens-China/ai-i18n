@@ -1,5 +1,5 @@
 import type { I18nRuntime } from '@ai-i18n/core';
-import { useSyncExternalStore } from 'react';
+import { useCallback, useSyncExternalStore } from 'react';
 
 export interface ReactI18n {
   t: I18nRuntime['t'];
@@ -9,12 +9,12 @@ export interface ReactI18n {
 }
 
 export function createReactI18n(runtime: I18nRuntime): () => ReactI18n {
-  let revision = 0;
+  let runtimeRevision = 0;
   const listeners = new Set<() => void>();
   const langs = runtime.getLangs();
 
   runtime.subscribe(() => {
-    revision += 1;
+    runtimeRevision += 1;
     listeners.forEach((listener) => listener());
   });
 
@@ -24,13 +24,18 @@ export function createReactI18n(runtime: I18nRuntime): () => ReactI18n {
   }
 
   return function useI18n() {
-    useSyncExternalStore(
+    const revision = useSyncExternalStore(
       subscribe,
-      () => revision,
-      () => revision,
+      () => runtimeRevision,
+      () => runtimeRevision,
+    );
+    // React Compiler 会按函数引用缓存调用结果，语言更新时必须让 t 的引用同步变化。
+    const t = useCallback(
+      (source: string, comment?: string) => runtime.t(source, comment),
+      [revision, runtime],
     );
     return {
-      t: runtime.t,
+      t,
       setLang: runtime.setLang,
       currentLang: runtime.getLang(),
       langs,

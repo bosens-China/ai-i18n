@@ -66,8 +66,8 @@ aiI18n({
 Translation Memory，直到同时满足已配置的限制。`maxBytes` 按稳定序列化后整个
 `cache.json` 的 UTF-8 字节数计算。
 
-当前 cache file records 或 ProjectState 引用的 message 始终受保护。若活动数据自身超限，
-插件保留数据并输出 warning。省略 `cache` 时不执行容量淘汰；
+现有 extracted 或 ProjectState 引用的 message 始终受保护。若活动数据自身超限，插件保留
+数据并输出 warning。省略 `cache` 时不执行容量淘汰；
 `cleanup.orphanMessages: true` 仍会优先删除全部非活跃消息。
 
 普通 `vite build` 每次使用新的分析状态；`vite build --watch` 会跨重建复用 ProjectState，

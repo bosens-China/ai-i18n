@@ -1,5 +1,5 @@
 import { Buffer } from 'node:buffer';
-import type { CacheFileV1 } from '@ai-i18n/core';
+import type { CacheFileV2 } from '@ai-i18n/core';
 import type { AiI18nCacheOptions } from './options.js';
 import { stableJson } from './json-files.js';
 
@@ -10,19 +10,15 @@ interface CacheUsage {
 }
 
 export function enforceCacheCapacity(
-  cache: CacheFileV1,
-  activeFiles: CacheFileV1['files'],
+  cache: CacheFileV2,
+  activeMessageIds: Iterable<string>,
   options: AiI18nCacheOptions | undefined,
   onWarning?: (message: string) => void,
 ): void {
   if (!options?.maxMessages && !options?.maxBytes) return;
   if (cacheUsage(cache, options).fits) return;
 
-  const active = new Set(
-    [...Object.values(cache.files), ...Object.values(activeFiles)].flatMap(
-      (file) => file.messageIds,
-    ),
-  );
+  const active = new Set(activeMessageIds);
   const candidates = Object.keys(cache.messages)
     .filter((messageId) => !active.has(messageId))
     .sort((left, right) => left.localeCompare(right));
@@ -43,10 +39,10 @@ export function enforceCacheCapacity(
 }
 
 function withoutMessages(
-  cache: CacheFileV1,
+  cache: CacheFileV2,
   candidates: readonly string[],
   count: number,
-): CacheFileV1 {
+): CacheFileV2 {
   const removed = new Set(candidates.slice(0, count));
   return {
     ...cache,
@@ -59,7 +55,7 @@ function withoutMessages(
 }
 
 function cacheUsage(
-  cache: CacheFileV1,
+  cache: CacheFileV2,
   options: AiI18nCacheOptions,
 ): CacheUsage {
   const messages = Object.keys(cache.messages).length;

@@ -5,13 +5,24 @@ import {
   parseCacheFile,
   parseExtractedFile,
   parseLocaleFile,
-  type CacheFileV1,
+  type CacheFileV2,
   type CacheMessage,
   type ExtractedFileV1,
   type LangOption,
   type LocaleFileV1,
 } from '@ai-i18n/core';
 import { enforceCacheCapacity } from './cache-capacity.js';
+import {
+  findMissingSources,
+  removeOrphanMessages,
+} from './file-store-cleanup.js';
+import { decodeExtractedSource } from './extracted-path.js';
+import {
+  cachePath,
+  extractedPath,
+  legacyExtractedPath,
+  localePath,
+} from './file-store-paths.js';
 import {
   hydrateExtracted,
   hydrateLocale,
@@ -23,7 +34,6 @@ import {
 import type { AiI18nCacheOptions } from './options.js';
 import type { ProjectSnapshot } from './project-state.js';
 import {
-  fileExists,
   listJsonFiles,
   readJson,
   readJsonRequired,
@@ -57,7 +67,7 @@ export class FileStore {
     this.directory = path.resolve(options.root, options.directory ?? 'i18n');
   }
 
-  async load(options: FileStoreLoadOptions = {}): Promise<CacheFileV1> {
+  async load(options: FileStoreLoadOptions = {}): Promise<CacheFileV2> {
     const cache = this.mergeExtracted(
       await this.readCache(),
       await this.readExtractedFiles(),
@@ -73,7 +83,7 @@ export class FileStore {
   sync(
     snapshot: ProjectSnapshot,
     options: FileStoreLoadOptions = {},
-  ): Promise<CacheFileV1> {
+  ): Promise<CacheFileV2> {
     // 每次任务都从最新磁盘状态开始；失败不会阻塞后续写入任务。
     const task = this.queue.then(
       () => this.writeSnapshot(snapshot, options),
@@ -115,13 +125,16 @@ export class FileStore {
     ) {
       return undefined;
     }
-    return relative.slice(0, -'.json'.length).split(path.sep).join('/');
+    const filename = relative.slice(0, -'.json'.length);
+    return relative.includes(path.sep)
+      ? filename.split(path.sep).join('/')
+      : decodeExtractedSource(filename);
   }
 
   localeValue(file: string): string | undefined {
     const resolved = path.resolve(file);
     return this.options.locales.find(
-      (locale) => this.localePath(locale.value) === resolved,
+      (locale) => localePath(this.directory, locale.value) === resolved,
     )?.value;
   }
 
@@ -144,19 +157,26 @@ export class FileStore {
 
   watchFiles(moduleId: string): string[] {
     return [
-      this.cachePath(),
-      this.extractedPath(moduleId),
+      cachePath(this.directory),
+      extractedPath(this.directory, moduleId),
       ...this.options.locales
         .filter((locale) => locale.value !== this.options.sourceLang)
-        .map((locale) => this.localePath(locale.value)),
+        .map((locale) => localePath(this.directory, locale.value)),
     ];
   }
 
   private async writeSnapshot(
     snapshot: ProjectSnapshot,
     options: FileStoreLoadOptions,
-  ): Promise<CacheFileV1> {
-    const diskExtracted = await this.readExtractedFiles();
+  ): Promise<CacheFileV2> {
+    const allDiskExtracted = await this.readExtractedFiles();
+    const missingSources = await findMissingSources(
+      this.options.root,
+      allDiskExtracted,
+      this.options.cleanupMissingSourceFiles !== false,
+    );
+    const missingSet = new Set(missingSources);
+    const diskExtracted = allDiskExtracted;
     let cache = this.mergeExtracted(
       await this.readCache(),
       diskExtracted,
@@ -169,8 +189,7 @@ export class FileStore {
     );
     try {
       cache = {
-        version: 1,
-        files: { ...cache.files, ...snapshot.cache.files },
+        version: 2,
         messages: mergeProjectMessages(cache.messages, snapshot.cache.messages),
       };
     } catch (error) {
@@ -181,10 +200,23 @@ export class FileStore {
     }
     this.ensureCurrentLocales(cache.messages);
 
-    const missingSources = await this.removeMissingSources(cache);
-    this.removeOrphanMessages(cache);
+    const seen = new Set(snapshot.seen);
+    const activeFiles = [
+      ...diskExtracted.filter(
+        (file) => !missingSet.has(file.source) && !seen.has(file.source),
+      ),
+      ...Object.values(snapshot.extracted),
+    ];
+    const activeMessageIds = activeFiles.flatMap((file) =>
+      file.messages.map((message) => message.id),
+    );
+    removeOrphanMessages(
+      cache,
+      activeMessageIds,
+      Boolean(this.options.cleanupOrphanMessages),
+    );
     const { cache: capacity, onWarning } = this.options;
-    enforceCacheCapacity(cache, snapshot.cache.files, capacity, onWarning);
+    enforceCacheCapacity(cache, activeMessageIds, capacity, onWarning);
     const activeExtracted = new Set(Object.keys(snapshot.extracted));
     for (const source of snapshot.seen) {
       if (!activeExtracted.has(source)) await this.removeExtracted(source);
@@ -193,7 +225,7 @@ export class FileStore {
 
     for (const [source, extracted] of Object.entries(snapshot.extracted)) {
       await this.writeJson(
-        this.extractedPath(source),
+        extractedPath(this.directory, source),
         hydrateExtracted(
           extracted,
           cache.messages,
@@ -202,18 +234,22 @@ export class FileStore {
             .filter((locale) => locale !== this.options.sourceLang),
         ),
       );
+      const oldPath = legacyExtractedPath(this.directory, source);
+      if (oldPath !== extractedPath(this.directory, source)) {
+        await fs.rm(oldPath, { force: true });
+      }
     }
     await this.writeLocales(snapshot.locales, cache.messages);
     // cache 最后写，异常中断后下次可由 extracted/locales 重新校准。
-    await this.writeJson(this.cachePath(), cache);
+    await this.writeJson(cachePath(this.directory), cache);
     return cache;
   }
 
-  private async readCache(): Promise<CacheFileV1> {
-    const value = await readJson(this.cachePath());
+  private async readCache(): Promise<CacheFileV2> {
+    const value = await readJson(cachePath(this.directory));
     return value === undefined
-      ? { version: 1, files: {}, messages: {} }
-      : parseCacheFile(value);
+      ? { version: 2, messages: {} }
+      : parseCacheFile(value, this.options.sourceLang);
   }
 
   private async readExtractedFiles(): Promise<ExtractedFileV1[]> {
@@ -235,10 +271,10 @@ export class FileStore {
   }
 
   private mergeExtracted(
-    cache: CacheFileV1,
+    cache: CacheFileV2,
     extractedFiles: readonly ExtractedFileV1[],
     preferredSources: readonly string[] = [],
-  ): CacheFileV1 {
+  ): CacheFileV2 {
     let activeMessages: Record<string, CacheMessage> = {};
     const preferredSet = new Set(preferredSources);
     const regularFiles = extractedFiles.filter(
@@ -252,7 +288,7 @@ export class FileStore {
             extracted.messages.map((message) => [
               message.id,
               {
-                source: message.source,
+                sourceLang: this.options.sourceLang,
                 ...(message.comment ? { comment: message.comment } : {}),
                 translations: message.translations,
               },
@@ -272,20 +308,20 @@ export class FileStore {
       for (const preferred of preferredFiles) {
         preferredMessages = mergeCacheMessages(
           preferredMessages,
-          messagesFromExtracted(preferred),
+          messagesFromExtracted(preferred, this.options.sourceLang),
         );
       }
       messages = overlayMessages(messages, preferredMessages, true);
     }
     this.ensureCurrentLocales(messages);
-    return { version: 1, files: { ...cache.files }, messages };
+    return { version: 2, messages };
   }
 
   private mergeLocales(
-    cache: CacheFileV1,
+    cache: CacheFileV2,
     localeFiles: readonly LocaleFileV1[],
     preferredLocales: readonly string[] = [],
-  ): CacheFileV1 {
+  ): CacheFileV2 {
     const preferred = new Set(preferredLocales);
     for (const localeFile of localeFiles) {
       const locale = localeFile.locale.value;
@@ -307,32 +343,11 @@ export class FileStore {
     );
     for (const message of Object.values(messages)) {
       for (const locale of targetLocales) {
+        if (locale.value === message.sourceLang) continue;
         if (!(locale.value in message.translations)) {
           message.translations[locale.value] = null;
         }
       }
-    }
-  }
-
-  private async removeMissingSources(cache: CacheFileV1): Promise<string[]> {
-    if (this.options.cleanupMissingSourceFiles === false) return [];
-    const missing: string[] = [];
-    for (const source of Object.keys(cache.files)) {
-      if (!(await fileExists(path.resolve(this.options.root, source)))) {
-        delete cache.files[source];
-        missing.push(source);
-      }
-    }
-    return missing;
-  }
-
-  private removeOrphanMessages(cache: CacheFileV1): void {
-    if (!this.options.cleanupOrphanMessages) return;
-    const active = new Set(
-      Object.values(cache.files).flatMap((file) => file.messageIds),
-    );
-    for (const messageId of Object.keys(cache.messages)) {
-      if (!active.has(messageId)) delete cache.messages[messageId];
     }
   }
 
@@ -348,39 +363,18 @@ export class FileStore {
         `${encodeURIComponent(locale.locale.value)}.json`,
       );
       expected.add(file);
-      await this.writeJson(
-        file,
-        hydrateLocale(locale, cacheMessages, this.options.sourceLang),
-      );
+      await this.writeJson(file, hydrateLocale(locale, cacheMessages));
     }
     for (const file of await listJsonFiles(directory)) {
       if (!expected.has(file)) await fs.rm(file, { force: true });
     }
   }
 
-  private cachePath(): string {
-    return path.join(this.directory, 'cache.json');
-  }
-
-  private localePath(locale: string): string {
-    return path.join(
-      this.directory,
-      'locales',
-      `${encodeURIComponent(locale)}.json`,
-    );
-  }
-
-  private extractedPath(source: string): string {
-    const base = path.join(this.directory, 'extracted');
-    const file = path.resolve(base, `${source}.json`);
-    if (file !== base && !file.startsWith(`${base}${path.sep}`)) {
-      throw new Error(`[ai-i18n] invalid extracted source path "${source}"`);
-    }
-    return file;
-  }
-
   private async removeExtracted(source: string): Promise<void> {
-    await fs.rm(this.extractedPath(source), { force: true });
+    await Promise.all([
+      fs.rm(extractedPath(this.directory, source), { force: true }),
+      fs.rm(legacyExtractedPath(this.directory, source), { force: true }),
+    ]);
   }
 
   private async writeJson(file: string, value: unknown): Promise<void> {

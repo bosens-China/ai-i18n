@@ -61,7 +61,7 @@ describe('Vite integration', () => {
     await write(root, 'src/old.ts', translatedModule('可移动文案'));
     await buildFixture(root);
 
-    const oldExtracted = path.join(root, 'i18n/extracted/src/old.ts.json');
+    const oldExtracted = path.join(root, 'i18n/extracted/src_old.ts.json');
     const extracted = await readJson<ExtractedFile>(oldExtracted);
     extracted.messages[0]!.translations['en-US'] = 'Moved text';
     await fs.writeFile(oldExtracted, `${JSON.stringify(extracted, null, 2)}\n`);
@@ -74,7 +74,7 @@ describe('Vite integration', () => {
     await buildFixture(root);
 
     const moved = await readJson<ExtractedFile>(
-      path.join(root, 'i18n/extracted/src/new.ts.json'),
+      path.join(root, 'i18n/extracted/src_new.ts.json'),
     );
     const cache = await readJson<CacheFile>(path.join(root, 'i18n/cache.json'));
     expect(moved.messages[0]?.translations['en-US']).toBe('Moved text');
@@ -106,7 +106,7 @@ describe('Vite integration', () => {
     await buildFixture(root);
 
     const cache = await readJson<CacheFile>(path.join(root, 'i18n/cache.json'));
-    expect(Object.keys(cache.files)).toEqual(['src/main.ts']);
+    expect(cache).not.toHaveProperty('files');
     expect(JSON.stringify(cache)).not.toContain(workspace);
   });
 });
@@ -116,7 +116,6 @@ interface ExtractedFile {
 }
 
 interface CacheFile {
-  files: Record<string, unknown>;
   messages: Record<string, { translations: Record<string, string | null> }>;
 }
 
@@ -154,7 +153,7 @@ function translatedModule(source: string) {
 }
 
 async function extractedSources(root: string) {
-  const directory = path.join(root, 'i18n/extracted/src');
+  const directory = path.join(root, 'i18n/extracted');
   const files = await fs.readdir(directory);
   const sources = await Promise.all(
     files.map(async (file) => {

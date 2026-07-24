@@ -2,7 +2,7 @@ import { Buffer } from 'node:buffer';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import type { CacheFileV1 } from '@ai-i18n/core';
+import type { CacheFileV2 } from '@ai-i18n/core';
 import { afterEach, describe, expect, it } from 'vitest';
 import { aiI18n } from '../src';
 import { FileStore } from '../src/file-store';
@@ -168,7 +168,7 @@ describe('Cache capacity', () => {
     cache.messages['history-b']!.translations['en-US'] = 'Git history';
     await fs.writeFile(cachePath, stableJson(cache));
 
-    const extractedPath = path.join(root, 'i18n/extracted/src/active.ts.json');
+    const extractedPath = path.join(root, 'i18n/extracted/src_active.ts.json');
     const extracted = JSON.parse(await fs.readFile(extractedPath, 'utf8')) as {
       messages: Array<{ translations: Record<string, string | null> }>;
     };
@@ -245,10 +245,10 @@ function capacityStore(
   });
 }
 
-function messageIds(cache: CacheFileV1): string[] {
+function messageIds(cache: CacheFileV2): string[] {
   return Object.keys(cache.messages).sort();
 }
 
-function byteLength(cache: CacheFileV1): number {
+function byteLength(cache: CacheFileV2): number {
   return Buffer.byteLength(stableJson(cache), 'utf8');
 }

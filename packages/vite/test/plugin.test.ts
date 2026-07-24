@@ -101,7 +101,7 @@ describe('@ai-i18n/vite plugin', () => {
 
     const extractedFile = path.join(
       directory,
-      'extracted/src/provider.ts.json',
+      'extracted/src_provider.ts.json',
     );
     const hotUpdate = objectHandler<
       (
@@ -413,7 +413,7 @@ export const View = () => <p>{t('React JSX')}</p>`,
     );
     const extractedFile = path.join(
       directory,
-      'extracted/src/lazy-hot.ts.json',
+      'extracted/src_lazy-hot.ts.json',
     );
     const edited = (await readJson(extractedFile)) as {
       messages: Array<{ translations: Record<string, string | null> }>;

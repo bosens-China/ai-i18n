@@ -1,4 +1,5 @@
 import {
+  parseMessageId,
   TranslationConflictError,
   type CacheMessage,
   type ExtractedFileV1,
@@ -32,16 +33,13 @@ export function hydrateExtracted(
 export function hydrateLocale(
   locale: LocaleFileV1,
   cacheMessages: Record<string, CacheMessage>,
-  sourceLang: string,
 ): LocaleFileV1 {
   return {
     ...locale,
     messages: Object.fromEntries(
-      Object.entries(locale.messages).map(([id, value]) => [
+      Object.keys(locale.messages).map((id) => [
         id,
-        locale.locale.value === sourceLang
-          ? value
-          : (cacheMessages[id]?.translations[locale.locale.value] ?? null),
+        cacheMessages[id]?.translations[locale.locale.value] ?? null,
       ]),
     ),
   };
@@ -49,12 +47,13 @@ export function hydrateLocale(
 
 export function messagesFromExtracted(
   extracted: ExtractedFileV1,
+  sourceLang: string,
 ): Record<string, CacheMessage> {
   return Object.fromEntries(
     extracted.messages.map((message) => [
       message.id,
       {
-        source: message.source,
+        sourceLang,
         ...(message.comment ? { comment: message.comment } : {}),
         translations: message.translations,
       },
@@ -67,7 +66,32 @@ export function mergeProjectMessages(
   incoming: Record<string, CacheMessage>,
 ): Record<string, CacheMessage> {
   // 磁盘上的 Agent 编辑优先；ProjectState 只补充新消息和缺失翻译。
-  return overlayMessages(current, incoming, false);
+  const reused = structuredClone(incoming);
+  for (const [messageId, next] of Object.entries(reused)) {
+    if (current[messageId]) continue;
+    const source = parseMessageId(messageId).source;
+    const candidates = Object.entries(current).filter(
+      ([historicId, historic]) =>
+        historic.sourceLang !== next.sourceLang &&
+        historic.translations[next.sourceLang] === source &&
+        (parseMessageId(historicId).comment ?? '') ===
+          (parseMessageId(messageId).comment ?? ''),
+    );
+    if (candidates.length !== 1) continue;
+    const [historicId, historic] = candidates[0]!;
+    const translations = { ...historic.translations };
+    delete translations[next.sourceLang];
+    if (historic.sourceLang) {
+      translations[historic.sourceLang] = parseMessageId(historicId).source;
+    }
+    for (const [locale, value] of Object.entries(next.translations)) {
+      if (value !== null || !(locale in translations)) {
+        translations[locale] = value;
+      }
+    }
+    next.translations = translations;
+  }
+  return overlayMessages(current, reused, false);
 }
 
 export function overlayMessages(
@@ -82,13 +106,13 @@ export function overlayMessages(
       merged[messageId] = structuredClone(next);
       continue;
     }
-    if (
-      previous.source !== next.source ||
-      (previous.comment ?? '') !== (next.comment ?? '')
-    ) {
+    if ((previous.comment ?? '') !== (next.comment ?? '')) {
       throw new Error(
         `[ai-i18n] message "${messageId}" has inconsistent metadata`,
       );
+    }
+    if (!previous.sourceLang && next.sourceLang) {
+      previous.sourceLang = next.sourceLang;
     }
     for (const [locale, value] of Object.entries(next.translations)) {
       if (

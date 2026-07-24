@@ -77,11 +77,16 @@ describe('ProjectState incremental analysis', () => {
       '/workspace/src/lazy.ts',
     );
     state.hydrateCache({
-      version: 1,
-      files: {},
+      version: 2,
       messages: {
-        保留: { source: '保留', translations: { 'en-US': 'Keep' } },
-        移除: { source: '移除', translations: { 'en-US': 'Remove' } },
+        保留: {
+          sourceLang: 'zh-CN',
+          translations: { 'en-US': 'Keep' },
+        },
+        移除: {
+          sourceLang: 'zh-CN',
+          translations: { 'en-US': 'Remove' },
+        },
       },
     });
 

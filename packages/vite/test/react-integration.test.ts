@@ -97,10 +97,10 @@ export function App() {
     expect(localeChunk?.fileName).toMatch(/^en-US-|^assets\/en-US-/);
     expect(translator).toHaveBeenCalled();
     expect(
-      await readJson(path.join(root, 'i18n/extracted/src/App.tsx.json')),
+      await readJson(path.join(root, 'i18n/extracted/src_App.tsx.json')),
     ).toMatchObject({ messages: [{ id: 'React TSX' }] });
     expect(
-      await readJson(path.join(root, 'i18n/extracted/src/useLabel.ts.json')),
+      await readJson(path.join(root, 'i18n/extracted/src_useLabel.ts.json')),
     ).toMatchObject({ messages: [{ id: 'React TS' }] });
   });
 });

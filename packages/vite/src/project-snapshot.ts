@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 import type {
-  CacheFileV1,
+  CacheFileV2,
   CacheMessage,
   ExtractedFileV1,
   LocaleFileV1,
@@ -11,7 +11,7 @@ import type { SourceLocation } from './extractor.js';
 import type { NormalizedAiI18nOptions } from './project-state.js';
 
 export interface ProjectSnapshot {
-  cache: CacheFileV1;
+  cache: CacheFileV2;
   extracted: Record<string, ExtractedFileV1>;
   locales: LocaleFileV1[];
   seen: string[];
@@ -19,28 +19,23 @@ export interface ProjectSnapshot {
 
 export function createProjectSnapshot(
   modules: ReadonlyMap<string, ExtractResult>,
-  fingerprints: ReadonlyMap<string, string>,
   translations: ReadonlyMap<string, ReadonlyMap<string, TranslationValue>>,
   seen: ReadonlySet<string>,
   options: NormalizedAiI18nOptions,
 ): ProjectSnapshot {
-  const files: CacheFileV1['files'] = {};
   const messages: Record<string, CacheMessage> = {};
   const extracted: Record<string, ExtractedFileV1> = {};
+  const targetLocales = options.locales.filter(
+    (locale) => locale.value !== options.sourceLang,
+  );
   const localeMessages = new Map(
-    options.locales.map((locale) => [
+    targetLocales.map((locale) => [
       locale.value,
       {} as LocaleFileV1['messages'],
     ]),
   );
 
   for (const [moduleId, result] of modules) {
-    files[moduleId] = {
-      fingerprint: fingerprints.get(moduleId) ?? '',
-      messageIds: result.messages
-        .map((message) => message.id)
-        .sort((left, right) => left.localeCompare(right)),
-    };
     if (!result.messages.length) continue;
 
     const extractedMessages = result.messages.map((message) => {
@@ -53,15 +48,13 @@ export function createProjectSnapshot(
           ]),
       );
       messages[message.id] = {
-        source: message.source,
+        sourceLang: options.sourceLang,
         ...(message.comment ? { comment: message.comment } : {}),
         translations: targetTranslations,
       };
-      for (const locale of options.locales) {
+      for (const locale of targetLocales) {
         localeMessages.get(locale.value)![message.id] =
-          locale.value === options.sourceLang
-            ? message.source
-            : (targetTranslations[locale.value] ?? null);
+          targetTranslations[locale.value] ?? null;
       }
       return {
         id: message.id,
@@ -79,9 +72,9 @@ export function createProjectSnapshot(
   }
 
   return {
-    cache: { version: 1, files, messages },
+    cache: { version: 2, messages },
     extracted,
-    locales: options.locales.map((locale) => ({
+    locales: targetLocales.map((locale) => ({
       version: 1,
       locale: { ...locale },
       messages: localeMessages.get(locale.value)!,
