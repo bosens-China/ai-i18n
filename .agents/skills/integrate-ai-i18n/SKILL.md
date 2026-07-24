@@ -18,6 +18,8 @@ plugin setup. Determine:
 - whether `unplugin-auto-import` is already registered;
 - whether the runtime is browser-only or includes SSR;
 - the source locale, target locales, default locale, and desired output directory;
+- whether target locale assets should be preloaded, prefetched, or fully lazy;
+- whether the project requires a bounded Translation Memory;
 - whether an ai-i18n Provider already exists.
 
 Do not combine Vue and React in one Vite build. Microfrontend repositories may use different modes
@@ -48,13 +50,28 @@ Always read [Vite configuration](references/vite.md). Then read only the matchin
 8. Run the app's type check and Vite build, then confirm `cache.json`, `extracted/**`, and `locales/**`
    under the resolved output directory.
 
+When the user requests smaller initial bundles, configure `loading: { strategy: 'locale' }`.
+Use `preload` only for target locales expected immediately, `prefetch` for likely later choices, and
+leave other targets fully lazy. Never list the source locale. A non-source `defaultLang` is
+automatically preloaded and temporarily renders source fallback until its locale module loads.
+
+When the project uses `vite build --watch`, expect the first build to create ProjectState and later
+builds to reuse unchanged analysis. Restart the Watch process after Vite config, plugin, extractor,
+or schema changes.
+
+Configure `cache.maxMessages` or `cache.maxBytes` only when the user requests a bounded Translation
+Memory. Both are positive integers. The limits are disabled by default and only prune inactive
+history in stable message-ID order. Active messages remain protected; if they exceed a configured
+limit, Vite warns and keeps them. `cleanup.orphanMessages: true` is stronger and removes all inactive
+messages before capacity enforcement.
+
 The external Auto Import plugin is only the default opt-in signal for ai-i18n. ai-i18n performs its
 own import injection, so do not add `useI18n` or the Vanilla runtime APIs to the external plugin's
 `imports` configuration.
 
-Do not add a translator, model, API key, HTML extraction, cleanup override, Vue plugin, or React
-provider unless the project requires it. When automatic translation is requested, keep secrets in
-the Node-side translator closure and follow [Vite configuration](references/vite.md).
+Do not add a translator, model, API key, HTML extraction, cache limit, cleanup override, Vue plugin,
+or React provider unless the project requires it. When automatic translation is requested, keep
+secrets in the Node-side translator closure and follow [Vite configuration](references/vite.md).
 
 ## ESLint
 

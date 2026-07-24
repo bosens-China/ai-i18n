@@ -36,7 +36,7 @@
 - [x] 添加 MIT License、README、repository metadata。
 - [x] 建立 changeset 或等价发布流程。
 - [x] Pages 构建用户文档站，并将三示例产物挂到 `/examples/*`（已移除根级 `examples/index.html` 导航页）。
-- [ ] 在 GitHub Pages 启用 GitHub Actions 发布源并完成首次部署验证。
+- [x] 在 GitHub Pages 启用 GitHub Actions 发布源并完成首次部署验证。
 - [x] 发布包改为独立版本，并以 `workspace:^` 保留内部兼容 semver 范围。
 
 ## 2. Schema 与 Core
@@ -268,11 +268,11 @@
 - [x] README 记录目录协议、Git 提交策略和 Agent 工作流。
 - [x] README 记录 Dev 渐进/Build 完整语义。
 - [x] README 明确只支持显式 `t()`、浏览器 Runtime 和 Vite 8。
-- [ ] 发布 `1.0.0-alpha` 给真实项目验证。
+- [x] 发布 `1.0.0-alpha` 给真实项目验证。
 
 ## 15. Phase 1 完成定义
 
-- [ ] PRD 验收标准全部通过。
+- [x] PRD 验收标准全部通过。
 - [x] Yuku 准入结论有 fixtures、平台验证和 benchmark 支撑。
 - [x] 不存在 `src/pages`、路由目录或业务默认值。
 - [x] 不存在独立 sync/scan CLI。

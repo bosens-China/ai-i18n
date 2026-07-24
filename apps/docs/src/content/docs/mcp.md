@@ -66,3 +66,7 @@ Codex、Claude Code、Cursor 与 Antigravity 的注册方式见
 
 工具不会覆盖不同的非空值。写入后，运行 Vite Dev 或 Build，把变更同步到 cache、其他
 extracted 文件与 locales。
+
+Vite 的 `cache.maxMessages` 与 `cache.maxBytes` 不会改变 MCP 的参数、分页或写入边界。
+MCP 写入的活动消息会受到保护。下一次 Vite 同步仍可能按照容量配置，淘汰已经没有活动引用的
+历史 Translation Memory。

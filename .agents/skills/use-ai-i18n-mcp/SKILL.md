@@ -27,6 +27,12 @@ The optional LangChain Provider's `batchLength` and `maxConcurrency` govern auto
 they do not change MCP pagination limits, write batch limits, or this manual translation workflow.
 Vue and React modes may produce ordinary `*.tsx.json` extracted files. The framework selected for
 that Vite build does not change MCP discovery, pagination, or write semantics.
+`loading.strategy: 'locale'` only changes browser language assets. It does not change MCP tools,
+protocol paths, locale names, pagination, or the rule that writes only extracted files.
+Optional Vite `cache.maxMessages` and `cache.maxBytes` settings also do not change MCP paths or tool
+contracts. MCP writes remain in extracted files and are protected while active. On the next Vite
+reconciliation, inactive Translation Memory may be pruned to satisfy those limits; do not bypass
+that policy by editing `cache.json`.
 
 ## Run the workflow
 
@@ -77,7 +83,11 @@ On an overwrite refusal, unknown locale, missing message, or stale file error, r
 
 Re-run `ai_i18n_list_translations` for every written file and requested locale with `missing_only: true`. Completion means all pages in the requested scope are empty. Report applied, unchanged, remaining, and failed counts rather than claiming the whole project is complete from a partial page.
 
-When Vite Dev is running, it reconciles the write automatically. Otherwise tell the user to run the next Vite Dev/Build command so `cache.json`, duplicate extracted occurrences, and `locales/**` are synchronized. Do not manually synchronize those derived files.
+When Vite Dev or `vite build --watch` is running, it reconciles the write automatically without
+reparsing unchanged source. Otherwise tell the user to run the next Vite Dev/Build command so
+`cache.json`, duplicate extracted occurrences, and `locales/**` are synchronized. Restart an active
+Build Watch process after Vite config, plugin, extractor, or schema changes. Do not manually
+synchronize those derived files.
 
 Translation completion does not make previously rendered imperative DOM reactive. For Vanilla
 applications, separately confirm that the host subscribes to Runtime updates and re-renders;

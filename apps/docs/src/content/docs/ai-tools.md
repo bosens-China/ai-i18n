@@ -210,4 +210,7 @@ MCP 只读写 workspace root 内的 `extracted/**`，不会覆盖不同的非空
 cache 或 locales。写入后，如果 Vite Dev 正在运行会自动同步；否则在下一次 `vite dev` 或
 `vite build` 时完成校准。
 
+Cache 容量配置不会改变 MCP 工具契约。MCP 写入的活动翻译会保留；Vite 只可能在后续同步时
+淘汰非活跃历史。配置与保护规则见 [Vite 插件配置](./api/vite/#cache-容量)。
+
 所有工具的必填参数、可选参数、默认值与返回结构见 [MCP 工具 API](./mcp/)。

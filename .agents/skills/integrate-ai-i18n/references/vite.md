@@ -82,6 +82,7 @@ import { useI18n } from 'virtual:ai-i18n'
 - `defaultLang` defaults to `sourceLang` and also occurs in `locales`.
 - `directory` defaults to `i18n` relative to Vite `root`.
 - `translator` and `provider` are optional.
+- `cache.maxMessages` and `cache.maxBytes` are optional positive integers.
 - Cleanup defaults should remain unless explicitly changed.
 
 ## Optional Provider
@@ -107,8 +108,62 @@ aiI18n({
 
 Keep secrets in Vite's Node process. `batchLength` measures serialized request length, not tokens.
 
+## Optional locale loading
+
+```ts
+aiI18n({
+  sourceLang: 'zh-CN',
+  locales,
+  loading: {
+    strategy: 'locale',
+    preload: ['en-US'],
+    prefetch: ['ja-JP'],
+  },
+})
+```
+
+Locale loading is opt-in. Each target locale becomes an independent Vite chunk. `preload` emits a
+`modulepreload` hint, `prefetch` emits a lower-priority browser hint, and unlisted targets load on
+their first `setLang()` call. Never include `sourceLang` or place the same locale in both lists.
+Duplicates within one list are harmless and normalized away.
+
+A non-source `defaultLang` is automatically preloaded. Until it finishes, Runtime and HTML use the
+synchronous source fallback. `setLang()` resolves only after an unloaded target is installed;
+failures preserve the current language. Omitting `loading` preserves eager all-locale registration.
+
+## Optional cache capacity
+
+```ts
+aiI18n({
+  sourceLang: 'zh-CN',
+  locales,
+  cache: {
+    maxMessages: 20_000,
+    maxBytes: 10 * 1024 * 1024,
+  },
+})
+```
+
+Capacity control is opt-in. Exceeding either configured limit prunes only inactive Translation
+Memory in stable message-ID order. `maxBytes` measures the UTF-8 bytes of the entire stable
+`cache.json` serialization. Messages referenced by cache file records or the current ProjectState
+are protected. If protected data alone exceeds a limit, Vite warns and keeps it.
+
+`cleanup.orphanMessages: true` deletes all inactive messages before capacity enforcement.
+`cleanup.missingSourceFiles` continues to decide whether missing source records protect their
+messages.
+
 ## Generation behavior
 
 Vite Dev accumulates browser-requested modules; visit lazy routes before judging coverage. Vite Build
 starts a fresh state and follows reachable imports. Both modes reconcile stable `cache.json`,
-`extracted/**`, and `locales/**`. SSR transforms and runtime injection are skipped with a warning.
+`extracted/**`, and `locales/**`.
+
+`vite build --watch` creates ProjectState on the first build and reuses it on later rebuilds.
+Unchanged source fingerprints reuse their AST; changed static dependencies refresh necessary reverse
+dependents. Edits to extracted or target locale files update translations and registration without
+parsing unchanged source. Deleted, renamed, or newly unreachable modules leave the active graph while
+Translation Memory remains available. Restart the Watch process after Vite config, plugin, extractor,
+or schema changes.
+
+SSR transforms and runtime injection are skipped with a warning.
