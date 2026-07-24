@@ -42,7 +42,7 @@ export default defineConfig({
 ```
 
 `sourceLang` 与 `locales` 必填。`sourceLang` 必须出现在 `locales` 中；省略
-`defaultLang` 时，Runtime 默认使用 `sourceLang`。
+`defaultLang` 时，Runtime 默认使用 `sourceLang`。两者相同时无需重复配置。
 
 ## 3. 写第一句翻译
 
@@ -147,10 +147,13 @@ pnpm build
 i18n/
 ├── cache.json
 ├── extracted/
+│   └── src_app.ts.json
 └── locales/
+    └── en-US.json
 ```
 
 Dev 只提取浏览器实际请求到的模块。验证懒加载页面时，请先访问对应路由。
+source locale 不会生成 locale 文件。
 
 ## 可选：ESLint 9 检查
 

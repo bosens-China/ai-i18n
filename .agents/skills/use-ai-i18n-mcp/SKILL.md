@@ -26,12 +26,14 @@ Require an existing `cache.json`. If the protocol files do not exist yet, run or
 Running `@ai-i18n/eslint-plugin` only validates static `t()` arguments; it never creates or reconciles these protocol files.
 The optional LangChain Provider's `batchLength` and `maxConcurrency` govern automatic model calls;
 they do not change MCP pagination limits, write batch limits, or this manual translation workflow.
-Vue and React modes may produce ordinary `*.tsx.json` extracted files. The framework selected for
-that Vite build does not change MCP discovery, pagination, or write semantics.
+Vue and React modes may produce flat extracted files such as `src_components_App.tsx.json`. Tool
+results still identify them by the original source path. The framework selected for that Vite build
+does not change MCP discovery, pagination, or write semantics.
 `loading.strategy: 'locale'` only changes browser language assets. It does not change MCP tools,
 protocol paths, locale names, pagination, or the rule that writes only extracted files.
 Optional Vite `cache.maxMessages` and `cache.maxBytes` settings also do not change MCP paths or tool
-contracts. MCP writes remain in extracted files and are protected while active. On the next Vite
+contracts. Cache v2 contains messages only; active references come from extracted files and the
+current ProjectState. MCP writes remain in extracted files and are protected while active. On the next Vite
 reconciliation, inactive Translation Memory may be pruned to satisfy those limits; do not bypass
 that policy by editing `cache.json`.
 

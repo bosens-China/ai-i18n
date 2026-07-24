@@ -9,16 +9,36 @@ description: i18n 协议目录、Git 提交约定与 Agent 协作流程
 
 ```text
 i18n/
-├── cache.json                 # fingerprint、引用与全局 Translation Memory
+├── cache.json                 # 全局 Translation Memory
 ├── extracted/
-│   └── src/example.ts.json    # source / comment / location / 各语言翻译
+│   └── src_example.ts.json    # source / comment / location / 各语言翻译
 └── locales/
-    ├── zh-CN.json             # 源语言始终输出 source
-    └── en-US.json             # 缺失项保留 null
+    └── en-US.json             # 只生成目标语言；缺失项保留 null
 ```
 
 可用 `directory` 修改路径。JSON 使用稳定排序，并通过临时文件加 rename 原子写入。
 文件中不包含绝对路径、时间戳、API key、完整 Prompt 或 Provider 原始响应。
+extracted 文件位于同一层级。路径分隔符编码为 `_`，源码文件名中的 `_` 会单独转义，
+因此相似路径不会互相覆盖。
+
+`cache.json` 使用消息 ID 作为 key，只保存 Translation Memory：
+
+```json
+{
+  "version": 2,
+  "messages": {
+    "8 位房间码": {
+      "sourceLang": "zh-CN",
+      "translations": {
+        "en-US": "8-digit Room Code"
+      }
+    }
+  }
+}
+```
+
+插件先按当前 message ID 查找。source language 变化后，如果新 source 文案唯一匹配某条
+历史 translation，插件会反向复用该消息的其他语言翻译。
 
 ## Dev 与 Build
 
@@ -40,7 +60,7 @@ Build Watch 会监听活动模块关联的 extracted 和目标 locale 文件。�
 Vite 配置、插件、extractor 或 schema 变化后需要重启 Watch 进程。
 
 可选的 `cache.maxMessages` 与 `cache.maxBytes` 会在协议文件合并后限制 Translation Memory
-规模。插件只淘汰非活跃历史；当前 file records 或 ProjectState 引用的 message 始终保留。
+规模。插件只淘汰非活跃历史；现有 extracted 或 ProjectState 引用的 message 始终保留。
 若活动数据自身超限，插件会输出 warning，而不会删除活动翻译。
 
 ## 应该提交什么

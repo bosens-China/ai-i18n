@@ -41,14 +41,15 @@ Always read [Vite configuration](references/vite.md). Then read only the matchin
 3. Let the final Vite plugin list infer the mode, or set `framework` only when an explicit override is required.
 4. Let an existing `unplugin-auto-import` enable ai-i18n auto imports, or set `autoImport: true/false`
    to force the behavior.
-5. Ensure `sourceLang` and `defaultLang` occur in the unique, non-empty `locales` array.
+5. Ensure `sourceLang` and a non-source `defaultLang` occur in the unique, non-empty `locales`
+   array. Omit `defaultLang` when it equals `sourceLang`.
 6. Add one static translation call. Explicit imports always come from `virtual:ai-i18n`; auto-import
    users write the same API without the import statement.
 7. For TypeScript, keep the generated `src/ai-i18n.d.ts` in the project or configure `dts` to another
    included path. The generated file carries noformat, ts-nocheck, and eslint-disable markers; do
    not hand-maintain or reformat duplicate global declarations.
-8. Run the app's type check and Vite build, then confirm `cache.json`, `extracted/**`, and `locales/**`
-   under the resolved output directory.
+8. Run the app's type check and Vite build, then confirm the messages-only cache v2,
+   flat `extracted/*.json`, and target-only `locales/*.json` under the resolved output directory.
 
 When the user requests smaller initial bundles, configure `loading: { strategy: 'locale' }`.
 Use `preload` only for target locales expected immediately, `prefetch` for likely later choices, and

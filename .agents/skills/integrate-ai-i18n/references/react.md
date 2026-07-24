@@ -40,9 +40,10 @@ If `unplugin-auto-import` is registered, omit the import. ai-i18n injects it and
 declaration; do not add it to the external plugin's imports list. Use `configs.react` from
 `@ai-i18n/eslint-plugin` to declare the global and validate static arguments.
 
-The Hook uses `useSyncExternalStore`, so language and translation updates re-render consumers. It is
-recognized in JS, TS, JSX, and TSX, including custom Hooks in `.ts`. JSX text is not translated
-automatically. Do not add Vue Vite plugins to the same build.
+The Hook uses `useSyncExternalStore`, and its `t` function identity changes with the Runtime revision,
+so language and translation updates also invalidate React Compiler caches. It is recognized in JS,
+TS, JSX, and TSX, including custom Hooks in `.ts`. JSX text is not translated automatically. Do not
+add Vue Vite plugins to the same build.
 
 For locally linked workspaces, `resolve: { dedupe: ['react', 'react-dom'] }` can prevent a second React
 instance. A normal peer-resolved installation usually does not need this.

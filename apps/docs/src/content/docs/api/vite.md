@@ -45,6 +45,8 @@ aiI18n({
 | `label` | `string` | 是   | 无     | 面向用户的语言名称；由 `getLangs()` 返回。     |
 
 `locales` 至少包含一项。`sourceLang` 与 `defaultLang` 都必须匹配某个 `value`。
+`defaultLang` 与 `sourceLang` 相同时直接省略即可。`locales/` 只为非 source 的目标语言
+生成文件；source fallback 直接来自源码，不会生成重复的 source locale 文件。
 
 ## 按语言加载
 
@@ -161,9 +163,8 @@ aiI18n({
 插件先合并磁盘编辑并执行 missing source 清理，再按 message ID 稳定淘汰当前源码不再引用的
 Translation Memory。
 
-cache file records 或当前 ProjectState 引用的 message 属于活动数据，不会参与容量淘汰。
-如果活动数据自身已经超过限制，插件会保留它们并输出 warning，因此容量限制是保护数据安全的
-软上限。
+现有 extracted 或当前 ProjectState 引用的 message 属于活动数据，不会参与容量淘汰。如果
+活动数据自身已经超过限制，插件会保留它们并输出 warning，因此容量限制是保护数据安全的软上限。
 
 ## HTML 提取
 

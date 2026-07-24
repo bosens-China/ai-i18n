@@ -43,7 +43,7 @@ description: '@ai-i18n/core、@ai-i18n/analyzer 与 @ai-i18n/vite 子路径的�
 | `AiI18nSchemaError`                     | 错误类             | 无           | 表示协议文件结构错误。               |
 | `TranslationConflictError`              | 错误类             | 无           | 表示同一消息和语言出现不同非空翻译。 |
 
-相关类型：`CacheFileV1`、`CacheMessage`、`ExtractedFileV1`、`ExtractedMessage`、
+相关类型：`CacheFileV2`、`CacheMessage`、`ExtractedFileV1`、`ExtractedMessage`、
 `LocaleFileV1`、`LangOption` 与 `TranslationValue`。
 
 ### Runtime 与 Provider

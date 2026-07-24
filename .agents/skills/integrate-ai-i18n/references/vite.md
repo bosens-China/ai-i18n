@@ -79,7 +79,8 @@ import { useI18n } from 'virtual:ai-i18n'
 
 - `locales` is non-empty and locale values are unique.
 - `sourceLang` occurs in `locales`.
-- `defaultLang` defaults to `sourceLang` and also occurs in `locales`.
+- `defaultLang` defaults to `sourceLang`; omit it when both are equal. A non-source value also
+  occurs in `locales`.
 - `directory` defaults to `i18n` relative to Vite `root`.
 - `translator` and `provider` are optional.
 - `cache.maxMessages` and `cache.maxBytes` are optional positive integers.
@@ -146,8 +147,8 @@ aiI18n({
 
 Capacity control is opt-in. Exceeding either configured limit prunes only inactive Translation
 Memory in stable message-ID order. `maxBytes` measures the UTF-8 bytes of the entire stable
-`cache.json` serialization. Messages referenced by cache file records or the current ProjectState
-are protected. If protected data alone exceeds a limit, Vite warns and keeps it.
+`cache.json` serialization. Messages referenced by existing extracted files or the current
+ProjectState are protected. If protected data alone exceeds a limit, Vite warns and keeps it.
 
 `cleanup.orphanMessages: true` deletes all inactive messages before capacity enforcement.
 `cleanup.missingSourceFiles` continues to decide whether missing source records protect their
@@ -158,6 +159,12 @@ messages.
 Vite Dev accumulates browser-requested modules; visit lazy routes before judging coverage. Vite Build
 starts a fresh state and follows reachable imports. Both modes reconcile stable `cache.json`,
 `extracted/**`, and `locales/**`.
+
+`cache.json` uses schema v2 and contains only `version` plus messages keyed by readable message ID.
+Each message stores its `sourceLang`, optional comment, and target translations. A source-language
+change first looks up the new message ID, then uniquely reverse-matches the new source against
+historical translations with the same comment. Extracted files are flat (for example,
+`src_components_App.tsx.json`), and locale files are generated only for non-source targets.
 
 `vite build --watch` creates ProjectState on the first build and reuses it on later rebuilds.
 Unchanged source fingerprints reuse their AST; changed static dependencies refresh necessary reverse
