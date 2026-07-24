@@ -1,1 +1,1 @@
-export { analyzeVueSource } from '@boses/analyzer/vue';
+export { analyzeVueSource } from '@ai-i18n/analyzer/vue';

@@ -1,5 +1,5 @@
 import fs from 'node:fs';
-import type { LangOption } from '@boses/core';
+import type { LangOption } from '@ai-i18n/core';
 import { normalizePath } from 'vite';
 import type { NormalizedAiI18nOptions } from './project-state.js';
 import type { SourceExtraction, TranslationHookBinding } from './extractor.js';

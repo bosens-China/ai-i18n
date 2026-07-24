@@ -1,4 +1,4 @@
-# @boses/eslint-plugin
+# @ai-i18n/eslint-plugin
 
 ## 1.0.0-alpha.0
 
@@ -9,4 +9,4 @@
 ### Patch Changes
 
 - Updated dependencies [47504fb]
-  - @boses/analyzer@1.0.0-alpha.0
+  - @ai-i18n/analyzer@1.0.0-alpha.0

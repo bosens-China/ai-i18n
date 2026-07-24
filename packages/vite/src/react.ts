@@ -1,4 +1,4 @@
-import type { I18nRuntime } from '@boses/core';
+import type { I18nRuntime } from '@ai-i18n/core';
 import { useSyncExternalStore } from 'react';
 
 export interface ReactI18n {

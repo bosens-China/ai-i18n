@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createI18nRuntime } from '@boses/core';
+import { createI18nRuntime } from '@ai-i18n/core';
 import { html, htmlBridgeCode, transformHtml } from '../src/html';
 
 describe('HTML extractor', () => {

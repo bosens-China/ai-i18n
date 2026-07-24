@@ -10,7 +10,7 @@ const hooks = [
   },
 ] as const;
 
-describe('@boses/analyzer', () => {
+describe('@ai-i18n/analyzer', () => {
   it('shares Hook member and undefined-comment semantics', () => {
     const module = analyzeModule(
       `import { useI18n } from 'virtual:ai-i18n'

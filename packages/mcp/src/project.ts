@@ -5,7 +5,7 @@ import {
   parseExtractedFile,
   type CacheMessage,
   type ExtractedFileV1,
-} from '@boses/core';
+} from '@ai-i18n/core';
 import { paginate, type Page } from './pagination.js';
 import {
   listJsonFiles,

@@ -10,7 +10,7 @@ import {
   type ExtractedFileV1,
   type LangOption,
   type LocaleFileV1,
-} from '@boses/core';
+} from '@ai-i18n/core';
 import type { ProjectSnapshot } from './project-state.js';
 import {
   fileExists,

@@ -11,7 +11,7 @@ import {
   type TranslationRequest,
   type TranslationResult,
   type TranslationValue,
-} from '@boses/core';
+} from '@ai-i18n/core';
 import { normalizePath } from 'vite';
 import { Analyzer, analyzeModule, extractMessages } from './yuku-analyzer.js';
 import type { ExtractResult, ExtractedMessage } from './yuku-analyzer.js';

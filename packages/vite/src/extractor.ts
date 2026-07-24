@@ -1,10 +1,10 @@
-import type { AnalysisLanguage, SourceLocation } from '@boses/analyzer';
+import type { AnalysisLanguage, SourceLocation } from '@ai-i18n/analyzer';
 
 export type {
   AnalysisLanguage,
   SourceLocation,
   TranslationHookBinding,
-} from '@boses/analyzer';
+} from '@ai-i18n/analyzer';
 
 export interface RegistrationInsertion {
   offset: number;

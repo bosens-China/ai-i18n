@@ -1,7 +1,7 @@
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import type { Translator } from '@boses/core';
+import type { Translator } from '@ai-i18n/core';
 import vuePlugin from '@vitejs/plugin-vue';
 import vueJsx from '@vitejs/plugin-vue-jsx';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -79,9 +79,9 @@ const label = useLabel()
       logLevel: 'silent',
       resolve: {
         alias: {
-          '@boses/core': path.resolve('packages/core/src/index.ts'),
-          '@boses/vite/runtime': path.resolve('packages/vite/src/runtime.ts'),
-          '@boses/vite/vue': path.resolve('packages/vite/src/vue.ts'),
+          '@ai-i18n/core': path.resolve('packages/core/src/index.ts'),
+          '@ai-i18n/vite/runtime': path.resolve('packages/vite/src/runtime.ts'),
+          '@ai-i18n/vite/vue': path.resolve('packages/vite/src/vue.ts'),
         },
       },
       plugins: [

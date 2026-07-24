@@ -1,5 +1,5 @@
 {
-  "name": "@boses/mcp",
+  "name": "@ai-i18n/mcp",
   "version": "1.0.0-alpha.0",
   "description": "Local MCP tools for reading and filling ai-i18n translation files.",
   "keywords": [
@@ -39,7 +39,7 @@
     "test": "pnpm --dir ../.. exec vitest run packages/mcp/test --config vitest.config.ts"
   },
   "dependencies": {
-    "@boses/core": "workspace:^",
+    "@ai-i18n/core": "workspace:^",
     "@modelcontextprotocol/sdk": "^1.29.0",
     "zod": "^4.0.0"
   },

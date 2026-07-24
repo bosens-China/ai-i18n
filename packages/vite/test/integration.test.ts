@@ -32,7 +32,7 @@ describe('Vite integration', () => {
       appType: 'custom',
       logLevel: 'silent',
       server: { middlewareMode: true },
-      resolve: { alias: { '@boses/vite/runtime': runtimeEntry } },
+      resolve: { alias: { '@ai-i18n/vite/runtime': runtimeEntry } },
       plugins: [plugin()],
     });
 
@@ -138,7 +138,7 @@ async function buildFixture(root: string) {
     root,
     configFile: false,
     logLevel: 'silent',
-    resolve: { alias: { '@boses/vite/runtime': runtimeEntry } },
+    resolve: { alias: { '@ai-i18n/vite/runtime': runtimeEntry } },
     plugins: [plugin()],
   });
 }

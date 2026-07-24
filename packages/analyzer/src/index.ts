@@ -1,4 +1,4 @@
-import { createMessageId, normalizeComment } from '@boses/core';
+import { createMessageId, normalizeComment } from '@ai-i18n/core';
 import {
   analyze,
   Analyzer,

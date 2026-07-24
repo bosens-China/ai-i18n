@@ -13,4 +13,4 @@ export { aiI18n } from './plugin.js';
 export type { AiI18nOptions, AiI18nProviderOptions } from './options.js';
 export type { AiI18nFramework } from './framework.js';
 export type { HtmlExtractorOptions } from './html.js';
-export type { I18nRuntime } from '@boses/core';
+export type { I18nRuntime } from '@ai-i18n/core';

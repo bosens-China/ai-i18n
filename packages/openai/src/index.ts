@@ -5,7 +5,7 @@ import type {
   TranslationRequest,
   TranslationResult,
   Translator,
-} from '@boses/core';
+} from '@ai-i18n/core';
 
 export interface LangSmithOptions {
   apiKey: string;

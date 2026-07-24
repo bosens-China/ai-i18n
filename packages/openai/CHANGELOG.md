@@ -1,4 +1,4 @@
-# @boses/openai
+# @ai-i18n/openai
 
 ## 1.0.0-alpha.0
 
@@ -9,4 +9,4 @@
 ### Patch Changes
 
 - Updated dependencies [47504fb]
-  - @boses/core@1.0.0-alpha.0
+  - @ai-i18n/core@1.0.0-alpha.0

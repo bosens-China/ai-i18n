@@ -1,4 +1,4 @@
-# @boses/core
+# @ai-i18n/core
 
 ## 1.0.0-alpha.0
 

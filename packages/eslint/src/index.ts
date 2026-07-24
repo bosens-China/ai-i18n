@@ -8,7 +8,7 @@ const { version } = createRequire(import.meta.url)('../package.json') as {
 
 const plugin: ESLint.Plugin = {
   meta: {
-    name: '@boses/eslint-plugin',
+    name: '@ai-i18n/eslint-plugin',
     version,
     namespace: 'ai-i18n',
   },

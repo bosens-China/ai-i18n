@@ -1,7 +1,7 @@
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import type { Translator } from '@boses/core';
+import type { Translator } from '@ai-i18n/core';
 import reactPlugin from '@vitejs/plugin-react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { build } from 'vite';
@@ -55,9 +55,9 @@ export function App() {
       logLevel: 'silent',
       resolve: {
         alias: {
-          '@boses/core': path.resolve('packages/core/src/index.ts'),
-          '@boses/vite/runtime': path.resolve('packages/vite/src/runtime.ts'),
-          '@boses/vite/react': path.resolve('packages/vite/src/react.ts'),
+          '@ai-i18n/core': path.resolve('packages/core/src/index.ts'),
+          '@ai-i18n/vite/runtime': path.resolve('packages/vite/src/runtime.ts'),
+          '@ai-i18n/vite/react': path.resolve('packages/vite/src/react.ts'),
         },
       },
       plugins: [

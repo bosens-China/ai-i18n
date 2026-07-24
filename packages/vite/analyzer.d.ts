@@ -1,6 +1,6 @@
-export { analyzeVueSource } from '@boses/analyzer/vue';
+export { analyzeVueSource } from '@ai-i18n/analyzer/vue';
 export type {
   VueAnalysisSource,
   VueCompiler,
   VueRegistrationInsertion,
-} from '@boses/analyzer/vue';
+} from '@ai-i18n/analyzer/vue';

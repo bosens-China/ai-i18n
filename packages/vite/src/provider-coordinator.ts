@@ -3,7 +3,7 @@ import type {
   TranslationResult,
   TranslationValue,
   Translator,
-} from '@boses/core';
+} from '@ai-i18n/core';
 
 export interface ProviderCoordinatorOptions {
   debounceMs?: number;

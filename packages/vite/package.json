@@ -1,5 +1,5 @@
 {
-  "name": "@boses/vite",
+  "name": "@ai-i18n/vite",
   "version": "1.0.0-alpha.0",
   "description": "Vite 8 static extraction and browser runtime plugin for ai-i18n.",
   "keywords": [
@@ -60,8 +60,8 @@
     "benchmark": "node benchmark/yuku-spike.mjs"
   },
   "dependencies": {
-    "@boses/analyzer": "workspace:^",
-    "@boses/core": "workspace:^",
+    "@ai-i18n/analyzer": "workspace:^",
+    "@ai-i18n/core": "workspace:^",
     "magic-string": "0.30.21",
     "parse5": "8.0.0",
     "yuku-analyzer": "0.7.3"

@@ -1,5 +1,5 @@
 {
-  "name": "@boses/eslint-plugin",
+  "name": "@ai-i18n/eslint-plugin",
   "version": "1.0.0-alpha.0",
   "description": "ESLint 9 static-argument checks aligned with ai-i18n extraction semantics.",
   "keywords": [
@@ -38,7 +38,7 @@
     "test": "pnpm --dir ../.. exec vitest run packages/eslint/test --config vitest.config.ts"
   },
   "dependencies": {
-    "@boses/analyzer": "workspace:^"
+    "@ai-i18n/analyzer": "workspace:^"
   },
   "peerDependencies": {
     "@vue/compiler-sfc": "^3.5.0",

@@ -1,4 +1,4 @@
-# @boses/vite
+# @ai-i18n/vite
 
 ## 1.0.0-alpha.0
 
@@ -9,5 +9,5 @@
 ### Patch Changes
 
 - Updated dependencies [47504fb]
-  - @boses/analyzer@1.0.0-alpha.0
-  - @boses/core@1.0.0-alpha.0
+  - @ai-i18n/analyzer@1.0.0-alpha.0
+  - @ai-i18n/core@1.0.0-alpha.0

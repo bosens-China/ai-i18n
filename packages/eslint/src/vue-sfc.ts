@@ -3,7 +3,7 @@ import {
   analyzeVueSource,
   type VueAnalysisSource,
   type VueCompiler,
-} from '@boses/analyzer/vue';
+} from '@ai-i18n/analyzer/vue';
 
 interface VueParserServices {
   getDocumentFragment?: () => unknown;

@@ -4,11 +4,11 @@ export {
   analyzeModule,
   extractMessages,
   findUnboundCalls,
-} from '@boses/analyzer';
+} from '@ai-i18n/analyzer';
 export type {
   ExtractResult,
   ExtractWarning,
   ExtractWarningCode,
   ExtractedMessage,
   Module,
-} from '@boses/analyzer';
+} from '@ai-i18n/analyzer';

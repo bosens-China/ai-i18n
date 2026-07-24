@@ -1,4 +1,4 @@
-import type { TranslationRequest, Translator } from '@boses/core';
+import type { TranslationRequest, Translator } from '@ai-i18n/core';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ProviderCoordinator } from '../src/provider-coordinator';
 

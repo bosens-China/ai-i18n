@@ -1,6 +1,6 @@
 import MagicString from 'magic-string';
 import { parse, type DefaultTreeAdapterTypes } from 'parse5';
-import type { ModuleMessages } from '@boses/core';
+import type { ModuleMessages } from '@ai-i18n/core';
 import {
   AI_I18N_VIRTUAL_MODULE_ID,
   analyzeModule,
