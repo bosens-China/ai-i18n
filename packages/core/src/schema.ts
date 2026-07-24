@@ -118,9 +118,7 @@ export function mergeCacheMessages(
       merged[id] = cloneMessage(next);
       continue;
     }
-    if ((previous.comment ?? '') !== (next.comment ?? '')) {
-      throw new Error(`[ai-i18n] message "${id}" has inconsistent metadata`);
-    }
+    if (!previous.comment && next.comment) previous.comment = next.comment;
     if (!previous.sourceLang && next.sourceLang) {
       previous.sourceLang = next.sourceLang;
     }

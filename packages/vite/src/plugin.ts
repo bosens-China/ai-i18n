@@ -1,4 +1,9 @@
-import type { NormalizedHotChannel, Plugin, ResolvedConfig } from 'vite';
+import {
+  type NormalizedHotChannel,
+  type Plugin,
+  type ResolvedConfig,
+} from 'vite';
+import { resolveAnalysisDependencies } from './analysis-dependencies.js';
 import { createBuildWatchState } from './build-watch.js';
 import { createDevUpdateSender } from './dev-updates.js';
 import { FileStore } from './file-store.js';
@@ -146,6 +151,11 @@ export function aiI18n(options: AiI18nOptions): Plugin {
         ...(options.cache ? { cache: options.cache } : {}),
         onWarning: (message) => resolved.logger.warn(`[ai-i18n] ${message}`),
       });
+      if (resolved.command === 'build' && resolved.build.watch) {
+        resolved.logger.info(
+          '[ai-i18n] Build Watch 已启用；修改 Vite 配置、插件、提取规则或协议 schema 后请重启。',
+        );
+      }
       ready = Promise.all([
         store.load(),
         writeFrameworkTypes(resolved.root, framework, autoImport, options.dts),
@@ -239,10 +249,13 @@ export function aiI18n(options: AiI18nOptions): Plugin {
           project: currentState(),
           store: currentStore(),
           flush: () => coordinator?.flush() ?? Promise.resolve(),
-          reconcile: (moduleIds) => buildWatch.reconcile(moduleIds),
+          reconcile: (moduleIds, complete) =>
+            buildWatch.reconcile(moduleIds, complete),
         });
         if (localeModule !== undefined) return localeModule;
-        const moduleId = decodeRegisterId(id);
+        const moduleId = decodeURIComponent(
+          id.slice(RESOLVED_REGISTER_PREFIX.length),
+        );
         return loadRegistration(this, {
           moduleId,
           build: config?.command === 'build',
@@ -285,34 +298,13 @@ export function aiI18n(options: AiI18nOptions): Plugin {
         );
         if (!update) return null;
         const { moduleId } = update;
-        let analysisChanged = false;
-        const analyzed = project.analyzer.module(moduleId);
-        if (analyzed) {
-          for (const imported of analyzed.imports) {
-            const resolved = await this.resolve(imported.specifier, id, {
-              skipSelf: true,
-            });
-            if (
-              resolved &&
-              !resolved.external &&
-              !resolved.id.startsWith('\0')
-            ) {
-              this.addWatchFile(resolved.id);
-              analysisChanged =
-                project.setResolution(id, imported.specifier, resolved.id) ||
-                analysisChanged;
-              const targetId = project.normalizeId(resolved.id);
-              if (
-                update.result.pending &&
-                targetId &&
-                !project.analyzer.module(targetId)
-              ) {
-                await this.load({ id: resolved.id });
-                analysisChanged = true;
-              }
-            }
-          }
-        }
+        const analysisChanged = await resolveAnalysisDependencies(
+          this,
+          project,
+          id,
+          moduleId,
+          update.result.pending,
+        );
         if (analysisChanged) {
           update = project.update(extraction?.analysisCode ?? code, id, {
             ...sourceUpdateOptions(
@@ -373,7 +365,8 @@ export function aiI18n(options: AiI18nOptions): Plugin {
         project: currentState(),
         store: currentStore(),
         flush: () => coordinator?.flush() ?? Promise.resolve(),
-        reconcile: (moduleIds) => buildWatch.reconcile(moduleIds),
+        reconcile: (moduleIds, complete) =>
+          buildWatch.reconcile(moduleIds, complete),
       });
     },
 
@@ -383,17 +376,11 @@ export function aiI18n(options: AiI18nOptions): Plugin {
       order: 'post',
       async handler(_outputOptions, bundle) {
         if (config?.command !== 'build') return;
-        if (this.meta.watchMode) {
-          await buildWatch.reconcile(this.getModuleIds());
-        }
+        await buildWatch.reconcile(this.getModuleIds(), true);
         injectBuiltLocaleHints(bundle, config, normalized);
       },
     },
 
     hotUpdate: handleHotUpdate,
   };
-}
-
-function decodeRegisterId(id: string) {
-  return decodeURIComponent(id.slice(RESOLVED_REGISTER_PREFIX.length));
 }

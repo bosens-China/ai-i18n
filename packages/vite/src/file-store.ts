@@ -8,7 +8,6 @@ import {
   type CacheFileV2,
   type CacheMessage,
   type ExtractedFileV1,
-  type LangOption,
   type LocaleFileV1,
 } from '@ai-i18n/core';
 import { enforceCacheCapacity } from './cache-capacity.js';
@@ -31,7 +30,10 @@ import {
   overlayMessages,
   withConflictFiles,
 } from './file-store-merge.js';
-import type { AiI18nCacheOptions } from './options.js';
+import type {
+  FileStoreLoadOptions,
+  FileStoreOptions,
+} from './file-store-types.js';
 import type { ProjectSnapshot } from './project-state.js';
 import {
   listJsonFiles,
@@ -41,21 +43,10 @@ import {
   stableJson,
 } from './json-files.js';
 
-export interface FileStoreOptions {
-  root: string;
-  sourceLang: string;
-  locales: readonly LangOption[];
-  directory?: string;
-  cleanupMissingSourceFiles?: boolean;
-  cleanupOrphanMessages?: boolean;
-  cache?: AiI18nCacheOptions;
-  onWarning?: (message: string) => void;
-}
-
-export interface FileStoreLoadOptions {
-  preferredSources?: readonly string[];
-  preferredLocales?: readonly string[];
-}
+export type {
+  FileStoreLoadOptions,
+  FileStoreOptions,
+} from './file-store-types.js';
 
 export class FileStore {
   readonly directory: string;
@@ -201,12 +192,14 @@ export class FileStore {
     this.ensureCurrentLocales(cache.messages);
 
     const seen = new Set(snapshot.seen);
-    const activeFiles = [
-      ...diskExtracted.filter(
-        (file) => !missingSet.has(file.source) && !seen.has(file.source),
-      ),
-      ...Object.values(snapshot.extracted),
-    ];
+    const activeFiles = options.complete
+      ? Object.values(snapshot.extracted)
+      : [
+          ...diskExtracted.filter(
+            (file) => !missingSet.has(file.source) && !seen.has(file.source),
+          ),
+          ...Object.values(snapshot.extracted),
+        ];
     const activeMessageIds = activeFiles.flatMap((file) =>
       file.messages.map((message) => message.id),
     );
@@ -218,7 +211,10 @@ export class FileStore {
     const { cache: capacity, onWarning } = this.options;
     enforceCacheCapacity(cache, activeMessageIds, capacity, onWarning);
     const activeExtracted = new Set(Object.keys(snapshot.extracted));
-    for (const source of snapshot.seen) {
+    const staleSources = options.complete
+      ? diskExtracted.map((file) => file.source)
+      : snapshot.seen;
+    for (const source of staleSources) {
       if (!activeExtracted.has(source)) await this.removeExtracted(source);
     }
     for (const source of missingSources) await this.removeExtracted(source);
@@ -239,7 +235,7 @@ export class FileStore {
         await fs.rm(oldPath, { force: true });
       }
     }
-    await this.writeLocales(snapshot.locales, cache.messages);
+    await this.writeLocales(activeMessageIds, cache.messages);
     // cache 最后写，异常中断后下次可由 extracted/locales 重新校准。
     await this.writeJson(cachePath(this.directory), cache);
     return cache;
@@ -352,18 +348,27 @@ export class FileStore {
   }
 
   private async writeLocales(
-    locales: readonly LocaleFileV1[],
+    messageIds: readonly string[],
     cacheMessages: Record<string, CacheMessage>,
   ): Promise<void> {
     const directory = path.join(this.directory, 'locales');
     const expected = new Set<string>();
-    for (const locale of locales) {
-      const file = path.join(
-        directory,
-        `${encodeURIComponent(locale.locale.value)}.json`,
-      );
+    const activeIds = [...new Set(messageIds)].sort();
+    for (const locale of this.options.locales) {
+      if (locale.value === this.options.sourceLang) continue;
+      const file = localePath(this.directory, locale.value);
       expected.add(file);
-      await this.writeJson(file, hydrateLocale(locale, cacheMessages));
+      await this.writeJson(
+        file,
+        hydrateLocale(
+          {
+            version: 1,
+            locale: { ...locale },
+            messages: Object.fromEntries(activeIds.map((id) => [id, null])),
+          },
+          cacheMessages,
+        ),
+      );
     }
     for (const file of await listJsonFiles(directory)) {
       if (!expected.has(file)) await fs.rm(file, { force: true });

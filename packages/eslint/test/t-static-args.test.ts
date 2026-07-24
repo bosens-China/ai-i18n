@@ -175,6 +175,15 @@ describe('ai-i18n/t-static-args', () => {
         code: "import { t } from 'virtual:ai-i18n'; t('保存', undefined)",
         filename: path.join(sourceRoot, 'undefined-comment.ts'),
       },
+      {
+        code: "import { t } from 'virtual:ai-i18n'; t`你好 ${name}`",
+        filename: path.join(sourceRoot, 'tagged-template.ts'),
+      },
+      {
+        code: 't`你好 ${name}`',
+        filename: path.join(sourceRoot, 'auto-tagged-template.ts'),
+        options: [{ autoImport: true }],
+      },
     ],
     invalid: [
       {

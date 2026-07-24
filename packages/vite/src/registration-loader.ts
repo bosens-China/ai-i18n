@@ -1,3 +1,4 @@
+import { normalizePath } from 'vite';
 import type { FileStore } from './file-store.js';
 import type { ProjectState } from './project-state.js';
 import { registerCode } from './virtual-modules.js';
@@ -23,9 +24,9 @@ export async function loadRegistration(
   const { moduleId, project, store } = options;
   for (const file of project.registrationWatchFiles(moduleId)) {
     context.addWatchFile(file);
-    if (project.normalizeId(file) !== moduleId) {
-      await context.load({ id: file });
-    }
+  }
+  for (const file of project.registrationLoadFiles(moduleId)) {
+    await context.load({ id: normalizePath(file) });
   }
   for (const file of store.watchFiles(moduleId)) {
     context.addWatchFile(file);

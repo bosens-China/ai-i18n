@@ -123,17 +123,13 @@ function frameworkTypes(
 ): string {
   const adapterFramework = framework === 'vanilla' ? undefined : framework;
   const adapter = adapterFramework
-    ? `  export const useI18n: ReturnType<
-    typeof import('@ai-i18n/vite/${adapterFramework}').create${capitalize(adapterFramework)}I18n
-  >;`
+    ? `  export const useI18n: import('@ai-i18n/vite/${adapterFramework}').UseI18n;`
     : '';
   const globals = autoImport
     ? AUTO_IMPORTS[framework]
         .map((name) => {
           if (name === 'useI18n') {
-            return `declare const useI18n: ReturnType<
-  typeof import('@ai-i18n/vite/${adapterFramework}').create${capitalize(adapterFramework!)}I18n
->;`;
+            return `declare const useI18n: import('@ai-i18n/vite/${adapterFramework}').UseI18n;`;
           }
           return `declare const ${name}: import('@ai-i18n/vite').I18nRuntime['${name}'];`;
         })
@@ -159,8 +155,4 @@ function frameworkTypes(
 
 ${virtualModule}${globals ? `\n\n${globals}` : ''}
 `;
-}
-
-function capitalize(value: 'vue' | 'react'): 'Vue' | 'React' {
-  return value === 'vue' ? 'Vue' : 'React';
 }

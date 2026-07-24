@@ -13,11 +13,7 @@ declare module 'virtual:ai-i18n' {
   export const getLang: I18nRuntime['getLang'];
   export const getLangs: I18nRuntime['getLangs'];
   export const subscribe: I18nRuntime['subscribe'];
-  export const useI18n: ReturnType<
-    typeof import('@ai-i18n/vite/vue').createVueI18n
-  >;
+  export const useI18n: import('@ai-i18n/vite/vue').UseI18n;
 }
 
-declare const useI18n: ReturnType<
-  typeof import('@ai-i18n/vite/vue').createVueI18n
->;
+declare const useI18n: import('@ai-i18n/vite/vue').UseI18n;

@@ -56,12 +56,17 @@ export function createBuildWatchState(dependencies: BuildWatchDependencies) {
       dependencies.requestMissingTranslations(affected);
     },
 
-    async reconcile(moduleIds: Iterable<string>): Promise<void> {
+    async reconcile(
+      moduleIds: Iterable<string>,
+      complete = false,
+    ): Promise<void> {
       const project = dependencies.state();
       const removed = project.retain(moduleIds);
-      if (!removed.length) return;
+      if (!removed.length && !complete) return;
       // Watch 状态可以跨轮次复用，但活动模块必须以当前 Vite 图为准。
-      const cache = await dependencies.store().sync(project.snapshot());
+      const cache = await dependencies
+        .store()
+        .sync(project.snapshot(), complete ? { complete: true } : {});
       project.hydrateCache(cache);
     },
   };

@@ -14,6 +14,7 @@ export type {
   AiI18nCacheOptions,
   AiI18nLocaleLoadingOptions,
   AiI18nOptions,
+  AiI18nPersistOptions,
   AiI18nProviderOptions,
 } from './options.js';
 export type { AiI18nFramework } from './framework.js';

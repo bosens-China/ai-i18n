@@ -64,7 +64,10 @@ export function runtimeStubCode(framework: AiI18nFramework): string {
       ? ''
       : 'export const useI18n = () => ({ t, setLang, currentLang: getLang(), langs: getLangs() });';
   return `
-export const t = (source) => source;
+export const t = (source, ...values) =>
+  typeof source === 'string'
+    ? source
+    : source.reduce((message, part, index) => message + part + (index < values.length ? String(values[index]) : ''), '');
 export const setLang = async () => {};
 export const getLang = () => '';
 export const getLangs = () => [];

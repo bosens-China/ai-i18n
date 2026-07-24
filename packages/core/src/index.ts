@@ -28,8 +28,15 @@ export type {
   I18nRuntimeOptions,
   LocaleLoader,
   LocaleMessages,
+  MissingTranslationFallback,
   ModuleMessages,
+  Translate,
 } from './runtime.js';
+export {
+  createTemplateMessage,
+  formatTemplateMessage,
+  templatePlaceholderIndexes,
+} from './template.js';
 export type {
   TranslationRequest,
   TranslationResult,

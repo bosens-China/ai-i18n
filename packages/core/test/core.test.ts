@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   AiI18nSchemaError,
   TranslationConflictError,
@@ -16,16 +16,25 @@ const locales = [
   { value: 'en-US', label: 'English' },
 ];
 
+afterEach(() => {
+  vi.unstubAllGlobals();
+});
+
 describe('@ai-i18n/core message IDs', () => {
-  it('preserves source and normalizes optional comments', () => {
-    expect(createMessageId(' 保存 ', '  按钮  ')).toBe(' 保存 #按钮');
+  it('keeps IDs stable when comments change', () => {
+    expect(createMessageId(' 保存 ', '  按钮  ')).toBe(' 保存 ');
     expect(createMessageId('保存', '   ')).toBe('保存');
-    expect(createMessageId('A#B\\C', 'D#E')).toBe('A\\#B\\\\C#D\\#E');
+    expect(createMessageId('A#B\\C', 'D#E')).toBe('A\\#B\\\\C');
   });
 
-  it('round-trips escaped IDs', () => {
-    const id = createMessageId('A#B\\C', 'D#E');
-    expect(parseMessageId(id)).toEqual({ source: 'A#B\\C', comment: 'D#E' });
+  it('parses current and legacy comment-bearing IDs', () => {
+    expect(parseMessageId(createMessageId('A#B\\C'))).toEqual({
+      source: 'A#B\\C',
+    });
+    expect(parseMessageId('A\\#B\\\\C#D\\#E')).toEqual({
+      source: 'A#B\\C',
+      comment: 'D#E',
+    });
   });
 });
 
@@ -137,6 +146,75 @@ describe('@ai-i18n/core schemas', () => {
 });
 
 describe('@ai-i18n/core runtime', () => {
+  it('translates tagged templates and lets targets reorder placeholders', () => {
+    const runtime = createI18nRuntime({
+      sourceLang: 'zh-CN',
+      defaultLang: 'en-US',
+      locales,
+    });
+    runtime.registerModule('src/app.ts', {
+      'zh-CN': { '你好 {{0}}，共有 {{1}} 项': '你好 {{0}}，共有 {{1}} 项' },
+      'en-US': { '你好 {{0}}，共有 {{1}} 项': '{{1}} items for {{0}}' },
+    });
+    const name = 'Ada';
+    const count = 2;
+
+    expect(runtime.t`你好 ${name}，共有 ${count} 项`).toBe('2 items for Ada');
+  });
+
+  it('detects and persists supported browser language preferences', async () => {
+    const values = new Map<string, string>([['preferred', 'zh-CN']]);
+    const storage: Storage = {
+      get length() {
+        return values.size;
+      },
+      clear: () => values.clear(),
+      getItem: (key) => values.get(key) ?? null,
+      key: (index) => [...values.keys()][index] ?? null,
+      removeItem: (key) => values.delete(key),
+      setItem: (key, value) => values.set(key, value),
+    };
+    vi.stubGlobal('localStorage', storage);
+    vi.stubGlobal('navigator', {
+      languages: ['en-GB'],
+      language: 'en-GB',
+    });
+
+    const persisted = createI18nRuntime({
+      sourceLang: 'zh-CN',
+      defaultLang: 'zh-CN',
+      locales,
+      persist: { key: 'preferred' },
+      detect: 'navigator',
+    });
+    expect(persisted.getLang()).toBe('zh-CN');
+    await persisted.setLang('en-US');
+    expect(values.get('preferred')).toBe('en-US');
+
+    values.clear();
+    const detected = createI18nRuntime({
+      sourceLang: 'zh-CN',
+      defaultLang: 'zh-CN',
+      locales,
+      detect: 'navigator',
+    });
+    expect(detected.getLang()).toBe('en-US');
+  });
+
+  it('supports key, marked, and empty missing-translation fallbacks', () => {
+    const create = (fallback: 'key' | 'marked' | 'empty') =>
+      createI18nRuntime({
+        sourceLang: 'zh-CN',
+        defaultLang: 'en-US',
+        locales,
+        fallback,
+      });
+
+    expect(create('key').t('A#B')).toBe('A\\#B');
+    expect(create('marked').t('缺失')).toBe('⟦缺失⟧');
+    expect(create('empty').t('缺失')).toBe('');
+  });
+
   it('registers all locales and falls back only for null or missing values', async () => {
     const runtime = createI18nRuntime({
       sourceLang: 'zh-CN',

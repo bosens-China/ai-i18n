@@ -54,8 +54,9 @@ describe('openAI', () => {
     });
     const messages = captured?.body.messages as Array<{ content: string }>;
     expect(messages[0]!.content).toMatch(
-      /^Translate product interface messages\.\n\n请仅以 JSON 返回/,
+      /^Translate product interface messages\.\n\n`\{\{0\}\}`/,
     );
+    expect(messages[0]!.content).toContain('请仅以 JSON 返回');
     expect(messages[0]!.content).toContain(
       '{"translations":[{"messageId":"save","locale":"en-US","value":"Save"}]}',
     );
@@ -70,9 +71,7 @@ describe('openAI', () => {
     const baseURL = await startServer(async (request, body) => {
       captured = { request, body };
       return completion({
-        translations: [
-          { messageId: 'save', locale: 'en-US', value: 'Save' },
-        ],
+        translations: [{ messageId: 'save', locale: 'en-US', value: 'Save' }],
       });
     });
 
@@ -93,9 +92,7 @@ describe('openAI', () => {
     const baseURL = await startServer(async () => {
       await new Promise((resolve) => setTimeout(resolve, 50));
       return completion({
-        translations: [
-          { messageId: 'save', locale: 'en-US', value: 'Save' },
-        ],
+        translations: [{ messageId: 'save', locale: 'en-US', value: 'Save' }],
       });
     });
 
@@ -119,9 +116,7 @@ describe('openAI', () => {
         ],
       },
       {
-        translations: [
-          { messageId: 'other', locale: 'en-US', value: 'Other' },
-        ],
+        translations: [{ messageId: 'other', locale: 'en-US', value: 'Other' }],
       },
       { translations: [{ messageId: 'save', locale: 'en-US', value: 1 }] },
       {
@@ -145,6 +140,26 @@ describe('openAI', () => {
     }
   });
 
+  it('rejects translations that change tagged-template placeholders', async () => {
+    const baseURL = await startServer(async () =>
+      completion({
+        translations: [
+          { messageId: 'welcome', locale: 'en-US', value: 'Hello' },
+        ],
+      }),
+    );
+
+    await expect(
+      openAI(validOptions(baseURL))([
+        {
+          messageId: 'welcome',
+          source: '你好 {{0}}',
+          locale: 'en-US',
+        },
+      ]),
+    ).rejects.toThrow('changed template placeholders');
+  });
+
   it('does not request the service for an empty batch', async () => {
     let requested = false;
     const baseURL = await startServer(async () => {
@@ -161,7 +176,9 @@ describe('openAI', () => {
       status: 401,
       body: { error: 'secret provider details' },
     }));
-    const invalidURL = await startServer(async () => ({ body: { choices: [] } }));
+    const invalidURL = await startServer(async () => ({
+      body: { choices: [] },
+    }));
 
     await expect(
       openAI(validOptions(errorURL))([

@@ -56,4 +56,22 @@ useI18n()`,
       messages: [{ source: '自动导入' }],
     });
   });
+
+  it('extracts tagged templates with numbered interpolation placeholders', () => {
+    const module = analyzeModule(
+      `import { t } from 'virtual:ai-i18n'
+const name = getName()
+t\`你好 \${name}，你有 \${items.length} 条消息\``,
+      'main.ts',
+    );
+
+    expect(extractMessages(module)).toMatchObject({
+      messages: [{ source: '你好 {{0}}，你有 {{1}} 条消息' }],
+      warnings: [],
+      pending: false,
+    });
+
+    const autoImported = analyzeModule('t`你好 ${name}`', 'auto.ts');
+    expect(findUnboundCalls(autoImported, new Set(['t']))).toEqual(['t']);
+  });
 });

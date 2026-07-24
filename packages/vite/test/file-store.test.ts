@@ -63,6 +63,88 @@ describe('FileStore', () => {
     expect(JSON.stringify(cache)).not.toContain(root);
   });
 
+  it('rebuilds locales from every active extracted file during partial Dev sync', async () => {
+    const { root, state, store } = await setup();
+    const sources = [
+      ['src/main.ts', '保存'],
+      ['src/lazy.ts', '稍后加载'],
+    ] as const;
+    for (const [relative, message] of sources) {
+      const source = path.join(root, relative);
+      const code = `import { t } from 'virtual:ai-i18n'; t('${message}')`;
+      await fs.writeFile(source, code);
+      state.update(code, source);
+    }
+    await store.sync(state.snapshot());
+
+    const partial = new ProjectState(root, options);
+    const [relative, message] = sources[0];
+    const source = path.join(root, relative);
+    partial.update(
+      `import { t } from 'virtual:ai-i18n'; t('${message}')`,
+      source,
+    );
+    await store.sync(partial.snapshot());
+
+    expect(
+      await readJson(path.join(root, 'i18n/locales/en-US.json')),
+    ).toMatchObject({
+      messages: { 保存: null, 稍后加载: null },
+    });
+  });
+
+  it('reuses translations when legacy comment IDs become stable source IDs', async () => {
+    const { root, state, store } = await setup();
+    const source = path.join(root, 'src/main.ts');
+    const oldCode = "import { t } from 'virtual:ai-i18n'; t('保存', '旧注释')";
+    await fs.writeFile(source, oldCode);
+    state.update(oldCode, source);
+    await store.sync(state.snapshot());
+
+    const cachePath = path.join(root, 'i18n/cache.json');
+    const extractedPath = path.join(root, 'i18n/extracted/src_main.ts.json');
+    const cache = (await readJson(cachePath)) as {
+      messages: Record<string, unknown>;
+    };
+    cache.messages['保存#旧注释'] = {
+      sourceLang: 'zh-CN',
+      comment: '旧注释',
+      translations: { 'en-US': 'Save' },
+    };
+    delete cache.messages['保存'];
+    const extracted = (await readJson(extractedPath)) as {
+      messages: Array<{
+        id: string;
+        comment?: string;
+        translations: Record<string, string | null>;
+      }>;
+    };
+    extracted.messages[0]!.id = '保存#旧注释';
+    extracted.messages[0]!.comment = '旧注释';
+    extracted.messages[0]!.translations['en-US'] = 'Save';
+    await fs.writeFile(cachePath, `${JSON.stringify(cache, null, 2)}\n`);
+    await fs.writeFile(
+      extractedPath,
+      `${JSON.stringify(extracted, null, 2)}\n`,
+    );
+
+    const next = new ProjectState(root, options);
+    const newCode = "import { t } from 'virtual:ai-i18n'; t('保存', '新注释')";
+    await fs.writeFile(source, newCode);
+    next.update(newCode, source);
+    await store.sync(next.snapshot());
+
+    expect(await readJson(extractedPath)).toMatchObject({
+      messages: [
+        {
+          id: '保存',
+          comment: '新注释',
+          translations: { 'en-US': 'Save' },
+        },
+      ],
+    });
+  });
+
   it('uses flat collision-free extracted filenames', async () => {
     const { root, state, store } = await setup();
     const sources = ['src/a_b.ts', 'src/a/b.ts'];

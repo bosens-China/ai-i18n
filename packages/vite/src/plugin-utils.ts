@@ -1,5 +1,5 @@
 import fs from 'node:fs';
-import type { LangOption } from '@ai-i18n/core';
+import type { LangOption, MissingTranslationFallback } from '@ai-i18n/core';
 import { normalizePath } from 'vite';
 import type {
   AiI18nCacheOptions,
@@ -12,6 +12,9 @@ export function normalizeOptions(options: {
   sourceLang: string;
   defaultLang?: string;
   locales: readonly LangOption[];
+  persist?: boolean | { key: string };
+  detect?: false | 'navigator';
+  fallback?: MissingTranslationFallback;
   loading?: AiI18nLocaleLoadingOptions;
   cache?: AiI18nCacheOptions;
 }): NormalizedAiI18nOptions {
@@ -30,6 +33,21 @@ export function normalizeOptions(options: {
   }
   validatePositiveInteger('cache.maxMessages', options.cache?.maxMessages);
   validatePositiveInteger('cache.maxBytes', options.cache?.maxBytes);
+  const persist = normalizePersist(options.persist);
+  if (
+    options.detect !== undefined &&
+    ![false, 'navigator'].includes(options.detect)
+  ) {
+    throw new Error('[ai-i18n] detect must be false or "navigator"');
+  }
+  if (
+    options.fallback !== undefined &&
+    !['source', 'key', 'empty', 'marked'].includes(options.fallback)
+  ) {
+    throw new Error(
+      '[ai-i18n] fallback must be "source", "key", "empty", or "marked"',
+    );
+  }
   const loading = options.loading
     ? normalizeLoading(options.loading, values, options.sourceLang, defaultLang)
     : undefined;
@@ -37,8 +55,23 @@ export function normalizeOptions(options: {
     sourceLang: options.sourceLang,
     defaultLang,
     locales,
+    ...(persist ? { persist } : {}),
+    ...(options.detect === 'navigator' ? { detect: 'navigator' as const } : {}),
+    ...(options.fallback && options.fallback !== 'source'
+      ? { fallback: options.fallback }
+      : {}),
     ...(loading ? { loading } : {}),
   };
+}
+
+function normalizePersist(
+  persist: boolean | { key: string } | undefined,
+): { key: string } | undefined {
+  if (!persist) return undefined;
+  if (persist === true) return { key: 'ai-i18n:lang' };
+  const key = persist.key.trim();
+  if (!key) throw new Error('[ai-i18n] persist.key must not be empty');
+  return { key };
 }
 
 function validatePositiveInteger(name: string, value: number | undefined) {

@@ -46,9 +46,33 @@ describe('@ai-i18n/vite plugin', () => {
       plugin.load,
       resolved!,
     );
-    expect(registration).toContain('"zh-CN":{"保存#按钮":"保存"}');
-    expect(registration).toContain('"en-US":{"保存#按钮":null}');
+    expect(registration).toContain('"zh-CN":{"保存":"保存"}');
+    expect(registration).toContain('"en-US":{"保存":null}');
     expect(registration).toContain('import.meta.hot.dispose');
+  });
+
+  it('normalizes resolved Windows IDs before loading pending static dependencies', async () => {
+    const root = String.raw`E:\DropRoom\apps\web`;
+    const dependency = String.raw`E:\DropRoom\apps\web\src\labels.ts`;
+    const { transform, dependencyLoad } = setupPlugin(
+      [],
+      async (specifier) =>
+        specifier === './labels' ? { id: dependency } : null,
+      options,
+      [],
+      root,
+    );
+
+    await transform(
+      `import { t } from 'virtual:ai-i18n'
+import { label } from './labels'
+t(label)`,
+      `${root}\\src\\main.ts`,
+    );
+
+    expect(dependencyLoad).toHaveBeenCalledWith({
+      id: 'E:/DropRoom/apps/web/src/labels.ts',
+    });
   });
 
   it('translates in the background and sends a targeted runtime update', async () => {
@@ -496,7 +520,7 @@ export const View = () => <p>{t('React JSX')}</p>`,
       { ssr: true },
     );
 
-    expect(stub).toContain('export const t = (source) => source');
+    expect(stub).toContain('export const t = (source, ...values)');
     expect(stub).not.toContain('createI18nRuntime');
     expect(warnings).toHaveLength(1);
   });
@@ -510,6 +534,7 @@ function setupPlugin(
   ) => Promise<{ id: string; external?: boolean } | null> = async () => null,
   pluginOptions: AiI18nOptions = options,
   vitePlugins: Plugin[] = [],
+  root = '/workspace',
 ) {
   const directory = path.join(
     os.tmpdir(),
@@ -526,7 +551,7 @@ function setupPlugin(
     },
   });
   callHook<void>(plugin.configResolved, {
-    root: '/workspace',
+    root,
     command: 'serve',
     plugins: vitePlugins,
   } as unknown as ResolvedConfig);
@@ -539,16 +564,19 @@ function setupPlugin(
     ) => Promise<{ code: string; map: unknown } | null>
   >(plugin.transform);
   const hotSend = vi.fn();
+  const dependencyLoad = vi.fn(async () => null);
   const context = {
     environment: { name: 'client', hot: { send: hotSend } },
     warn: (warning: unknown) => warnings.push(warning),
     resolve,
     addWatchFile: () => {},
+    load: dependencyLoad,
   };
   return {
     plugin,
     directory,
     hotSend,
+    dependencyLoad,
     transform: (code: string, id: string, options?: { ssr?: boolean }) =>
       handler.call(context, code, id, options),
   };

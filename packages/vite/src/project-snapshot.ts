@@ -3,7 +3,6 @@ import type {
   CacheFileV2,
   CacheMessage,
   ExtractedFileV1,
-  LocaleFileV1,
   TranslationValue,
 } from '@ai-i18n/core';
 import type { ExtractResult } from './yuku-analyzer.js';
@@ -13,7 +12,6 @@ import type { NormalizedAiI18nOptions } from './project-state.js';
 export interface ProjectSnapshot {
   cache: CacheFileV2;
   extracted: Record<string, ExtractedFileV1>;
-  locales: LocaleFileV1[];
   seen: string[];
 }
 
@@ -28,34 +26,21 @@ export function createProjectSnapshot(
   const targetLocales = options.locales.filter(
     (locale) => locale.value !== options.sourceLang,
   );
-  const localeMessages = new Map(
-    targetLocales.map((locale) => [
-      locale.value,
-      {} as LocaleFileV1['messages'],
-    ]),
-  );
-
   for (const [moduleId, result] of modules) {
     if (!result.messages.length) continue;
 
     const extractedMessages = result.messages.map((message) => {
       const targetTranslations = Object.fromEntries(
-        options.locales
-          .filter((locale) => locale.value !== options.sourceLang)
-          .map((locale) => [
-            locale.value,
-            translations.get(locale.value)?.get(message.id) ?? null,
-          ]),
+        targetLocales.map((locale) => [
+          locale.value,
+          translations.get(locale.value)?.get(message.id) ?? null,
+        ]),
       );
       messages[message.id] = {
         sourceLang: options.sourceLang,
         ...(message.comment ? { comment: message.comment } : {}),
         translations: targetTranslations,
       };
-      for (const locale of targetLocales) {
-        localeMessages.get(locale.value)![message.id] =
-          targetTranslations[locale.value] ?? null;
-      }
       return {
         id: message.id,
         source: message.source,
@@ -74,11 +59,6 @@ export function createProjectSnapshot(
   return {
     cache: { version: 2, messages },
     extracted,
-    locales: targetLocales.map((locale) => ({
-      version: 1,
-      locale: { ...locale },
-      messages: localeMessages.get(locale.value)!,
-    })),
     seen: [...seen].sort(),
   };
 }

@@ -3,6 +3,7 @@ import {
   TranslationConflictError,
   type CacheFileV2,
   type LangOption,
+  type MissingTranslationFallback,
   type ModuleMessages,
   type TranslationRequest,
   type TranslationResult,
@@ -29,6 +30,9 @@ export interface NormalizedAiI18nOptions {
   sourceLang: string;
   defaultLang: string;
   locales: readonly LangOption[];
+  persist?: { key: string };
+  detect?: 'navigator';
+  fallback?: MissingTranslationFallback;
   loading?: {
     strategy: 'locale';
     preload: readonly string[];
@@ -143,7 +147,12 @@ export class ProjectState {
   ): ProjectUpdate | null {
     const moduleId = this.normalizeId(id);
     if (!moduleId) return null;
-    const result: ExtractResult = { messages, warnings: [], pending: false };
+    const result: ExtractResult = {
+      messages,
+      warnings: [],
+      dependencies: [],
+      pending: false,
+    };
     this.modules.set(moduleId, result);
     this.seen.add(moduleId);
     this.fingerprints.set(moduleId, fingerprint(code, this.options));
@@ -196,6 +205,12 @@ export class ProjectState {
       }
     }
     return [...watched].map((source) => path.resolve(this.root, source));
+  }
+
+  registrationLoadFiles(moduleId: string): string[] {
+    return (this.modules.get(moduleId)?.dependencies ?? []).map((source) =>
+      path.resolve(this.root, source),
+    );
   }
 
   setResolution(

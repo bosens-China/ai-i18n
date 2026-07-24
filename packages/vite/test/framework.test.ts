@@ -65,7 +65,7 @@ describe('framework integration', () => {
     expect(source).toContain('// @ts-nocheck');
     expect(source).toContain('/* eslint-disable */');
     expect(source).toContain("declare module 'virtual:ai-i18n'");
-    expect(source).toContain('createVueI18n');
+    expect(source).toContain("import('@ai-i18n/vite/vue').UseI18n");
     expect(source).toContain('declare const useI18n');
     expect(source).not.toContain('declare const t:');
 

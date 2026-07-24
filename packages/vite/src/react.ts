@@ -8,7 +8,9 @@ export interface ReactI18n {
   langs: ReturnType<I18nRuntime['getLangs']>;
 }
 
-export function createReactI18n(runtime: I18nRuntime): () => ReactI18n {
+export type UseI18n = () => ReactI18n;
+
+export function createReactI18n(runtime: I18nRuntime): UseI18n {
   let runtimeRevision = 0;
   const listeners = new Set<() => void>();
   const langs = runtime.getLangs();
@@ -30,9 +32,14 @@ export function createReactI18n(runtime: I18nRuntime): () => ReactI18n {
       () => runtimeRevision,
     );
     // React Compiler 会按函数引用缓存调用结果，语言更新时必须让 t 的引用同步变化。
+    const translate = runtime.t as (
+      source: string | TemplateStringsArray,
+      ...values: unknown[]
+    ) => string;
     const t = useCallback(
-      (source: string, comment?: string) => runtime.t(source, comment),
-      [revision, runtime],
+      ((source: string | TemplateStringsArray, ...values: unknown[]) =>
+        translate(source, ...values)) as I18nRuntime['t'],
+      [revision, translate],
     );
     return {
       t,

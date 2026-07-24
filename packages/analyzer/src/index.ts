@@ -1,14 +1,23 @@
-import { createMessageId, normalizeComment } from '@ai-i18n/core';
+import {
+  createMessageId,
+  createTemplateMessage,
+  normalizeComment,
+} from '@ai-i18n/core';
 import {
   analyze,
   Analyzer,
-  SymbolFlags,
   type AddFileOptions,
   type Module,
   type NodeOfType,
   type NodeType,
   type Symbol as YukuSymbol,
 } from 'yuku-analyzer';
+import {
+  argumentWarning,
+  evaluateStrings,
+  sourceLocation,
+  type StaticWarningCode,
+} from './static-values.js';
 
 export type { Module } from 'yuku-analyzer';
 
@@ -35,8 +44,7 @@ export interface ExtractedMessage {
   locations: SourceLocation[];
 }
 
-export type ExtractWarningCode =
-  'parse-error' | 'dynamic-argument' | 'unresolved-argument';
+export type ExtractWarningCode = StaticWarningCode;
 
 export interface ExtractWarning extends SourceLocation {
   code: ExtractWarningCode;
@@ -47,6 +55,7 @@ export interface ExtractWarning extends SourceLocation {
 export interface ExtractResult {
   messages: ExtractedMessage[];
   warnings: ExtractWarning[];
+  dependencies: string[];
   pending: boolean;
 }
 
@@ -78,6 +87,7 @@ export function extractMessages(
     message: diagnostic.message,
   }));
   let pending = false;
+  const dependencies = new Set<string>();
   const translateSymbols = new Set<YukuSymbol>();
   const translationObjects = new Map<YukuSymbol, Set<string>>();
   const valueWrappers = new Set<YukuSymbol>();
@@ -114,8 +124,29 @@ export function extractMessages(
     !translationObjects.size &&
     !autoImportRuntime
   ) {
-    return { messages: [], warnings, pending };
+    return { messages: [], warnings, dependencies: [], pending };
   }
+
+  const addMessage = (
+    source: string,
+    rawComment: string | undefined,
+    offset: number,
+  ) => {
+    const comment = normalizeComment(rawComment);
+    const id = createMessageId(source, comment);
+    const location = sourceLocation(module.source, offset);
+    const previous = messages.get(id);
+    if (previous) {
+      previous.locations.push(location);
+      return;
+    }
+    messages.set(id, {
+      id,
+      source,
+      ...(comment ? { comment } : {}),
+      locations: [location],
+    });
+  };
 
   module.walk({
     CallExpression(node) {
@@ -132,12 +163,17 @@ export function extractMessages(
         return;
       }
 
-      const sources = evaluateStrings(node.arguments[0], module);
+      const sources = evaluateStrings(
+        node.arguments[0],
+        module,
+        new Set(),
+        dependencies,
+      );
       const comments =
         node.arguments.length < 2 ||
         isUnboundUndefined(node.arguments[1], module)
           ? ['']
-          : evaluateStrings(node.arguments[1], module);
+          : evaluateStrings(node.arguments[1], module, new Set(), dependencies);
       if (sources === undefined || comments === undefined) {
         pending = true;
         warnings.push(
@@ -150,27 +186,43 @@ export function extractMessages(
         return;
       }
 
-      const location = sourceLocation(module.source, node.start);
       for (const source of sources) {
         for (const rawComment of comments) {
-          const comment = normalizeComment(rawComment);
-          const id = createMessageId(source, comment);
-          const previous = messages.get(id);
-          if (previous) previous.locations.push(location);
-          else {
-            messages.set(id, {
-              id,
-              source,
-              ...(comment ? { comment } : {}),
-              locations: [location],
-            });
-          }
+          addMessage(source, rawComment, node.start);
         }
       }
     },
+    TaggedTemplateExpression(node) {
+      if (
+        !isTranslationCallee(
+          node.tag,
+          module,
+          translateSymbols,
+          translationObjects,
+          valueWrappers,
+          autoImportRuntime,
+        )
+      ) {
+        return;
+      }
+      addMessage(
+        createTemplateMessage(
+          node.quasi.quasis.map(
+            (quasi) => quasi.value.cooked ?? quasi.value.raw,
+          ),
+        ),
+        undefined,
+        node.start,
+      );
+    },
   });
 
-  return { messages: [...messages.values()], warnings, pending };
+  return {
+    messages: [...messages.values()],
+    warnings,
+    dependencies: [...dependencies].sort(),
+    pending,
+  };
 }
 
 function collectHookTranslationSymbols(
@@ -284,6 +336,15 @@ export function findUnboundCalls(
         found.add(node.callee.name);
       }
     },
+    TaggedTemplateExpression(node) {
+      if (
+        node.tag.type === 'Identifier' &&
+        names.has(node.tag.name) &&
+        !module.symbolOf(node.tag)
+      ) {
+        found.add(node.tag.name);
+      }
+    },
   });
   return [...found];
 }
@@ -318,80 +379,6 @@ function isUnboundUndefined(node: Node | undefined, module: Module): boolean {
     node.name === 'undefined' &&
     !module.symbolOf(node)
   );
-}
-
-function evaluateStrings(
-  node: Node | undefined,
-  module: Module,
-  seen = new Set<string>(),
-): string[] | null | undefined {
-  if (!node) return null;
-
-  switch (node.type) {
-    case 'Literal':
-      return typeof node.value === 'string' ? [node.value] : null;
-    case 'TemplateLiteral':
-      return node.expressions.length === 0
-        ? [
-            node.quasis
-              .map((quasi) => quasi.value.cooked ?? quasi.value.raw)
-              .join(''),
-          ]
-        : null;
-    case 'ParenthesizedExpression':
-    case 'TSAsExpression':
-    case 'TSTypeAssertion':
-    case 'TSNonNullExpression':
-      return evaluateStrings(node.expression, module, seen);
-    case 'ConditionalExpression': {
-      const consequent = evaluateStrings(
-        node.consequent,
-        module,
-        new Set(seen),
-      );
-      const alternate = evaluateStrings(node.alternate, module, new Set(seen));
-      if (consequent === undefined || alternate === undefined) return undefined;
-      return consequent === null || alternate === null
-        ? null
-        : [...new Set([...consequent, ...alternate])];
-    }
-    case 'Identifier': {
-      const symbol = module.symbolOf(node);
-      if (!symbol) return null;
-      const definition = symbol.definition();
-      if (!definition && symbol.has(SymbolFlags.Import)) return undefined;
-      const target = definition?.symbol ?? symbol;
-      if (!target.has(SymbolFlags.Const)) return null;
-      const key = `${target.module.path}:${target.id}`;
-      if (seen.has(key)) return null;
-      seen.add(key);
-      const declaration = target.declarations[0];
-      const parent = declaration ? target.module.parentOf(declaration) : null;
-      return parent?.type === 'VariableDeclarator'
-        ? evaluateStrings(parent.init ?? undefined, target.module, seen)
-        : null;
-    }
-    default:
-      return null;
-  }
-}
-
-function argumentWarning(
-  module: Module,
-  offset: number,
-  code: ExtractWarningCode,
-): ExtractWarning {
-  return {
-    code,
-    file: module.path,
-    ...sourceLocation(module.source, offset),
-    message: 't() arguments must be statically evaluable strings',
-  };
-}
-
-function sourceLocation(source: string, offset: number): SourceLocation {
-  const lines = source.slice(0, offset).split('\n');
-  return { line: lines.length, column: lines.at(-1)?.length ?? 0 };
 }
 
 export { Analyzer };

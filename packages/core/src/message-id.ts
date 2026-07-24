@@ -1,4 +1,4 @@
-export const MESSAGE_ID_VERSION = 1;
+export const MESSAGE_ID_VERSION = 2;
 
 export function escapeMessageIdPart(value: string): string {
   return value.replace(/\\/g, '\\\\').replace(/#/g, '\\#');
@@ -9,12 +9,10 @@ export function normalizeComment(comment?: string): string | undefined {
   return normalized ? normalized : undefined;
 }
 
-export function createMessageId(source: string, comment?: string): string {
-  const normalizedComment = normalizeComment(comment);
-  const escapedSource = escapeMessageIdPart(source);
-  return normalizedComment
-    ? `${escapedSource}#${escapeMessageIdPart(normalizedComment)}`
-    : escapedSource;
+export function createMessageId(source: string, _comment?: string): string {
+  // 保留第二参数兼容现有调用，但 comment 不再参与 ID。
+  void _comment;
+  return escapeMessageIdPart(source);
 }
 
 export function parseMessageId(id: string): {

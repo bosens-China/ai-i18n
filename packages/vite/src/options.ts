@@ -1,4 +1,8 @@
-import type { LangOption, Translator } from '@ai-i18n/core';
+import type {
+  LangOption,
+  MissingTranslationFallback,
+  Translator,
+} from '@ai-i18n/core';
 import type { AiI18nFramework } from './framework.js';
 import type { HtmlExtractorOptions } from './html.js';
 import type { ProviderCoordinatorOptions } from './provider-coordinator.js';
@@ -19,6 +23,10 @@ export interface AiI18nCacheOptions {
   maxBytes?: number;
 }
 
+export interface AiI18nPersistOptions {
+  key: string;
+}
+
 export interface AiI18nOptions {
   framework?: AiI18nFramework;
   autoImport?: boolean;
@@ -29,6 +37,12 @@ export interface AiI18nOptions {
   defaultLang?: string;
   /** Runtime 可切换的语言列表，需要包含 sourceLang 与 defaultLang。 */
   locales: readonly LangOption[];
+  /** 持久化用户语言偏好；true 使用默认 key。 */
+  persist?: boolean | AiI18nPersistOptions;
+  /** 首次加载时按浏览器语言选择最接近的 locale。 */
+  detect?: false | 'navigator';
+  /** 目标语言缺译时的显示策略。 */
+  fallback?: MissingTranslationFallback;
   loading?: AiI18nLocaleLoadingOptions;
   cache?: AiI18nCacheOptions;
   translator?: Translator;

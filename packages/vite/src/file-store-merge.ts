@@ -70,12 +70,21 @@ export function mergeProjectMessages(
   for (const [messageId, next] of Object.entries(reused)) {
     if (current[messageId]) continue;
     const source = parseMessageId(messageId).source;
-    const candidates = Object.entries(current).filter(
+    const sameSource = Object.entries(current).filter(
       ([historicId, historic]) =>
+        historic.sourceLang === next.sourceLang &&
+        parseMessageId(historicId).source === source,
+    );
+    if (sameSource.length) {
+      for (const [, historic] of sameSource) {
+        inheritTranslations(messageId, next, historic);
+      }
+      continue;
+    }
+    const candidates = Object.entries(current).filter(
+      ([, historic]) =>
         historic.sourceLang !== next.sourceLang &&
-        historic.translations[next.sourceLang] === source &&
-        (parseMessageId(historicId).comment ?? '') ===
-          (parseMessageId(messageId).comment ?? ''),
+        historic.translations[next.sourceLang] === source,
     );
     if (candidates.length !== 1) continue;
     const [historicId, historic] = candidates[0]!;
@@ -91,13 +100,14 @@ export function mergeProjectMessages(
     }
     next.translations = translations;
   }
-  return overlayMessages(current, reused, false);
+  return overlayMessages(current, reused, false, true);
 }
 
 export function overlayMessages(
   current: Record<string, CacheMessage>,
   incoming: Record<string, CacheMessage>,
   overwriteNull: boolean,
+  overwriteMetadata = false,
 ): Record<string, CacheMessage> {
   const merged = structuredClone(current);
   for (const [messageId, next] of Object.entries(incoming)) {
@@ -106,10 +116,11 @@ export function overlayMessages(
       merged[messageId] = structuredClone(next);
       continue;
     }
-    if ((previous.comment ?? '') !== (next.comment ?? '')) {
-      throw new Error(
-        `[ai-i18n] message "${messageId}" has inconsistent metadata`,
-      );
+    if (overwriteMetadata) {
+      if (next.comment) previous.comment = next.comment;
+      else delete previous.comment;
+    } else if (!previous.comment && next.comment) {
+      previous.comment = next.comment;
     }
     if (!previous.sourceLang && next.sourceLang) {
       previous.sourceLang = next.sourceLang;
@@ -125,6 +136,20 @@ export function overlayMessages(
     }
   }
   return merged;
+}
+
+function inheritTranslations(
+  messageId: string,
+  target: CacheMessage,
+  historic: CacheMessage,
+): void {
+  for (const [locale, value] of Object.entries(historic.translations)) {
+    const current = target.translations[locale];
+    if (current != null && value != null && current !== value) {
+      throw new TranslationConflictError(messageId, locale);
+    }
+    if (current == null && value !== null) target.translations[locale] = value;
+  }
 }
 
 export function withConflictFiles(
