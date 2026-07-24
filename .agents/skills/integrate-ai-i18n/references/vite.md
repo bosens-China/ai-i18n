@@ -63,7 +63,9 @@ With auto import enabled, the available globals are:
 ai-i18n writes `src/ai-i18n.d.ts` by default. Set `dts: 'path/file.d.ts'` to move it or `dts: false`
 only when declarations are managed elsewhere. The file declares both `virtual:ai-i18n` and the
 mode-specific globals. This is separate from the external Auto Import plugin's declarations for
-its own APIs.
+its own APIs. The generated file carries noformat, ts-nocheck, and eslint-disable markers. Prettier
+honors noformat for the whole file when `--check-ignore-pragma` is enabled; the generated declarations
+also use stable Prettier-compatible formatting when that option is absent.
 
 Explicit imports are always supported:
 

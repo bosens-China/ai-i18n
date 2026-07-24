@@ -226,6 +226,7 @@
 - [x] `autoImport: true/false` 强制覆盖检测结果。
 - [x] 自动注入只处理未绑定调用，不覆盖局部同名 binding。
 - [x] 默认生成 `src/ai-i18n.d.ts`，并支持改路径或关闭。
+- [x] 生成声明带有 noformat、ts-nocheck 与 eslint-disable 标记，并保持 Prettier 稳定格式。
 - [x] 提供 Vanilla、Vue、React ESLint globals preset。
 
 ## 12. OpenAI-compatible Provider

@@ -43,7 +43,8 @@ Always read [Vite configuration](references/vite.md). Then read only the matchin
 6. Add one static translation call. Explicit imports always come from `virtual:ai-i18n`; auto-import
    users write the same API without the import statement.
 7. For TypeScript, keep the generated `src/ai-i18n.d.ts` in the project or configure `dts` to another
-   included path. Do not hand-maintain duplicate global declarations.
+   included path. The generated file carries noformat, ts-nocheck, and eslint-disable markers; do
+   not hand-maintain or reformat duplicate global declarations.
 8. Run the app's type check and Vite build, then confirm `cache.json`, `extracted/**`, and `locales/**`
    under the resolved output directory.
 

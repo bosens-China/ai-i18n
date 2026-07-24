@@ -257,7 +257,9 @@ aiI18n({
   JS/TS 模块进入 Vue 分析链。
 - `autoImport` 显式布尔值优先；否则由 `unplugin-auto-import` 插件名启用。
 - 外部 Auto Import 只是开关，ai-i18n 自己注入 `virtual:ai-i18n` import。
-- auto import 开启时默认生成 `src/ai-i18n.d.ts`，可用 `dts` 改路径或关闭。
+- 默认生成 `src/ai-i18n.d.ts`，为虚拟模块以及启用 auto import 时的全局 API 提供类型；
+  可用 `dts` 改路径或关闭。
+- 生成的声明文件带有 generated、noformat、ts-nocheck 与 eslint-disable 标记，避免宿主工具改写或检查。
 
 ## 8. Yuku 解析方案
 

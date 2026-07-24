@@ -25,6 +25,8 @@
   拒绝启动，显式 `framework` 可覆盖单一推断。
 - 检测到 `unplugin-auto-import` 时会启用内部按需注入，显式 `autoImport: true/false`
   可双向覆盖；显式 `virtual:ai-i18n` import 始终保留。
+- Vanilla、Vue、React 生成声明均带有 noformat、ts-nocheck 与 eslint-disable 标记，
+  并已通过 Prettier、ESLint、TypeScript 与真实 Vite Build 回归。
 - Vue SFC、Vue JSX/TSX、React JSX/TSX 以及普通 JS/TS Hook 均已通过真实 Vite Build 验证。
 - Vue SFC 使用 compiler-sfc 合并 script/setup 与 inline template，再用 source map 回到 SFC
   原始位置；模板 alias、局部 shadow 和双 script 作用域已覆盖。
