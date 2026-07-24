@@ -1,6 +1,6 @@
 {
   "name": "@boses/eslint-plugin",
-  "version": "0.0.0",
+  "version": "1.0.0-alpha.0",
   "description": "ESLint 9 static-argument checks aligned with ai-i18n extraction semantics.",
   "keywords": [
     "eslint",

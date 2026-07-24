@@ -1,6 +1,6 @@
 {
   "name": "@boses/vite",
-  "version": "0.0.0",
+  "version": "1.0.0-alpha.0",
   "description": "Vite 8 static extraction and browser runtime plugin for ai-i18n.",
   "keywords": [
     "i18n",

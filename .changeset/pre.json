@@ -10,7 +10,8 @@
     "@boses/eslint-plugin": "0.0.0",
     "@boses/mcp": "0.0.0",
     "@boses/openai": "0.0.0",
-    "@boses/vite": "0.0.0"
+    "@boses/vite": "0.0.0",
+    "@boses/docs": "0.0.0"
   },
-  "changesets": []
+  "changesets": ["initial-alpha"]
 }

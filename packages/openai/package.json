@@ -1,6 +1,6 @@
 {
   "name": "@boses/openai",
-  "version": "0.0.0",
+  "version": "1.0.0-alpha.0",
   "description": "LangChain-based OpenAI-compatible translation provider for ai-i18n.",
   "keywords": [
     "i18n",
