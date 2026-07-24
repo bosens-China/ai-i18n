@@ -1,6 +1,6 @@
 {
   "name": "@ai-i18n/analyzer",
-  "version": "1.0.0-alpha.0",
+  "version": "1.0.0-alpha.1",
   "description": "Shared Yuku-based static translation analysis for ai-i18n tooling.",
   "keywords": [
     "i18n",
