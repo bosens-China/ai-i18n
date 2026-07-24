@@ -1,6 +1,6 @@
 {
   "name": "@ai-i18n/core",
-  "version": "1.0.0-alpha.0",
+  "version": "1.0.0-alpha.1",
   "description": "Framework-independent schemas, provider contracts, and browser runtime for ai-i18n.",
   "keywords": [
     "i18n",
