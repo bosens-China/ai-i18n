@@ -1,6 +1,6 @@
 ---
 name: integrate-ai-i18n
-description: Integrate ai-i18n into Vite 8 browser projects and configure its static extraction runtime for Vue 3, React 18/19, or vanilla JavaScript and TypeScript. Use when installing or registering @ai-i18n/vite, selecting or detecting a framework mode, enabling ai-i18n auto imports, importing virtual:ai-i18n or useI18n, enabling optional ESLint checks, configuring locale output directories and generated virtual-module types, migrating an existing Vite app, or diagnosing an incomplete ai-i18n setup.
+description: Integrate ai-i18n into Vite browser projects and configure its static extraction runtime for Vue 3, React 18+, or vanilla JavaScript and TypeScript. Use when installing or registering @ai-i18n/vite, selecting or detecting a framework mode, enabling ai-i18n auto imports, importing virtual:ai-i18n or useI18n, enabling optional ESLint checks, configuring locale output directories and generated virtual-module types, migrating an existing Vite app, or diagnosing an incomplete ai-i18n setup.
 ---
 
 # Integrate ai-i18n
@@ -13,7 +13,7 @@ project's package manager, existing Vite plugins, framework conventions, and con
 Read the target app's `package.json`, `vite.config.*`, TypeScript config, entry files, and framework
 plugin setup. Determine:
 
-- whether Vite is version 8;
+- whether Vite is version 8 or newer;
 - whether this build is Vanilla, Vue, or React;
 - whether `unplugin-auto-import` is already registered;
 - whether the runtime is browser-only or includes SSR;
@@ -23,7 +23,7 @@ plugin setup. Determine:
 - whether an ai-i18n Provider already exists.
 
 Do not combine Vue and React in one Vite build. Microfrontend repositories may use different modes
-in separate child builds. ai-i18n currently supports Vite 8 and a browser runtime; surface the SSR
+in separate child builds. ai-i18n currently supports Vite ≥ 8 and a browser runtime; surface the SSR
 limitation when server-rendered translation is required.
 
 ## Load the relevant guidance

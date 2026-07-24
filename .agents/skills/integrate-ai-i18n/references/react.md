@@ -1,6 +1,6 @@
 # React integration
 
-Install `@ai-i18n/vite` and reuse React 18.3/19 plus the existing React Vite plugin. Do not install a
+Install `@ai-i18n/vite` and reuse React 18+ plus the existing React Vite plugin. Do not install a
 separate ai-i18n React binding.
 
 ```ts

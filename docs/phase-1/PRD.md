@@ -33,7 +33,7 @@ Vanilla/Vue/React 单一模式的 pnpm monorepo。
 15. 不自研 Rust 原生内核。
 16. 六个公开包独立版本，使用 tsdown/Rolldown 生成 ESM 与类型声明，并以 publint、ATTW
     和真实 tarball 检查作为发布门禁。
-17. 只有独立运行的 `@ai-i18n/mcp` 声明 Node 版本；Vite 集成包由 `vite@^8` peer 约束
+17. 只有独立运行的 `@ai-i18n/mcp` 声明 Node 版本；Vite 集成包由 `vite@>=8` peer 约束
     配置运行环境，浏览器绑定不重复声明 Node。
 
 ## 3. 产品目标

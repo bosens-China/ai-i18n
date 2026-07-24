@@ -1,6 +1,6 @@
 # Vite configuration
 
-Use Vite 8 and a supported Node runtime (`^20.19.0` or `>=22.12.0`). Register the plugin once:
+Use Vite ≥ 8 and a supported Node runtime (`^20.19.0` or `>=22.12.0`). Register the plugin once:
 
 ```ts
 import { aiI18n } from '@ai-i18n/vite'

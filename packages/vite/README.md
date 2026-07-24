@@ -1,6 +1,6 @@
 # @ai-i18n/vite
 
-Vite 8 的 ai-i18n 主插件。它在 Dev/Build 中提取显式 `t()`，维护可提交 Git 的
+Vite 的 ai-i18n 主插件。它在 Dev/Build 中提取显式 `t()`，维护可提交 Git 的
 `cache.json`、`extracted/**`、`locales/**`，并提供浏览器虚拟 Runtime。
 
 JS、TS、JSX、TSX 默认进入框架中立的共享分析器；Vue/React extractor 只补充对应 Hook
@@ -76,4 +76,4 @@ Translation Memory，直到同时满足已配置的限制。`maxBytes` 按稳定
 当前入口可达模块，同时继续保留可复用的 Translation Memory。Vite 配置、插件、extractor
 或 schema 变化后需要重启 Watch 进程。
 
-仅支持 Vite 8 和浏览器 Runtime，不支持 SSR。完整配置与文件协议见仓库根目录 README。
+仅支持 Vite ≥ 8 和浏览器 Runtime，不支持 SSR。完整配置与文件协议见仓库根目录 README。

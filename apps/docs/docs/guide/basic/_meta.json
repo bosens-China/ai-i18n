@@ -12,6 +12,6 @@
   {
     "type": "file",
     "name": "eslint",
-    "label": "ESLint 9"
+    "label": "ESLint"
   }
 ]

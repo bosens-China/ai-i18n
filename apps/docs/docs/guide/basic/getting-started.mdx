@@ -1,6 +1,6 @@
 ---
 title: 快速上手
-description: 在 Vite 8 项目中安装 ai-i18n，完成框架配置并了解自动导入
+description: 在 Vite 项目中安装 ai-i18n，完成框架配置并了解自动导入
 ---
 
 import { Tab, Tabs, PackageManagerTabs } from '@rspress/core/theme';
@@ -11,7 +11,7 @@ ai-i18n 在 Vite Dev 与 Build 期间提取显式 `t()`，维护可提交到 Git
 
 :::warning 使用前请确认
 
-- 仅支持 **Vite 8** 与浏览器端 Runtime（不支持 SSR，若遇 SSR 环境会自动跳过并警告）。
+- 仅支持 **Vite ≥ 8** 与浏览器端 Runtime（不支持 SSR，若遇 SSR 环境会自动跳过并警告）。
 - 插件会根据最终解析的 Vite 插件推断框架模式，每个 Vite build 只能选择一种模式：`vanilla`、`vue` 或 `react`。
 - 插件只识别并提取显式调用的 `t()` 函数，不会去猜测普通字符串、JSX 文本或 Vue 模板文本。
 - 所有写入和合并由 `vite dev` 或 `vite build` 驱动，不需要单独执行提取命令行。

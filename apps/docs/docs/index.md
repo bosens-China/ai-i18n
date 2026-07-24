@@ -1,11 +1,11 @@
 ---
 pageType: home
 title: ai-i18n
-description: 面向 Vite 8 的浏览器端国际化插件，支持静态提取、可选 AI 翻译和 Git 友好的翻译文件。
+description: 面向 Vite 的浏览器端国际化插件，支持静态提取、可选 AI 翻译和 Git 友好的翻译文件。
 
 hero:
   name: ai-i18n
-  text: 面向 Vite 8 的浏览器端 AI 国际化插件
+  text: 面向 Vite 的浏览器端 AI 国际化插件
   tagline: 源码直接书写 t('中文')。Vite 在 Dev 与 Build 期间静态提取，并维护可提交到 Git 的 Translation Memory。
   image:
     src: /logo.png

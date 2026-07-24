@@ -5,7 +5,7 @@
 <h1 align="center">ai-i18n</h1>
 
 <p align="center">
-  <b>面向 Vite 8 的自动化 AI 国际化插件</b><br>
+  <b>面向 Vite 的自动化 AI 国际化插件</b><br>
   源码即文案 · 告别 Key 维护 · 全自动 AI 翻译 · 智能按需拆包 · 内置 MCP 协同
 </p>
 
