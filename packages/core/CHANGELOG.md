@@ -1,5 +1,12 @@
 # @ai-i18n/core
 
+## [1.0.0-alpha.2](https://github.com/bosens-China/ai-i18n/compare/core-v1.0.0-alpha.1...core-v1.0.0-alpha.2) (2026-07-24)
+
+
+### Features
+
+* **core:** 升级 Cache 协议至 v2 并优化 Schema ([3c071d4](https://github.com/bosens-China/ai-i18n/commit/3c071d47ce744830a46d94f67a7a733092127457))
+
 ## [1.0.0-alpha.1](https://github.com/bosens-China/ai-i18n/compare/core-v1.0.0-alpha.0...core-v1.0.0-alpha.1) (2026-07-24)
 
 
