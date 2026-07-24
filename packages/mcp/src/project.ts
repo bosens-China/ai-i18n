@@ -119,7 +119,8 @@ export class AiI18nProjectService {
           input.locale,
         );
         const parsedId = parseMessageId(messageId);
-        const comment = message.comment ?? parsedId.comment;
+        const comment =
+          selectedOccurrence.comment ?? message.comment ?? parsedId.comment;
         return {
           message_id: messageId,
           source: parsedId.source,
@@ -332,20 +333,30 @@ function findExtracted(
   return extracted;
 }
 
-function collectOccurrences(
-  files: readonly LoadedExtracted[],
-): Map<
+function collectOccurrences(files: readonly LoadedExtracted[]): Map<
   string,
-  Array<{ file: string; locations: Array<{ line: number; column: number }> }>
+  Array<{
+    file: string;
+    comment?: string;
+    locations: Array<{ line: number; column: number }>;
+  }>
 > {
   const occurrences = new Map<
     string,
-    Array<{ file: string; locations: Array<{ line: number; column: number }> }>
+    Array<{
+      file: string;
+      comment?: string;
+      locations: Array<{ line: number; column: number }>;
+    }>
   >();
   for (const { value } of files) {
     for (const message of value.messages) {
       const items = occurrences.get(message.id) ?? [];
-      items.push({ file: value.source, locations: message.locations });
+      items.push({
+        file: value.source,
+        ...(message.comment ? { comment: message.comment } : {}),
+        locations: message.locations,
+      });
       occurrences.set(message.id, items);
     }
   }

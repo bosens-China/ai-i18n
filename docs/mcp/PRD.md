@@ -9,19 +9,33 @@
 1. 列出仍有缺失翻译的源码文件。
 2. 分页读取文件或全项目的具体翻译内容。
 3. 批量填充 extracted 文件中的缺失翻译。
+4. 从客户端 workspace roots 自动发现可用的协议目录。
 
 ## 2. 边界
 
 - MCP 不扫描业务源码，不执行或解析 `vite.config.*`。
 - MCP 注册与启动不接收项目路径，同一 server 可以处理不同项目。
-- Agent 负责读取 Vite 配置，并传入最终 `i18n_directory` 的绝对路径。
+- `ai_i18n_discover` 优先扫描客户端提供的 workspace roots；客户端未实现 roots 时回退到
+  MCP 进程目录，也可显式传入 `cwd`。
+- 发现过程只识别同时含有合法 `cache.json` 与 `extracted/` 的协议目录，不解析业务源码
+  或 Vite 配置。
+- Agent 从发现结果中选择目录，再向其余工具传入绝对 `i18n_directory`。
 - `i18n_directory` 必须是绝对路径；MCP 通过 realpath 校验目录存在且确实是目录。
 - MCP 只修改 `extracted/**`；cache、重复 extracted 和 locales 继续由 Vite Dev/Build 校准。
-- 不提供 manifest、临时注册表、node_modules 缓存或自动项目发现。
+- 不提供 manifest、临时注册表或 node_modules 缓存。
 
 ## 3. 工具
 
-### 3.1 `ai_i18n_list_translation_files`
+### 3.1 `ai_i18n_discover`
+
+输入：
+
+- `cwd`：可选，仅在客户端未提供正确 workspace roots 时作为显式回退目录。
+
+返回所有已发现项目的绝对 `i18n_directory` 和对应 `workspace_root`。注册 MCP 时无需配置
+项目路径。
+
+### 3.2 `ai_i18n_list_translation_files`
 
 输入：
 
@@ -32,7 +46,7 @@
 
 只返回有效 Translation Memory 合并后仍存在 `null` 的源码文件，并按 source 稳定排序。
 
-### 3.2 `ai_i18n_list_translations`
+### 3.3 `ai_i18n_list_translations`
 
 输入：
 
@@ -46,7 +60,7 @@
 返回 source、comment、有效 translations、缺失语言、代表文件和出现次数。单次结构化响应限制约
 25,000 字符，超限时缩短当前页并返回下一页 cursor。
 
-### 3.3 `ai_i18n_write_translations`
+### 3.4 `ai_i18n_write_translations`
 
 输入一个 source 文件和最多 100 个 `message_id + locale + value`：
 
@@ -63,12 +77,14 @@
 查询时先读取并校验 `cache.json` 与所有 `extracted/**/*.json`，再复用 Core 冲突合并规则计算
 有效 Translation Memory。这样 extracted 中的旧 `null` 不会覆盖 cache 已有值，也不会重复翻译。
 
+列表和发现工具同时返回完整格式化 JSON 文本与 `structuredContent`，避免只展示摘要的客户端
+丢失明细；大结果仍由 cursor 分页和字符上限控制。
+
 写入前重新读取最新磁盘状态。Vite Dev 运行时会通过现有 watcher 自动同步；否则下一次 Dev
 或 Build 校准 cache、其他活动 extracted 和 locales。
 
 ## 5. 非目标
 
-- 自动选择 Vite 项目或翻译目录。
 - 读取动态 Vite 配置。
 - 调用翻译 Provider。
 - 覆盖或删除已有翻译。

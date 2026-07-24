@@ -141,6 +141,10 @@ test('requires an absolute directory and rejects unknown source files', async ()
 
 test('registers callable MCP tools with defaults and structured output', async () => {
   const root = await fixture();
+  await fs.mkdir(path.join(root, 'invalid/i18n/extracted'), {
+    recursive: true,
+  });
+  await fs.writeFile(path.join(root, 'invalid/i18n/cache.json'), '{}');
   const server = createAiI18nMcpServer();
   const client = new Client({ name: 'ai-i18n-mcp-test', version: '0.0.0' });
   const [clientTransport, serverTransport] =
@@ -153,10 +157,19 @@ test('registers callable MCP tools with defaults and structured output', async (
   try {
     const tools = await client.listTools();
     expect(tools.tools.map((tool) => tool.name)).toEqual([
+      'ai_i18n_discover',
       'ai_i18n_list_translation_files',
       'ai_i18n_list_translations',
       'ai_i18n_write_translations',
     ]);
+    const discovered = await client.callTool({
+      name: 'ai_i18n_discover',
+      arguments: { cwd: root },
+    });
+    expect(discovered.structuredContent).toMatchObject({
+      count: 1,
+      items: [{ i18n_directory: path.join(root, 'apps/web/i18n') }],
+    });
     const result = await client.callTool({
       name: 'ai_i18n_list_translations',
       arguments: {
@@ -169,6 +182,12 @@ test('registers callable MCP tools with defaults and structured output', async (
       total_count: 2,
       count: 2,
     });
+    expect(result.content).toEqual([
+      {
+        type: 'text',
+        text: expect.stringContaining('"message_id": "保存"'),
+      },
+    ]);
   } finally {
     await clientTransport.close();
     await server.close();
