@@ -3,14 +3,16 @@ title: AI 翻译
 description: 配置 OpenAI-compatible Provider，并编写稳定、可维护的翻译提示词
 ---
 
+import { PackageManagerTabs } from '@rspress/core/theme';
+
+:::tip 可选能力
 AI 翻译是可选能力。未配置 `translator` 时，ai-i18n 仍会完成提取、Runtime 和协议文件维护，
 目标语言的缺失值保持为 `null`。
+:::
 
 ## 安装 Provider
 
-```sh
-pnpm add @ai-i18n/openai
-```
+<PackageManagerTabs command="add @ai-i18n/openai" />
 
 `@ai-i18n/openai` 连接 OpenAI-compatible API。它不会替你选择供应商或模型。
 
@@ -31,7 +33,7 @@ pnpm add @ai-i18n/openai
 | `headers`      | 否       | 无             | 仅用于供应商要求的额外 Header。                 |
 | `langSmith`    | 否       | 不启用         | 需要 tracing 时才配置。                         |
 
-完整类型与约束见 [`@ai-i18n/openai` API](../api/openai/)。
+完整类型与约束见 [`@ai-i18n/openai` API](/api/openai)。
 
 ## 推荐配置
 
@@ -87,7 +89,9 @@ AI_MODEL=model-name
 AI_API_KEY=replace-me
 ```
 
+:::warning
 不要给密钥添加 `VITE_` 前缀，也不要在客户端源码中导入 Provider。
+:::
 
 ## 如何编写 `systemPrompt`
 

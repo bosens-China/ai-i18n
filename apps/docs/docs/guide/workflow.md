@@ -65,7 +65,9 @@ Vite 配置、插件、extractor 或 schema 变化后需要重启 Watch 进程�
 
 ## 应该提交什么
 
+:::important 全部提交
 `i18n/cache.json`、`i18n/extracted/**`、`i18n/locales/**` **都应提交到 Git**。
+:::
 
 推荐流程：
 
@@ -76,14 +78,16 @@ Vite 配置、插件、extractor 或 schema 变化后需要重启 Watch 进程�
    extracted 与 locales。
 4. 源码与三类 i18n 文件一起提交，避免只提交派生文件的一部分。
 
+:::warning 合并冲突
 分支合并时请保留 `cache.json`。它承载文件移动或删除后的 Translation Memory。
 合并后重新执行 Dev 或 Build 以校准。同一 message 与 locale 若出现不同的非空翻译，
 会报冲突，必须人工决定；插件不会采用后写覆盖。
+:::
 
 ## Agent 协作边界
 
 - Agent 应修改 extracted，而不是把手工修改的 cache 或 locales 当作权威来源。
 - Build Watch 能恢复目标 locale 文件的外部编辑，但团队和 Agent 的规范写入入口仍是
   extracted。
-- 使用 MCP 时，写入同样只落在 extracted。详见 [AI 工具接入](../ai-tools/)。
+- 使用 MCP 时，写入同样只落在 extracted。详见 [AI 工具接入](/guide/ai-tools)。
 - 使用约定以本文档为准，不以仓库内部设计笔记替代。

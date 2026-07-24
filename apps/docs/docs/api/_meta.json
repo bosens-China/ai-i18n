@@ -1,0 +1,22 @@
+[
+  {
+    "type": "file",
+    "name": "vite",
+    "label": "Vite 插件配置"
+  },
+  {
+    "type": "file",
+    "name": "runtime",
+    "label": "Runtime API"
+  },
+  {
+    "type": "file",
+    "name": "openai",
+    "label": "@ai-i18n/openai"
+  },
+  {
+    "type": "file",
+    "name": "libraries",
+    "label": "低层库 API"
+  }
+]

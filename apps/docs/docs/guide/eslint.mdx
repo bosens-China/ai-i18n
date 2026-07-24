@@ -3,17 +3,19 @@ title: ESLint 9
 description: '@ai-i18n/eslint-plugin 的 Flat Config、预设、规则与选项'
 ---
 
+import { PackageManagerTabs } from '@rspress/core/theme';
+
 `@ai-i18n/eslint-plugin` 面向 ESLint 9 Flat Config。它在 lint 阶段复用 ai-i18n 的静态分析语义，
 提前报告无法被 Vite 提取的 `t()` 参数。
 
 ## 安装
 
-```sh
-pnpm add -D eslint @ai-i18n/eslint-plugin
-```
+<PackageManagerTabs command="install -D eslint @ai-i18n/eslint-plugin" />
 
+:::tip Vue 项目
 Vue SFC 还需要宿主已有的 `eslint-plugin-vue`、`vue-eslint-parser` 与
 `@vue/compiler-sfc`。
+:::
 
 ## 显式导入
 

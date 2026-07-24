@@ -5,7 +5,7 @@ description: '@ai-i18n/mcp 三个工具的参数、默认值、输出与写入�
 
 `@ai-i18n/mcp` 提供本地 stdio MCP server，注册时不需要项目路径。Codex、Claude Code、
 Cursor 与 Antigravity 的注册方式见
-[AI 工具接入](../../ai-tools/)。
+[AI 工具接入](/guide/ai-tools)。
 
 ## 通用参数
 

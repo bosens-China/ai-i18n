@@ -49,7 +49,7 @@ Provider 不主动读取宿主的 `OPENAI_API_KEY`。密钥必须显式传入，
 - 固定术语及其目标语言写法；
 - 如何使用请求中的 `comment` 解决歧义。
 
-完整示例见 [AI 翻译教程](../../ai-translation/)。
+完整示例见 [AI 翻译教程](/guide/ai-translation)。
 
 ## `langSmith`
 

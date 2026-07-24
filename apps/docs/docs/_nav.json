@@ -1,0 +1,17 @@
+[
+  {
+    "text": "文档",
+    "link": "/guide/getting-started",
+    "activeMatch": "/guide/"
+  },
+  {
+    "text": "API",
+    "link": "/api/vite",
+    "activeMatch": "/api/"
+  },
+  {
+    "text": "演示",
+    "link": "/demo",
+    "activeMatch": "/demo"
+  }
+]

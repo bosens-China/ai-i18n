@@ -3,13 +3,17 @@ title: AI 工具接入
 description: 在 Codex、Claude Code、Cursor 与 Antigravity 中安装 skills，并接入 ai-i18n MCP
 ---
 
+import { Prompt } from '@rspress/core/theme';
+
 把 ai-i18n 接到 AI 编码工具时，推荐同时安装 **Agent Skills** 与 **MCP**：
 
 - Agent Skills 告诉 Agent 如何接入 `@ai-i18n/vite`，以及如何按安全流程补译。
 - MCP 提供查询与写回工具，让 Agent 可以读取 `extracted/**` 并填充缺失翻译。
 
+:::tip
 两者缺一也能使用，但只接 MCP 时，Agent 仍可能误判协议目录或直接修改生成文件；安装
 `use-ai-i18n-mcp` 后，补译流程会更稳定。
+:::
 
 ## 开始前
 
@@ -167,23 +171,30 @@ npx skills add bosens-China/ai-i18n --agent antigravity --skill integrate-ai-i18
 
 ## 推荐的补译流程
 
-完成 Skill 与 MCP 接入后，可以直接发出以下提示词：
+完成 Skill 与 MCP 接入后，可以把下面的提示词发给 Agent：
 
-```text
-使用 use-ai-i18n-mcp：
+<Prompt
+  eyebrow="给 Agent"
+  title="批量补齐缺失翻译"
+  description="复制后发送给 Agent，按 MCP 安全流程补译。"
+  defaultCollapsed={false}
+  prompt={`使用 use-ai-i18n-mcp：
 1. 读取 Vite 配置，结合 Vite root 与 aiI18n({ directory }) 计算 i18n_directory 绝对路径；
 2. 列出所有仍有缺失翻译的文件；
 3. 按原文语义和项目现有术语补齐目标语言；
 4. 只通过 ai_i18n_write_translations 写入 null 值，不覆盖已有翻译；
-5. 再次查询并报告剩余缺失项。
-```
+5. 再次查询并报告剩余缺失项。`}
+/>
 
-处理单个语言或文件时，直接补充限制条件，例如：
+处理单个语言或文件时，可改用更窄的提示词：
 
-```text
-使用 use-ai-i18n-mcp，只补 apps/web/src/pages/Home.vue 的日语翻译。
-保留插值变量、产品名和代码标识符，不覆盖已有非空翻译，完成后复查剩余缺失项。
-```
+<Prompt
+  eyebrow="给 Agent"
+  title="按文件 / 语言补译"
+  description="适合只补某一文件或某一目标语言。"
+  prompt={`使用 use-ai-i18n-mcp，只补 apps/web/src/pages/Home.vue 的日语翻译。
+保留插值变量、产品名和代码标识符，不覆盖已有非空翻译，完成后复查剩余缺失项。`}
+/>
 
 ### `i18n_directory` 如何确定
 
@@ -193,7 +204,9 @@ npx skills add bosens-China/ai-i18n --agent antigravity --skill integrate-ai-i18
 - 单项目示例：`/workspace/project/i18n`
 - monorepo 示例：`/workspace/project/apps/web/i18n`
 
+:::note
 MCP 不会执行 `vite.config.*`，也不会扫描业务源码，所以这一步由 Agent 读取配置后完成。
+:::
 
 ## MCP 能力与边界
 
@@ -208,6 +221,6 @@ MCP 只读写所传 `i18n_directory` 下的 `extracted/**`，不会覆盖不同�
 `vite dev` 或 `vite build` 时完成校准。
 
 Cache 容量配置不会改变 MCP 工具契约。MCP 写入的活动翻译会保留；Vite 只可能在后续同步时
-淘汰非活跃历史。配置与保护规则见 [Vite 插件配置](./api/vite/#cache-容量)。
+淘汰非活跃历史。配置与保护规则见 [Vite 插件配置](/api/vite#cache-容量)。
 
-所有工具的必填参数、可选参数、默认值与返回结构见 [MCP 工具 API](./mcp/)。
+所有工具的必填参数、可选参数、默认值与返回结构见 [MCP 工具 API](/guide/mcp)。

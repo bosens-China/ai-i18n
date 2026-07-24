@@ -3,13 +3,18 @@ title: 框架上手
 description: Vanilla、Vue、React 三种互斥模式的接入方式
 ---
 
+import { Tab, Tabs } from '@rspress/core/theme';
+
+:::warning 一 build 一框架
 每个 Vite build 只选择一种模式：`vanilla`、`vue` 或 `react`。
 
 插件在 `configResolved` 读取最终插件列表。检测到 `vite:vue` / `vite:vue-jsx` 时使用 Vue，
 检测到 `vite:react*` 时使用 React，否则回退到 Vanilla。配置 `framework` 可强制覆盖推断。
 同一 build 同时安装 Vue 与 React 的 Vite 插件时，会直接报错。
+:::
 
-## Vanilla
+<Tabs>
+  <Tab label="Vanilla">
 
 默认模式，适合纯 JS/TS 或无框架入口。显式从虚拟模块导入即可：
 
@@ -17,7 +22,8 @@ description: Vanilla、Vue、React 三种互斥模式的接入方式
 import { setLang, t } from 'virtual:ai-i18n';
 ```
 
-## Vue
+  </Tab>
+  <Tab label="Vue">
 
 ```ts
 import { aiI18n } from '@ai-i18n/vite';
@@ -46,7 +52,8 @@ const { t, setLang, currentLang, langs } = useI18n();
 Vue 模式支持 `.vue`、JS/TS，以及由 `@vitejs/plugin-vue-jsx` 编译的 JSX/TSX。
 SFC 会尊重模板 alias、`v-for` 局部变量，以及 `<script>` 与 `<script setup>` 的隔离。
 
-## React
+  </Tab>
+  <Tab label="React">
 
 ```ts
 import { aiI18n } from '@ai-i18n/vite';
@@ -70,6 +77,9 @@ export function App() {
 React 模式支持 JS/TS/JSX/TSX。同一个 Vite build 不能混用 Vue 与 React 语法。
 微前端场景下，每个子应用应使用自己的 Vite 配置与 ai-i18n 状态。
 
+  </Tab>
+</Tabs>
+
 ## 自动导入
 
 若最终插件列表包含 `unplugin-auto-import`，ai-i18n 默认启用按需导入，
@@ -91,4 +101,4 @@ React 模式支持 JS/TS/JSX/TSX。同一个 Vite build 不能混用 Vue 与 Rea
 
 `@ai-i18n/eslint-plugin` 与 Vite 共用分析语义，可提前报告无法静态求值的 `t()` 参数。
 ESLint 9 使用 Flat Config；按框架展开 `aiI18n.configs.vanilla`、`.vue` 或 `.react`。
-完整示例见 [ESLint 9 配置](./eslint/)。
+完整示例见 [ESLint 9 配置](/guide/eslint)。

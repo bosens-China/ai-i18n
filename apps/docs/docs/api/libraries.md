@@ -8,14 +8,14 @@ description: '@ai-i18n/core、@ai-i18n/analyzer 与 @ai-i18n/vite 子路径的�
 
 ## `@ai-i18n/vite` 子路径
 
-| 入口                     | 导出                         | 参数                                          | 默认值                 | 作用                                  |
-| ------------------------ | ---------------------------- | --------------------------------------------- | ---------------------- | ------------------------------------- |
-| `@ai-i18n/vite`          | `aiI18n(options)`            | `options` 必填                                | 见[插件配置](../vite/) | 注册 Vite 插件。                      |
-| `@ai-i18n/vite/runtime`  | `createI18nRuntime(options)` | `sourceLang`、`defaultLang`、`locales` 都必填 | 无                     | 创建独立 Runtime。                    |
-| `@ai-i18n/vite/vue`      | `createVueI18n(runtime)`     | `runtime` 必填                                | 无                     | 把 Runtime 适配为 Vue `useI18n()`。   |
-| `@ai-i18n/vite/react`    | `createReactI18n(runtime)`   | `runtime` 必填                                | 无                     | 把 Runtime 适配为 React `useI18n()`。 |
-| `@ai-i18n/vite/client`   | TypeScript 声明              | 无                                            | 无                     | 声明基础版 `virtual:ai-i18n`。        |
-| `@ai-i18n/vite/analyzer` | `analyzeVueSource()`         | 三个参数都必填                                | 无                     | 兼容入口，转发 Vue SFC 分析器。       |
+| 入口                     | 导出                         | 参数                                          | 默认值                  | 作用                                  |
+| ------------------------ | ---------------------------- | --------------------------------------------- | ----------------------- | ------------------------------------- |
+| `@ai-i18n/vite`          | `aiI18n(options)`            | `options` 必填                                | 见[插件配置](/api/vite) | 注册 Vite 插件。                      |
+| `@ai-i18n/vite/runtime`  | `createI18nRuntime(options)` | `sourceLang`、`defaultLang`、`locales` 都必填 | 无                      | 创建独立 Runtime。                    |
+| `@ai-i18n/vite/vue`      | `createVueI18n(runtime)`     | `runtime` 必填                                | 无                      | 把 Runtime 适配为 Vue `useI18n()`。   |
+| `@ai-i18n/vite/react`    | `createReactI18n(runtime)`   | `runtime` 必填                                | 无                      | 把 Runtime 适配为 React `useI18n()`。 |
+| `@ai-i18n/vite/client`   | TypeScript 声明              | 无                                            | 无                      | 声明基础版 `virtual:ai-i18n`。        |
+| `@ai-i18n/vite/analyzer` | `analyzeVueSource()`         | 三个参数都必填                                | 无                      | 兼容入口，转发 Vue SFC 分析器。       |
 
 `@ai-i18n/vite` 根入口还导出 `AiI18nOptions`、`AiI18nProviderOptions`、
 `AiI18nFramework`、`HtmlExtractorOptions` 和 `I18nRuntime` 类型。
@@ -93,4 +93,4 @@ import { analyzeVueSource } from '@ai-i18n/analyzer/vue';
 | `@ai-i18n/mcp`           | `createAiI18nMcpServer()` | 无参数                | 创建可嵌入 Node 进程的 MCP server。      |
 
 `@ai-i18n/mcp` 还导出三个工具的输入、条目与写入结果类型，字段见
-[MCP 工具](../mcp/)。
+[MCP 工具](/guide/mcp)。
