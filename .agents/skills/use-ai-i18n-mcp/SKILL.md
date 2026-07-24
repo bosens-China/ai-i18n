@@ -59,7 +59,7 @@ The server also applies a response character limit, so a page can contain fewer 
 Use these fields while translating:
 
 - `source`: source text.
-- `comment`: author-provided disambiguation.
+- `comment`: optional author-provided disambiguation; often absent. Use it when present, and do not invent a comment when translating.
 - `locations`: source locations when the query is scoped to a file.
 - `missing_locales`: locales that may be filled.
 - `translations`: existing terminology that must remain consistent.

@@ -33,9 +33,12 @@ function t(source: string, comment?: string): string;
 | `source`  | `string` | 是   | 无          | 源文案，也是翻译缺失时的回退值。 |
 | `comment` | `string` | 否   | `undefined` | 消歧注释，会参与 message ID。    |
 
-两个参数都必须能在构建期静态求值。相同 `source` 配合不同 `comment` 会生成不同消息。
+日常文案只需 `t(source)`。`comment` 仅在同一源文案需要消歧，或 AI 翻译效果不佳时再补上；
+不要给普通 UI 文案凭空添加注释。两个参数都必须能在构建期静态求值。相同 `source` 配合不同
+`comment` 会生成不同消息。
 
 ```ts
+t('保存');
 t('保存', '按钮');
 t('保存', '草稿状态');
 ```

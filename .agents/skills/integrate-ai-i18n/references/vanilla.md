@@ -9,7 +9,7 @@ Explicit imports remain the simplest baseline:
 import { getLang, getLangs, setLang, subscribe, t } from 'virtual:ai-i18n'
 
 function render() {
-  document.querySelector('#app')!.textContent = t('保存', '按钮')
+  document.querySelector('#app')!.textContent = t('保存')
 }
 
 render()
@@ -17,6 +17,10 @@ subscribe(render)
 await setLang('en-US')
 console.log(getLang(), getLangs())
 ```
+
+Default to `t(source)` only. Add the optional second `comment` argument solely when the same
+source text needs disambiguation or AI translation quality is poor (for example
+`t('保存', '工具栏按钮')`). Do not invent comments for ordinary UI copy.
 
 If `unplugin-auto-import` is already registered, these runtime APIs can be used without imports.
 ai-i18n injects them and generates `src/ai-i18n.d.ts`; do not add them to the external plugin's

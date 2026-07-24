@@ -35,7 +35,7 @@ const { t, setLang, currentLang, langs } = useI18n()
 </script>
 
 <template>
-  <p>{{ t('保存', '按钮') }}</p>
+  <p>{{ t('保存') }}</p>
   <select :value="currentLang" @change="setLang(($event.target as HTMLSelectElement).value)">
     <option v-for="lang in langs" :key="lang.value" :value="lang.value">
       {{ lang.label }}
@@ -43,6 +43,10 @@ const { t, setLang, currentLang, langs } = useI18n()
   </select>
 </template>
 ```
+
+Default to `t(source)` only. Add the optional second `comment` argument solely when the same
+source text needs disambiguation or AI translation quality is poor (for example
+`t('保存', '工具栏按钮')`). Do not invent comments for ordinary UI copy.
 
 If `unplugin-auto-import` is registered, omit the `useI18n` import. ai-i18n injects it and generates
 its declaration; do not add it to the external plugin's imports list. Use `configs.vue` from

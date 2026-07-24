@@ -84,7 +84,9 @@ responsible for ESLint declarations of its own APIs.
 ## Preserve extraction semantics
 
 - Ordinary strings, JSX text, Vue text, and mixed HTML fragments are not guessed.
-- Source and optional comment arguments must be statically evaluable.
+- Prefer `t(source)` for ordinary copy. The optional second `comment` is only for
+  disambiguation or poor AI translation quality; do not invent comments by default.
+  Source and comment arguments must be statically evaluable.
 - Vue/React Hook bindings work in JS, TS, JSX, and TSX, including composables and custom Hooks.
 - Vue SFC extraction respects compiler-sfc bindings and template-local scopes.
 - Vue JSX/TSX is supported in Vue mode when `@vitejs/plugin-vue-jsx` is present.
