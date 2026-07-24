@@ -1,108 +1,75 @@
 {
-  "files": {
-    "eslint.config.js": {
-      "fingerprint": "sha256:577aa6a1f919b8137171034f4971b325410ad8f0c8b4512516fc9d3ffae85002",
-      "messageIds": []
-    },
-    "index.html": {
-      "fingerprint": "sha256:fc45a702b53c57e9e39249de0fa43ebf933779dd2482b1b3a9f451365e134877",
-      "messageIds": [
-        "ai-i18n Vue 示例"
-      ]
-    },
-    "src/ai-i18n.d.ts": {
-      "fingerprint": "sha256:523fe04a674d829724e07306f4e39ef2b2b279ffc657023e7b685820df56e0f2",
-      "messageIds": []
-    },
-    "src/App.vue": {
-      "fingerprint": "sha256:e9a56733418ba4b88c78a3fec2bbd573c2b4ef365931ac2922e53bd290626172",
-      "messageIds": [
-        "Vue 示例",
-        "交互式语言切换演示",
-        "切换语言",
-        "响应式文案会随语言立即更新",
-        "当前语言",
-        "文案变化",
-        "模板会自动响应 Runtime 状态。",
-        "语言"
-      ]
-    },
-    "src/main.ts": {
-      "fingerprint": "sha256:16c58ee3c471cf485811195702344501065282a235c83b7f4679ef0a42e3f8be",
-      "messageIds": []
-    }
-  },
   "messages": {
     "ai-i18n Vue 示例": {
-      "source": "ai-i18n Vue 示例",
+      "sourceLang": "zh-CN",
       "translations": {
         "en-US": "ai-i18n Vue demo",
         "ja-JP": "ai-i18n Vue デモ"
       }
     },
     "Composition API 与 Vite extractor 共享 Runtime": {
-      "source": "Composition API 与 Vite extractor 共享 Runtime",
+      "sourceLang": "zh-CN",
       "translations": {
         "en-US": "Composition API and the Vite extractor share one Runtime",
         "ja-JP": null
       }
     },
     "Vue 示例": {
-      "source": "Vue 示例",
+      "sourceLang": "zh-CN",
       "translations": {
         "en-US": "Vue demo",
         "ja-JP": "Vue デモ"
       }
     },
     "交互式语言切换演示": {
-      "source": "交互式语言切换演示",
+      "sourceLang": "zh-CN",
       "translations": {
         "en-US": "Interactive language switch demo",
         "ja-JP": "インタラクティブ言語切り替えデモ"
       }
     },
     "切换语言": {
-      "source": "切换语言",
+      "sourceLang": "zh-CN",
       "translations": {
         "en-US": "Switch language",
         "ja-JP": "言語切り替え"
       }
     },
     "响应式文案会随语言立即更新": {
-      "source": "响应式文案会随语言立即更新",
+      "sourceLang": "zh-CN",
       "translations": {
         "en-US": "Reactive copy updates immediately with the language",
         "ja-JP": "リアクティブなテキストは言語に合わせて即座に更新されます"
       }
     },
     "当前语言": {
-      "source": "当前语言",
+      "sourceLang": "zh-CN",
       "translations": {
         "en-US": "Current language",
         "ja-JP": "現在の言語"
       }
     },
     "文案变化": {
-      "source": "文案变化",
+      "sourceLang": "zh-CN",
       "translations": {
         "en-US": "Copy changes",
         "ja-JP": "テキストの変化"
       }
     },
     "模板会自动响应 Runtime 状态。": {
-      "source": "模板会自动响应 Runtime 状态。",
+      "sourceLang": "zh-CN",
       "translations": {
         "en-US": "The template reacts to Runtime state automatically.",
         "ja-JP": "テンプレートは Runtime の状態に自動的に反応します。"
       }
     },
     "语言": {
-      "source": "语言",
+      "sourceLang": "zh-CN",
       "translations": {
         "en-US": "Language",
         "ja-JP": "言語"
       }
     }
   },
-  "version": 1
+  "version": 2
 }

@@ -1,121 +1,89 @@
 {
-  "files": {
-    "eslint.config.js": {
-      "fingerprint": "sha256:8263a211d49ef211c6992c301165f0df92a9b4a79d98899be26f60fb3377a43f",
-      "messageIds": []
-    },
-    "index.html": {
-      "fingerprint": "sha256:87f673b5fd3b9a5f60274811ea113e8ac9e3fc65781cfc85d13b0e0c81f39a51",
-      "messageIds": [
-        "ai-i18n React 示例"
-      ]
-    },
-    "src/ai-i18n.d.ts": {
-      "fingerprint": "sha256:0068f1d5ec84d9de573e64e96d763df2d1f178cd3ebc2783e2531a0e9ebf839b",
-      "messageIds": []
-    },
-    "src/App.tsx": {
-      "fingerprint": "sha256:2b2a231587bebc36aaf270d275988c883abbcca2003ad6d71f6daabab469bace",
-      "messageIds": [
-        "React 示例",
-        "useI18n 实时订阅 Runtime 并重渲染。",
-        "交互式语言切换演示",
-        "切换后，这段文案会立即更新。",
-        "切换语言",
-        "当前语言",
-        "文案变化"
-      ]
-    },
-    "src/main.tsx": {
-      "fingerprint": "sha256:b5bdea69e2c44230038ce799bfa18f29ff99702854b3e8c81f005c0cd0a06257",
-      "messageIds": []
-    }
-  },
   "messages": {
     "ai-i18n React 示例": {
-      "source": "ai-i18n React 示例",
+      "sourceLang": "zh-CN",
       "translations": {
         "en-US": "ai-i18n React demo"
       }
     },
     "Hook 与 Vite extractor 共享 Runtime": {
-      "source": "Hook 与 Vite extractor 共享 Runtime",
+      "sourceLang": "zh-CN",
       "translations": {
         "en-US": null
       }
     },
     "React 示例": {
-      "source": "React 示例",
+      "sourceLang": "zh-CN",
       "translations": {
         "en-US": "React demo"
       }
     },
     "useI18n 实时订阅 Runtime 并重渲染。": {
-      "source": "useI18n 实时订阅 Runtime 并重渲染。",
+      "sourceLang": "zh-CN",
       "translations": {
         "en-US": "useI18n subscribes to the Runtime and re-renders in real time."
       }
     },
     "交互式语言切换演示": {
-      "source": "交互式语言切换演示",
+      "sourceLang": "zh-CN",
       "translations": {
         "en-US": "Interactive language switching demo"
       }
     },
     "切换后，这段文案会立即更新。": {
-      "source": "切换后，这段文案会立即更新。",
+      "sourceLang": "zh-CN",
       "translations": {
         "en-US": "This copy updates as soon as you switch languages."
       }
     },
     "切换语言": {
-      "source": "切换语言",
+      "sourceLang": "zh-CN",
       "translations": {
         "en-US": "Switch language"
       }
     },
     "当前语言": {
-      "source": "当前语言",
+      "sourceLang": "zh-CN",
       "translations": {
         "en-US": "Current language"
       }
     },
     "文案变化": {
-      "source": "文案变化",
+      "sourceLang": "zh-CN",
       "translations": {
         "en-US": "Translated copy"
       }
     },
     "由 useI18n 实时订阅 Runtime": {
-      "source": "由 useI18n 实时订阅 Runtime",
+      "sourceLang": "zh-CN",
       "translations": {
         "en-US": "useI18n subscribes to Runtime updates in real time"
       }
     },
     "让产品自然地说每一种语言": {
-      "source": "让产品自然地说每一种语言",
+      "sourceLang": "zh-CN",
       "translations": {
         "en-US": "Help your product speak every language naturally"
       }
     },
     "语言": {
-      "source": "语言",
+      "sourceLang": "zh-CN",
       "translations": {
         "en-US": null
       }
     },
     "语言切换，应该一眼可见": {
-      "source": "语言切换，应该一眼可见",
+      "sourceLang": "zh-CN",
       "translations": {
         "en-US": "Language switching should be instantly visible"
       }
     },
     "这个示例把当前语言、切换动作和文案变化放在同一个视图里。": {
-      "source": "这个示例把当前语言、切换动作和文案变化放在同一个视图里。",
+      "sourceLang": "zh-CN",
       "translations": {
         "en-US": "This demo puts the current language, switch controls, and live copy in one view."
       }
     }
   },
-  "version": 1
+  "version": 2
 }
