@@ -1,3 +1,4 @@
 .agents/
 examples/*/i18n/
+**/ai-i18n.d.ts
 pnpm-lock.yaml

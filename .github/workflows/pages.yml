@@ -25,16 +25,10 @@ jobs:
           node-version: 24
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm build
-      - name: Build docs site
-        run: pnpm --filter @boses/docs build
+      - name: Build docs and examples
+        run: pnpm docs:build
         env:
           DEPLOY_TARGET: pages
-      - name: Build examples
-        run: |
-          for example in vanilla vue react; do
-            pnpm --dir "examples/$example" exec vite build --base=./
-          done
       - name: Assemble Pages artifact
         run: |
           mkdir -p site
