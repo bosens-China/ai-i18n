@@ -1,16 +1,26 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import {
-  TranslationConflictError,
   mergeCacheMessages,
   parseCacheFile,
   parseExtractedFile,
+  parseLocaleFile,
   type CacheFileV1,
   type CacheMessage,
   type ExtractedFileV1,
   type LangOption,
   type LocaleFileV1,
 } from '@ai-i18n/core';
+import { enforceCacheCapacity } from './cache-capacity.js';
+import {
+  hydrateExtracted,
+  hydrateLocale,
+  mergeProjectMessages,
+  messagesFromExtracted,
+  overlayMessages,
+  withConflictFiles,
+} from './file-store-merge.js';
+import type { AiI18nCacheOptions } from './options.js';
 import type { ProjectSnapshot } from './project-state.js';
 import {
   fileExists,
@@ -28,6 +38,13 @@ export interface FileStoreOptions {
   directory?: string;
   cleanupMissingSourceFiles?: boolean;
   cleanupOrphanMessages?: boolean;
+  cache?: AiI18nCacheOptions;
+  onWarning?: (message: string) => void;
+}
+
+export interface FileStoreLoadOptions {
+  preferredSources?: readonly string[];
+  preferredLocales?: readonly string[];
 }
 
 export class FileStore {
@@ -40,23 +57,27 @@ export class FileStore {
     this.directory = path.resolve(options.root, options.directory ?? 'i18n');
   }
 
-  async load(preferredSource?: string): Promise<CacheFileV1> {
-    const cache = await this.readCache();
-    return this.mergeExtracted(
-      cache,
+  async load(options: FileStoreLoadOptions = {}): Promise<CacheFileV1> {
+    const cache = this.mergeExtracted(
+      await this.readCache(),
       await this.readExtractedFiles(),
-      preferredSource,
+      options.preferredSources,
+    );
+    return this.mergeLocales(
+      cache,
+      await this.readLocaleFiles(),
+      options.preferredLocales,
     );
   }
 
   sync(
     snapshot: ProjectSnapshot,
-    preferredSource?: string,
+    options: FileStoreLoadOptions = {},
   ): Promise<CacheFileV1> {
     // 每次任务都从最新磁盘状态开始；失败不会阻塞后续写入任务。
     const task = this.queue.then(
-      () => this.writeSnapshot(snapshot, preferredSource),
-      () => this.writeSnapshot(snapshot, preferredSource),
+      () => this.writeSnapshot(snapshot, options),
+      () => this.writeSnapshot(snapshot, options),
     );
     this.queue = task.then(
       () => undefined,
@@ -79,6 +100,11 @@ export class FileStore {
     return this.lastWritten.get(path.resolve(file)) === content;
   }
 
+  async isOwnFile(file: string): Promise<boolean> {
+    const content = await readText(file);
+    return content !== undefined && this.isOwnWrite(file, content);
+  }
+
   extractedSource(file: string): string | undefined {
     const base = path.join(this.directory, 'extracted');
     const relative = path.relative(base, path.resolve(file));
@@ -92,15 +118,54 @@ export class FileStore {
     return relative.slice(0, -'.json'.length).split(path.sep).join('/');
   }
 
+  localeValue(file: string): string | undefined {
+    const resolved = path.resolve(file);
+    return this.options.locales.find(
+      (locale) => this.localePath(locale.value) === resolved,
+    )?.value;
+  }
+
+  loadOptions(files: Iterable<string>): FileStoreLoadOptions {
+    const preferredSources = new Set<string>();
+    const preferredLocales = new Set<string>();
+    for (const file of files) {
+      const source = this.extractedSource(file);
+      if (source) preferredSources.add(source);
+      const locale = this.localeValue(file);
+      if (locale && locale !== this.options.sourceLang) {
+        preferredLocales.add(locale);
+      }
+    }
+    return {
+      preferredSources: [...preferredSources].sort(),
+      preferredLocales: [...preferredLocales].sort(),
+    };
+  }
+
+  watchFiles(moduleId: string): string[] {
+    return [
+      this.cachePath(),
+      this.extractedPath(moduleId),
+      ...this.options.locales
+        .filter((locale) => locale.value !== this.options.sourceLang)
+        .map((locale) => this.localePath(locale.value)),
+    ];
+  }
+
   private async writeSnapshot(
     snapshot: ProjectSnapshot,
-    preferredSource?: string,
+    options: FileStoreLoadOptions,
   ): Promise<CacheFileV1> {
     const diskExtracted = await this.readExtractedFiles();
     let cache = this.mergeExtracted(
       await this.readCache(),
       diskExtracted,
-      preferredSource,
+      options.preferredSources,
+    );
+    cache = this.mergeLocales(
+      cache,
+      await this.readLocaleFiles(),
+      options.preferredLocales,
     );
     try {
       cache = {
@@ -118,6 +183,8 @@ export class FileStore {
 
     const missingSources = await this.removeMissingSources(cache);
     this.removeOrphanMessages(cache);
+    const { cache: capacity, onWarning } = this.options;
+    enforceCacheCapacity(cache, snapshot.cache.files, capacity, onWarning);
     const activeExtracted = new Set(Object.keys(snapshot.extracted));
     for (const source of snapshot.seen) {
       if (!activeExtracted.has(source)) await this.removeExtracted(source);
@@ -159,14 +226,23 @@ export class FileStore {
     );
   }
 
+  private async readLocaleFiles(): Promise<LocaleFileV1[]> {
+    const directory = path.join(this.directory, 'locales');
+    const files = await listJsonFiles(directory);
+    return Promise.all(
+      files.map(async (file) => parseLocaleFile(await readJsonRequired(file))),
+    );
+  }
+
   private mergeExtracted(
     cache: CacheFileV1,
     extractedFiles: readonly ExtractedFileV1[],
-    preferredSource?: string,
+    preferredSources: readonly string[] = [],
   ): CacheFileV1 {
     let activeMessages: Record<string, CacheMessage> = {};
+    const preferredSet = new Set(preferredSources);
     const regularFiles = extractedFiles.filter(
-      (file) => file.source !== preferredSource,
+      (file) => !preferredSet.has(file.source),
     );
     for (const extracted of regularFiles) {
       try {
@@ -188,18 +264,41 @@ export class FileStore {
       }
     }
     let messages = overlayMessages(cache.messages, activeMessages, false);
-    const preferred = extractedFiles.find(
-      (file) => file.source === preferredSource,
+    const preferredFiles = extractedFiles.filter((file) =>
+      preferredSet.has(file.source),
     );
-    if (preferred) {
-      messages = overlayMessages(
-        messages,
-        messagesFromExtracted(preferred),
-        true,
-      );
+    if (preferredFiles.length) {
+      let preferredMessages: Record<string, CacheMessage> = {};
+      for (const preferred of preferredFiles) {
+        preferredMessages = mergeCacheMessages(
+          preferredMessages,
+          messagesFromExtracted(preferred),
+        );
+      }
+      messages = overlayMessages(messages, preferredMessages, true);
     }
     this.ensureCurrentLocales(messages);
     return { version: 1, files: { ...cache.files }, messages };
+  }
+
+  private mergeLocales(
+    cache: CacheFileV1,
+    localeFiles: readonly LocaleFileV1[],
+    preferredLocales: readonly string[] = [],
+  ): CacheFileV1 {
+    const preferred = new Set(preferredLocales);
+    for (const localeFile of localeFiles) {
+      const locale = localeFile.locale.value;
+      if (!preferred.has(locale) || locale === this.options.sourceLang) {
+        continue;
+      }
+      for (const [messageId, value] of Object.entries(localeFile.messages)) {
+        const message = cache.messages[messageId];
+        if (message) message.translations[locale] = value;
+      }
+    }
+    this.ensureCurrentLocales(cache.messages);
+    return cache;
   }
 
   private ensureCurrentLocales(messages: Record<string, CacheMessage>): void {
@@ -263,6 +362,14 @@ export class FileStore {
     return path.join(this.directory, 'cache.json');
   }
 
+  private localePath(locale: string): string {
+    return path.join(
+      this.directory,
+      'locales',
+      `${encodeURIComponent(locale)}.json`,
+    );
+  }
+
   private extractedPath(source: string): string {
     const base = path.join(this.directory, 'extracted');
     const file = path.resolve(base, `${source}.json`);
@@ -290,116 +397,4 @@ export class FileStore {
       throw error;
     }
   }
-}
-
-function hydrateExtracted(
-  extracted: ExtractedFileV1,
-  cacheMessages: Record<string, CacheMessage>,
-  targetLocales: readonly string[],
-): ExtractedFileV1 {
-  return {
-    ...extracted,
-    messages: extracted.messages
-      .map((message) => ({
-        ...message,
-        translations: Object.fromEntries(
-          targetLocales.map((locale) => [
-            locale,
-            cacheMessages[message.id]!.translations[locale] ?? null,
-          ]),
-        ),
-        locations: [...message.locations].sort(
-          (left, right) => left.line - right.line || left.column - right.column,
-        ),
-      }))
-      .sort((left, right) => left.id.localeCompare(right.id)),
-  };
-}
-
-function hydrateLocale(
-  locale: LocaleFileV1,
-  cacheMessages: Record<string, CacheMessage>,
-  sourceLang: string,
-): LocaleFileV1 {
-  return {
-    ...locale,
-    messages: Object.fromEntries(
-      Object.entries(locale.messages).map(([id, value]) => [
-        id,
-        locale.locale.value === sourceLang
-          ? value
-          : (cacheMessages[id]?.translations[locale.locale.value] ?? null),
-      ]),
-    ),
-  };
-}
-
-function messagesFromExtracted(
-  extracted: ExtractedFileV1,
-): Record<string, CacheMessage> {
-  return Object.fromEntries(
-    extracted.messages.map((message) => [
-      message.id,
-      {
-        source: message.source,
-        ...(message.comment ? { comment: message.comment } : {}),
-        translations: message.translations,
-      },
-    ]),
-  );
-}
-
-function mergeProjectMessages(
-  current: Record<string, CacheMessage>,
-  incoming: Record<string, CacheMessage>,
-): Record<string, CacheMessage> {
-  // 磁盘上的 Agent 编辑优先；ProjectState 只补充新消息和缺失翻译。
-  return overlayMessages(current, incoming, false);
-}
-
-function overlayMessages(
-  current: Record<string, CacheMessage>,
-  incoming: Record<string, CacheMessage>,
-  overwriteNull: boolean,
-): Record<string, CacheMessage> {
-  const merged = structuredClone(current);
-  for (const [messageId, next] of Object.entries(incoming)) {
-    const previous = merged[messageId];
-    if (!previous) {
-      merged[messageId] = structuredClone(next);
-      continue;
-    }
-    if (
-      previous.source !== next.source ||
-      (previous.comment ?? '') !== (next.comment ?? '')
-    ) {
-      throw new Error(
-        `[ai-i18n] message "${messageId}" has inconsistent metadata`,
-      );
-    }
-    for (const [locale, value] of Object.entries(next.translations)) {
-      if (
-        value !== null ||
-        overwriteNull ||
-        !(locale in previous.translations)
-      ) {
-        previous.translations[locale] = value;
-      }
-    }
-  }
-  return merged;
-}
-
-function withConflictFiles(
-  error: unknown,
-  extractedFiles: readonly ExtractedFileV1[],
-): unknown {
-  if (!(error instanceof TranslationConflictError)) return error;
-  const files = extractedFiles
-    .filter((file) =>
-      file.messages.some((message) => message.id === error.messageId),
-    )
-    .map((file) => file.source);
-  const locations = ['i18n/cache.json', ...new Set(files)].join(', ');
-  return new Error(`${error.message}; files: ${locations}`);
 }

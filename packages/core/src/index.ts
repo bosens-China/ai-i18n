@@ -26,6 +26,8 @@ export { createI18nRuntime } from './runtime.js';
 export type {
   I18nRuntime,
   I18nRuntimeOptions,
+  LocaleLoader,
+  LocaleMessages,
   ModuleMessages,
 } from './runtime.js';
 export type {

@@ -181,4 +181,60 @@ describe('HTML extractor', () => {
       '正文',
     ]);
   });
+
+  it('keeps source HTML until a lazy locale is loaded', async () => {
+    const extracted = transformHtml(
+      `<title>t('标题')</title>`,
+      '/workspace/index.html',
+      html(),
+    );
+    const bridge = htmlBridgeCode(
+      'index.html',
+      { 'zh-CN': { 标题: '标题' } },
+      extracted.bindings,
+    );
+    let finish!: (messages: { 标题: string }) => void;
+    const runtime = createI18nRuntime({
+      sourceLang: 'zh-CN',
+      defaultLang: 'zh-CN',
+      locales: [
+        { value: 'zh-CN', label: '中文' },
+        { value: 'en-US', label: 'English' },
+      ],
+      localeLoaders: {
+        'en-US': () =>
+          new Promise((resolve) => {
+            finish = resolve;
+          }),
+      },
+    });
+    const title = { textContent: '' };
+    const document = {
+      querySelectorAll: () => [title],
+      createTreeWalker: () => ({ nextNode: () => null }),
+    };
+    const executable = bridge
+      .replace(
+        /^import \{[^}]+\} from "virtual:ai-i18n";/m,
+        'const { subscribe, __registerModule, __unregisterModule, __translate } = runtime;',
+      )
+      .replace(/if \(import\.meta\.hot\) \{[\s\S]*\}\s*$/, '');
+    new Function('runtime', 'document', 'NodeFilter', 'Node', executable)(
+      {
+        subscribe: runtime.subscribe,
+        __registerModule: runtime.registerModule,
+        __unregisterModule: runtime.unregisterModule,
+        __translate: runtime.translate,
+      },
+      document,
+      { SHOW_COMMENT: 128 },
+      { TEXT_NODE: 3 },
+    );
+
+    const switching = runtime.setLang('en-US');
+    expect(title.textContent).toBe('标题');
+    finish({ 标题: 'Title' });
+    await switching;
+    expect(title.textContent).toBe('Title');
+  });
 });

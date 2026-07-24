@@ -1,12 +1,8 @@
-import { createHash } from 'node:crypto';
 import path from 'node:path';
 import {
   TranslationConflictError,
   type CacheFileV1,
-  type CacheMessage,
-  type ExtractedFileV1,
   type LangOption,
-  type LocaleFileV1,
   type ModuleMessages,
   type TranslationRequest,
   type TranslationResult,
@@ -20,24 +16,30 @@ import type {
   SourceLocation,
   TranslationHookBinding,
 } from './extractor.js';
+import {
+  createProjectSnapshot,
+  fingerprint,
+  mapResultLocations,
+  type ProjectSnapshot,
+} from './project-snapshot.js';
+
+export type { ProjectSnapshot } from './project-snapshot.js';
 
 export interface NormalizedAiI18nOptions {
   sourceLang: string;
   defaultLang: string;
   locales: readonly LangOption[];
+  loading?: {
+    strategy: 'locale';
+    preload: readonly string[];
+    prefetch: readonly string[];
+  };
 }
 
 export interface ProjectUpdate {
   moduleId: string;
   result: ExtractResult;
   affectedModuleIds: string[];
-}
-
-export interface ProjectSnapshot {
-  cache: CacheFileV1;
-  extracted: Record<string, ExtractedFileV1>;
-  locales: LocaleFileV1[];
-  seen: string[];
 }
 
 export class ProjectState {
@@ -93,16 +95,27 @@ export class ProjectState {
       mapLocation?: (location: SourceLocation) => SourceLocation;
       translationHooks?: readonly TranslationHookBinding[];
       autoImportRuntime?: boolean;
+      force?: boolean;
     } = {},
   ): ProjectUpdate | null {
     const moduleId = this.normalizeId(id);
     if (!moduleId) return null;
+    const nextFingerprint = fingerprint(
+      options.sourceCode ?? code,
+      this.options,
+    );
+    const current = this.modules.get(moduleId);
+    if (
+      !options.force &&
+      current &&
+      this.fingerprints.get(moduleId) === nextFingerprint
+    ) {
+      // Rolldown 可能因虚拟注册模块失效而重新调用 transform；源码未变时复用 AST。
+      return { moduleId, result: current, affectedModuleIds: [] };
+    }
     analyzeModule(code, moduleId, this.analyzer, options.analysisLang);
     this.seen.add(moduleId);
-    this.fingerprints.set(
-      moduleId,
-      fingerprint(options.sourceCode ?? code, this.options),
-    );
+    this.fingerprints.set(moduleId, nextFingerprint);
     if (options.mapLocation) {
       this.locationMappers.set(moduleId, options.mapLocation);
     } else {
@@ -153,6 +166,36 @@ export class ProjectState {
     this.autoImportRuntime.delete(moduleId);
     const affected = dependents.flatMap((dependent) => this.refresh(dependent));
     return [...new Set([moduleId, ...affected])];
+  }
+
+  retain(ids: Iterable<string>): string[] {
+    const active = new Set<string>();
+    for (const id of ids) {
+      const moduleId = this.normalizeId(id);
+      if (moduleId) active.add(moduleId);
+    }
+    const affected = [...this.modules.keys()]
+      .filter((moduleId) => !active.has(moduleId))
+      .flatMap((moduleId) => this.remove(moduleId));
+    return [...new Set(affected)];
+  }
+
+  registrationWatchFiles(moduleId: string): string[] {
+    this.analyzer.link();
+    const queue = [moduleId];
+    const watched = new Set<string>();
+    while (queue.length) {
+      const currentId = queue.shift()!;
+      if (watched.has(currentId)) continue;
+      watched.add(currentId);
+      const current = this.analyzer.module(currentId);
+      if (current) {
+        queue.push(
+          ...current.dependencies.map((dependency) => dependency.path),
+        );
+      }
+    }
+    return [...watched].map((source) => path.resolve(this.root, source));
   }
 
   setResolution(
@@ -258,71 +301,24 @@ export class ProjectState {
   }
 
   snapshot(): ProjectSnapshot {
-    const files: CacheFileV1['files'] = {};
-    const messages: Record<string, CacheMessage> = {};
-    const extracted: Record<string, ExtractedFileV1> = {};
-    const localeMessages = new Map(
-      this.options.locales.map((locale) => [
-        locale.value,
-        {} as LocaleFileV1['messages'],
-      ]),
+    return createProjectSnapshot(
+      this.modules,
+      this.fingerprints,
+      this.translations,
+      this.seen,
+      this.options,
     );
-
-    for (const [moduleId, result] of this.modules) {
-      files[moduleId] = {
-        fingerprint: this.fingerprints.get(moduleId) ?? '',
-        messageIds: result.messages
-          .map((message) => message.id)
-          .sort((left, right) => left.localeCompare(right)),
-      };
-      if (!result.messages.length) continue;
-
-      const extractedMessages = result.messages.map((message) => {
-        const translations = this.targetTranslations(message.id);
-        messages[message.id] = {
-          source: message.source,
-          ...(message.comment ? { comment: message.comment } : {}),
-          translations,
-        };
-        for (const locale of this.options.locales) {
-          localeMessages.get(locale.value)![message.id] =
-            locale.value === this.options.sourceLang
-              ? message.source
-              : (translations[locale.value] ?? null);
-        }
-        return {
-          id: message.id,
-          source: message.source,
-          ...(message.comment ? { comment: message.comment } : {}),
-          locations: message.locations.map((location) => ({ ...location })),
-          translations,
-        };
-      });
-      extracted[moduleId] = {
-        version: 1,
-        source: moduleId,
-        messages: extractedMessages,
-      };
-    }
-
-    return {
-      cache: { version: 1, files, messages },
-      extracted,
-      locales: this.options.locales.map((locale) => ({
-        version: 1,
-        locale: { ...locale },
-        messages: localeMessages.get(locale.value)!,
-      })),
-      seen: [...this.seen].sort(),
-    };
   }
 
-  registration(moduleId: string): ModuleMessages | null {
+  registration(moduleId: string, localeValue?: string): ModuleMessages | null {
     const result = this.modules.get(moduleId);
     if (!result?.messages.length) return null;
+    const locales = localeValue
+      ? this.options.locales.filter((locale) => locale.value === localeValue)
+      : this.options.locales;
 
     return Object.fromEntries(
-      this.options.locales.map((locale) => [
+      locales.map((locale) => [
         locale.value,
         Object.fromEntries(
           result.messages.map((message) => [
@@ -333,6 +329,23 @@ export class ProjectState {
           ]),
         ),
       ]),
+    );
+  }
+
+  localeMessages(locale: string): Record<string, TranslationValue> {
+    if (
+      locale === this.options.sourceLang ||
+      !this.options.locales.some((option) => option.value === locale)
+    ) {
+      throw new RangeError(`[ai-i18n] unsupported target locale "${locale}"`);
+    }
+    return Object.fromEntries(
+      [...this.modules.values()].flatMap((result) =>
+        result.messages.map((message) => [
+          message.id,
+          this.translations.get(locale)?.get(message.id) ?? null,
+        ]),
+      ),
     );
   }
 
@@ -363,51 +376,10 @@ export class ProjectState {
     }
     return affected;
   }
-
-  private targetTranslations(
-    messageId: string,
-  ): Record<string, TranslationValue> {
-    return Object.fromEntries(
-      this.options.locales
-        .filter((locale) => locale.value !== this.options.sourceLang)
-        .map((locale) => [
-          locale.value,
-          this.translations.get(locale.value)?.get(messageId) ?? null,
-        ]),
-    );
-  }
 }
 
 const WINDOWS_ABSOLUTE_RE = /^[A-Za-z]:\//;
 
-function mapResultLocations(
-  result: ExtractResult,
-  mapLocation: (location: SourceLocation) => SourceLocation,
-): ExtractResult {
-  return {
-    ...result,
-    messages: result.messages.map((message) => ({
-      ...message,
-      locations: message.locations.map(mapLocation),
-    })),
-    warnings: result.warnings.map((warning) => ({
-      ...warning,
-      ...mapLocation(warning),
-    })),
-  };
-}
-
 function resolutionKey(importer: string, specifier: string) {
   return `${importer}\0${specifier}`;
-}
-
-function fingerprint(code: string, options: NormalizedAiI18nOptions): string {
-  // fingerprint 同时覆盖源码、schema/extractor 版本和语言配置。
-  const config = JSON.stringify({
-    version: 1,
-    extractor: 'yuku-0.7.3',
-    sourceLang: options.sourceLang,
-    locales: options.locales.map((locale) => locale.value),
-  });
-  return `sha256:${createHash('sha256').update(config).update('\0').update(code).digest('hex')}`;
 }

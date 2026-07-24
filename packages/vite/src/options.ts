@@ -8,6 +8,17 @@ export type AiI18nProviderOptions = Pick<
   'debounceMs' | 'batchLength' | 'maxConcurrency' | 'strict'
 >;
 
+export interface AiI18nLocaleLoadingOptions {
+  strategy: 'locale';
+  preload?: readonly string[];
+  prefetch?: readonly string[];
+}
+
+export interface AiI18nCacheOptions {
+  maxMessages?: number;
+  maxBytes?: number;
+}
+
 export interface AiI18nOptions {
   framework?: AiI18nFramework;
   autoImport?: boolean;
@@ -15,6 +26,8 @@ export interface AiI18nOptions {
   sourceLang: string;
   defaultLang?: string;
   locales: readonly LangOption[];
+  loading?: AiI18nLocaleLoadingOptions;
+  cache?: AiI18nCacheOptions;
   translator?: Translator;
   provider?: AiI18nProviderOptions;
   directory?: string;

@@ -222,11 +222,16 @@ describe('@ai-i18n/vite plugin', () => {
   });
 
   it('detects Vue JSX and auto-imports its Hook', async () => {
-    const { transform } = setupPlugin([], undefined, options, [
-      { name: 'vite:vue' },
-      { name: 'vite:vue-jsx' },
-      { name: 'unplugin-auto-import' },
-    ]);
+    const { transform } = setupPlugin(
+      [],
+      undefined,
+      { ...options, loading: { strategy: 'locale' } },
+      [
+        { name: 'vite:vue' },
+        { name: 'vite:vue-jsx' },
+        { name: 'unplugin-auto-import' },
+      ],
+    );
     const vue = await transform(
       `const { t } = useI18n()
 export const View = () => <p>{t('Vue JSX')}</p>`,
@@ -256,10 +261,12 @@ export const label = t('显式 Hook')`,
   });
 
   it('detects React JSX and auto-imports its Hook', async () => {
-    const { transform } = setupPlugin([], undefined, options, [
-      { name: 'vite:react-babel' },
-      { name: 'unplugin-auto-import' },
-    ]);
+    const { transform } = setupPlugin(
+      [],
+      undefined,
+      { ...options, loading: { strategy: 'locale' } },
+      [{ name: 'vite:react-babel' }, { name: 'unplugin-auto-import' }],
+    );
     const react = await transform(
       `const { t } = useI18n()
 export const View = () => <p>{t('React JSX')}</p>`,
@@ -390,6 +397,81 @@ export const View = () => <p>{t('React JSX')}</p>`,
     expect(result).toEqual([register]);
   });
 
+  it('sends locale-only HMR updates without requesting an unloaded locale', async () => {
+    const { plugin, transform, hotSend, directory } = setupPlugin(
+      [],
+      undefined,
+      {
+        ...options,
+        defaultLang: 'zh-CN',
+        loading: { strategy: 'locale' },
+      },
+    );
+    await transform(
+      "import { t } from 'virtual:ai-i18n'; t('保存')",
+      '/workspace/src/lazy-hot.ts',
+    );
+    const extractedFile = path.join(
+      directory,
+      'extracted/src/lazy-hot.ts.json',
+    );
+    const edited = (await readJson(extractedFile)) as {
+      messages: Array<{ translations: Record<string, string | null> }>;
+    };
+    edited.messages[0]!.translations['en-US'] = 'Save';
+    const editedContent = `${JSON.stringify(edited, null, 2)}\n`;
+    await fs.writeFile(extractedFile, editedContent);
+    hotSend.mockClear();
+
+    const hotUpdate = objectHandler<
+      (
+        this: unknown,
+        options: {
+          type: 'update';
+          file: string;
+          timestamp: number;
+          modules: unknown[];
+          read: () => Promise<string>;
+        },
+      ) => Promise<unknown[] | undefined>
+    >(plugin.hotUpdate);
+    await hotUpdate.call(
+      { environment: { name: 'client' } },
+      {
+        type: 'update',
+        file: extractedFile,
+        timestamp: 4,
+        modules: [],
+        read: async () => editedContent,
+      },
+    );
+
+    expect(hotSend).toHaveBeenCalledWith('ai-i18n:locale-update', {
+      locale: 'en-US',
+      messages: { 保存: 'Save' },
+    });
+    expect(hotSend).not.toHaveBeenCalledWith(
+      'ai-i18n:update',
+      expect.anything(),
+    );
+  });
+
+  it('generates a static Dev locale manifest and locale HMR listener', async () => {
+    const { plugin } = setupPlugin([], undefined, {
+      ...options,
+      defaultLang: 'zh-CN',
+      loading: { strategy: 'locale' },
+    });
+    const runtimeId = callHook<string>(plugin.resolveId, 'virtual:ai-i18n');
+    const code = await callHook<Promise<string>>(plugin.load, runtimeId);
+
+    expect(code).toContain(
+      '"en-US": () => import("/@ai-i18n/locale/en-US.js")',
+    );
+    expect(code).toContain('ai-i18n:locale-update');
+    expect(code).toContain('runtime.replaceLocale(locale, messages)');
+  });
+
   it('returns a stateless stub and skips transforms for SSR', async () => {
     const warnings: unknown[] = [];
     const { plugin, transform } = setupPlugin(warnings);
@@ -490,6 +572,8 @@ function callHook<T>(hook: unknown, ...args: unknown[]): T {
     {
       environment: { name: 'client' },
       warn: () => {},
+      addWatchFile: () => {},
+      load: async () => null,
     },
     args,
   ) as T;

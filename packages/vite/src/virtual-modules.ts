@@ -1,12 +1,16 @@
 import type { ModuleMessages } from '@ai-i18n/core';
 import type { AiI18nFramework } from './framework.js';
+import { localeLoadersCode } from './locale-loading.js';
 import type { NormalizedAiI18nOptions } from './project-state.js';
 import { AI_I18N_VIRTUAL_MODULE_ID } from './yuku-analyzer.js';
 
 export function runtimeCode(
   options: NormalizedAiI18nOptions,
   translationUpdateEvent: string,
+  localeUpdateEvent: string,
   framework: AiI18nFramework,
+  build = false,
+  base = '/',
 ): string {
   const adapter =
     framework === 'vanilla'
@@ -16,10 +20,19 @@ export function runtimeCode(
     framework === 'vanilla'
       ? ''
       : `export const useI18n = create${framework === 'vue' ? 'Vue' : 'React'}I18n(runtime);`;
+  const localeHotUpdate = options.loading
+    ? `
+  import.meta.hot.on(${JSON.stringify(localeUpdateEvent)}, ({ locale, messages }) => {
+    runtime.replaceLocale(locale, messages);
+  });`
+    : '';
   return `
 import { createI18nRuntime } from '@ai-i18n/vite/runtime';
 ${adapter}
-const runtime = createI18nRuntime(${JSON.stringify(options)});
+const runtime = createI18nRuntime({
+  ...${JSON.stringify(options)},
+  localeLoaders: ${localeLoadersCode(options, build, base)},
+});
 const activeModules = new Set();
 export const t = runtime.t;
 export const setLang = runtime.setLang;
@@ -40,6 +53,7 @@ if (import.meta.hot) {
   import.meta.hot.on(${JSON.stringify(translationUpdateEvent)}, ({ moduleId, messages }) => {
     if (activeModules.has(moduleId)) runtime.replaceModule(moduleId, messages);
   });
+${localeHotUpdate}
 }
 `;
 }

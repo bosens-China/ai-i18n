@@ -68,6 +68,7 @@ export function App() {
             { value: 'zh-CN', label: '中文' },
             { value: 'en-US', label: 'English' },
           ],
+          loading: { strategy: 'locale' },
           translator,
           provider: { batchLength: 12_000, strict: true },
         }),
@@ -82,10 +83,18 @@ export function App() {
         },
       },
     });
-    const code = chunks(output);
+    const outputChunks = buildOutputItems(output).filter(
+      (item) => item.type === 'chunk',
+    );
+    const code = outputChunks.map((item) => item.code).join('\n');
+    const localeChunk = outputChunks.find((item) =>
+      item.code.includes('EN:React TSX'),
+    );
 
     expect(code).toContain('EN:React TSX');
     expect(code).toContain('EN:React TS');
+    expect(localeChunk?.isEntry).toBe(false);
+    expect(localeChunk?.fileName).toMatch(/^en-US-|^assets\/en-US-/);
     expect(translator).toHaveBeenCalled();
     expect(
       await readJson(path.join(root, 'i18n/extracted/src/App.tsx.json')),
@@ -95,13 +104,6 @@ export function App() {
     ).toMatchObject({ messages: [{ id: 'React TS' }] });
   });
 });
-
-function chunks(output: Awaited<ReturnType<typeof build>>) {
-  return buildOutputItems(output)
-    .filter((item) => item.type === 'chunk')
-    .map((item) => item.code)
-    .join('\n');
-}
 
 async function readJson(file: string): Promise<Record<string, unknown>> {
   return JSON.parse(await fs.readFile(file, 'utf8')) as Record<string, unknown>;

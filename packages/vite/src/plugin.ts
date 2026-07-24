@@ -1,5 +1,6 @@
-import MagicString from 'magic-string';
 import type { NormalizedHotChannel, Plugin, ResolvedConfig } from 'vite';
+import { createBuildWatchState } from './build-watch.js';
+import { createDevUpdateSender } from './dev-updates.js';
 import { FileStore } from './file-store.js';
 import {
   extractFrameworkSource,
@@ -10,29 +11,28 @@ import {
   writeFrameworkTypes,
   type AiI18nFramework,
 } from './framework.js';
-import {
-  html as createHtmlExtractor,
-  htmlBridgeCode,
-  isTransformedHtml,
-  transformHtml,
-  type HtmlExtractor,
-} from './html.js';
+import { html as createHtmlExtractor, type HtmlExtractor } from './html.js';
+import { createHtmlTransformHandler } from './html-transform.js';
 import { createHotUpdateHandler } from './hot-update.js';
+import {
+  injectBuiltLocaleHints,
+  localeFromRequest,
+  RESOLVED_LOCALE_PREFIX,
+  resolvedLocaleRequestId,
+} from './locale-loading.js';
+import { loadLocaleModule, renderLocaleChunk } from './locale-module-loader.js';
 import { ProjectState } from './project-state.js';
 import { ProviderCoordinator } from './provider-coordinator.js';
+import { loadRegistration } from './registration-loader.js';
 import type { AiI18nOptions } from './options.js';
 import {
   normalizeOptions,
   normalizeRoot,
-  registrationImportOffset,
   shouldIgnoreSource,
   sourceUpdateOptions,
 } from './plugin-utils.js';
-import {
-  registerCode,
-  runtimeCode,
-  runtimeStubCode,
-} from './virtual-modules.js';
+import { runtimeCode, runtimeStubCode } from './virtual-modules.js';
+import { sourceRegistration } from './source-registration.js';
 import {
   AI_I18N_VIRTUAL_MODULE_ID,
   findUnboundCalls,
@@ -42,9 +42,12 @@ const RESOLVED_RUNTIME_ID = `\0${AI_I18N_VIRTUAL_MODULE_ID}`;
 const REGISTER_PREFIX = `${AI_I18N_VIRTUAL_MODULE_ID}/register?module=`;
 const RESOLVED_REGISTER_PREFIX = `\0${REGISTER_PREFIX}`;
 const SOURCE_RE = /\.(?:[cm]?[jt]sx?|vue)(?:\?.*)?$/;
-const VIRTUAL_RE = /^virtual:ai-i18n(?:\/register\?module=.+)?$/;
-const RESOLVED_VIRTUAL_RE = /^\0virtual:ai-i18n(?:\/register\?module=.+)?$/;
+const VIRTUAL_RE =
+  /^(?:virtual:ai-i18n(?:\/register\?module=.+|\/locale\/[^?]+)?|.*\/@ai-i18n\/locale\/[^?]+\.js(?:\?.*)?)$/;
+const RESOLVED_VIRTUAL_RE =
+  /^\0virtual:ai-i18n(?:\/register\?module=.+|\/locale\/[^?]+)?$/;
 const TRANSLATION_UPDATE_EVENT = 'ai-i18n:update';
+const LOCALE_UPDATE_EVENT = 'ai-i18n:locale-update';
 
 export function aiI18n(options: AiI18nOptions): Plugin {
   const normalized = normalizeOptions(options);
@@ -73,26 +76,26 @@ export function aiI18n(options: AiI18nOptions): Plugin {
     return store;
   }
 
-  function sendTranslationUpdates(moduleIds: readonly string[]) {
-    const project = currentState();
-    for (const moduleId of new Set(moduleIds)) {
-      const messages = project.registration(moduleId);
-      if (messages) {
-        devHot?.send(TRANSLATION_UPDATE_EVENT, { moduleId, messages });
-      }
-    }
-  }
+  const {
+    sendTranslationUpdates,
+    sendLocaleUpdates,
+    requestMissingTranslations,
+  } = createDevUpdateSender({
+    options: normalized,
+    state: currentState,
+    hot: () => devHot,
+    coordinator: () => coordinator,
+    translationEvent: TRANSLATION_UPDATE_EVENT,
+    localeEvent: LOCALE_UPDATE_EVENT,
+  });
 
-  function requestMissingTranslations(moduleIds: readonly string[]) {
-    if (!coordinator) return;
-    const project = currentState();
-    for (const moduleId of new Set(moduleIds)) {
-      for (const request of project.missingTranslations(moduleId)) {
-        // Dev 不等待网络；Build 在注册虚拟模块 load 时统一 flush。
-        void coordinator.request(request);
-      }
-    }
-  }
+  const buildWatch = createBuildWatchState({
+    sourcePattern: SOURCE_RE,
+    ready: () => ready,
+    state: currentState,
+    store: currentStore,
+    requestMissingTranslations,
+  });
 
   const handleHotUpdate = createHotUpdateHandler({
     sourcePattern: SOURCE_RE,
@@ -103,8 +106,24 @@ export function aiI18n(options: AiI18nOptions): Plugin {
     framework: () => framework,
     autoImport: () => autoImport,
     translationHooks: () => translationHooks,
+    localeLoading: normalized.loading !== undefined,
     sendTranslationUpdates,
+    sendLocaleUpdates,
     requestMissingTranslations,
+  });
+
+  const transformIndexHtml = createHtmlTransformHandler({
+    ...(htmlExtractor ? { extractor: htmlExtractor } : {}),
+    options: normalized,
+    config: () => config,
+    ready: () => ready,
+    state: currentState,
+    store: currentStore,
+    requestMissingTranslations,
+    flush: () => coordinator?.flush() ?? Promise.resolve(),
+    setDevHot(hot) {
+      devHot = hot;
+    },
   });
 
   return {
@@ -124,6 +143,8 @@ export function aiI18n(options: AiI18nOptions): Plugin {
         ...(options.directory ? { directory: options.directory } : {}),
         cleanupMissingSourceFiles: options.cleanup?.missingSourceFiles ?? true,
         cleanupOrphanMessages: options.cleanup?.orphanMessages ?? false,
+        ...(options.cache ? { cache: options.cache } : {}),
+        onWarning: (message) => resolved.logger.warn(`[ai-i18n] ${message}`),
       });
       ready = Promise.all([
         store.load(),
@@ -139,7 +160,13 @@ export function aiI18n(options: AiI18nOptions): Plugin {
             const affected = project.applyTranslations(results);
             const cache = await currentStore().sync(project.snapshot());
             project.hydrateCache(cache);
-            sendTranslationUpdates(affected);
+            if (normalized.loading) {
+              if (affected.length) {
+                sendLocaleUpdates(results.map((result) => result.locale));
+              }
+            } else {
+              sendTranslationUpdates(affected);
+            }
           },
           onWarning(message) {
             const warning = `[ai-i18n] ${message}`;
@@ -151,10 +178,14 @@ export function aiI18n(options: AiI18nOptions): Plugin {
     },
 
     async buildStart() {
-      await ready;
       if (config?.command === 'build') {
-        currentState().reset();
-        currentState().hydrateCache(await currentStore().load());
+        await buildWatch.buildStart(this.meta.watchMode);
+      }
+    },
+
+    async watchChange(id, change) {
+      if (config?.command === 'build' && this.meta.watchMode) {
+        await buildWatch.watchChange(id, change.event);
       }
     },
 
@@ -163,6 +194,16 @@ export function aiI18n(options: AiI18nOptions): Plugin {
       handler(id) {
         if (id === AI_I18N_VIRTUAL_MODULE_ID) return RESOLVED_RUNTIME_ID;
         if (id.startsWith(REGISTER_PREFIX)) return `\0${id}`;
+        const locale = localeFromRequest(id);
+        if (
+          locale &&
+          normalized.locales.some(
+            (option) =>
+              option.value === locale && locale !== normalized.sourceLang,
+          )
+        ) {
+          return resolvedLocaleRequestId(id, locale);
+        }
       },
     },
 
@@ -176,22 +217,40 @@ export function aiI18n(options: AiI18nOptions): Plugin {
               '[ai-i18n] SSR runtime is not supported; injection skipped.',
             );
           }
-          return id === RESOLVED_RUNTIME_ID
-            ? runtimeStubCode(framework)
-            : 'export {}';
+          if (id === RESOLVED_RUNTIME_ID) return runtimeStubCode(framework);
+          return id.startsWith(RESOLVED_LOCALE_PREFIX)
+            ? 'export default {};'
+            : 'export {};';
         }
         if (id === RESOLVED_RUNTIME_ID) {
-          return runtimeCode(normalized, TRANSLATION_UPDATE_EVENT, framework);
+          return runtimeCode(
+            normalized,
+            TRANSLATION_UPDATE_EVENT,
+            LOCALE_UPDATE_EVENT,
+            framework,
+            config?.command === 'build',
+            config?.base,
+          );
         }
         await ready;
-        if (config?.command === 'build') await coordinator?.flush();
-        if (config?.command === 'build') {
-          const cache = await currentStore().sync(currentState().snapshot());
-          currentState().hydrateCache(cache);
-        }
+        const localeModule = await loadLocaleModule(this, {
+          id,
+          build: config?.command === 'build',
+          project: currentState(),
+          store: currentStore(),
+          flush: () => coordinator?.flush() ?? Promise.resolve(),
+          reconcile: (moduleIds) => buildWatch.reconcile(moduleIds),
+        });
+        if (localeModule !== undefined) return localeModule;
         const moduleId = decodeRegisterId(id);
-        const messages = currentState().registration(moduleId);
-        return messages ? registerCode(moduleId, messages) : 'export {}';
+        return loadRegistration(this, {
+          moduleId,
+          build: config?.command === 'build',
+          project: currentState(),
+          store: currentStore(),
+          flush: () => coordinator?.flush() ?? Promise.resolve(),
+          ...(normalized.loading ? { locale: normalized.sourceLang } : {}),
+        });
       },
     },
 
@@ -255,16 +314,15 @@ export function aiI18n(options: AiI18nOptions): Plugin {
           }
         }
         if (analysisChanged) {
-          update = project.update(
-            extraction?.analysisCode ?? code,
-            id,
-            sourceUpdateOptions(
+          update = project.update(extraction?.analysisCode ?? code, id, {
+            ...sourceUpdateOptions(
               extraction,
               code,
               translationHooks,
               autoImport && framework === 'vanilla',
             ),
-          )!;
+            force: true,
+          })!;
         }
         const { result } = update;
         for (const warning of result.warnings) {
@@ -276,7 +334,7 @@ export function aiI18n(options: AiI18nOptions): Plugin {
         }
         const cache = await currentStore().sync(project.snapshot());
         project.hydrateCache(cache);
-        requestMissingTranslations([moduleId]);
+        requestMissingTranslations(update.affectedModuleIds);
         const currentModule = project.analyzer.module(moduleId)!;
         // 只注入没有本地 symbol 的调用，避免覆盖用户自己的同名函数。
         const unboundCalls = autoImport
@@ -295,93 +353,40 @@ export function aiI18n(options: AiI18nOptions): Plugin {
         );
         if (!needsRegistration && !autoImports.length) return null;
 
-        const imports = [
-          ...(autoImports.length
-            ? [
-                `import { ${autoImports.join(', ')} } from ${JSON.stringify(AI_I18N_VIRTUAL_MODULE_ID)};`,
-              ]
-            : []),
-          ...(needsRegistration
-            ? [
-                `import ${JSON.stringify(`${REGISTER_PREFIX}${encodeURIComponent(moduleId)}`)};`,
-              ]
-            : []),
-        ];
-        const registration = extraction?.registration;
-        const offset =
-          registration?.offset ??
-          registrationImportOffset(code, currentModule?.ast.body ?? []);
-        const injected = registration
-          ? `${registration.prefix ?? ''}${imports.join('\n')}\n${registration.suffix ?? ''}`
-          : `${offset ? '\n' : ''}${imports.join('\n')}\n`;
-        const transformed = new MagicString(code, { filename: id });
-        transformed.appendLeft(offset, injected);
-        return {
-          code: transformed.toString(),
-          map: transformed.generateMap({
-            source: id,
-            includeContent: true,
-            hires: true,
-          }),
-        };
+        return sourceRegistration({
+          code,
+          id,
+          moduleId,
+          registerPrefix: REGISTER_PREFIX,
+          module: currentModule,
+          ...(extraction?.registration
+            ? { registration: extraction.registration }
+            : {}),
+          autoImports,
+          needsRegistration,
+        });
       },
     },
 
-    transformIndexHtml: {
-      order: 'pre',
-      async handler(source, context) {
-        // Vite Build 会对同一份 HTML 再跑一次钩子，保留首轮提取结果。
-        if (!htmlExtractor || isTransformedHtml(source)) return;
-        await ready;
-        if (context.server) devHot = context.server.environments.client.hot;
-        let result = transformHtml(source, context.filename, htmlExtractor);
-        for (const warning of result.warnings) {
-          this.warn({
-            message: warning.message,
-            id: context.filename,
-            loc: { line: warning.line, column: warning.column },
-          });
-        }
+    async renderChunk(code, chunk) {
+      return renderLocaleChunk(this, code, chunk.facadeModuleId, {
+        project: currentState(),
+        store: currentStore(),
+        flush: () => coordinator?.flush() ?? Promise.resolve(),
+        reconcile: (moduleIds) => buildWatch.reconcile(moduleIds),
+      });
+    },
 
-        const project = currentState();
-        const update = project.updateExtracted(
-          source,
-          context.filename,
-          result.messages,
-        );
-        if (!update) return;
-        let cache = await currentStore().sync(project.snapshot());
-        project.hydrateCache(cache);
-        requestMissingTranslations([update.moduleId]);
-        if (config?.command === 'build') await coordinator?.flush();
-        cache = await currentStore().sync(project.snapshot());
-        project.hydrateCache(cache);
-        const messages = project.registration(update.moduleId);
-        if (!messages) return result.code;
-        if (config?.command === 'build') {
-          result = transformHtml(
-            source,
-            context.filename,
-            htmlExtractor,
-            messages[normalized.defaultLang],
-          );
-        }
+    transformIndexHtml: { order: 'pre', handler: transformIndexHtml },
 
-        return {
-          html: result.code,
-          tags: [
-            {
-              tag: 'script',
-              attrs: { type: 'module' },
-              children: htmlBridgeCode(
-                update.moduleId,
-                messages,
-                result.bindings,
-              ),
-              injectTo: 'body',
-            },
-          ],
-        };
+    generateBundle: {
+      order: 'post',
+      async handler(_outputOptions, bundle) {
+        if (config?.command !== 'build') return;
+        if (this.meta.watchMode) {
+          await buildWatch.reconcile(this.getModuleIds());
+        }
+        injectBuiltLocaleHints(bundle, config, normalized);
       },
     },
 

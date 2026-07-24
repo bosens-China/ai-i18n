@@ -19,7 +19,9 @@ interface HotUpdateDependencies {
   framework(): AiI18nFramework;
   autoImport(): boolean;
   translationHooks(): readonly TranslationHookBinding[];
+  localeLoading: boolean;
   sendTranslationUpdates(moduleIds: readonly string[]): void;
+  sendLocaleUpdates(locales: readonly string[]): void;
   requestMissingTranslations(moduleIds: readonly string[]): void;
 }
 
@@ -36,19 +38,21 @@ export function createHotUpdateHandler(dependencies: HotUpdateDependencies) {
     const project = dependencies.state();
     await dependencies.ready();
     const fileStore = dependencies.store();
+    const localeSnapshot = dependencies.localeLoading
+      ? snapshotLocales(project)
+      : undefined;
     if (fileStore.manages(options.file)) {
       const content = await options.read();
       if (fileStore.isOwnWrite(options.file, content)) return [];
-      const preferredSource = fileStore.extractedSource(options.file);
-      const affected = project.hydrateCache(
-        await fileStore.load(preferredSource),
-      );
-      const reconciled = await fileStore.sync(
-        project.snapshot(),
-        preferredSource,
-      );
+      const loadOptions = fileStore.loadOptions([options.file]);
+      const affected = project.hydrateCache(await fileStore.load(loadOptions));
+      const reconciled = await fileStore.sync(project.snapshot(), loadOptions);
       const updated = [...affected, ...project.hydrateCache(reconciled)];
-      dependencies.sendTranslationUpdates(updated);
+      if (localeSnapshot) {
+        dependencies.sendLocaleUpdates(changedLocales(project, localeSnapshot));
+      } else {
+        dependencies.sendTranslationUpdates(updated);
+      }
       dependencies.requestMissingTranslations(updated);
       return [];
     }
@@ -78,6 +82,10 @@ export function createHotUpdateHandler(dependencies: HotUpdateDependencies) {
           )?.affectedModuleIds ?? []);
     const cache = await fileStore.sync(project.snapshot());
     project.hydrateCache(cache);
+    dependencies.requestMissingTranslations(affected);
+    if (localeSnapshot) {
+      dependencies.sendLocaleUpdates(changedLocales(project, localeSnapshot));
+    }
     const registers = affected
       .map((affectedId) =>
         this.environment.moduleGraph.getModuleById(
@@ -95,4 +103,27 @@ export function createHotUpdateHandler(dependencies: HotUpdateDependencies) {
     }
     return registers.length ? [...options.modules, ...registers] : undefined;
   };
+}
+
+function snapshotLocales(project: ProjectState): Map<string, string> {
+  return new Map(
+    project.options.locales
+      .filter((locale) => locale.value !== project.options.sourceLang)
+      .map((locale) => [
+        locale.value,
+        JSON.stringify(project.localeMessages(locale.value)),
+      ]),
+  );
+}
+
+function changedLocales(
+  project: ProjectState,
+  previous: ReadonlyMap<string, string>,
+): string[] {
+  return [...previous]
+    .filter(
+      ([locale, messages]) =>
+        JSON.stringify(project.localeMessages(locale)) !== messages,
+    )
+    .map(([locale]) => locale);
 }

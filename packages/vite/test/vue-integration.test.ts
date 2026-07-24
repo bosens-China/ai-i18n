@@ -92,6 +92,7 @@ const label = useLabel()
             { value: 'zh-CN', label: '中文' },
             { value: 'en-US', label: 'English' },
           ],
+          loading: { strategy: 'locale' },
           translator,
           provider: { batchLength: 12_000, strict: true },
         }),
@@ -106,11 +107,19 @@ const label = useLabel()
         },
       },
     });
-    const code = chunks(output);
+    const outputChunks = buildOutputItems(output).filter(
+      (item) => item.type === 'chunk',
+    );
+    const code = outputChunks.map((item) => item.code).join('\n');
+    const localeChunk = outputChunks.find((item) =>
+      item.code.includes('EN:Vue SFC'),
+    );
 
     expect(code).toContain('EN:Vue SFC');
     expect(code).toContain('EN:Vue TS');
     expect(code).toContain('EN:Vue TSX');
+    expect(localeChunk?.isEntry).toBe(false);
+    expect(localeChunk?.fileName).toMatch(/^assets\/en-US-/);
     expect(translator).toHaveBeenCalled();
     expect(
       await readJson(path.join(root, 'i18n/extracted/src/App.vue.json')),
@@ -125,13 +134,6 @@ const label = useLabel()
     ).toMatchObject({ messages: [{ id: 'Vue TSX' }] });
   });
 });
-
-function chunks(output: Awaited<ReturnType<typeof build>>) {
-  return buildOutputItems(output)
-    .filter((item) => item.type === 'chunk')
-    .map((item) => item.code)
-    .join('\n');
-}
 
 async function readJson(file: string): Promise<Record<string, unknown>> {
   return JSON.parse(await fs.readFile(file, 'utf8')) as Record<string, unknown>;

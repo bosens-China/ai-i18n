@@ -3,7 +3,10 @@ import os from 'node:os';
 import path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import { FileStore } from '../src/file-store';
-import { ProjectState, type NormalizedAiI18nOptions } from '../src/project-state';
+import {
+  ProjectState,
+  type NormalizedAiI18nOptions,
+} from '../src/project-state';
 
 const tempDirs: string[] = [];
 const options: NormalizedAiI18nOptions = {
@@ -17,9 +20,9 @@ const options: NormalizedAiI18nOptions = {
 
 afterEach(async () => {
   await Promise.all(
-    tempDirs.splice(0).map((directory) =>
-      fs.rm(directory, { recursive: true, force: true }),
-    ),
+    tempDirs
+      .splice(0)
+      .map((directory) => fs.rm(directory, { recursive: true, force: true })),
   );
 });
 
@@ -75,10 +78,7 @@ describe('FileStore', () => {
     state.update(mainCode, main);
     await store.sync(state.snapshot());
 
-    const extractedPath = path.join(
-      root,
-      'i18n/extracted/src/main.ts.json',
-    );
+    const extractedPath = path.join(root, 'i18n/extracted/src/main.ts.json');
     const edited = (await readJson(extractedPath)) as {
       messages: Array<{ translations: Record<string, string | null> }>;
     };
@@ -106,8 +106,9 @@ describe('FileStore', () => {
     };
     changed.messages[0]!.translations['en-US'] = 'Store';
     await fs.writeFile(extractedPath, `${JSON.stringify(changed, null, 2)}\n`);
-    state.hydrateCache(await store.load('src/main.ts'));
-    await store.sync(state.snapshot(), 'src/main.ts');
+    const preferred = { preferredSources: ['src/main.ts'] };
+    state.hydrateCache(await store.load(preferred));
+    await store.sync(state.snapshot(), preferred);
     expect(
       await readJson(path.join(root, 'i18n/extracted/src/other.ts.json')),
     ).toMatchObject({
@@ -119,7 +120,9 @@ describe('FileStore', () => {
     const afterDelete = await store.sync(state.snapshot());
     expect(afterDelete.files).not.toHaveProperty('src/main.ts');
     expect(afterDelete.messages).toHaveProperty('保存');
-    await expect(fs.access(extractedPath)).rejects.toMatchObject({ code: 'ENOENT' });
+    await expect(fs.access(extractedPath)).rejects.toMatchObject({
+      code: 'ENOENT',
+    });
 
     await fs.rm(other);
     state.remove(other);
@@ -137,6 +140,36 @@ describe('FileStore', () => {
     state.update(otherCode, other);
     expect(state.registration('src/other.ts')).toMatchObject({
       'en-US': { 保存: null },
+    });
+  });
+
+  it('restores an explicitly changed locale file without losing metadata', async () => {
+    const { root, state, store } = await setup();
+    const source = path.join(root, 'src/main.ts');
+    const code = "import { t } from 'virtual:ai-i18n'; t('保存')";
+    await fs.writeFile(source, code);
+    state.update(code, source);
+    await store.sync(state.snapshot());
+
+    const localePath = path.join(root, 'i18n/locales/en-US.json');
+    const locale = (await readJson(localePath)) as {
+      messages: Record<string, string | null>;
+    };
+    locale.messages['保存'] = 'Save';
+    await fs.writeFile(localePath, `${JSON.stringify(locale, null, 2)}\n`);
+
+    const loadOptions = store.loadOptions([localePath]);
+    state.hydrateCache(await store.load(loadOptions));
+    const cache = await store.sync(state.snapshot(), loadOptions);
+
+    expect(cache.messages['保存']).toMatchObject({
+      source: '保存',
+      translations: { 'en-US': 'Save' },
+    });
+    expect(
+      await readJson(path.join(root, 'i18n/extracted/src/main.ts.json')),
+    ).toMatchObject({
+      messages: [{ translations: { 'en-US': 'Save' } }],
     });
   });
 
@@ -252,15 +285,15 @@ describe('FileStore', () => {
     };
     cache.messages['保存']!.translations['en-US'] = 'Save';
     await fs.writeFile(cachePath, `${JSON.stringify(cache, null, 2)}\n`);
-    const extractedPath = path.join(
-      root,
-      'i18n/extracted/src/other.ts.json',
-    );
+    const extractedPath = path.join(root, 'i18n/extracted/src/other.ts.json');
     const extracted = (await readJson(extractedPath)) as {
       messages: Array<{ translations: Record<string, string | null> }>;
     };
     extracted.messages[0]!.translations['en-US'] = 'Cancel';
-    await fs.writeFile(extractedPath, `${JSON.stringify(extracted, null, 2)}\n`);
+    await fs.writeFile(
+      extractedPath,
+      `${JSON.stringify(extracted, null, 2)}\n`,
+    );
 
     state.hydrateCache(await store.load());
     const reconciled = await store.sync(state.snapshot());
@@ -268,7 +301,9 @@ describe('FileStore', () => {
       保存: { translations: { 'en-US': 'Save' } },
       取消: { translations: { 'en-US': 'Cancel' } },
     });
-    expect(await readJson(path.join(root, 'i18n/locales/en-US.json'))).toMatchObject({
+    expect(
+      await readJson(path.join(root, 'i18n/locales/en-US.json')),
+    ).toMatchObject({
       messages: { 保存: 'Save', 取消: 'Cancel' },
     });
   });
@@ -284,10 +319,7 @@ describe('FileStore', () => {
     state.update(second, source);
     const secondSnapshot = state.snapshot();
 
-    await Promise.all([
-      store.sync(firstSnapshot),
-      store.sync(secondSnapshot),
-    ]);
+    await Promise.all([store.sync(firstSnapshot), store.sync(secondSnapshot)]);
 
     expect(
       await readJson(path.join(root, 'i18n/extracted/src/main.ts.json')),

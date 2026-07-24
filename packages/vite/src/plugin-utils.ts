@@ -1,6 +1,10 @@
 import fs from 'node:fs';
 import type { LangOption } from '@ai-i18n/core';
 import { normalizePath } from 'vite';
+import type {
+  AiI18nCacheOptions,
+  AiI18nLocaleLoadingOptions,
+} from './options.js';
 import type { NormalizedAiI18nOptions } from './project-state.js';
 import type { SourceExtraction, TranslationHookBinding } from './extractor.js';
 
@@ -8,6 +12,8 @@ export function normalizeOptions(options: {
   sourceLang: string;
   defaultLang?: string;
   locales: readonly LangOption[];
+  loading?: AiI18nLocaleLoadingOptions;
+  cache?: AiI18nCacheOptions;
 }): NormalizedAiI18nOptions {
   const locales = options.locales.map((locale) => ({ ...locale }));
   const values = new Set(locales.map((locale) => locale.value));
@@ -22,7 +28,66 @@ export function normalizeOptions(options: {
   if (!values.has(defaultLang)) {
     throw new Error('[ai-i18n] defaultLang must exist in locales');
   }
-  return { sourceLang: options.sourceLang, defaultLang, locales };
+  validatePositiveInteger('cache.maxMessages', options.cache?.maxMessages);
+  validatePositiveInteger('cache.maxBytes', options.cache?.maxBytes);
+  const loading = options.loading
+    ? normalizeLoading(options.loading, values, options.sourceLang, defaultLang)
+    : undefined;
+  return {
+    sourceLang: options.sourceLang,
+    defaultLang,
+    locales,
+    ...(loading ? { loading } : {}),
+  };
+}
+
+function validatePositiveInteger(name: string, value: number | undefined) {
+  if (value !== undefined && (!Number.isSafeInteger(value) || value <= 0)) {
+    throw new Error(`[ai-i18n] ${name} must be a positive integer`);
+  }
+}
+
+function normalizeLoading(
+  loading: AiI18nLocaleLoadingOptions,
+  locales: ReadonlySet<string>,
+  sourceLang: string,
+  defaultLang: string,
+) {
+  if (loading.strategy !== 'locale') {
+    throw new Error('[ai-i18n] loading.strategy must be "locale"');
+  }
+  const preload = new Set(loading.preload ?? []);
+  const prefetch = new Set(loading.prefetch ?? []);
+  if (defaultLang !== sourceLang) preload.add(defaultLang);
+  for (const [kind, values] of [
+    ['preload', preload],
+    ['prefetch', prefetch],
+  ] as const) {
+    for (const locale of values) {
+      if (!locales.has(locale)) {
+        throw new Error(
+          `[ai-i18n] loading.${kind} contains unknown locale "${locale}"`,
+        );
+      }
+      if (locale === sourceLang) {
+        throw new Error(
+          `[ai-i18n] source locale "${locale}" cannot be ${kind}ed`,
+        );
+      }
+    }
+  }
+  for (const locale of preload) {
+    if (prefetch.has(locale)) {
+      throw new Error(
+        `[ai-i18n] locale "${locale}" cannot be both preloaded and prefetched`,
+      );
+    }
+  }
+  return {
+    strategy: 'locale' as const,
+    preload: [...preload],
+    prefetch: [...prefetch],
+  };
 }
 
 export function normalizeRoot(root: string): string {
