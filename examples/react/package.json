@@ -1,5 +1,5 @@
 {
-  "name": "@boses/example-react",
+  "name": "@ai-i18n/example-react",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -15,8 +15,8 @@
     "react-dom": "^19.2.7"
   },
   "devDependencies": {
-    "@boses/eslint-plugin": "workspace:*",
-    "@boses/vite": "workspace:*",
+    "@ai-i18n/eslint-plugin": "workspace:*",
+    "@ai-i18n/vite": "workspace:*",
     "@types/node": "^24.13.2",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",

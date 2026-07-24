@@ -1,5 +1,5 @@
 import { defineConfig } from 'vite';
-import { aiI18n } from '@boses/vite';
+import { aiI18n } from '@ai-i18n/vite';
 import react from '@vitejs/plugin-react';
 import AutoImport from 'unplugin-auto-import/vite';
 

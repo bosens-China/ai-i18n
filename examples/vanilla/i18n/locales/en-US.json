@@ -3,16 +3,6 @@
     "label": "English",
     "value": "en-US"
   },
-  "messages": {
-    "ai-i18n Vanilla 示例": "ai-i18n Vanilla demo",
-    "Vanilla 示例": "Vanilla demo",
-    "交互式语言切换演示": "Interactive language switch demo",
-    "切换后，这段文案会立即更新。": "This copy updates immediately after switching.",
-    "切换语言": "Switch language",
-    "当前语言": "Current language",
-    "文案变化": "Copy changes",
-    "订阅 Runtime 后重新渲染原生 DOM。": "Subscribe to the Runtime to re-render the native DOM.",
-    "语言": "Language"
-  },
+  "messages": {},
   "version": 1
 }

@@ -1,5 +1,9 @@
 {
   "files": {
+    "eslint.config.js": {
+      "fingerprint": "sha256:8263a211d49ef211c6992c301165f0df92a9b4a79d98899be26f60fb3377a43f",
+      "messageIds": []
+    },
     "index.html": {
       "fingerprint": "sha256:87f673b5fd3b9a5f60274811ea113e8ac9e3fc65781cfc85d13b0e0c81f39a51",
       "messageIds": [
@@ -7,7 +11,7 @@
       ]
     },
     "src/ai-i18n.d.ts": {
-      "fingerprint": "sha256:88a2cbe682460a1610f385f7f57c734250084664304ac00b2eb8edf5534f948e",
+      "fingerprint": "sha256:0068f1d5ec84d9de573e64e96d763df2d1f178cd3ebc2783e2531a0e9ebf839b",
       "messageIds": []
     },
     "src/App.tsx": {

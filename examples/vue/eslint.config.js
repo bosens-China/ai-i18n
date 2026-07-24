@@ -1,4 +1,4 @@
-import aiI18n from '@boses/eslint-plugin';
+import aiI18n from '@ai-i18n/eslint-plugin';
 import { defineConfig } from 'eslint/config';
 import pluginVue from 'eslint-plugin-vue';
 import tseslint from 'typescript-eslint';

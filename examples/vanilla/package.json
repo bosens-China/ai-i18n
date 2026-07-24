@@ -1,5 +1,5 @@
 {
-  "name": "@boses/example-vanilla",
+  "name": "@ai-i18n/example-vanilla",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -11,7 +11,7 @@
     "preview": "vite preview --port 51881 --strictPort"
   },
   "devDependencies": {
-    "@boses/vite": "workspace:*",
+    "@ai-i18n/vite": "workspace:*",
     "typescript": "~6.0.2",
     "vite": "^8.1.1"
   }

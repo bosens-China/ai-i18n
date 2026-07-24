@@ -1,5 +1,9 @@
 {
   "files": {
+    "eslint.config.js": {
+      "fingerprint": "sha256:577aa6a1f919b8137171034f4971b325410ad8f0c8b4512516fc9d3ffae85002",
+      "messageIds": []
+    },
     "index.html": {
       "fingerprint": "sha256:658950ea26fb1a392a331238bd902cbb81fb95aa0d622de0a9add1309051ccf6",
       "messageIds": [
@@ -7,7 +11,7 @@
       ]
     },
     "src/ai-i18n.d.ts": {
-      "fingerprint": "sha256:a775f4ef2b0474f9212608770b19637b1cac6f5d64bf25561d76f6a07363ebf6",
+      "fingerprint": "sha256:df2c82f76dad4f9adcb2d2dbdd3226a4a36c04efa2eb7af559bdeecac69666f1",
       "messageIds": []
     },
     "src/App.vue": {
