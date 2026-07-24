@@ -19,10 +19,11 @@ afterEach(async () => {
 
 test('lists missing files and effective translations with cursor pagination', async () => {
   const root = await fixture();
-  const service = new AiI18nProjectService(root);
+  const directory = path.join(root, 'apps/web/i18n');
+  const service = new AiI18nProjectService();
 
   const files = await service.listFiles({
-    i18n_directory: 'apps/web/i18n',
+    i18n_directory: directory,
     limit: 50,
   });
   expect(files.items).toEqual([
@@ -35,7 +36,7 @@ test('lists missing files and effective translations with cursor pagination', as
   ]);
 
   const first = await service.listTranslations({
-    i18n_directory: 'apps/web/i18n',
+    i18n_directory: directory,
     file: 'src/home.ts',
     missing_only: true,
     limit: 1,
@@ -48,7 +49,7 @@ test('lists missing files and effective translations with cursor pagination', as
   expect(first.has_more).toBe(true);
 
   const second = await service.listTranslations({
-    i18n_directory: 'apps/web/i18n',
+    i18n_directory: directory,
     file: 'src/home.ts',
     missing_only: true,
     limit: 1,
@@ -59,7 +60,8 @@ test('lists missing files and effective translations with cursor pagination', as
 
 test('fills null values atomically and refuses conflicting overwrites', async () => {
   const root = await fixture();
-  const service = new AiI18nProjectService(root);
+  const directory = path.join(root, 'apps/web/i18n');
+  const service = new AiI18nProjectService();
   const extractedPath = path.join(
     root,
     'apps/web/i18n/extracted/src/home.ts.json',
@@ -67,7 +69,7 @@ test('fills null values atomically and refuses conflicting overwrites', async ()
 
   await expect(
     service.writeTranslations({
-      i18n_directory: 'apps/web/i18n',
+      i18n_directory: directory,
       file: 'src/home.ts',
       translations: [
         { message_id: '保存', locale: 'en-US', value: 'Save' },
@@ -82,7 +84,7 @@ test('fills null values atomically and refuses conflicting overwrites', async ()
 
   await expect(
     service.writeTranslations({
-      i18n_directory: 'apps/web/i18n',
+      i18n_directory: directory,
       file: 'src/home.ts',
       translations: [
         { message_id: '保存', locale: 'en-US', value: 'Save' },
@@ -106,49 +108,40 @@ test('fills null values atomically and refuses conflicting overwrites', async ()
 
   await expect(
     service.writeTranslations({
-      i18n_directory: 'apps/web/i18n',
+      i18n_directory: directory,
       file: 'src/home.ts',
       translations: [{ message_id: '保存', locale: 'ja-JP', value: 'セーブ' }],
     }),
   ).rejects.toThrow('refusing to overwrite');
 });
 
-test('rejects paths outside the workspace and unknown source files', async () => {
+test('requires an absolute directory and rejects unknown source files', async () => {
   const root = await fixture();
-  const service = new AiI18nProjectService(root);
+  const directory = path.join(root, 'apps/web/i18n');
+  const service = new AiI18nProjectService();
 
   await expect(
-    service.listFiles({ i18n_directory: '../outside', limit: 50 }),
-  ).rejects.toThrow('must not contain ".."');
+    service.listFiles({ i18n_directory: 'apps/web/i18n', limit: 50 }),
+  ).rejects.toThrow('must be an absolute path');
   await expect(
     service.listFiles({
-      i18n_directory: path.resolve(root, 'apps/web/i18n'),
+      i18n_directory: path.join(root, 'missing-i18n'),
       limit: 50,
     }),
-  ).rejects.toThrow('must be relative');
+  ).rejects.toThrow('pass its final absolute path');
   await expect(
     service.listTranslations({
-      i18n_directory: 'apps/web/i18n',
+      i18n_directory: directory,
       file: 'src/missing.ts',
       missing_only: true,
       limit: 100,
     }),
   ).rejects.toThrow('extracted source not found');
-
-  const outside = await fixture();
-  await fs.symlink(
-    path.join(outside, 'apps/web/i18n'),
-    path.join(root, 'linked-i18n'),
-    process.platform === 'win32' ? 'junction' : 'dir',
-  );
-  await expect(
-    service.listFiles({ i18n_directory: 'linked-i18n', limit: 50 }),
-  ).rejects.toThrow('escapes workspace root');
 });
 
 test('registers callable MCP tools with defaults and structured output', async () => {
   const root = await fixture();
-  const server = createAiI18nMcpServer(root);
+  const server = createAiI18nMcpServer();
   const client = new Client({ name: 'ai-i18n-mcp-test', version: '0.0.0' });
   const [clientTransport, serverTransport] =
     InMemoryTransport.createLinkedPair();
@@ -166,7 +159,10 @@ test('registers callable MCP tools with defaults and structured output', async (
     ]);
     const result = await client.callTool({
       name: 'ai_i18n_list_translations',
-      arguments: { i18n_directory: 'apps/web/i18n', file: 'src/home.ts' },
+      arguments: {
+        i18n_directory: path.join(root, 'apps/web/i18n'),
+        file: 'src/home.ts',
+      },
     });
     expect(result.isError).not.toBe(true);
     expect(result.structuredContent).toMatchObject({

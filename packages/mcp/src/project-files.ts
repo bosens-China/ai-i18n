@@ -2,31 +2,21 @@ import { randomUUID } from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
-export async function resolveI18nDirectory(
-  workspaceRoot: string,
-  input: string,
-): Promise<string> {
-  if (path.isAbsolute(input) || path.win32.isAbsolute(input)) {
-    throw new Error('[ai-i18n/mcp] i18n_directory must be relative to workspace root');
+export async function resolveI18nDirectory(input: string): Promise<string> {
+  if (!path.isAbsolute(input)) {
+    throw new Error('[ai-i18n/mcp] i18n_directory must be an absolute path');
   }
-  if (input.split(/[\\/]+/).includes('..')) {
-    throw new Error('[ai-i18n/mcp] i18n_directory must not contain ".."');
-  }
-  const root = await fs.realpath(workspaceRoot);
-  const candidate = path.resolve(root, input);
-  assertInside(root, candidate);
   let directory: string;
   try {
-    directory = await fs.realpath(candidate);
+    directory = await fs.realpath(input);
   } catch (error) {
     if (isNotFound(error)) {
       throw new Error(
-        '[ai-i18n/mcp] i18n directory not found; read the Vite config and pass its final workspace-relative path',
+        '[ai-i18n/mcp] i18n directory not found; read the Vite config and pass its final absolute path',
       );
     }
     throw error;
   }
-  assertInside(root, directory);
   const stat = await fs.stat(directory);
   if (!stat.isDirectory()) {
     throw new Error('[ai-i18n/mcp] i18n_directory is not a directory');
@@ -71,7 +61,10 @@ export async function listJsonFiles(directory: string): Promise<string[]> {
   return nested.flat().sort();
 }
 
-export async function writeJsonAtomic(file: string, value: unknown): Promise<void> {
+export async function writeJsonAtomic(
+  file: string,
+  value: unknown,
+): Promise<void> {
   const temporary = `${file}.${process.pid}.${randomUUID()}.tmp`;
   try {
     await fs.writeFile(temporary, stableJson(value), 'utf8');
@@ -94,17 +87,6 @@ function sortValue(value: unknown): unknown {
       .sort(([left], [right]) => left.localeCompare(right))
       .map(([key, entry]) => [key, sortValue(entry)]),
   );
-}
-
-function assertInside(root: string, target: string): void {
-  const relative = path.relative(root, target);
-  if (
-    relative === '..' ||
-    relative.startsWith(`..${path.sep}`) ||
-    path.isAbsolute(relative)
-  ) {
-    throw new Error('[ai-i18n/mcp] i18n_directory escapes workspace root');
-  }
 }
 
 function isNotFound(error: unknown): boolean {

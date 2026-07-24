@@ -82,8 +82,6 @@ interface LoadedProject {
 export class AiI18nProjectService {
   private writeQueue = Promise.resolve();
 
-  constructor(private readonly workspaceRoot: string) {}
-
   async listFiles(input: ListFilesInput): Promise<Page<TranslationFileItem>> {
     const project = await this.load(input.i18n_directory);
     validateLocale(project, input.locale);
@@ -224,10 +222,7 @@ export class AiI18nProjectService {
   }
 
   private async load(i18nDirectory: string): Promise<LoadedProject> {
-    const directory = await resolveI18nDirectory(
-      this.workspaceRoot,
-      i18nDirectory,
-    );
+    const directory = await resolveI18nDirectory(i18nDirectory);
     const cache = parseCacheFile(
       await readJsonRequired(path.join(directory, 'cache.json')),
     );

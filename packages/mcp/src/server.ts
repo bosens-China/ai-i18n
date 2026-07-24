@@ -17,7 +17,7 @@ const DirectorySchema = z
   .min(1)
   .max(1_024)
   .describe(
-    'Final ai-i18n output directory relative to the MCP workspace root. Read the Vite config and combine its resolved root with aiI18n.directory first, for example "apps/web/i18n".',
+    'Absolute path to the final ai-i18n output directory. Read the Vite config and resolve aiI18n.directory against the Vite root before calling the tool.',
   );
 const CursorSchema = z.string().min(1).max(4_096).optional();
 const LocationSchema = z.object({
@@ -41,19 +41,19 @@ const TranslationItemSchema = z.object({
   locations: z.array(LocationSchema).optional(),
 });
 
-export function createAiI18nMcpServer(workspaceRoot: string): McpServer {
+export function createAiI18nMcpServer(): McpServer {
   const server = new McpServer({
     name: 'ai-i18n-mcp-server',
     version,
   });
-  const project = new AiI18nProjectService(workspaceRoot);
+  const project = new AiI18nProjectService();
 
   server.registerTool(
     'ai_i18n_list_translation_files',
     {
       title: 'List ai-i18n files needing translation',
       description:
-        'List source files with effective null translations. Before calling, read the Vite config and pass the final ai-i18n output directory relative to the MCP workspace root.',
+        'List source files with effective null translations. Before calling, read the Vite config and pass the absolute path to the final ai-i18n output directory.',
       inputSchema: z
         .object({
           i18n_directory: DirectorySchema,
