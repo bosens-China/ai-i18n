@@ -13,15 +13,15 @@ import { Prompt } from '@rspress/core/theme';
 
 ## Skills
 
-你可以在宿主环境（终端或项目库）安装 `@ai-i18n` 提供的标准指令。只需安装一个用于 MCP 写入的 Skill 即可覆盖日常维护。
+你可以在宿主环境（终端或项目库）安装 `@ai-i18n` 提供的标准指令。
 
 在仓库根目录执行：
 
 ```sh
-npx skills add bosens-China/ai-i18n --skill use-ai-i18n-mcp -y
+npx skills add bosens-China/ai-i18n --skill use-ai-i18n-mcp integrate-ai-i18n -y
 ```
 
-安装后，Skill 会被保存到 `.agents/skills/` 中。在之后的对话中，你可以直接告诉 Agent：“使用 `use-ai-i18n-mcp` 补译缺失的语言”。
+安装后，Skill 会被保存到 `.agents/skills/` 中。在之后的对话中，你可以直接告诉 Agent：“使用 `use-ai-i18n-mcp` 补译缺失的语言” 或 “使用 `integrate-ai-i18n` 指导项目接入”。
 
 ## MCP
 
