@@ -3,6 +3,16 @@ name: Release
 on:
   push:
     branches: [main]
+    # 仅在可发布包或发布配置变化时跑；纯文档/Agent/示例提交不启动
+    paths:
+      - 'packages/**'
+      - 'release-please-config.json'
+      - '.release-please-manifest.json'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
+      - 'tsdown.config.ts'
+      - '.github/workflows/release.yml'
 
 permissions:
   contents: write

@@ -4,11 +4,13 @@
 
 ## 自动流程
 
-1. 功能提交合并到 `main` 后，`.github/workflows/release.yml` 运行 Release Please。
+1. 影响 `packages/**` 或发布相关配置的提交合并到 `main` 后，`.github/workflows/release.yml` 运行 Release Please。纯文档、Agent skills、示例站点等路径不会触发该工作流；被跳过的 Conventional Commit 会在下次相关 push 时一并纳入。
 2. Release Please 根据 `fix:`、`feat:` 和带 `!` 的破坏性变更创建或更新 Release PR。
 3. 合并 Release PR 后，Release Please 创建各包的 Git tag 与 GitHub Release。
 4. 仅当本次确实创建 Release 时，CI 执行 `pnpm check`、`pnpm test` 并发布对应 npm 包。
 5. 发布先通过 `pnpm pack` 展开 `workspace:` 依赖，再由 npm CLI 使用 OIDC Trusted Publishing 上传。
+
+GitHub Pages 部署（`pages.yml`）同样按路径过滤：仅 `apps/docs`、`examples`、`packages` 及其构建依赖变化时部署；可用 `workflow_dispatch` 手动补跑。
 
 Release Please PR 默认使用仓库 `GITHUB_TOKEN`。若希望机器人 PR 触发其他 PR 工作流，可配置 `RELEASE_PLEASE_TOKEN` 为 fine-grained PAT；未配置时自动回退到 `GITHUB_TOKEN`。
 

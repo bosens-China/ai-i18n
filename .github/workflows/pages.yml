@@ -3,6 +3,20 @@ name: Deploy docs and examples to GitHub Pages
 on:
   push:
     branches: [main]
+    # 仅在站点/示例或其构建依赖变化时部署，避免 AGENTS、内部 docs 等无关提交空跑
+    paths:
+      - 'apps/docs/**'
+      - 'examples/**'
+      - 'packages/**'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
+      - 'turbo.json'
+      - 'tsdown.config.ts'
+      - 'tsconfig.json'
+      - 'tsconfig.base.json'
+      - 'tsconfig.package.json'
+      - '.github/workflows/pages.yml'
   workflow_dispatch:
 
 permissions:
