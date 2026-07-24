@@ -3,6 +3,7 @@ import {
   mergeCacheMessages,
   parseCacheFile,
   parseExtractedFile,
+  parseMessageId,
   type CacheMessage,
   type ExtractedFileV1,
 } from '@ai-i18n/core';
@@ -117,10 +118,12 @@ export class AiI18nProjectService {
           message.translations,
           input.locale,
         );
+        const parsedId = parseMessageId(messageId);
+        const comment = message.comment ?? parsedId.comment;
         return {
           message_id: messageId,
-          source: message.source,
-          ...(message.comment ? { comment: message.comment } : {}),
+          source: parsedId.source,
+          ...(comment ? { comment } : {}),
           translations,
           missing_locales: Object.entries(translations)
             .filter(([, value]) => value === null)
@@ -268,7 +271,7 @@ function messagesFromExtracted(
     file.messages.map((message) => [
       message.id,
       {
-        source: message.source,
+        sourceLang: '',
         ...(message.comment ? { comment: message.comment } : {}),
         translations: message.translations,
       },

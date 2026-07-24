@@ -64,7 +64,7 @@ test('fills null values atomically and refuses conflicting overwrites', async ()
   const service = new AiI18nProjectService();
   const extractedPath = path.join(
     root,
-    'apps/web/i18n/extracted/src/home.ts.json',
+    'apps/web/i18n/extracted/src_home.ts.json',
   );
 
   await expect(
@@ -179,31 +179,25 @@ async function fixture(): Promise<string> {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'ai-i18n-mcp-'));
   tempDirectories.push(root);
   const directory = path.join(root, 'apps/web/i18n');
-  await fs.mkdir(path.join(directory, 'extracted/src'), { recursive: true });
+  await fs.mkdir(path.join(directory, 'extracted'), { recursive: true });
   await fs.writeFile(
     path.join(directory, 'cache.json'),
     JSON.stringify({
-      version: 1,
-      files: {
-        'src/home.ts': {
-          fingerprint: 'sha256:test',
-          messageIds: ['保存', '退出'],
-        },
-      },
+      version: 2,
       messages: {
         保存: {
-          source: '保存',
+          sourceLang: 'zh-CN',
           translations: { 'en-US': null, 'ja-JP': '保存する' },
         },
         退出: {
-          source: '退出',
+          sourceLang: 'zh-CN',
           translations: { 'en-US': 'Exit', 'ja-JP': null },
         },
       },
     }),
   );
   await fs.writeFile(
-    path.join(directory, 'extracted/src/home.ts.json'),
+    path.join(directory, 'extracted/src_home.ts.json'),
     JSON.stringify({
       version: 1,
       source: 'src/home.ts',
