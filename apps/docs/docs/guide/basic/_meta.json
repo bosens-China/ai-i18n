@@ -1,0 +1,17 @@
+[
+  {
+    "type": "file",
+    "name": "getting-started",
+    "label": "快速上手"
+  },
+  {
+    "type": "file",
+    "name": "auto-import",
+    "label": "自动导入"
+  },
+  {
+    "type": "file",
+    "name": "eslint",
+    "label": "ESLint 9"
+  }
+]

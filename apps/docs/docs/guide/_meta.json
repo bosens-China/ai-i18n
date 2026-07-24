@@ -1,55 +1,12 @@
 [
   {
-    "type": "section-header",
-    "label": "入门指南"
+    "type": "dir",
+    "name": "basic",
+    "label": "基础指南"
   },
   {
-    "type": "file",
-    "name": "getting-started",
-    "label": "快速上手"
-  },
-  {
-    "type": "file",
-    "name": "frameworks",
-    "label": "框架上手"
-  },
-  {
-    "type": "divider"
-  },
-  {
-    "type": "section-header",
-    "label": "核心工作流"
-  },
-  {
-    "type": "file",
-    "name": "workflow",
-    "label": "文件与工作流"
-  },
-  {
-    "type": "file",
-    "name": "ai-translation",
-    "label": "AI 翻译"
-  },
-  {
-    "type": "file",
-    "name": "ai-tools",
-    "label": "AI 工具接入"
-  },
-  {
-    "type": "divider"
-  },
-  {
-    "type": "section-header",
-    "label": "生态与集成"
-  },
-  {
-    "type": "file",
-    "name": "eslint",
-    "label": "ESLint 9"
-  },
-  {
-    "type": "file",
-    "name": "mcp",
-    "label": "MCP 工具"
+    "type": "dir",
+    "name": "advanced",
+    "label": "进阶与 AI"
   }
 ]

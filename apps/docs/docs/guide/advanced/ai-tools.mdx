@@ -1,0 +1,115 @@
+---
+title: 接入 Agent
+description: 为你的项目配置 Agent Skills、MCP 服务器与文档索引，实现自动化补译
+---
+
+import { Prompt } from '@rspress/core/theme';
+
+把 ai-i18n 接到 AI 编码工具时，可以通过三种途径增强 Agent 的能力：
+
+1. **Skills**：安装任务指令集，告诉 Agent 如何按安全流程调用工具补译。
+2. **MCP (Model Context Protocol)**：为各类 AI 编码工具提供安全读取和写入翻译文件的底层能力。
+3. **文档索引 (llms.txt)**：提供机器友好的官方指南，让 Agent 自己查阅高级配置。
+
+## Skills
+
+你可以在宿主环境（终端或项目库）安装 `@ai-i18n` 提供的标准指令。只需安装一个用于 MCP 写入的 Skill 即可覆盖日常维护。
+
+在仓库根目录执行：
+
+```sh
+npx skills add bosens-China/ai-i18n --skill use-ai-i18n-mcp -y
+```
+
+安装后，Skill 会被保存到 `.agents/skills/` 中。在之后的对话中，你可以直接告诉 Agent：“使用 `use-ai-i18n-mcp` 补译缺失的语言”。
+
+## MCP
+
+Agent 补译依赖 `@ai-i18n/mcp` 暴露的底层写入能力。你需要在你最喜欢的 AI IDE 或 CLI 工具中注册这个 MCP 服务器。
+
+不同的工具注册方式略有不同：
+
+### Codex
+
+在 `~/.codex/config.toml` 中加入，或者写到项目的 `.codex/config.toml` 中：
+
+```toml
+[mcp_servers.ai_i18n]
+command = "npx"
+args = ["-y", "@ai-i18n/mcp"]
+```
+
+或者在 Codex 桌面端 **Settings → MCP servers → Add server → STDIO** 中填写相同的 `command` 与 `args`。
+
+### Cursor
+
+创建项目级 `.cursor/mcp.json`，或者写到全局的 `~/.cursor/mcp.json`：
+
+```json
+{
+  "mcpServers": {
+    "ai-i18n": {
+      "command": "npx",
+      "args": ["-y", "@ai-i18n/mcp"]
+    }
+  }
+}
+```
+
+### Claude Code
+
+推荐注册为 local server，避免把绝对路径提交：
+
+```sh
+claude mcp add --transport stdio --scope local ai-i18n -- npx -y @ai-i18n/mcp
+```
+
+### Antigravity
+
+创建项目级 `.agents/mcp_config.json`：
+
+```json
+{
+  "mcpServers": {
+    "ai-i18n": {
+      "command": "npx",
+      "args": ["-y", "@ai-i18n/mcp"]
+    }
+  }
+}
+```
+
+### MCP 能力与边界
+
+接入后，Agent 就能获得 `ai_i18n_write_translations` 等工具。
+
+**安全运作边界：**
+
+1. **只能修改 `extracted` 目录**：MCP 只读写源文件，不会覆盖不同的非空翻译，也不会直接修改 `cache` 或 `locales` 文件。
+2. **自动校准与同步**：写入后，如果 Vite Dev 正在运行，它会自动同步到内存与派生文件；否则，在下一次 `vite dev` 或 `vite build` 时完成同步。
+
+## 文档索引 (llms.txt)
+
+当你希望 Agent 能深入理解本插件的高级用法、配置项甚至特定错误处理，你可以直接在任务对话中丢入本站点的 `llms.txt` 链接：
+
+`https://bosens-china.github.io/ai-i18n/llms.txt`
+
+本官方文档站点基于 Rspress 构建并开启了 SSG-MD 特性，在根路径暴露了对大模型高度友好的纯 Markdown 索引及其全量文本库 (`llms-full.txt`)。
+Agent 收到这个地址后，能自动抓取结构化、干净的教程原文并学习。
+
+## 最佳补译流程示例
+
+完成上述接入后，你可以把下面的提示词发给 Agent。Agent 会通过 Skill 中的指引调用 MCP 完成任务：
+
+<Prompt
+  eyebrow="给 Agent"
+  title="批量补齐缺失翻译"
+  description="复制后发送给 Agent，按 MCP 安全流程补译。"
+  defaultCollapsed={false}
+  prompt={`使用 use-ai-i18n-mcp：
+1. 读取 Vite 配置，结合 Vite root 与 aiI18n({ directory }) 计算 i18n_directory 绝对路径；
+2. 列出所有仍有缺失翻译的文件；
+3. 按原文语义和项目现有术语补齐目标语言；
+4. 只通过 ai_i18n_write_translations 写入 null 值，不覆盖已有翻译；
+5. 再次查询并报告剩余缺失项。`}
+/>

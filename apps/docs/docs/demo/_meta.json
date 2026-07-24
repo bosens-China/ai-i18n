@@ -1,0 +1,17 @@
+[
+  {
+    "type": "file",
+    "name": "vue",
+    "label": "Vue 3 示例"
+  },
+  {
+    "type": "file",
+    "name": "react",
+    "label": "React 示例"
+  },
+  {
+    "type": "file",
+    "name": "vanilla",
+    "label": "Vanilla JS 示例"
+  }
+]

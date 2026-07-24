@@ -1,0 +1,147 @@
+---
+title: AI 翻译
+description: 配置 OpenAI-compatible Provider，并编写稳定、可维护的翻译提示词
+---
+
+import { PackageManagerTabs } from '@rspress/core/theme';
+
+:::tip 可选能力
+AI 翻译是可选能力。未配置 `translator` 时，ai-i18n 仍会完成提取、Runtime 和协议文件维护，
+目标语言的缺失值保持为 `null`。
+:::
+
+## 安装 Provider
+
+<PackageManagerTabs command="add @ai-i18n/openai" />
+
+`@ai-i18n/openai` 借助 LangChain `ChatOpenAI` 连接符合 OpenAI-compatible 的 API 接口。它提供完整的超时、重试与链路追踪机制，但它不会替你选择具体的供应商或模型。
+
+## 必填与可选配置
+
+你可以通过传入配置给 `openAI()` 来灵活调整调用行为：
+
+| 字段           | 是否必填 | 默认值         | 作用与建议                                                                                                  |
+| -------------- | -------- | -------------- | ----------------------------------------------------------------------------------------------------------- |
+| `baseURL`      | 是       | 无             | 明确写到供应商的 OpenAI-compatible `/v1` 地址。                                                             |
+| `model`        | 是       | 无             | 显式选择的模型名，建议通过环境变量选择避免写死。                                                            |
+| `apiKey`       | 否       | 本地占位值     | 远程服务通常需要；本地无认证服务可省略。注意避免硬编码。                                                    |
+| `systemPrompt` | 否       | 内置翻译提示词 | 覆盖翻译目标、术语与风格约束。产品有固定术语时强烈建议编写。                                                |
+| `temperature`  | 否       | `1`            | 先使用默认值；需要更稳定的措辞时再降低。                                                                    |
+| `maxTokens`    | 否       | 由模型决定     | 单次响应 token 上限，只有供应商限制或批次响应截断时再设置。                                                 |
+| `timeoutMs`    | 否       | `120_000`      | 单次请求超时时间（毫秒）。网络较慢或本地模型较慢时适当调高。                                                |
+| `maxRetries`   | 否       | `3`            | LangChain 层的最大重试次数。遇到限流时结合供应商策略调整。                                                  |
+| `headers`      | 否       | 无             | 追加到 Provider 请求的 HTTP Header，仅用于部分供应商要求。                                                  |
+| `langSmith`    | 否       | 不启用         | 传入 `{ apiKey, project?, endpoint?, workspaceId? }` 后自动启用 LangSmith tracing，便于排查大模型输出质量。 |
+
+## 推荐配置
+
+Vite 配置在 Node 进程中执行。下面使用 `loadEnv()` 读取不带 `VITE_` 前缀的服务端变量，
+避免把大模型 API 密钥暴露给最终发到浏览器的代码中：
+
+```ts
+// vite.config.ts
+import { openAI } from '@ai-i18n/openai';
+import { aiI18n } from '@ai-i18n/vite';
+import { defineConfig, loadEnv } from 'vite';
+
+function required(value: string | undefined, name: string): string {
+  if (!value) throw new Error(`Missing ${name}`);
+  return value;
+}
+
+export default defineConfig(({ mode }) => {
+  const env = loadEnv(mode, process.cwd(), 'AI_');
+
+  return {
+    plugins: [
+      aiI18n({
+        sourceLang: 'zh-CN',
+        locales: [
+          { value: 'zh-CN', label: '中文' },
+          { value: 'en-US', label: 'English' },
+        ],
+        translator: openAI({
+          baseURL: required(env.AI_BASE_URL, 'AI_BASE_URL'),
+          model: required(env.AI_MODEL, 'AI_MODEL'),
+          apiKey: env.AI_API_KEY,
+          systemPrompt: `
+你负责翻译面向开发者的 Web 产品界面。
+- 使用自然、简洁的目标语言，按钮优先使用动词。
+- ai-i18n、Vite、Vue、React 等产品名保持不变。
+- 保留代码、URL、变量名和占位符的原始写法。
+- 结合 comment 判断文案语境；没有 comment 时采用最常见的 UI 含义。
+- 术语约定：构建 = build，工作区 = workspace，按需导入 = auto import。
+          `.trim(),
+          // 如果需要追踪翻译质量，可以配置 langSmith:
+          // langSmith: { apiKey: env.AI_LANGSMITH_API_KEY, project: 'ai-i18n-docs' }
+        }),
+      }),
+    ],
+  };
+});
+```
+
+`.env.local` 示例：
+
+```dotenv
+AI_BASE_URL=https://example.com/v1
+AI_MODEL=model-name
+AI_API_KEY=replace-me
+# AI_LANGSMITH_API_KEY=xxx
+```
+
+:::warning
+不要给密钥添加 `VITE_` 前缀，也不要在客户端源码中导入 Provider。
+:::
+
+## 如何编写 `systemPrompt`
+
+`systemPrompt` 只需要描述翻译要求。Provider 内部会利用 LangChain 在末尾追加固定的 JSON Schema 输出约束，**不要在自定义提示词中重复定义返回 JSON 的格式字段**。
+
+推荐把提示词写成短规则，而不是长篇角色设定。每条规则只约束一件事。
+
+### 建议包含
+
+1. **产品与读者**：说明是开发者工具、消费应用还是后台系统。
+2. **语气与长度**：例如“按钮使用动词”“错误信息说明原因和处理方式”。
+3. **固定术语**：列出团队已经确认的术语映射。
+4. **保留内容**：品牌名、代码、URL、变量名和占位符不翻译。
+5. **消歧方式**：要求优先使用请求中的 `comment`。
+
+### 不需要包含
+
+- JSON 字段、Schema 或返回示例；
+- API key、内部地址或其他秘密。
+- 与翻译无关的通用模型行为说明。
+- 每次都会变化的业务上下文；这类信息更适合放在 `t(source, comment)` 的 `comment` 中。
+
+建议把提示词保存在 Vite 配置可导入的独立常量中，并纳入代码评审。术语发生变化时只修改一处。
+
+## 调度策略
+
+`provider` 配置除了接收上述 `openAI` 返回的 Translator 外，还能调整并发与调度：
+
+- Dev 模式默认防抖 `100` 毫秒，且不会阻塞首次模块响应。
+- 默认会拼出长字符串进行批量翻译（`batchLength: 12_000` 字符，不是 token 数）。
+- 最多允许 `5` 个批次并发处理（`maxConcurrency`）。
+- Build 模式会在结束前挂起等待必要翻译批次完成。
+
+```ts
+aiI18n({
+  sourceLang: 'zh-CN',
+  locales,
+  translator,
+  provider: {
+    debounceMs: 100,
+    batchLength: 12_000,
+    maxConcurrency: 5,
+    strict: false,
+  },
+});
+```
+
+如果你希望在 CI 环境下若有任何翻译请求失败（或没能完全覆盖 `null`），整个 Build 流程直接中断报错，请将 `provider.strict` 设为 `true`。
+
+## 自定义 Translator
+
+如果不使用 `@ai-i18n/openai`，也可以实现 `@ai-i18n/core` 定义的 `Translator` 类型，自行对接任意后台大模型。只需确保返回值精准覆盖收到的每个 `messageId + locale`，对于无法翻译或报错的情况请显式返回 `null`，切勿原样返回源语言伪造为已翻译状态。

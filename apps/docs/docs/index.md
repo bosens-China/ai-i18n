@@ -13,28 +13,28 @@ hero:
   actions:
     - theme: brand
       text: 快速上手
-      link: /guide/getting-started
+      link: /guide/basic/getting-started
     - theme: alt
       text: 在线演示
-      link: /demo
+      link: /demo/vue
 
 features:
   - title: 快速上手
     details: 安装插件，选择显式导入或按需导入，并验证第一批翻译文件。
-    link: /guide/getting-started
+    link: /guide/basic/getting-started
   - title: 框架上手
     details: 查看 Vanilla、Vue 3 与 React 的 Runtime 接入方式。
-    link: /guide/frameworks
+    link: /guide/basic/getting-started
   - title: 配置与 API
     details: 按层级查找 Vite 配置、Runtime、Provider、ESLint 与 MCP 契约。
     link: /api/vite
   - title: 文件与工作流
     details: 了解 i18n 协议目录、Git 提交约定和冲突处理。
-    link: /guide/workflow
+    link: /guide/advanced/workflow
   - title: AI 翻译
     details: 区分必填与可选字段，并编写可维护的翻译提示词。
-    link: /guide/ai-translation
+    link: /guide/advanced/ai-translation
   - title: AI 工具接入
     details: 安装 Agent skills，并通过 MCP 安全补齐缺失翻译。
-    link: /guide/ai-tools
+    link: /guide/advanced/ai-tools
 ---

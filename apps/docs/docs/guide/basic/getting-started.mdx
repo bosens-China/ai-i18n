@@ -1,0 +1,199 @@
+---
+title: 快速上手
+description: 在 Vite 8 项目中安装 ai-i18n，完成框架配置并了解自动导入
+---
+
+import { Tab, Tabs, PackageManagerTabs } from '@rspress/core/theme';
+
+ai-i18n 在 Vite Dev 与 Build 期间提取显式 `t()`，维护可提交到 Git 的翻译文件，并向浏览器提供切换语言所需的 Runtime。
+
+## 开始前
+
+:::warning 使用前请确认
+
+- 仅支持 **Vite 8** 与浏览器端 Runtime（不支持 SSR，若遇 SSR 环境会自动跳过并警告）。
+- 插件会根据最终解析的 Vite 插件推断框架模式，每个 Vite build 只能选择一种模式：`vanilla`、`vue` 或 `react`。
+- 插件只识别并提取显式调用的 `t()` 函数，不会去猜测普通字符串、JSX 文本或 Vue 模板文本。
+- 所有写入和合并由 `vite dev` 或 `vite build` 驱动，不需要单独执行提取命令行。
+
+:::
+
+### 安装
+
+<PackageManagerTabs command="add @ai-i18n/vite" />
+
+:::tip
+Vue 或 React 项目继续使用原有的 Vite 框架插件，不需要为不同框架额外安装特殊的 ai-i18n 适配包。
+:::
+
+### 注册 Vite 插件与框架配置
+
+插件会在 `configResolved` 阶段检测最终插件列表。检测到 `vite:vue` / `vite:vue-jsx` 时使用 Vue 模式，检测到 `vite:react*` 时使用 React 模式，否则回退到 Vanilla 模式。
+
+<Tabs>
+  <Tab label="Vanilla">
+    纯 JS/TS 模式，没有特殊依赖。
+
+    ```ts
+    // vite.config.ts
+    import { aiI18n } from '@ai-i18n/vite';
+    import { defineConfig } from 'vite';
+
+    export default defineConfig({
+      plugins: [
+        aiI18n({
+          sourceLang: 'zh-CN', // 源码使用的语言
+          defaultLang: 'en-US', // 浏览器端首次加载时使用的语言，如果省略则等于 sourceLang
+          locales: [
+            { value: 'zh-CN', label: '中文' },
+            { value: 'en-US', label: 'English' },
+          ],
+        }),
+      ],
+    });
+    ```
+
+    业务代码中，你可以通过显式导入调用：
+
+    ```ts
+    import { t, setLang, getLangs } from 'virtual:ai-i18n';
+
+    console.log(t('保存', '按钮'));
+    console.log(getLangs());
+    await setLang('en-US');
+    ```
+
+  </Tab>
+
+  <Tab label="Vue 3">
+    与 `@vitejs/plugin-vue` 搭配使用。你可以额外开启 `html: true` 来提取 `index.html` 中的文本。
+
+    ```ts
+    // vite.config.ts
+    import { aiI18n } from '@ai-i18n/vite';
+    import vue from '@vitejs/plugin-vue';
+    import { defineConfig } from 'vite';
+
+    export default defineConfig({
+      plugins: [
+        aiI18n({
+          sourceLang: 'zh-CN',
+          locales: [
+            { value: 'zh-CN', label: '中文' },
+            { value: 'en-US', label: 'English' },
+          ],
+          html: true, // 开启 index.html 的文本与属性提取
+        }),
+        vue(),
+      ],
+    });
+    ```
+
+    Vue 模式支持 `.vue` 以及 `@vitejs/plugin-vue-jsx` 编译的 JSX/TSX。组件中使用响应式的 Hook：
+
+    ```ts
+    import { useI18n } from 'virtual:ai-i18n';
+
+    const { t, setLang, currentLang, langs } = useI18n();
+    ```
+
+  </Tab>
+
+  <Tab label="React">
+    与 `@vitejs/plugin-react` 搭配使用。
+
+    ```ts
+    // vite.config.ts
+    import { aiI18n } from '@ai-i18n/vite';
+    import react from '@vitejs/plugin-react';
+    import { defineConfig } from 'vite';
+
+    export default defineConfig({
+      plugins: [
+        aiI18n({
+          sourceLang: 'zh-CN',
+          locales: [
+            { value: 'zh-CN', label: '中文' },
+            { value: 'en-US', label: 'English' },
+          ]
+        }),
+        react(),
+      ],
+    });
+    ```
+
+    组件中通过 Hook 订阅变更，切换语言后组件树会重渲染：
+
+    ```tsx
+    import { useI18n } from 'virtual:ai-i18n';
+
+    export function App() {
+      const { t, setLang, currentLang, langs } = useI18n();
+      return <button onClick={() => void setLang('en-US')}>{t('切换语言')}</button>;
+    }
+    ```
+
+  </Tab>
+</Tabs>
+
+### 设置按需导入（可选）
+
+如果不希望每次都显式 `import { useI18n } from 'virtual:ai-i18n'`，你可以启用按需导入。
+
+- **如果你没有使用其他自动导入库**，可以直接设置 `autoImport: true`。
+- **如果你在使用 `unplugin-auto-import`**，ai-i18n 会**自动探测**并开启按需导入。你不需要把 `useI18n` 再重复写进 `unplugin-auto-import` 的 `imports` 列表中。
+
+一旦开启，插件会默认在 `src/ai-i18n.d.ts` 生成相关的全局 TypeScript 声明（可以通过 `dts: false` 禁用或通过字符串修改生成路径）。开启后，你在 Vue/React 就可以直接写 `useI18n()`。
+
+### 了解进阶配置：分包与按需加载
+
+在应对多语言的大型项目时，你可能希望单独拆分并预加载语言包。你可以在配置中增加 `loading` 配置：
+
+```ts
+aiI18n({
+  sourceLang: 'zh-CN',
+  defaultLang: 'en-US',
+  locales: [
+    { value: 'zh-CN', label: '中文' },
+    { value: 'en-US', label: 'English' },
+    { value: 'ja-JP', label: '日本語' },
+  ],
+  loading: {
+    strategy: 'locale',
+    preload: ['en-US'], // 尽早准备该语言包
+    prefetch: ['ja-JP'], // 低优先级缓存该语言包
+  },
+});
+```
+
+- `strategy: 'locale'` 会让每一个目标语言打包成独立的内容 chunk，不再全量混入同一个 Runtime。
+- 非源码的 `defaultLang` (本例为 `en-US`) 默认采用 preload 语义，首次渲染用源码作为 fallback，加载完成后切换并通知订阅者。
+
+### 验证输出
+
+运行开发服务器并访问包含 `t()` 的页面，或执行一次生产构建：
+
+```sh
+pnpm dev
+# 或
+pnpm build
+```
+
+默认在项目根目录（或者你通过 `directory` 指定的目录）会生成：
+
+```text
+i18n/
+├── cache.json
+├── extracted/
+│   └── src_app.ts.json
+└── locales/
+    └── en-US.json
+```
+
+:::tip
+Dev 模式具有“渐进式”特点，只提取浏览器实际请求到的模块。如果想要全量验证所有页面的提取，请执行一次 `pnpm build`。
+:::
+
+## 下一步
+
+接下来，你可以阅读 [目录说明](/guide/advanced/workflow) 了解 Git 提交约定，或直接了解如何通过 [AI 工具接入](/guide/advanced/ai-tools) 自动填充翻译。

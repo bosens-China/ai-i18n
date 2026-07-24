@@ -1,7 +1,7 @@
 [
   {
     "text": "文档",
-    "link": "/guide/getting-started",
+    "link": "/guide/basic/getting-started",
     "activeMatch": "/guide/"
   },
   {
@@ -11,7 +11,7 @@
   },
   {
     "text": "演示",
-    "link": "/demo",
+    "link": "/demo/vue",
     "activeMatch": "/demo"
   }
 ]

@@ -1,0 +1,79 @@
+---
+title: 自动导入
+description: 开启自动导入以免除手动引入 Hook 的繁琐，并了解它与 unplugin-auto-import 的配合方式
+---
+
+在业务代码中，通常需要频繁使用 `t` 或 `useI18n`。如果不希望每次都显式编写 `import { useI18n } from 'virtual:ai-i18n'`，你可以启用自动按需导入功能。
+
+## 开启自动导入
+
+你可以直接在配置中设置 `autoImport: true`：
+
+```ts
+// vite.config.ts
+import { aiI18n } from '@ai-i18n/vite';
+import { defineConfig } from 'vite';
+
+export default defineConfig({
+  plugins: [
+    aiI18n({
+      // ... 其他基础配置
+      autoImport: true,
+    }),
+  ],
+});
+```
+
+一旦开启：
+
+- 在 **Vanilla** 模式下，可以直接在全局使用 `t`, `setLang`, `getLang`, `getLangs`, `subscribe`。
+- 在 **Vue** 与 **React** 模式下，可以直接在组件里使用 `useI18n()`。
+
+## TypeScript 支持
+
+开启自动导入后，插件会默认在根目录的 `src/ai-i18n.d.ts` 生成相关的全局 TypeScript 声明文件，以确保 IDE 不会报 TS 未定义错误。该文件由插件维护，带有 `@noformat` 等标记，请勿手工编辑。
+
+你可以通过 `dts` 选项调整生成行为：
+
+```ts
+aiI18n({
+  autoImport: true,
+  // 禁用自动生成
+  // dts: false,
+  // 或者自定义生成路径
+  dts: 'types/ai-i18n-auto-imports.d.ts',
+});
+```
+
+:::tip
+生成声明文件后，请确保该文件所在的目录已被你的 `tsconfig.json` 的 `include` 字段包含。
+:::
+
+## 配合 unplugin-auto-import
+
+许多项目已经使用了 [`unplugin-auto-import`](https://github.com/unplugin/unplugin-auto-import) 来自动导入 `vue`, `react` 相关的 API。
+
+ai-i18n 与 `unplugin-auto-import` **完美兼容并高度集成**。你**不需要**去修改 `unplugin-auto-import` 的 `imports` 列表。
+
+你只需要保证 `aiI18n` 插件在 `AutoImport` 插件之前注册：
+
+```ts
+import { aiI18n } from '@ai-i18n/vite';
+import AutoImport from 'unplugin-auto-import/vite';
+import vue from '@vitejs/plugin-vue';
+
+export default defineConfig({
+  plugins: [
+    aiI18n({
+      // 当检测到 AutoImport 时，会自动复用它的逻辑开启 autoImport
+      sourceLang: 'zh-CN',
+    }),
+    AutoImport({
+      imports: ['vue'],
+    }),
+    vue(),
+  ],
+});
+```
+
+ai-i18n 会**自动探测**后续插件队列中的 `unplugin-auto-import`。如果发现它，就会自动将 `virtual:ai-i18n` 的全局 API 注入到它的处理管线中，复用同一套全局声明流，避免产生多余的 `d.ts` 文件。
