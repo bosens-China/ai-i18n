@@ -5,17 +5,17 @@
       "messageIds": []
     },
     "index.html": {
-      "fingerprint": "sha256:658950ea26fb1a392a331238bd902cbb81fb95aa0d622de0a9add1309051ccf6",
+      "fingerprint": "sha256:fc45a702b53c57e9e39249de0fa43ebf933779dd2482b1b3a9f451365e134877",
       "messageIds": [
         "ai-i18n Vue 示例"
       ]
     },
     "src/ai-i18n.d.ts": {
-      "fingerprint": "sha256:df2c82f76dad4f9adcb2d2dbdd3226a4a36c04efa2eb7af559bdeecac69666f1",
+      "fingerprint": "sha256:523fe04a674d829724e07306f4e39ef2b2b279ffc657023e7b685820df56e0f2",
       "messageIds": []
     },
     "src/App.vue": {
-      "fingerprint": "sha256:c0a8baeecb84aa56b0257494b463e1254cc4a4b2bae7840bd6f09f00da8f6e80",
+      "fingerprint": "sha256:e9a56733418ba4b88c78a3fec2bbd573c2b4ef365931ac2922e53bd290626172",
       "messageIds": [
         "Vue 示例",
         "交互式语言切换演示",
@@ -28,7 +28,7 @@
       ]
     },
     "src/main.ts": {
-      "fingerprint": "sha256:145a4c772e422d154a17807624626765a536c29d8722d58a00bd7fbfbddfdbea",
+      "fingerprint": "sha256:16c58ee3c471cf485811195702344501065282a235c83b7f4679ef0a42e3f8be",
       "messageIds": []
     }
   },
@@ -36,61 +36,71 @@
     "ai-i18n Vue 示例": {
       "source": "ai-i18n Vue 示例",
       "translations": {
-        "en-US": "ai-i18n Vue demo"
+        "en-US": "ai-i18n Vue demo",
+        "ja-JP": "ai-i18n Vue デモ"
       }
     },
     "Composition API 与 Vite extractor 共享 Runtime": {
       "source": "Composition API 与 Vite extractor 共享 Runtime",
       "translations": {
-        "en-US": "Composition API and the Vite extractor share one Runtime"
+        "en-US": "Composition API and the Vite extractor share one Runtime",
+        "ja-JP": null
       }
     },
     "Vue 示例": {
       "source": "Vue 示例",
       "translations": {
-        "en-US": "Vue demo"
+        "en-US": "Vue demo",
+        "ja-JP": "Vue デモ"
       }
     },
     "交互式语言切换演示": {
       "source": "交互式语言切换演示",
       "translations": {
-        "en-US": "Interactive language switch demo"
+        "en-US": "Interactive language switch demo",
+        "ja-JP": "インタラクティブ言語切り替えデモ"
       }
     },
     "切换语言": {
       "source": "切换语言",
       "translations": {
-        "en-US": "Switch language"
+        "en-US": "Switch language",
+        "ja-JP": "言語切り替え"
       }
     },
     "响应式文案会随语言立即更新": {
       "source": "响应式文案会随语言立即更新",
       "translations": {
-        "en-US": "Reactive copy updates immediately with the language"
+        "en-US": "Reactive copy updates immediately with the language",
+        "ja-JP": "リアクティブなテキストは言語に合わせて即座に更新されます"
       }
     },
     "当前语言": {
       "source": "当前语言",
       "translations": {
-        "en-US": "Current language"
+        "en-US": "Current language",
+        "ja-JP": "現在の言語"
       }
     },
     "文案变化": {
       "source": "文案变化",
       "translations": {
-        "en-US": "Copy changes"
+        "en-US": "Copy changes",
+        "ja-JP": "テキストの変化"
       }
     },
     "模板会自动响应 Runtime 状态。": {
       "source": "模板会自动响应 Runtime 状态。",
       "translations": {
-        "en-US": "The template reacts to Runtime state automatically."
+        "en-US": "The template reacts to Runtime state automatically.",
+        "ja-JP": "テンプレートは Runtime の状態に自動的に反応します。"
       }
     },
     "语言": {
       "source": "语言",
       "translations": {
-        "en-US": "Language"
+        "en-US": "Language",
+        "ja-JP": "言語"
       }
     }
   },

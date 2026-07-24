@@ -10,7 +10,8 @@
       ],
       "source": "ai-i18n Vue 示例",
       "translations": {
-        "en-US": "ai-i18n Vue demo"
+        "en-US": "ai-i18n Vue demo",
+        "ja-JP": "ai-i18n Vue デモ"
       }
     }
   ],
