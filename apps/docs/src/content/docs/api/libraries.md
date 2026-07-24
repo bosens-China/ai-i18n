@@ -87,10 +87,10 @@ import { analyzeVueSource } from '@ai-i18n/analyzer/vue';
 
 ## 其他命名导出
 
-| 包                       | 导出                                   | 参数                  | 作用                                     |
-| ------------------------ | -------------------------------------- | --------------------- | ---------------------------------------- |
-| `@ai-i18n/eslint-plugin` | `tStaticArgs`                          | ESLint 按规则协议调用 | 允许在自定义插件组合中直接复用规则对象。 |
-| `@ai-i18n/mcp`           | `createAiI18nMcpServer(workspaceRoot)` | `workspaceRoot` 必填  | 创建可嵌入 Node 进程的 MCP server。      |
+| 包                       | 导出                      | 参数                  | 作用                                     |
+| ------------------------ | ------------------------- | --------------------- | ---------------------------------------- |
+| `@ai-i18n/eslint-plugin` | `tStaticArgs`             | ESLint 按规则协议调用 | 允许在自定义插件组合中直接复用规则对象。 |
+| `@ai-i18n/mcp`           | `createAiI18nMcpServer()` | 无参数                | 创建可嵌入 Node 进程的 MCP server。      |
 
 `@ai-i18n/mcp` 还导出三个工具的输入、条目与写入结果类型，字段见
 [MCP 工具](../mcp/)。

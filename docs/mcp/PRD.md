@@ -13,9 +13,9 @@
 ## 2. 边界
 
 - MCP 不扫描业务源码，不执行或解析 `vite.config.*`。
-- Agent 负责读取 Vite 配置，并传入相对于 MCP workspace root 的最终 `i18n_directory`。
-- MCP workspace root 默认为进程 cwd，可通过 `--root` 固定。
-- `i18n_directory` 必须是相对路径，解析结果和 realpath 都不得逃逸 workspace root。
+- MCP 注册与启动不接收项目路径，同一 server 可以处理不同项目。
+- Agent 负责读取 Vite 配置，并传入最终 `i18n_directory` 的绝对路径。
+- `i18n_directory` 必须是绝对路径；MCP 通过 realpath 校验目录存在且确实是目录。
 - MCP 只修改 `extracted/**`；cache、重复 extracted 和 locales 继续由 Vite Dev/Build 校准。
 - 不提供 manifest、临时注册表、node_modules 缓存或自动项目发现。
 
@@ -25,7 +25,7 @@
 
 输入：
 
-- `i18n_directory`：必填，最终协议目录相对 workspace root 的路径。
+- `i18n_directory`：必填，最终协议目录的绝对路径。
 - `locale`：可选，只统计指定目标语言。
 - `cursor`：可选，上一页返回的 opaque cursor。
 - `limit`：默认 50，范围 1～200。

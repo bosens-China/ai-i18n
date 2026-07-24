@@ -94,5 +94,6 @@ responsible for ESLint declarations of its own APIs.
 
 Check package installation, resolved framework mode, resolved auto-import behavior, Vite config syntax,
 generated declarations, ESLint globals when applicable, one runtime call, and generated protocol
-files. State explicitly when SSR, dynamic messages, unvisited Dev routes, or Build-unreachable modules
-remain outside the verified scope.
+files. When handing the project to `@ai-i18n/mcp`, report the final output directory as an absolute
+path; MCP registration itself takes no project path. State explicitly when SSR, dynamic messages,
+unvisited Dev routes, or Build-unreachable modules remain outside the verified scope.

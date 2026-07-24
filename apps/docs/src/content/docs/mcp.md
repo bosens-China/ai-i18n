@@ -3,20 +3,20 @@ title: MCP 工具
 description: '@ai-i18n/mcp 三个工具的参数、默认值、输出与写入边界'
 ---
 
-`@ai-i18n/mcp` 提供本地 stdio MCP server。所有路径都受启动时的 workspace root 约束。
-Codex、Claude Code、Cursor 与 Antigravity 的注册方式见
+`@ai-i18n/mcp` 提供本地 stdio MCP server，注册时不需要项目路径。Codex、Claude Code、
+Cursor 与 Antigravity 的注册方式见
 [AI 工具接入](../../ai-tools/)。
 
 ## 通用参数
 
-| 参数             | 类型     | 必填 | 默认值     | 作用                                      |
-| ---------------- | -------- | ---- | ---------- | ----------------------------------------- |
-| `i18n_directory` | `string` | 是   | 无         | 最终协议目录，相对于 MCP workspace root。 |
-| `cursor`         | `string` | 否   | 第一页     | 上一页返回的不透明游标。                  |
-| `limit`          | `number` | 否   | 因工具而异 | 每页数量，范围为 `1`～`200`。             |
+| 参数             | 类型     | 必填 | 默认值     | 作用                          |
+| ---------------- | -------- | ---- | ---------- | ----------------------------- |
+| `i18n_directory` | `string` | 是   | 无         | 最终协议目录的绝对路径。      |
+| `cursor`         | `string` | 否   | 第一页     | 上一页返回的不透明游标。      |
+| `limit`          | `number` | 否   | 因工具而异 | 每页数量，范围为 `1`～`200`。 |
 
 不要根据目录名猜测 `i18n_directory`。应先读取 Vite `root` 与
-`aiI18n({ directory })`，再换算成相对 MCP workspace root 的路径。
+`aiI18n({ directory })`，再解析出最终绝对路径。相对路径会被拒绝。
 
 ## `ai_i18n_list_translation_files`
 

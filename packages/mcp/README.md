@@ -4,19 +4,19 @@
 `extracted/**` 中仍为 `null` 的翻译。
 
 MCP 不执行 Vite 配置。调用工具前，Agent 应读取项目的 `vite.config.*`，结合 Vite root 与
-`aiI18n({ directory })`，传入相对于 MCP workspace root 的最终 `i18n_directory`。
+`aiI18n({ directory })`，传入最终 `i18n_directory` 的绝对路径。
 
 MCP 宿主可以直接执行 npm 包（alpha 阶段将版本标签替换为 `@alpha`）：
 
 ```json
 {
   "command": "npx",
-  "args": ["-y", "@ai-i18n/mcp", "--root", "/workspace/repo"]
+  "args": ["-y", "@ai-i18n/mcp"]
 }
 ```
 
-如果已经在本地或全局安装，也可以把 `command` 改成包提供的 `ai-i18n-mcp`，并仅保留
-`--root` 参数。server 使用 stdio 通信，标准输出专用于 MCP 协议。
+如果已经在本地或全局安装，也可以把 `command` 改成包提供的 `ai-i18n-mcp`，无需参数。
+server 使用 stdio 通信，标准输出专用于 MCP 协议。
 
 提供三个工具：
 

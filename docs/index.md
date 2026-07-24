@@ -11,7 +11,7 @@
 - [phase-2/TODO.md](./phase-2/TODO.md) — Phase 2 任务清单
 - [phase-2/SPIKES.md](./phase-2/SPIKES.md) — Phase 2 Vite Watch / Locale 资产 Spike
 - [phase-2/ACCEPTANCE.md](./phase-2/ACCEPTANCE.md) — Phase 2 验收证据
-- [mcp/PRD.md](./mcp/PRD.md) — `@ai-i18n/mcp` 工具契约
+- [mcp/PRD.md](./mcp/PRD.md) — `@ai-i18n/mcp` 零参数注册与绝对目录工具契约
 - [mcp/TODO.md](./mcp/TODO.md) — MCP 交付清单
 - [release.md](./release.md) — Release Please、npm OIDC 与 alpha/正式版发布流程
 - [ast-extraction-report.md](./ast-extraction-report.md) — AST / 静态提取能力边界

@@ -8,18 +8,19 @@ description: Use the ai-i18n local MCP tools to locate files with missing transl
 Use the three ai-i18n tools in a read → translate → write → verify loop. Never scan or edit generated JSON manually when the MCP tools are available.
 
 `@ai-i18n/mcp` is an independently versioned Node package, not a Vite subpath. Register the package as
-a local stdio server with `npx -y @ai-i18n/mcp --root <workspace-root>`, or call its published
-`ai-i18n-mcp` executable when it is already installed. Honor the Node range declared by that package,
-and never write non-protocol output to the server's stdout.
+a local stdio server with `npx -y @ai-i18n/mcp`, or call its published `ai-i18n-mcp` executable when
+it is already installed. Registration takes no project path. Honor the Node range declared by that
+package, and never write non-protocol output to the server's stdout.
 
 ## Establish the project path
 
-1. Identify the MCP workspace root from the MCP server registration. Do not assume it equals the Vite project root.
-2. Read the target project's `vite.config.*`; do not execute the config merely to discover a path.
-3. Resolve Vite `root`, then resolve `aiI18n({ directory })` against it. The defaults are the Vite project root and `i18n`.
-4. Convert the final directory to a path relative to the MCP workspace root and pass that same value as `i18n_directory` to every tool.
+1. Read the target project's `vite.config.*`; do not execute the config merely to discover a path.
+2. Resolve Vite `root`, then resolve `aiI18n({ directory })` against it. The defaults are the Vite project root and `i18n`.
+3. Convert the final directory to an absolute path and pass that same value as `i18n_directory` to every tool.
 
-For a workspace rooted at the repository and a Vite app in `apps/web` using the defaults, pass `apps/web/i18n`. Never pass an absolute path or a path containing `..`. If the final directory is outside the MCP workspace root, stop and explain that the server root must be widened or changed.
+For a repository at `/workspace/project` and a Vite app in `apps/web` using the defaults, pass
+`/workspace/project/apps/web/i18n`. Never pass a relative path. One MCP registration can serve
+different projects because the target directory is supplied on each tool call.
 
 Require an existing `cache.json`. If the protocol files do not exist yet, run or ask the user to run the project's Vite Dev/Build command before continuing.
 Running `@ai-i18n/eslint-plugin` only validates static `t()` arguments; it never creates or reconciles these protocol files.
@@ -40,7 +41,7 @@ that policy by editing `cache.json`.
 
 Call `ai_i18n_list_translation_files` with:
 
-- `i18n_directory`: the resolved workspace-relative directory.
+- `i18n_directory`: the resolved absolute directory.
 - `locale`: only when the user requested one target locale.
 - `limit`: normally leave the default `50`; use at most `200`.
 - `cursor`: omit on the first call, then pass `next_cursor` unchanged.
