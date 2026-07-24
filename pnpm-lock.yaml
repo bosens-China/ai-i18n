@@ -195,7 +195,7 @@ importers:
         specifier: workspace:^
         version: link:../analyzer
       eslint:
-        specifier: ^9.0.0
+        specifier: '>=9.0.0'
         version: 9.39.5(supports-color@7.2.0)
     devDependencies:
       '@vue/compiler-sfc':
@@ -247,7 +247,7 @@ importers:
         specifier: 8.0.0
         version: 8.0.0
       vite:
-        specifier: ^8.0.0
+        specifier: '>=8.0.0'
         version: 8.1.5(@types/node@24.13.3)(esbuild@0.28.1)(yaml@2.9.0)
       yuku-analyzer:
         specifier: 0.7.3
