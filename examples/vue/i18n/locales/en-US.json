@@ -5,7 +5,6 @@
   },
   "messages": {
     "ai-i18n Vue 示例": "ai-i18n Vue demo",
-    "Composition API 与 Vite extractor 共享 Runtime": "Composition API and the Vite extractor share one Runtime",
     "Vue 示例": "Vue demo",
     "交互式语言切换演示": "Interactive language switch demo",
     "切换语言": "Switch language",

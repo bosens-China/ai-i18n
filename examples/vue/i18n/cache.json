@@ -6,10 +6,13 @@
         "ai-i18n Vue 示例"
       ]
     },
+    "src/ai-i18n.d.ts": {
+      "fingerprint": "sha256:a775f4ef2b0474f9212608770b19637b1cac6f5d64bf25561d76f6a07363ebf6",
+      "messageIds": []
+    },
     "src/App.vue": {
-      "fingerprint": "sha256:5c7b146cadffd95947f35ae88089a9bfa654333787325903ba8138fc5fc08b7a",
+      "fingerprint": "sha256:c0a8baeecb84aa56b0257494b463e1254cc4a4b2bae7840bd6f09f00da8f6e80",
       "messageIds": [
-        "Composition API 与 Vite extractor 共享 Runtime",
         "Vue 示例",
         "交互式语言切换演示",
         "切换语言",

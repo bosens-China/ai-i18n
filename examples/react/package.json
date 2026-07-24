@@ -4,11 +4,11 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
+    "dev": "vite --port 51883 --strictPort",
+    "build": "vite build --base=./",
     "lint": "eslint .",
     "check": "tsc -b && pnpm lint",
-    "preview": "vite preview"
+    "preview": "vite preview --port 51883 --strictPort"
   },
   "dependencies": {
     "react": "^19.2.7",

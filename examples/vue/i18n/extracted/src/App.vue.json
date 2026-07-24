@@ -1,19 +1,6 @@
 {
   "messages": [
     {
-      "id": "Composition API 与 Vite extractor 共享 Runtime",
-      "locations": [
-        {
-          "column": 11,
-          "line": 18
-        }
-      ],
-      "source": "Composition API 与 Vite extractor 共享 Runtime",
-      "translations": {
-        "en-US": "Composition API and the Vite extractor share one Runtime"
-      }
-    },
-    {
       "id": "Vue 示例",
       "locations": [
         {
@@ -30,8 +17,8 @@
       "id": "交互式语言切换演示",
       "locations": [
         {
-          "column": 44,
-          "line": 22
+          "column": 45,
+          "line": 19
         }
       ],
       "source": "交互式语言切换演示",
@@ -43,8 +30,8 @@
       "id": "切换语言",
       "locations": [
         {
-          "column": 15,
-          "line": 35
+          "column": 36,
+          "line": 30
         }
       ],
       "source": "切换语言",
@@ -57,7 +44,7 @@
       "locations": [
         {
           "column": 16,
-          "line": 53
+          "line": 47
         }
       ],
       "source": "响应式文案会随语言立即更新",
@@ -69,8 +56,8 @@
       "id": "当前语言",
       "locations": [
         {
-          "column": 15,
-          "line": 25
+          "column": 36,
+          "line": 21
         }
       ],
       "source": "当前语言",
@@ -82,8 +69,8 @@
       "id": "文案变化",
       "locations": [
         {
-          "column": 15,
-          "line": 51
+          "column": 36,
+          "line": 45
         }
       ],
       "source": "文案变化",
@@ -96,7 +83,7 @@
       "locations": [
         {
           "column": 19,
-          "line": 54
+          "line": 48
         }
       ],
       "source": "模板会自动响应 Runtime 状态。",
@@ -108,8 +95,8 @@
       "id": "语言",
       "locations": [
         {
-          "column": 19,
-          "line": 37
+          "column": 35,
+          "line": 32
         }
       ],
       "source": "语言",

@@ -6,18 +6,20 @@
         "ai-i18n React 示例"
       ]
     },
+    "src/ai-i18n.d.ts": {
+      "fingerprint": "sha256:88a2cbe682460a1610f385f7f57c734250084664304ac00b2eb8edf5534f948e",
+      "messageIds": []
+    },
     "src/App.tsx": {
-      "fingerprint": "sha256:07cb538c5217a2ab8ae3bf6c48eb29ba085dafe18da1a3ac4cbe7a725f6e138d",
+      "fingerprint": "sha256:2b2a231587bebc36aaf270d275988c883abbcca2003ad6d71f6daabab469bace",
       "messageIds": [
+        "React 示例",
+        "useI18n 实时订阅 Runtime 并重渲染。",
         "交互式语言切换演示",
         "切换后，这段文案会立即更新。",
         "切换语言",
         "当前语言",
-        "文案变化",
-        "由 useI18n 实时订阅 Runtime",
-        "让产品自然地说每一种语言",
-        "语言切换，应该一眼可见",
-        "这个示例把当前语言、切换动作和文案变化放在同一个视图里。"
+        "文案变化"
       ]
     },
     "src/main.tsx": {
@@ -41,7 +43,13 @@
     "React 示例": {
       "source": "React 示例",
       "translations": {
-        "en-US": null
+        "en-US": "React demo"
+      }
+    },
+    "useI18n 实时订阅 Runtime 并重渲染。": {
+      "source": "useI18n 实时订阅 Runtime 并重渲染。",
+      "translations": {
+        "en-US": "useI18n subscribes to the Runtime and re-renders in real time."
       }
     },
     "交互式语言切换演示": {

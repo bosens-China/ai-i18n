@@ -9,17 +9,15 @@ function render() {
   const currentLanguage = langs.find(({ value }) => value === currentLang);
 
   app.innerHTML = `
-    <main class="page-shell">
-      <header class="hero">
-        <p class="eyebrow">virtual:ai-i18n · browser runtime</p>
+    <main class="demo-app">
+      <header class="demo-header">
+        <p class="demo-eyebrow">virtual:ai-i18n</p>
         <h1>${t('Vanilla 示例')}</h1>
-        <p class="lede">${t('显式调用会被静态提取')}</p>
       </header>
 
-      <section class="demo-grid" aria-label="${t('交互式语言切换演示')}">
-        <article class="demo-step">
-          <span class="step-number">01</span>
-          <h2>${t('当前语言')}</h2>
+      <section class="demo-panel" aria-label="${t('交互式语言切换演示')}">
+        <article class="demo-card">
+          <span class="demo-label">${t('当前语言')}</span>
           <div class="locale-readout" aria-live="polite">
             <span class="status-dot" aria-hidden="true"></span>
             <strong>${currentLanguage?.label ?? currentLang}</strong>
@@ -27,11 +25,10 @@ function render() {
           </div>
         </article>
 
-        <article class="demo-step">
-          <span class="step-number">02</span>
-          <h2>${t('切换语言')}</h2>
+        <article class="demo-card">
+          <span class="demo-label">${t('切换语言')}</span>
           <label class="language-control">
-            <span>${t('语言')}</span>
+            <span class="sr-only">${t('语言')}</span>
             <select id="language">
               ${langs
                 .map(
@@ -43,9 +40,8 @@ function render() {
           </label>
         </article>
 
-        <article class="demo-step result-step">
-          <span class="step-number">03</span>
-          <h2>${t('文案变化')}</h2>
+        <article class="demo-card demo-card--highlight">
+          <span class="demo-label">${t('文案变化')}</span>
           <div class="translation-output" aria-live="polite">
             <p>${t('切换后，这段文案会立即更新。')}</p>
             <span>${t('订阅 Runtime 后重新渲染原生 DOM。')}</span>

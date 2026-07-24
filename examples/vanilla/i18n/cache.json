@@ -6,8 +6,12 @@
         "ai-i18n Vanilla 示例"
       ]
     },
+    "src/ai-i18n.d.ts": {
+      "fingerprint": "sha256:5225fa46f5bb2a2b4b728b04436022b26f30a8696708d3d3d454d6956eb3d934",
+      "messageIds": []
+    },
     "src/main.ts": {
-      "fingerprint": "sha256:e778fbc6f088e35a7c553fa0bf41e5a17f1550f5fe62beba3461e1b6f794f89c",
+      "fingerprint": "sha256:ced014ce0987e6f59ff72b059a781b0057d0de6b445c4d4842d98dbeea85b2e1",
       "messageIds": [
         "Vanilla 示例",
         "交互式语言切换演示",
@@ -15,7 +19,6 @@
         "切换语言",
         "当前语言",
         "文案变化",
-        "显式调用会被静态提取",
         "订阅 Runtime 后重新渲染原生 DOM。",
         "语言"
       ]

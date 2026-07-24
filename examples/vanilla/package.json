@@ -4,11 +4,11 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
+    "dev": "vite --port 51881 --strictPort",
+    "build": "vite build --base=./",
     "lint": "eslint .",
     "check": "tsc && pnpm lint",
-    "preview": "vite preview"
+    "preview": "vite preview --port 51881 --strictPort"
   },
   "devDependencies": {
     "@boses/vite": "workspace:*",
