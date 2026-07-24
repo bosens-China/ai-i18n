@@ -6,25 +6,21 @@ export interface LangOption {
 }
 
 export interface CacheMessage {
-  source: string;
+  sourceLang: string;
   comment?: string;
   translations: Record<string, TranslationValue>;
 }
 
-export interface CacheFileV1 {
-  version: 1;
-  files: Record<
-    string,
-    {
-      fingerprint: string;
-      messageIds: string[];
-    }
-  >;
+export interface CacheFileV2 {
+  version: 2;
   messages: Record<string, CacheMessage>;
 }
 
-export interface ExtractedMessage extends CacheMessage {
+export interface ExtractedMessage {
   id: string;
+  source: string;
+  comment?: string;
+  translations: Record<string, TranslationValue>;
   locations: Array<{ line: number; column: number }>;
 }
 
@@ -59,33 +55,36 @@ export class TranslationConflictError extends Error {
   }
 }
 
-export function parseCacheFile(value: unknown): CacheFileV1 {
+export function parseCacheFile(
+  value: unknown,
+  legacySourceLang = '',
+): CacheFileV2 {
   const root = record(value, 'cache');
-  version(root, 'cache');
-  const files = record(root.files, 'cache.files');
+  if (root.version === 1) {
+    return migrateCacheV1(root, legacySourceLang);
+  }
+  exactVersion(root, 'cache', 2);
   const messages = record(root.messages, 'cache.messages');
 
-  for (const [path, file] of Object.entries(files)) {
-    const entry = record(file, `cache.files.${path}`);
-    string(entry.fingerprint, `cache.files.${path}.fingerprint`);
-    stringArray(entry.messageIds, `cache.files.${path}.messageIds`);
-  }
   for (const [id, message] of Object.entries(messages)) {
     validateCacheMessage(message, `cache.messages.${id}`);
   }
-  return value as CacheFileV1;
+  return value as CacheFileV2;
 }
 
 export function parseExtractedFile(value: unknown): ExtractedFileV1 {
   const root = record(value, 'extracted');
-  version(root, 'extracted');
+  exactVersion(root, 'extracted', 1);
   string(root.source, 'extracted.source');
   if (!Array.isArray(root.messages)) fail('extracted.messages', 'an array');
   root.messages.forEach((message, index) => {
     const path = `extracted.messages.${index}`;
     const entry = record(message, path);
     string(entry.id, `${path}.id`);
-    validateCacheMessage(entry, path);
+    string(entry.source, `${path}.source`);
+    migrateLegacyContext(entry, path);
+    if (entry.comment !== undefined) string(entry.comment, `${path}.comment`);
+    translations(entry.translations, `${path}.translations`);
     if (!Array.isArray(entry.locations)) fail(`${path}.locations`, 'an array');
     entry.locations.forEach((location, locationIndex) => {
       const locationPath = `${path}.locations.${locationIndex}`;
@@ -99,7 +98,7 @@ export function parseExtractedFile(value: unknown): ExtractedFileV1 {
 
 export function parseLocaleFile(value: unknown): LocaleFileV1 {
   const root = record(value, 'locale');
-  version(root, 'locale');
+  exactVersion(root, 'locale', 1);
   const locale = record(root.locale, 'locale.locale');
   string(locale.value, 'locale.locale.value');
   string(locale.label, 'locale.locale.label');
@@ -119,11 +118,11 @@ export function mergeCacheMessages(
       merged[id] = cloneMessage(next);
       continue;
     }
-    if (
-      previous.source !== next.source ||
-      (previous.comment ?? '') !== (next.comment ?? '')
-    ) {
+    if ((previous.comment ?? '') !== (next.comment ?? '')) {
       throw new Error(`[ai-i18n] message "${id}" has inconsistent metadata`);
+    }
+    if (!previous.sourceLang && next.sourceLang) {
+      previous.sourceLang = next.sourceLang;
     }
 
     for (const [locale, value] of Object.entries(next.translations)) {
@@ -131,8 +130,10 @@ export function mergeCacheMessages(
       if (oldValue != null && value != null && oldValue !== value) {
         throw new TranslationConflictError(id, locale);
       }
-      if (oldValue == null && value !== null) previous.translations[locale] = value;
-      else if (!(locale in previous.translations)) previous.translations[locale] = null;
+      if (oldValue == null && value !== null)
+        previous.translations[locale] = value;
+      else if (!(locale in previous.translations))
+        previous.translations[locale] = null;
     }
   }
   return merged;
@@ -140,7 +141,7 @@ export function mergeCacheMessages(
 
 function validateCacheMessage(value: unknown, path: string): void {
   const message = record(value, path);
-  string(message.source, `${path}.source`);
+  string(message.sourceLang, `${path}.sourceLang`);
   migrateLegacyContext(message, path);
   if (message.comment !== undefined) string(message.comment, `${path}.comment`);
   translations(message.translations, `${path}.translations`);
@@ -152,10 +153,7 @@ function migrateLegacyContext(
 ): void {
   if (message.context === undefined) return;
   string(message.context, `${path}.context`);
-  if (
-    message.comment !== undefined &&
-    message.comment !== message.context
-  ) {
+  if (message.comment !== undefined && message.comment !== message.context) {
     throw new AiI18nSchemaError(
       `${path}.comment conflicts with legacy ${path}.context`,
     );
@@ -173,10 +171,14 @@ function translations(value: unknown, path: string): void {
   }
 }
 
-function version(value: Record<string, unknown>, schema: string): void {
-  if (value.version !== 1) {
+function exactVersion(
+  value: Record<string, unknown>,
+  schema: string,
+  expected: number,
+): void {
+  if (value.version !== expected) {
     throw new AiI18nSchemaError(
-      `${schema} schema version must be 1; received ${String(value.version)}`,
+      `${schema} schema version must be ${expected}; received ${String(value.version)}`,
     );
   }
 }
@@ -192,12 +194,6 @@ function string(value: unknown, path: string): asserts value is string {
   if (typeof value !== 'string') fail(path, 'a string');
 }
 
-function stringArray(value: unknown, path: string): asserts value is string[] {
-  if (!Array.isArray(value) || value.some((item) => typeof item !== 'string')) {
-    fail(path, 'an array of strings');
-  }
-}
-
 function integer(value: unknown, path: string, minimum: number): void {
   if (!Number.isInteger(value) || (value as number) < minimum) {
     fail(path, `an integer >= ${minimum}`);
@@ -210,7 +206,7 @@ function fail(path: string, expected: string): never {
 
 function cloneMessage(message: CacheMessage): CacheMessage {
   return {
-    source: message.source,
+    sourceLang: message.sourceLang,
     ...(message.comment === undefined ? {} : { comment: message.comment }),
     translations: { ...message.translations },
   };
@@ -220,6 +216,47 @@ function cloneMessages(
   messages: Record<string, CacheMessage>,
 ): Record<string, CacheMessage> {
   return Object.fromEntries(
-    Object.entries(messages).map(([id, message]) => [id, cloneMessage(message)]),
+    Object.entries(messages).map(([id, message]) => [
+      id,
+      cloneMessage(message),
+    ]),
   );
+}
+
+function migrateCacheV1(
+  root: Record<string, unknown>,
+  sourceLang: string,
+): CacheFileV2 {
+  const files = record(root.files, 'cache.files');
+  for (const [source, value] of Object.entries(files)) {
+    const file = record(value, `cache.files.${source}`);
+    string(file.fingerprint, `cache.files.${source}.fingerprint`);
+    if (
+      !Array.isArray(file.messageIds) ||
+      file.messageIds.some((id) => typeof id !== 'string')
+    ) {
+      fail(`cache.files.${source}.messageIds`, 'an array of strings');
+    }
+  }
+  const legacyMessages = record(root.messages, 'cache.messages');
+  const messages: Record<string, CacheMessage> = {};
+  for (const [id, value] of Object.entries(legacyMessages)) {
+    const path = `cache.messages.${id}`;
+    const message = record(value, path);
+    string(message.source, `${path}.source`);
+    migrateLegacyContext(message, path);
+    if (message.comment !== undefined)
+      string(message.comment, `${path}.comment`);
+    translations(message.translations, `${path}.translations`);
+    messages[id] = {
+      sourceLang,
+      ...(message.comment === undefined
+        ? {}
+        : { comment: message.comment as string }),
+      translations: {
+        ...(message.translations as Record<string, TranslationValue>),
+      },
+    };
+  }
+  return { version: 2, messages };
 }

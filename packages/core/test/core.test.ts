@@ -41,25 +41,26 @@ describe('@ai-i18n/core schemas', () => {
   });
 
   it('reports unsupported schema versions clearly', () => {
-    expect(() =>
-      parseCacheFile({ version: 2, files: {}, messages: {} }),
-    ).toThrow(
-      new AiI18nSchemaError('cache schema version must be 1; received 2'),
+    expect(() => parseCacheFile({ version: 3, messages: {} })).toThrow(
+      new AiI18nSchemaError('cache schema version must be 2; received 3'),
     );
   });
 
   it('migrates legacy context metadata to comment', () => {
-    const cache = parseCacheFile({
-      version: 1,
-      files: {},
-      messages: {
-        '保存#按钮': {
-          source: '保存',
-          context: '按钮',
-          translations: { 'en-US': 'Save' },
+    const cache = parseCacheFile(
+      {
+        version: 1,
+        files: {},
+        messages: {
+          '保存#按钮': {
+            source: '保存',
+            context: '按钮',
+            translations: { 'en-US': 'Save' },
+          },
         },
       },
-    });
+      'zh-CN',
+    );
     const extracted = parseExtractedFile({
       version: 1,
       source: 'src/app.ts',
@@ -74,7 +75,10 @@ describe('@ai-i18n/core schemas', () => {
       ],
     });
 
-    expect(cache.messages['保存#按钮']).toMatchObject({ comment: '按钮' });
+    expect(cache.messages['保存#按钮']).toMatchObject({
+      sourceLang: 'zh-CN',
+      comment: '按钮',
+    });
     expect(extracted.messages[0]).toMatchObject({ comment: '按钮' });
     expect(cache.messages['保存#按钮']).not.toHaveProperty('context');
     expect(extracted.messages[0]).not.toHaveProperty('context');
@@ -101,13 +105,13 @@ describe('@ai-i18n/core schemas', () => {
     const result = mergeCacheMessages(
       {
         保存: {
-          source: '保存',
+          sourceLang: 'zh-CN',
           translations: { 'en-US': 'Save', ja: null },
         },
       },
       {
         保存: {
-          source: '保存',
+          sourceLang: 'zh-CN',
           translations: { 'en-US': null, ja: '保存する' },
         },
       },
@@ -121,8 +125,12 @@ describe('@ai-i18n/core schemas', () => {
   it('rejects conflicting non-null translations', () => {
     expect(() =>
       mergeCacheMessages(
-        { 保存: { source: '保存', translations: { en: 'Save' } } },
-        { 保存: { source: '保存', translations: { en: 'Store' } } },
+        {
+          保存: { sourceLang: 'zh-CN', translations: { en: 'Save' } },
+        },
+        {
+          保存: { sourceLang: 'zh-CN', translations: { en: 'Store' } },
+        },
       ),
     ).toThrow(TranslationConflictError);
   });

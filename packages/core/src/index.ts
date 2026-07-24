@@ -14,7 +14,7 @@ export {
   parseLocaleFile,
 } from './schema.js';
 export type {
-  CacheFileV1,
+  CacheFileV2,
   CacheMessage,
   ExtractedFileV1,
   ExtractedMessage,
