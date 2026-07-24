@@ -4,7 +4,7 @@
 >
 > 目标版本：1.0.0-alpha
 >
-> 六个公开包统一使用正式 npm scope `@boses`。GitHub 仓库仍由
+> 六个公开包统一使用正式 npm scope `@ai-i18n`。GitHub 仓库仍由
 > `bosens-China/ai-i18n` 承载，两者相互独立。
 
 ## 1. 背景
@@ -33,7 +33,7 @@ Vanilla/Vue/React 单一模式的 pnpm monorepo。
 15. 不自研 Rust 原生内核。
 16. 六个公开包独立版本，使用 tsdown/Rolldown 生成 ESM 与类型声明，并以 publint、ATTW
     和真实 tarball 检查作为发布门禁。
-17. 只有独立运行的 `@boses/mcp` 声明 Node 版本；Vite 集成包由 `vite@^8` peer 约束
+17. 只有独立运行的 `@ai-i18n/mcp` 声明 Node 版本；Vite 集成包由 `vite@^8` peer 约束
     配置运行环境，浏览器绑定不重复声明 Node。
 
 ## 3. 产品目标
@@ -136,25 +136,25 @@ type TranslationValue = string | null;
 ```text
 .
 ├── packages/
-│   ├── core/                  # @boses/core
-│   ├── analyzer/              # @boses/analyzer，共享静态语义
-│   ├── vite/                  # @boses/vite
-│   ├── openai/                # @boses/openai，可选 Provider
-│   ├── eslint/                # @boses/eslint-plugin，可选静态检查
-│   └── mcp/                   # @boses/mcp，本地 Agent 工具
+│   ├── core/                  # @ai-i18n/core
+│   ├── analyzer/              # @ai-i18n/analyzer，共享静态语义
+│   ├── vite/                  # @ai-i18n/vite
+│   ├── openai/                # @ai-i18n/openai，可选 Provider
+│   ├── eslint/                # @ai-i18n/eslint-plugin，可选静态检查
+│   └── mcp/                   # @ai-i18n/mcp，本地 Agent 工具
 ├── examples/
 │   ├── vanilla/
 │   ├── vue/
 │   └── react/
 ├── apps/
-│   └── docs/                  # @boses/docs，Astro Starlight 用户文档站
+│   └── docs/                  # @ai-i18n/docs，Astro Starlight 用户文档站
 ├── docs/                      # 内部 PRD / TODO / 验收（见 docs/index.md）
 ├── package.json
 ├── pnpm-workspace.yaml
 └── pnpm-lock.yaml
 ```
 
-### 6.1 `@boses/core`
+### 6.1 `@ai-i18n/core`
 
 包含：
 
@@ -167,19 +167,19 @@ type TranslationValue = string | null;
 
 不得依赖 Vite、Vue、React、Yuku 或具体 Provider SDK。
 
-### 6.1.1 `@boses/analyzer`
+### 6.1.1 `@ai-i18n/analyzer`
 
 包含 Vite 与 ESLint 共用的 Yuku AST、translation binding、Hook 成员识别、静态字符串求值
 和诊断类型。不得依赖 Vite、ESLint、React 或 Vue Runtime；compiler-sfc 只作为 Vue 分析
 子入口的可选 peer 注入。
 
-### 6.2 `@boses/vite`
+### 6.2 `@ai-i18n/vite`
 
 包含：
 
 - Vite 8 插件生命周期。
 - 按模式选择 JS/TS、JSX/TSX 和 Vue SFC 分析入口。
-- 复用 `@boses/analyzer` 的 Yuku 语义。
+- 复用 `@ai-i18n/analyzer` 的 Yuku 语义。
 - ProjectState、Provider 调度和文件写入。
 - Runtime 与模块注册虚拟模块。
 - Vue computed/ref 与 React `useSyncExternalStore` Hook adapter。
@@ -202,12 +202,12 @@ import { useI18n } from 'virtual:ai-i18n';
 - 两种模式都只提取显式 `t()`，不自动处理文本节点。
 - 同一个 Vite build 不允许同时出现 Vue 和 React 插件族。
 
-### 6.4 `@boses/openai`
+### 6.4 `@ai-i18n/openai`
 
 可选 Provider：
 
 ```ts
-import { openAI } from '@boses/openai';
+import { openAI } from '@ai-i18n/openai';
 ```
 
 - 使用 `@langchain/openai` 的 `ChatOpenAI` 对接 OpenAI-compatible API，并固定使用
@@ -220,12 +220,12 @@ import { openAI } from '@boses/openai';
 - 可选 LangSmith 配置包含 API key、project、endpoint、workspace ID；传入才启用 tracing。
 - Core/Vite 包不依赖 LangChain 或 OpenAI SDK。
 
-### 6.5 `@boses/eslint-plugin`
+### 6.5 `@ai-i18n/eslint-plugin`
 
 可选 ESLint flat-config 插件：
 
 - 提供 `t-static-args` 规则，提前报告无法静态提取的 `t()` 参数。
-- 直接复用 `@boses/analyzer` 的 binding、alias、成员调用、跨文件常量和动态参数语义。
+- 直接复用 `@ai-i18n/analyzer` 的 binding、alias、成员调用、跨文件常量和动态参数语义。
 - `vanilla`、`vue`、`react` flat config 分别声明对应 auto-import 全局并启用同一规则。
 - Vue 模式由宿主用 `vue-eslint-parser` 接入 SFC，语义分析与 Vite 共用 compiler-sfc
   结果和 source map。
@@ -237,7 +237,7 @@ import { openAI } from '@boses/openai';
 ## 7. 框架与 Auto Import 解析
 
 ```ts
-import { aiI18n } from '@boses/vite';
+import { aiI18n } from '@ai-i18n/vite';
 
 aiI18n({
   framework: 'vue', // 可省略，由最终 Vite 插件列表推断
@@ -273,7 +273,7 @@ aiI18n({
 - import/export 跨文件链接。
 - Dev 中 add/replace/remove file。
 
-`@boses/analyzer` 只保留窄边界：
+`@ai-i18n/analyzer` 只保留窄边界：
 
 ```ts
 analyzeModule(code, id);
@@ -389,7 +389,7 @@ registerModule('src/pages/order.ts', {
 
 ## 11. Provider 调度
 
-框架无关 Provider 契约由 `@boses/core` 导出：
+框架无关 Provider 契约由 `@ai-i18n/core` 导出：
 
 ```ts
 interface TranslationRequest {
@@ -586,7 +586,7 @@ cleanup: {
 HTML 默认不处理；通过选项启用：
 
 ```ts
-import { aiI18n } from '@boses/vite';
+import { aiI18n } from '@ai-i18n/vite';
 
 aiI18n({
   html: true,

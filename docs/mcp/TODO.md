@@ -2,7 +2,7 @@
 
 > 对应文档：[MCP PRD](./PRD.md)
 
-- [x] 新增独立 `@boses/mcp` 发布包与 stdio 入口。
+- [x] 新增独立 `@ai-i18n/mcp` 发布包与 stdio 入口。
 - [x] 支持 cwd 和 `--root` workspace 边界。
 - [x] 三个工具统一接收 workspace-relative `i18n_directory`。
 - [x] 拒绝绝对路径、`..` 与 symlink workspace 逃逸。

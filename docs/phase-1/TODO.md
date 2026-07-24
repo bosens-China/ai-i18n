@@ -61,7 +61,7 @@
 
 - [x] 安装并锁定 `yuku-analyzer` 候选版本。
 - [x] 实现内部 `analyzeModule` / `extractMessages` 窄边界。
-- [x] 抽出 `@boses/analyzer`，由 Vite 与 ESLint 共享 binding、静态求值和诊断语义。
+- [x] 抽出 `@ai-i18n/analyzer`，由 Vite 与 ESLint 共享 binding、静态求值和诊断语义。
 - [x] 将现有 Babel fixtures 同时跑 Babel 与 Yuku，对比提取结果。
 - [x] 覆盖 JS、TS、JSX、TSX、decorators、template literal。
 - [x] 覆盖 import alias、re-export、dynamic import、跨文件静态常量。
@@ -74,7 +74,7 @@
 
 ## 4. Vite 8 主插件
 
-- [x] 创建 `@boses/vite` 插件入口。
+- [x] 创建 `@ai-i18n/vite` 插件入口。
 - [x] 在 `configResolved` 后基于 Vite root 归一化路径。
 - [x] 使用 hook filters 限定默认 JS/TS/JSX/TSX，并让 JSX 入口保持框架中立。
 - [x] 识别来自约定虚拟模块的 `t` binding 和 alias。
@@ -112,7 +112,7 @@
 
 ## 5.1 ESLint 静态检查迁移
 
-- [x] 创建可发布的 `@boses/eslint-plugin` package 入口和 metadata。
+- [x] 创建可发布的 `@ai-i18n/eslint-plugin` package 入口和 metadata。
 - [x] 将旧版 `t-static-args` 迁入 `packages/eslint`，移除根私有包导出。
 - [x] 对齐 Vite/Yuku 的 `t()` binding、alias、跨文件常量和动态参数语义。
 - [x] 提供 ESLint flat config 使用方式，但不默认侵入宿主规则集。
@@ -188,7 +188,7 @@
 
 ## 9. Vue 模式与 Runtime
 
-- [x] 在 `@boses/vite` 内提供 Vue SFC 提取和响应式 Hook。
+- [x] 在 `@ai-i18n/vite` 内提供 Vue SFC 提取和响应式 Hook。
 - [x] 统一从 `virtual:ai-i18n` 显式导入 `useI18n`。
 - [x] 支持省略 import 的内部按需注入。
 - [x] 使用 `@vue/compiler-sfc` 拆分 SFC。
@@ -206,7 +206,7 @@
 
 ## 10. React 模式与 Runtime
 
-- [x] 在 `@boses/vite` 内提供 React Hook adapter。
+- [x] 在 `@ai-i18n/vite` 内提供 React Hook adapter。
 - [x] 统一从 `virtual:ai-i18n` 显式导入 `useI18n`。
 - [x] React 模式向 `.jsx`/`.tsx` 分析入口注册 Hook 语义。
 - [x] 复用同一次 Yuku AST/semantic 结果，不重复 parse。
@@ -231,7 +231,7 @@
 
 ## 12. OpenAI-compatible Provider
 
-- [x] 创建可选 `@boses/openai` package。
+- [x] 创建可选 `@ai-i18n/openai` package。
 - [x] 使用 LangChain `ChatOpenAI`，不让 Core/Vite 依赖 LangChain 或 OpenAI SDK。
 - [x] 支持 base URL、model、headers、可选 API key 和本地 OpenAI-compatible 服务。
 - [x] temperature 默认 1、超时默认 120 秒、重试默认 3，并支持可选 max tokens。

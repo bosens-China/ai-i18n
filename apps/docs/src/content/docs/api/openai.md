@@ -1,15 +1,15 @@
 ---
 title: OpenAI Provider
-description: '@boses/openai 的 openAI()、提示词、LangSmith 与 Translator 契约'
+description: '@ai-i18n/openai 的 openAI()、提示词、LangSmith 与 Translator 契约'
 ---
 
-`@boses/openai` 是可选 Provider。它通过 LangChain `ChatOpenAI` 连接
+`@ai-i18n/openai` 是可选 Provider。它通过 LangChain `ChatOpenAI` 连接
 OpenAI-compatible 服务，并返回 `aiI18n()` 所需的 `Translator`。
 
 ## `openAI(options)`
 
 ```ts
-import { openAI } from '@boses/openai';
+import { openAI } from '@ai-i18n/openai';
 
 const translator = openAI({
   baseURL: 'https://example.com/v1',
@@ -62,7 +62,7 @@ Provider 不主动读取宿主的 `OPENAI_API_KEY`。密钥必须显式传入，
 
 ## 自定义 `Translator`
 
-不使用 `@boses/openai` 时，可实现 `@boses/core` 导出的函数类型：
+不使用 `@ai-i18n/openai` 时，可实现 `@ai-i18n/core` 导出的函数类型：
 
 ```ts
 type Translator = (

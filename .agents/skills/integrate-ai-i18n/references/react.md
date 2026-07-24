@@ -1,10 +1,10 @@
 # React integration
 
-Install `@boses/vite` and reuse React 18.3/19 plus the existing React Vite plugin. Do not install a
+Install `@ai-i18n/vite` and reuse React 18.3/19 plus the existing React Vite plugin. Do not install a
 separate ai-i18n React binding.
 
 ```ts
-import { aiI18n } from '@boses/vite'
+import { aiI18n } from '@ai-i18n/vite'
 import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vite'
 
@@ -38,7 +38,7 @@ export function SaveButton() {
 
 If `unplugin-auto-import` is registered, omit the import. ai-i18n injects it and generates the
 declaration; do not add it to the external plugin's imports list. Use `configs.react` from
-`@boses/eslint-plugin` to declare the global and validate static arguments.
+`@ai-i18n/eslint-plugin` to declare the global and validate static arguments.
 
 The Hook uses `useSyncExternalStore`, so language and translation updates re-render consumers. It is
 recognized in JS, TS, JSX, and TSX, including custom Hooks in `.ts`. JSX text is not translated

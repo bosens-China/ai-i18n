@@ -6,7 +6,7 @@ description: aiI18n() 的全部配置项、嵌套字段、默认值与约束
 ## `aiI18n(options)`
 
 ```ts
-import { aiI18n } from '@boses/vite';
+import { aiI18n } from '@ai-i18n/vite';
 
 aiI18n({
   sourceLang: 'zh-CN',

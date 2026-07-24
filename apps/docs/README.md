@@ -1,4 +1,4 @@
-# @boses/docs
+# @ai-i18n/docs
 
 用户文档站（Astro Starlight）。内部 PRD 与 TODO 仍在仓库根目录 `docs/`。
 

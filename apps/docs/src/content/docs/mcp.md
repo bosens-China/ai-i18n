@@ -1,9 +1,9 @@
 ---
 title: MCP 工具
-description: '@boses/mcp 三个工具的参数、默认值、输出与写入边界'
+description: '@ai-i18n/mcp 三个工具的参数、默认值、输出与写入边界'
 ---
 
-`@boses/mcp` 提供本地 stdio MCP server。所有路径都受启动时的 workspace root 约束。
+`@ai-i18n/mcp` 提供本地 stdio MCP server。所有路径都受启动时的 workspace root 约束。
 Codex、Claude Code、Cursor 与 Antigravity 的注册方式见
 [AI 工具接入](../../ai-tools/)。
 

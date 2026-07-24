@@ -16,7 +16,7 @@ ai-i18n 在 Vite Dev 与 Build 期间提取显式 `t()`，维护可提交到 Git
 ## 1. 安装
 
 ```sh
-pnpm add @boses/vite
+pnpm add @ai-i18n/vite
 ```
 
 Vue 或 React 项目继续使用原有的 Vite 框架插件，不需要额外安装 ai-i18n 框架包。
@@ -25,7 +25,7 @@ Vue 或 React 项目继续使用原有的 Vite 框架插件，不需要额外安
 
 ```ts
 // vite.config.ts
-import { aiI18n } from '@boses/vite';
+import { aiI18n } from '@ai-i18n/vite';
 import { defineConfig } from 'vite';
 
 export default defineConfig({
@@ -87,7 +87,7 @@ pnpm add -D unplugin-auto-import
 
 ```ts
 // vite.config.ts
-import { aiI18n } from '@boses/vite';
+import { aiI18n } from '@ai-i18n/vite';
 import AutoImport from 'unplugin-auto-import/vite';
 import { defineConfig } from 'vite';
 

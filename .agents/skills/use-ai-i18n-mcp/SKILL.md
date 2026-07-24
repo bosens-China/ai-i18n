@@ -7,8 +7,8 @@ description: Use the ai-i18n local MCP tools to locate files with missing transl
 
 Use the three ai-i18n tools in a read → translate → write → verify loop. Never scan or edit generated JSON manually when the MCP tools are available.
 
-`@boses/mcp` is an independently versioned Node package, not a Vite subpath. Register the package as
-a local stdio server with `npx -y @boses/mcp --root <workspace-root>`, or call its published
+`@ai-i18n/mcp` is an independently versioned Node package, not a Vite subpath. Register the package as
+a local stdio server with `npx -y @ai-i18n/mcp --root <workspace-root>`, or call its published
 `ai-i18n-mcp` executable when it is already installed. Honor the Node range declared by that package,
 and never write non-protocol output to the server's stdout.
 
@@ -22,7 +22,7 @@ and never write non-protocol output to the server's stdout.
 For a workspace rooted at the repository and a Vite app in `apps/web` using the defaults, pass `apps/web/i18n`. Never pass an absolute path or a path containing `..`. If the final directory is outside the MCP workspace root, stop and explain that the server root must be widened or changed.
 
 Require an existing `cache.json`. If the protocol files do not exist yet, run or ask the user to run the project's Vite Dev/Build command before continuing.
-Running `@boses/eslint-plugin` only validates static `t()` arguments; it never creates or reconciles these protocol files.
+Running `@ai-i18n/eslint-plugin` only validates static `t()` arguments; it never creates or reconciles these protocol files.
 The optional LangChain Provider's `batchLength` and `maxConcurrency` govern automatic model calls;
 they do not change MCP pagination limits, write batch limits, or this manual translation workflow.
 Vue and React modes may produce ordinary `*.tsx.json` extracted files. The framework selected for
@@ -89,4 +89,4 @@ the MCP tools only maintain translation protocol data.
 - **Unknown locale**: use locale values from `aiI18n({ locales })`, not labels.
 - **Invalid cursor**: restart that listing from the first page; cursors are opaque and must not be edited.
 - **Shared message**: write through a file returned for that message, then let Vite reconcile other occurrences.
-- **MCP tools unavailable**: report that `@boses/mcp` must be registered as a local stdio server; do not silently fall back to broad source-tree editing.
+- **MCP tools unavailable**: report that `@ai-i18n/mcp` must be registered as a local stdio server; do not silently fall back to broad source-tree editing.

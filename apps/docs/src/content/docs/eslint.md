@@ -1,15 +1,15 @@
 ---
 title: ESLint 9
-description: '@boses/eslint-plugin 的 Flat Config、预设、规则与选项'
+description: '@ai-i18n/eslint-plugin 的 Flat Config、预设、规则与选项'
 ---
 
-`@boses/eslint-plugin` 面向 ESLint 9 Flat Config。它在 lint 阶段复用 ai-i18n 的静态分析语义，
+`@ai-i18n/eslint-plugin` 面向 ESLint 9 Flat Config。它在 lint 阶段复用 ai-i18n 的静态分析语义，
 提前报告无法被 Vite 提取的 `t()` 参数。
 
 ## 安装
 
 ```sh
-pnpm add -D eslint @boses/eslint-plugin
+pnpm add -D eslint @ai-i18n/eslint-plugin
 ```
 
 Vue SFC 还需要宿主已有的 `eslint-plugin-vue`、`vue-eslint-parser` 与
@@ -21,7 +21,7 @@ Vue SFC 还需要宿主已有的 `eslint-plugin-vue`、`vue-eslint-parser` 与
 
 ```js
 // eslint.config.mjs
-import aiI18n from '@boses/eslint-plugin';
+import aiI18n from '@ai-i18n/eslint-plugin';
 import { defineConfig } from 'eslint/config';
 
 export default defineConfig([...aiI18n.configs.recommended]);
@@ -36,7 +36,7 @@ export default defineConfig([...aiI18n.configs.recommended]);
 
 ```js
 // eslint.config.mjs
-import aiI18n from '@boses/eslint-plugin';
+import aiI18n from '@ai-i18n/eslint-plugin';
 import { defineConfig } from 'eslint/config';
 
 export default defineConfig([
@@ -59,7 +59,7 @@ ESLint 集成负责。
 
 ```js
 // eslint.config.mjs
-import aiI18n from '@boses/eslint-plugin';
+import aiI18n from '@ai-i18n/eslint-plugin';
 import pluginVue from 'eslint-plugin-vue';
 import { defineConfig } from 'eslint/config';
 import tseslint from 'typescript-eslint';
@@ -82,7 +82,7 @@ export default defineConfig([
 
 ```js
 // eslint.config.mjs
-import aiI18n from '@boses/eslint-plugin';
+import aiI18n from '@ai-i18n/eslint-plugin';
 import { defineConfig } from 'eslint/config';
 
 export default defineConfig([

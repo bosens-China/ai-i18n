@@ -10,7 +10,7 @@
 - [x] 不实现 cache 分片。
 - [x] 不实现 module group × locale 二维拆分。
 - [x] 不增加 ProviderCoordinator 通用重试层。
-- [x] `@boses/openai` 继续使用可配置 `maxRetries`，默认值为 `3`。
+- [x] `@ai-i18n/openai` 继续使用可配置 `maxRetries`，默认值为 `3`。
 - [x] Vite Full Bundle Mode 只观察，不阻塞 Phase 2。
 - [x] Native 插件等待 Vite 或 Rolldown 提供稳定支持。
 - [x] Phase 1 默认模式和文件协议必须保持兼容。
@@ -149,8 +149,8 @@
 ## 5. 文档与兼容
 
 - [ ] 更新根 README 的 Phase 2 配置示例。
-- [ ] 更新 `@boses/vite` README 的 `loading` 配置。
-- [ ] 更新 `@boses/vite` README 的 `cache` 配置。
+- [ ] 更新 `@ai-i18n/vite` README 的 `loading` 配置。
+- [ ] 更新 `@ai-i18n/vite` README 的 `cache` 配置。
 - [ ] 更新 `apps/docs` 用户文档中的 Phase 2 配置与行为说明。
 - [ ] 说明 preload、prefetch 和完全 lazy 的区别。
 - [ ] 说明 prefetch 是浏览器提示，不保证完成时间。

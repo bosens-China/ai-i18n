@@ -9,6 +9,6 @@
 - [phase-1/YUKU-SPIKE.md](./phase-1/YUKU-SPIKE.md) — Yuku 准入 Spike
 - [phase-2/PRD.md](./phase-2/PRD.md) — Phase 2 规格（Draft）
 - [phase-2/TODO.md](./phase-2/TODO.md) — Phase 2 任务清单（Draft）
-- [mcp/PRD.md](./mcp/PRD.md) — `@boses/mcp` 工具契约
+- [mcp/PRD.md](./mcp/PRD.md) — `@ai-i18n/mcp` 工具契约
 - [mcp/TODO.md](./mcp/TODO.md) — MCP 交付清单
 - [ast-extraction-report.md](./ast-extraction-report.md) — AST / 静态提取能力边界

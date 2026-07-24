@@ -1,8 +1,8 @@
 # AST 静态提取能力报告
 
 > 更新日期：2026-07-23  
-> 适用范围：当前仓库的 `@boses/analyzer`、`@boses/vite`、
-> `@boses/eslint-plugin` 以及 `@boses/vite` 的 Vanilla、Vue、React 三种模式
+> 适用范围：当前仓库的 `@ai-i18n/analyzer`、`@ai-i18n/vite`、
+> `@ai-i18n/eslint-plugin` 以及 `@ai-i18n/vite` 的 Vanilla、Vue、React 三种模式
 
 ## 结论
 

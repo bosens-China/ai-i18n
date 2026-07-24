@@ -35,14 +35,14 @@
 ### 1. 安装插件
 
 ```bash
-pnpm add @boses/vite
+pnpm add @ai-i18n/vite
 ```
 
 ### 2. 配置 `vite.config.ts`
 
 ```ts
 import { defineConfig } from 'vite';
-import { aiI18n } from '@boses/vite';
+import { aiI18n } from '@ai-i18n/vite';
 
 export default defineConfig({
   plugins: [

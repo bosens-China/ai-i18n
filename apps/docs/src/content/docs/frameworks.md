@@ -20,7 +20,7 @@ import { setLang, t } from 'virtual:ai-i18n';
 ## Vue
 
 ```ts
-import { aiI18n } from '@boses/vite';
+import { aiI18n } from '@ai-i18n/vite';
 import vue from '@vitejs/plugin-vue';
 import { defineConfig } from 'vite';
 
@@ -49,7 +49,7 @@ SFC 会尊重模板 alias、`v-for` 局部变量，以及 `<script>` 与 `<scrip
 ## React
 
 ```ts
-import { aiI18n } from '@boses/vite';
+import { aiI18n } from '@ai-i18n/vite';
 import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vite';
 
@@ -89,6 +89,6 @@ React 模式支持 JS/TS/JSX/TSX。同一个 Vite build 不能混用 Vue 与 Rea
 
 ## ESLint（可选）
 
-`@boses/eslint-plugin` 与 Vite 共用分析语义，可提前报告无法静态求值的 `t()` 参数。
+`@ai-i18n/eslint-plugin` 与 Vite 共用分析语义，可提前报告无法静态求值的 `t()` 参数。
 ESLint 9 使用 Flat Config；按框架展开 `aiI18n.configs.vanilla`、`.vue` 或 `.react`。
 完整示例见 [ESLint 9 配置](./eslint/)。

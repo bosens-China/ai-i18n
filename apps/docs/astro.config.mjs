@@ -68,7 +68,7 @@ export default defineConfig({
           items: [
             { label: 'Vite 插件配置', slug: 'api/vite' },
             { label: 'Runtime API', slug: 'api/runtime' },
-            { label: '@boses/openai', slug: 'api/openai' },
+            { label: '@ai-i18n/openai', slug: 'api/openai' },
             { label: '低层库 API', slug: 'api/libraries' },
           ],
         },

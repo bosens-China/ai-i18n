@@ -1,11 +1,11 @@
 ---
 name: integrate-ai-i18n
-description: Integrate ai-i18n into Vite 8 browser projects and configure its static extraction runtime for Vue 3, React 18/19, or vanilla JavaScript and TypeScript. Use when installing or registering @boses/vite, selecting or detecting a framework mode, enabling ai-i18n auto imports, importing virtual:ai-i18n or useI18n, enabling optional ESLint checks, configuring locale output directories and generated virtual-module types, migrating an existing Vite app, or diagnosing an incomplete ai-i18n setup.
+description: Integrate ai-i18n into Vite 8 browser projects and configure its static extraction runtime for Vue 3, React 18/19, or vanilla JavaScript and TypeScript. Use when installing or registering @ai-i18n/vite, selecting or detecting a framework mode, enabling ai-i18n auto imports, importing virtual:ai-i18n or useI18n, enabling optional ESLint checks, configuring locale output directories and generated virtual-module types, migrating an existing Vite app, or diagnosing an incomplete ai-i18n setup.
 ---
 
 # Integrate ai-i18n
 
-Use one `@boses/vite` installation and one framework mode per Vite build. Preserve the
+Use one `@ai-i18n/vite` installation and one framework mode per Vite build. Preserve the
 project's package manager, existing Vite plugins, framework conventions, and configuration style.
 
 ## Inspect before editing
@@ -34,7 +34,7 @@ Always read [Vite configuration](references/vite.md). Then read only the matchin
 
 ## Implement the smallest complete setup
 
-1. Install `@boses/vite`; do not add separate ai-i18n Vue or React packages.
+1. Install `@ai-i18n/vite`; do not add separate ai-i18n Vue or React packages.
 2. Register one `aiI18n()` in the existing Vite `plugins` array.
 3. Let the final Vite plugin list infer the mode, or set `framework` only when an explicit override is required.
 4. Let an existing `unplugin-auto-import` enable ai-i18n auto imports, or set `autoImport: true/false`
@@ -58,7 +58,7 @@ the Node-side translator closure and follow [Vite configuration](references/vite
 
 ## ESLint
 
-Add `@boses/eslint-plugin` only when checks are requested or auto-imported globals must be declared.
+Add `@ai-i18n/eslint-plugin` only when checks are requested or auto-imported globals must be declared.
 Use exactly one of `configs.vanilla`, `configs.vue`, or `configs.react`, matching the resolved Vite
 mode. Preserve the host Vue parser and framework lint rules. The host Auto Import plugin remains
 responsible for ESLint declarations of its own APIs.
