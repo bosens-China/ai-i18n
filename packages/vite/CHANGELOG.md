@@ -1,5 +1,20 @@
 # @ai-i18n/vite
 
+## [1.0.0-alpha.2](https://github.com/bosens-China/ai-i18n/compare/vite-v1.0.0-alpha.1...vite-v1.0.0-alpha.2) (2026-07-24)
+
+
+### Features
+
+* **vite:** 支持单层 extracted 路径、缓存优化与 React t 引用同步 ([bc2012d](https://github.com/bosens-China/ai-i18n/commit/bc2012d8fd7562d69ad72a6f9c533c0e6e8715ad))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @ai-i18n/analyzer bumped to 1.0.0-alpha.2
+    * @ai-i18n/core bumped to 1.0.0-alpha.2
+
 ## [1.0.0-alpha.1](https://github.com/bosens-China/ai-i18n/compare/vite-v1.0.0-alpha.0...vite-v1.0.0-alpha.1) (2026-07-24)
 
 

@@ -1,5 +1,19 @@
 # @ai-i18n/mcp
 
+## [1.0.0-alpha.3](https://github.com/bosens-China/ai-i18n/compare/mcp-v1.0.0-alpha.2...mcp-v1.0.0-alpha.3) (2026-07-24)
+
+
+### Features
+
+* **mcp:** 适配单层 extracted 文件路径规则与 Schema v2 ([37100a3](https://github.com/bosens-China/ai-i18n/commit/37100a3ec826369ae4f487cc47f5a1f7664a04a3))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @ai-i18n/core bumped to 1.0.0-alpha.2
+
 ## [1.0.0-alpha.2](https://github.com/bosens-China/ai-i18n/compare/mcp-v1.0.0-alpha.1...mcp-v1.0.0-alpha.2) (2026-07-24)
 
 
