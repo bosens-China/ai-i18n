@@ -27,12 +27,8 @@ import { defineConfig } from 'vite';
 export default defineConfig({
   plugins: [
     aiI18n({
-      sourceLang: 'zh-CN',
-      locales: [
-        { value: 'zh-CN', label: '中文' },
-        { value: 'en-US', label: 'English' },
-      ],
-      html: true,
+      /* 基础配置见快速上手 */
+      html: true, // Vue 项目常用选项
     }),
     vue(),
   ],
@@ -58,16 +54,7 @@ import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vite';
 
 export default defineConfig({
-  plugins: [
-    aiI18n({
-      sourceLang: 'zh-CN',
-      locales: [
-        { value: 'zh-CN', label: '中文' },
-        { value: 'en-US', label: 'English' },
-      ],
-    }),
-    react(),
-  ],
+  plugins: [aiI18n({/* 基础配置见快速上手 */}), react()],
 });
 ```
 
@@ -92,7 +79,9 @@ React 模式支持 JS/TS/JSX/TSX。同一个 Vite build 不能混用 Vue 与 Rea
 无需把 `useI18n` 再写进 Auto Import 的 `imports`。
 
 - `autoImport: true | false` 可强制覆盖检测结果。
-- 启用按需导入时，默认生成 `src/ai-i18n.d.ts`。可用 `dts` 修改路径，或设为 `dts: false` 关闭。
+- 默认生成 `src/ai-i18n.d.ts`，声明虚拟模块以及启用按需导入时的全局 API。
+  可用 `dts` 修改路径，或设为 `dts: false` 关闭。
+- 该文件由插件维护，并带有 noformat、ts-nocheck 与 eslint-disable 标记，请勿手工编辑。
 
 ## HTML 提取
 
@@ -101,4 +90,5 @@ React 模式支持 JS/TS/JSX/TSX。同一个 Vite build 不能混用 Vue 与 Rea
 ## ESLint（可选）
 
 `@boses/eslint-plugin` 与 Vite 共用分析语义，可提前报告无法静态求值的 `t()` 参数。
-按框架展开 `aiI18n.configs.vanilla`、`.vue` 或 `.react`。完整配置见该包 README。
+ESLint 9 使用 Flat Config；按框架展开 `aiI18n.configs.vanilla`、`.vue` 或 `.react`。
+完整示例见 [ESLint 9 配置](./eslint/)。

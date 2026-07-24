@@ -1,40 +1,55 @@
 ---
 title: ai-i18n
-description: 面向 Vite 8 的浏览器端 AI 国际化插件
+description: 面向 Vite 8 的浏览器端国际化插件，支持静态提取、可选 AI 翻译和 Git 友好的翻译文件。
 template: splash
 hero:
-  tagline: 源码只写显式 t()。Vite 在 Dev 与 Build 期间提取文案，可选调用 AI Provider，并生成可提交 Git 的 Translation Memory。
+  tagline: 源码直接书写 t('中文')。Vite 在 Dev 与 Build 期间静态提取，并维护可提交到 Git 的 Translation Memory。
+  image:
+    alt: ai-i18n logo
+    file: ../../assets/logo.png
   actions:
     - text: 快速上手
-      link: /getting-started/
+      link: getting-started/
       icon: right-arrow
     - text: 在线演示
-      link: /demo/
-      icon: external
+      link: demo/
+      icon: laptop
       variant: minimal
 ---
 
-import { Card, CardGrid } from '@astrojs/starlight/components';
+import { CardGrid, LinkCard } from '@astrojs/starlight/components';
 
-## 文档导航
+## 从这里开始
 
 <CardGrid>
-  <Card title="快速上手" icon="rocket">
-    安装插件、写第一句 `t()`，并了解适用边界。
-  </Card>
-  <Card title="框架上手" icon="puzzle">
-    Vanilla、Vue 和 React 的接入方式与自动导入。
-  </Card>
-  <Card title="配置与 API" icon="setting">
-    `aiI18n()` 配置项与 Runtime API。
-  </Card>
-  <Card title="文件与工作流" icon="document">
-    `i18n/` 协议文件、Git 提交与 Agent 协作。
-  </Card>
-  <Card title="AI 翻译" icon="approve-check">
-    接入 `@boses/openai` 或其他 Provider。
-  </Card>
-  <Card title="AI 工具接入" icon="laptop">
-    安装 Agent skills，并用 MCP 补齐缺失翻译。
-  </Card>
+  <LinkCard
+    title="快速上手"
+    href="getting-started/"
+    description="安装插件，选择显式导入或按需导入，并验证第一批翻译文件。"
+  />
+  <LinkCard
+    title="框架上手"
+    href="frameworks/"
+    description="查看 Vanilla、Vue 3 与 React 的 Runtime 接入方式。"
+  />
+  <LinkCard
+    title="配置与 API"
+    href="api/"
+    description="按层级查找 Vite 配置、Runtime、Provider、ESLint 与 MCP 契约。"
+  />
+  <LinkCard
+    title="文件与工作流"
+    href="workflow/"
+    description="了解 i18n 协议目录、Git 提交约定和冲突处理。"
+  />
+  <LinkCard
+    title="AI 翻译"
+    href="ai-translation/"
+    description="区分必填与可选字段，并编写可维护的翻译提示词。"
+  />
+  <LinkCard
+    title="AI 工具接入"
+    href="ai-tools/"
+    description="安装 Agent skills，并通过 MCP 安全补齐缺失翻译。"
+  />
 </CardGrid>

@@ -1,0 +1,26 @@
+---
+import type { Props } from '@astrojs/starlight/props';
+import DefaultSidebar from '@astrojs/starlight/components/Sidebar.astro';
+
+const pathname = Astro.url.pathname.replace(/\/$/, '');
+const isReference = pathname.endsWith('/api') || pathname.includes('/api/');
+const isDemo = pathname.endsWith('/demo');
+
+const sidebar = Astro.locals.starlightRoute.sidebar;
+
+const filteredSidebar = sidebar.filter((entry) => {
+  if (entry.type !== 'group') return true;
+
+  if (isReference) {
+    return entry.label === '配置与 API';
+  }
+  if (isDemo) {
+    return entry.label === '演示';
+  }
+  return entry.label === '入门指南' || entry.label === '核心工作流' || entry.label === '生态与集成';
+});
+
+Astro.locals.starlightRoute.sidebar = filteredSidebar;
+---
+
+<DefaultSidebar {...Astro.props} />

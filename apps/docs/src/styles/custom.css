@@ -1,0 +1,483 @@
+/**
+ * ai-i18n Astro Starlight 主题样式表
+ * 品牌调色：科技蓝紫渐变 (#2563eb -> #7c3aed) + 闪电琥珀点缀 (#f59e0b)
+ */
+
+:root {
+  --brand-blue: #2563eb;
+  --brand-purple: #7c3aed;
+  --brand-amber: #f59e0b;
+  --brand-gradient: linear-gradient(
+    135deg,
+    var(--brand-blue),
+    var(--brand-purple)
+  );
+  --sl-font-system:
+    'Inter', -apple-system, BlinkMacSystemFont, 'PingFang SC',
+    'Microsoft YaHei', sans-serif;
+  --sl-font-mono:
+    'JetBrains Mono', 'Fira Code', ui-monospace, SFMono-Regular, monospace;
+}
+
+/* 亮色模式主题变量 (WCAG AAA 高对比度) */
+:root[data-theme='light'] {
+  --sl-color-accent-low: #eff6ff;
+  --sl-color-accent: #2563eb;
+  --sl-color-accent-high: #1d4ed8;
+
+  --sl-color-white: #0f172a;
+  --sl-color-gray-1: #1e293b;
+  --sl-color-gray-2: #334155;
+  --sl-color-gray-3: #475569;
+  --sl-color-gray-4: #64748b;
+  --sl-color-gray-5: #cbd5e1;
+  --sl-color-gray-6: #e2e8f0;
+  --sl-color-gray-7: #f1f5f9;
+  --sl-color-black: #ffffff;
+
+  --sl-color-bg: #f8fafc;
+  --sl-color-bg-nav: rgba(255, 255, 255, 0.85);
+  --sl-color-bg-sidebar: #f1f5f9;
+
+  --sl-color-hairline-light: rgba(37, 99, 235, 0.12);
+  --sl-color-hairline: rgba(15, 23, 42, 0.12);
+  --sl-color-hairline-shade: rgba(15, 23, 42, 0.06);
+
+  --sl-color-text: var(--sl-color-gray-2);
+  --hero-title-color: #0f172a;
+  --card-bg: rgba(255, 255, 255, 0.9);
+  --card-shadow: 0 10px 30px rgba(15, 23, 42, 0.05);
+  --card-shadow-hover: 0 16px 40px rgba(37, 99, 235, 0.12);
+}
+
+/* 暗色模式主题变量 (深邃科技蓝黑) */
+:root[data-theme='dark'] {
+  --sl-color-accent-low: #1e1b4b;
+  --sl-color-accent: #3b82f6;
+  --sl-color-accent-high: #93c5fd;
+
+  --sl-color-white: #f8fafc;
+  --sl-color-gray-1: #f1f5f9;
+  --sl-color-gray-2: #e2e8f0;
+  --sl-color-gray-3: #cbd5e1;
+  --sl-color-gray-4: #94a3b8;
+  --sl-color-gray-5: #334155;
+  --sl-color-gray-6: #1e293b;
+  --sl-color-gray-7: #111827;
+  --sl-color-black: #060913;
+
+  --sl-color-bg: #090d16;
+  --sl-color-bg-nav: rgba(9, 13, 22, 0.85);
+  --sl-color-bg-sidebar: #0d1322;
+
+  --sl-color-hairline-light: rgba(59, 130, 246, 0.15);
+  --sl-color-hairline: rgba(255, 255, 255, 0.12);
+  --sl-color-hairline-shade: rgba(0, 0, 0, 0.4);
+
+  --sl-color-text: var(--sl-color-gray-2);
+  --hero-title-color: #f8fafc;
+  --card-bg: rgba(13, 19, 34, 0.7);
+  --card-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+  --card-shadow-hover: 0 16px 40px rgba(59, 130, 246, 0.2);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* 顶部导航栏 */
+header[role='banner'] {
+  backdrop-filter: blur(16px) saturate(1.5);
+  -webkit-backdrop-filter: blur(16px) saturate(1.5);
+  border-bottom: 1px solid var(--sl-color-hairline-light);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+}
+
+header[role='banner'] .title-wrapper img {
+  height: 2.2rem;
+  width: 2.2rem;
+  object-fit: contain;
+  border-radius: 0.5rem;
+}
+
+#starlight-search form button:focus-visible,
+#starlight-search form input:focus-visible {
+  outline: 2px solid var(--sl-color-accent);
+  outline-offset: 2px;
+}
+
+/* Hero 区域 */
+.hero {
+  position: relative;
+  --hero-pad: clamp(2.5rem, 6vw, 5rem);
+  padding-block: var(--hero-pad) calc(var(--hero-pad) * 0.7);
+  background:
+    radial-gradient(
+      circle at 20% 20%,
+      rgba(37, 99, 235, 0.12),
+      transparent 45%
+    ),
+    radial-gradient(
+      circle at 80% 15%,
+      rgba(124, 58, 237, 0.1),
+      transparent 40%
+    ),
+    radial-gradient(
+      circle at 50% 90%,
+      rgba(245, 158, 11, 0.05),
+      transparent 35%
+    ),
+    var(--sl-color-bg);
+  overflow: hidden;
+}
+
+.hero > * {
+  position: relative;
+  z-index: 1;
+}
+
+.hero .title,
+.hero h1,
+.hero .hero-text h1 {
+  color: var(--hero-title-color) !important;
+  font-weight: 800;
+  letter-spacing: -0.035em;
+  line-height: 1.15;
+}
+
+.hero .tagline {
+  max-width: 44rem;
+  margin-inline: auto;
+  font-size: clamp(1.05rem, 2.2vw, 1.25rem);
+  line-height: 1.65;
+  color: var(--sl-color-gray-3);
+}
+
+.hero img,
+.hero .hero-image img,
+.hero picture img {
+  width: min(240px, 42vw);
+  height: auto;
+  aspect-ratio: 1;
+  object-fit: contain;
+  margin-inline: auto;
+  padding: 1.5rem;
+  border-radius: 2.2rem;
+  background: var(--sl-color-bg);
+  border: 1px solid var(--sl-color-hairline);
+  box-shadow: var(--card-shadow);
+  transition:
+    transform 260ms cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 260ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.hero img:hover,
+.hero .hero-image img:hover,
+.hero picture img:hover {
+  transform: translateY(-5px) scale(1.03);
+  box-shadow: var(--card-shadow-hover);
+}
+
+.hero .actions {
+  gap: 1rem;
+  margin-top: 2rem;
+}
+
+.hero .actions a {
+  border-radius: 999px;
+  padding: 0.75rem 1.6rem;
+  font-weight: 600;
+  font-size: 0.95rem;
+  transition:
+    transform 180ms ease,
+    box-shadow 180ms ease,
+    filter 180ms ease;
+}
+
+.hero .actions a:hover {
+  transform: translateY(-2px);
+}
+
+.hero .actions a:first-child {
+  background: var(--brand-gradient);
+  border: none;
+  color: #ffffff !important;
+  box-shadow: 0 10px 25px rgba(37, 99, 235, 0.3);
+}
+
+.hero .actions a:first-child:hover {
+  box-shadow: 0 14px 32px rgba(37, 99, 235, 0.42);
+  filter: brightness(1.08);
+}
+
+.hero .actions a:last-child {
+  border: 1px solid var(--sl-color-hairline);
+  color: var(--sl-color-gray-1);
+  background: color-mix(in srgb, var(--sl-color-bg) 85%, transparent);
+  backdrop-filter: blur(8px);
+}
+
+.hero .actions a:last-child:hover {
+  border-color: var(--sl-color-accent);
+  color: var(--sl-color-accent);
+}
+
+.hero .hero-stack,
+.hero .sl-flex {
+  max-width: 72rem;
+  margin-inline: auto;
+  gap: 3rem;
+}
+
+/* Markdown 排版 */
+.sl-markdown-content h1,
+.sl-markdown-content h2,
+.sl-markdown-content h3,
+.sl-markdown-content h4 {
+  color: var(--sl-color-white);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.sl-markdown-content h2 {
+  margin-top: 2.5rem;
+  margin-bottom: 1.25rem;
+  padding-bottom: 0.4rem;
+  border-bottom: 1px solid var(--sl-color-hairline-light);
+}
+
+.sl-markdown-content p,
+.sl-markdown-content li {
+  line-height: 1.75;
+  color: var(--sl-color-gray-2);
+}
+
+/* 行内代码块 */
+.sl-markdown-content :not(pre) > code {
+  border-radius: 0.4rem;
+  padding: 0.18em 0.4em;
+  font-size: 0.88em;
+  background: var(--sl-color-accent-low);
+  color: var(--sl-color-accent-high);
+  border: 1px solid color-mix(in srgb, var(--sl-color-accent) 18%, transparent);
+  font-weight: 500;
+}
+
+/* Expressive Code 代码框外壳修复 */
+.expressive-code .frame {
+  border-radius: 0.85rem !important;
+  border: 1px solid var(--sl-color-hairline) !important;
+  box-shadow: var(--card-shadow) !important;
+  overflow: hidden !important;
+  position: relative !important;
+}
+
+:root[data-theme='dark'] .expressive-code .frame {
+  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.35) !important;
+}
+
+.sl-markdown-content pre,
+.expressive-code pre {
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  margin: 0 !important;
+}
+
+/* macOS Terminal 经典红黄绿三按钮 (解绑 mask 遮罩) */
+.expressive-code .frame.is-terminal .header::before {
+  content: '' !important;
+  position: absolute !important;
+  left: 1rem !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+  width: 0.65rem !important;
+  height: 0.65rem !important;
+  border-radius: 50% !important;
+  background-color: #ff5f56 !important;
+  box-shadow:
+    1.05rem 0 0 #ffbd2e,
+    2.1rem 0 0 #27c93f !important;
+  -webkit-mask-image: none !important;
+  mask-image: none !important;
+  opacity: 1 !important;
+  margin: 0 !important;
+}
+
+/* 复制按钮 Hover 渐显与定位对齐 */
+.expressive-code .copy {
+  z-index: 10 !important;
+}
+
+.expressive-code .copy button {
+  width: 2rem !important;
+  height: 2rem !important;
+  border-radius: 0.45rem !important;
+  border: 1px solid var(--sl-color-hairline) !important;
+  background: color-mix(
+    in srgb,
+    var(--sl-color-bg) 85%,
+    transparent
+  ) !important;
+  backdrop-filter: blur(8px) !important;
+  opacity: 0 !important;
+  transition:
+    opacity 180ms ease,
+    background 180ms ease,
+    border-color 180ms ease,
+    transform 180ms ease !important;
+  transform: scale(0.92);
+}
+
+/* 鼠标 Hover 代码框或按钮聚焦时平滑淡入 */
+.expressive-code .frame:hover .copy button,
+.expressive-code .copy button:focus-visible,
+.expressive-code .copy button:hover {
+  opacity: 1 !important;
+  transform: scale(1);
+}
+
+.expressive-code .copy button:hover {
+  border-color: var(--sl-color-accent) !important;
+  background: var(--sl-color-accent-low) !important;
+}
+
+.sl-markdown-content a:not([class]) {
+  color: var(--sl-color-accent);
+  text-underline-offset: 0.25em;
+  text-decoration-thickness: 1.5px;
+  text-decoration-color: color-mix(
+    in srgb,
+    var(--sl-color-accent) 40%,
+    transparent
+  );
+  transition:
+    text-decoration-color 160ms ease,
+    color 160ms ease;
+}
+
+.sl-markdown-content a:not([class]):hover {
+  text-decoration-color: var(--sl-color-accent);
+  color: var(--sl-color-accent-high);
+}
+
+/* Feature 卡片网格 */
+.card-grid {
+  --card-grid-max: 72rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr));
+  gap: 1.25rem;
+  max-width: var(--card-grid-max);
+  margin-inline: auto;
+}
+
+.card-grid .card {
+  border-radius: 1.15rem;
+  border: 1px solid var(--sl-color-hairline);
+  background: var(--card-bg);
+  backdrop-filter: blur(12px);
+  padding: 1.5rem;
+  box-shadow: var(--card-shadow);
+  transition:
+    transform 220ms cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 220ms cubic-bezier(0.16, 1, 0.3, 1),
+    border-color 220ms ease;
+}
+
+.card-grid .card:hover {
+  transform: translateY(-4px);
+  border-color: color-mix(in srgb, var(--sl-color-accent) 45%, transparent);
+  box-shadow: var(--card-shadow-hover);
+}
+
+.card-grid .card .icon {
+  color: var(--brand-blue);
+  background: var(--sl-color-accent-low);
+  border-radius: 0.75rem;
+  padding: 0.55rem;
+  width: 2.5rem;
+  height: 2.5rem;
+  margin-bottom: 1rem;
+  box-shadow: inset 0 0 0 1px
+    color-mix(in srgb, var(--brand-blue) 20%, transparent);
+}
+
+.card-grid .card .title {
+  font-weight: 700;
+  font-size: 1.1rem;
+  letter-spacing: -0.01em;
+  margin-bottom: 0.4rem;
+  color: var(--sl-color-white);
+}
+
+.card-grid .card p {
+  font-size: 0.94rem;
+  line-height: 1.6;
+  color: var(--sl-color-gray-3);
+  margin: 0;
+}
+
+/* 侧边栏与 Aside */
+.sidebar-content .group-label,
+.sidebar-content summary .large {
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--sl-color-gray-4);
+}
+
+.sidebar-content a[aria-current='page'] {
+  background: color-mix(in srgb, var(--sl-color-accent) 14%, transparent);
+  color: var(--sl-color-accent);
+  border-radius: 0.6rem;
+  font-weight: 600;
+}
+
+.sl-markdown-content .sl-aside {
+  border-radius: 0.85rem;
+  border: 1px solid var(--sl-color-hairline);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.02);
+}
+
+.sl-markdown-content table {
+  border-radius: 0.85rem;
+  overflow: hidden;
+  border: 1px solid var(--sl-color-hairline);
+  width: 100%;
+}
+
+.sl-markdown-content th {
+  background: var(--sl-color-bg-sidebar);
+  font-weight: 600;
+  color: var(--sl-color-white);
+}
+
+.sl-markdown-content td,
+.sl-markdown-content th {
+  padding: 0.8rem 1.1rem;
+  border-bottom: 1px solid var(--sl-color-hairline);
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--sl-color-gray-5);
+  border-radius: 999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--sl-color-gray-4);
+}

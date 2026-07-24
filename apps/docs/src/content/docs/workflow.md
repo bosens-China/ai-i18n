@@ -48,5 +48,5 @@ i18n/
 ## Agent 协作边界
 
 - Agent 应修改 extracted，而不是把手工修改的 cache 或 locales 当作权威来源。
-- 使用 MCP 时，写入同样只落在 extracted。详见 [AI 工具接入](/ai-tools/)。
+- 使用 MCP 时，写入同样只落在 extracted。详见 [AI 工具接入](../ai-tools/)。
 - 使用约定以本文档为准，不以仓库内部设计笔记替代。

@@ -1,15 +1,47 @@
 ---
 title: 在线演示
-description: 嵌入 Vanilla、Vue、React 示例应用
+description: 嵌入 Vanilla、Vue、React 示例应用，直观体验语言切换与文案更新
+template: splash
 ---
 
+import { Tabs, TabItem } from '@astrojs/starlight/components';
 import DemoFrame from '../../components/DemoFrame.astro';
 
-示例仍是独立 Vite 应用（`examples/*`），由文档站嵌入展示。文档站本身不挂载
-`@boses/vite`，因此可以同时展示三种框架模式。
+<div class="demo-page-container">
 
-本地预览文档时，需要先构建 examples，或访问已部署的 GitHub Pages。
+<Tabs>
+  <TabItem label="Vue 3 示例" icon="star">
+    <DemoFrame
+      framework="vue"
+      title="Vue 3 集成演示"
+      description="基于 useI18n 响应式 Composable，Runtime 更新后 Vue 模板与响应式状态即时同步。"
+    />
+  </TabItem>
+  <TabItem label="React 示例" icon="puzzle">
+    <DemoFrame
+      framework="react"
+      title="React 集成演示"
+      description="基于 useI18n Hook 订阅 Runtime 变更，切换语言后组件树即时重渲染。"
+    />
+  </TabItem>
+  <TabItem label="Vanilla JS 示例" icon="laptop">
+    <DemoFrame
+      framework="vanilla"
+      title="Vanilla JS 集成演示"
+      description="显式调用 t()，通过 i18n.subscribe() 监听语言切换事件并更新原生 DOM。"
+    />
+  </TabItem>
+</Tabs>
 
-<DemoFrame framework="vanilla" title="Vanilla" />
-<DemoFrame framework="vue" title="Vue" />
-<DemoFrame framework="react" title="React" />
+</div>
+
+<style>{`
+  .demo-page-container {
+    max-width: 76rem;
+    margin-inline: auto;
+    padding-block: 1rem 3rem;
+  }
+  .demo-page-container starlight-tabs {
+    margin-top: 1rem;
+  }
+`}</style>
