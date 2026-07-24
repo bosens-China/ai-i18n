@@ -87,10 +87,10 @@ importers:
         specifier: ^19.2.7
         version: 19.2.8(react@19.2.8)
     devDependencies:
-      '@boses/eslint-plugin':
+      '@ai-i18n/eslint-plugin':
         specifier: workspace:*
         version: link:../../packages/eslint
-      '@boses/vite':
+      '@ai-i18n/vite':
         specifier: workspace:*
         version: link:../../packages/vite
       '@types/node':
@@ -117,7 +117,7 @@ importers:
 
   examples/vanilla:
     devDependencies:
-      '@boses/vite':
+      '@ai-i18n/vite':
         specifier: workspace:*
         version: link:../../packages/vite
       typescript:
@@ -133,10 +133,10 @@ importers:
         specifier: ^3.5.39
         version: 3.5.40(typescript@6.0.3)
     devDependencies:
-      '@boses/eslint-plugin':
+      '@ai-i18n/eslint-plugin':
         specifier: workspace:*
         version: link:../../packages/eslint
-      '@boses/vite':
+      '@ai-i18n/vite':
         specifier: workspace:*
         version: link:../../packages/vite
       '@types/node':
@@ -163,7 +163,7 @@ importers:
 
   packages/analyzer:
     dependencies:
-      '@boses/core':
+      '@ai-i18n/core':
         specifier: workspace:^
         version: link:../core
       source-map-js:
@@ -181,7 +181,7 @@ importers:
 
   packages/eslint:
     dependencies:
-      '@boses/analyzer':
+      '@ai-i18n/analyzer':
         specifier: workspace:^
         version: link:../analyzer
       eslint:
@@ -197,7 +197,7 @@ importers:
 
   packages/mcp:
     dependencies:
-      '@boses/core':
+      '@ai-i18n/core':
         specifier: workspace:^
         version: link:../core
       '@modelcontextprotocol/sdk':
@@ -209,7 +209,7 @@ importers:
 
   packages/openai:
     dependencies:
-      '@boses/core':
+      '@ai-i18n/core':
         specifier: workspace:^
         version: link:../core
       '@langchain/core':
@@ -224,10 +224,10 @@ importers:
 
   packages/vite:
     dependencies:
-      '@boses/analyzer':
+      '@ai-i18n/analyzer':
         specifier: workspace:^
         version: link:../analyzer
-      '@boses/core':
+      '@ai-i18n/core':
         specifier: workspace:^
         version: link:../core
       magic-string:

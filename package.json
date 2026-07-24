@@ -1,5 +1,5 @@
 {
-  "name": "@boses/ai-i18n",
+  "name": "@ai-i18n/ai-i18n",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -17,11 +17,11 @@
   "scripts": {
     "prepare": "husky",
     "build": "tsdown",
-    "examples:dev": "pnpm build && turbo run dev --filter='@boses/example-*'",
-    "examples:build": "pnpm build && turbo run build --filter='@boses/example-*'",
-    "examples:preview": "turbo run preview --filter='@boses/example-*'",
-    "docs:dev": "pnpm build && turbo run dev --filter='@boses/docs' --filter='@boses/example-*'",
-    "docs:build": "pnpm examples:build && pnpm --filter @boses/docs build",
+    "examples:dev": "pnpm build && turbo run dev --filter='@ai-i18n/example-*'",
+    "examples:build": "pnpm build && turbo run build --filter='@ai-i18n/example-*'",
+    "examples:preview": "turbo run preview --filter='@ai-i18n/example-*'",
+    "docs:dev": "pnpm build && turbo run dev --filter='@ai-i18n/docs' --filter='@ai-i18n/example-*'",
+    "docs:build": "pnpm examples:build && pnpm --filter @ai-i18n/docs build",
     "check": "pnpm build && tsc -p tsconfig.json && eslint \"*.config.{js,ts}\" && pnpm -r --if-present run check",
     "test": "vitest run",
     "changeset": "changeset",

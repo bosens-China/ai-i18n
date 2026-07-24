@@ -44,4 +44,4 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm build
       - run: pnpm vitest run packages/vite/test/yuku-spike.test.ts
-      - run: pnpm --filter @boses/vite benchmark
+      - run: pnpm --filter @ai-i18n/vite benchmark
