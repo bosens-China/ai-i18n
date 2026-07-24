@@ -1,6 +1,6 @@
 # Vanilla JavaScript and TypeScript integration
 
-Install `@ai-i18n/vite` and register `aiI18n()`. When no Vue or React Vite plugin is detected, the
+Install `@ai-i18n/vite@alpha` during prerelease and register `aiI18n()`. When no Vue or React Vite plugin is detected, the
 mode defaults to Vanilla.
 
 Explicit imports remain the simplest baseline:
@@ -18,9 +18,9 @@ await setLang('en-US')
 console.log(getLang(), getLangs())
 ```
 
-Default to `t(source)` only. Add the optional second `comment` argument solely when the same
-source text needs disambiguation or AI translation quality is poor (for example
-`t('保存', '工具栏按钮')`). Do not invent comments for ordinary UI copy.
+Default to `t(source)`. Use `` t`已加入 ${name}` `` for dynamic values. Add the optional second
+`comment` only as translation guidance (for example `t('保存', '工具栏按钮')`). It does not change the
+message ID; do not invent comments for ordinary UI copy.
 
 If `unplugin-auto-import` is already registered, these runtime APIs can be used without imports.
 ai-i18n injects them and generates `src/ai-i18n.d.ts`; do not add them to the external plugin's

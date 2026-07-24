@@ -14,7 +14,10 @@
 - [phase-3/PRD.md](./phase-3/PRD.md) — Phase 3 持久化协议与 React 响应式修复规格
 - [phase-3/TODO.md](./phase-3/TODO.md) — Phase 3 交付清单
 - [phase-3/ACCEPTANCE.md](./phase-3/ACCEPTANCE.md) — Phase 3 验收证据
-- [mcp/PRD.md](./mcp/PRD.md) — `@ai-i18n/mcp` 零参数注册与绝对目录工具契约
+- [phase-4/PRD.md](./phase-4/PRD.md) — DropRoom 实接反馈与运行时 / Vite / MCP 改进规格
+- [phase-4/TODO.md](./phase-4/TODO.md) — Phase 4 交付清单
+- [phase-4/ACCEPTANCE.md](./phase-4/ACCEPTANCE.md) — Phase 4 验收证据
+- [mcp/PRD.md](./mcp/PRD.md) — `@ai-i18n/mcp` 自动发现与绝对目录工具契约
 - [mcp/TODO.md](./mcp/TODO.md) — MCP 交付清单
 - [release.md](./release.md) — Release Please、npm OIDC 与 alpha/正式版发布流程
 - [ast-extraction-report.md](./ast-extraction-report.md) — AST / 静态提取能力边界

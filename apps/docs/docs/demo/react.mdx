@@ -10,3 +10,24 @@ import DemoFrame from '../../components/DemoFrame';
 基于 `useI18n` Hook 订阅 Runtime 变更，切换语言后组件树即时重渲染。
 
 <DemoFrame framework="react" title="React 集成演示" />
+
+## 同步 Ant Design 等第三方 locale
+
+ai-i18n 只负责应用文案；组件库和日期库仍使用各自的 locale。直接由 `currentLang` 派生即可：
+
+```tsx
+import { ConfigProvider } from 'antd';
+import enUS from 'antd/locale/en_US';
+import zhCN from 'antd/locale/zh_CN';
+import type { PropsWithChildren } from 'react';
+import { useI18n } from 'virtual:ai-i18n';
+
+export function AppLocale({ children }: PropsWithChildren) {
+  const { currentLang } = useI18n();
+  return (
+    <ConfigProvider locale={currentLang === 'en-US' ? enUS : zhCN}>
+      {children}
+    </ConfigProvider>
+  );
+}
+```

@@ -1,6 +1,6 @@
 # React integration
 
-Install `@ai-i18n/vite` and reuse React 18+ plus the existing React Vite plugin. Do not install a
+Install `@ai-i18n/vite@alpha` during prerelease and reuse React 18+ plus the existing React Vite plugin. Do not install a
 separate ai-i18n React binding.
 
 ```ts
@@ -36,9 +36,9 @@ export function SaveButton() {
 }
 ```
 
-Default to `t(source)` only. Add the optional second `comment` argument solely when the same
-source text needs disambiguation or AI translation quality is poor (for example
-`t('保存', '工具栏按钮')`). Do not invent comments for ordinary UI copy.
+Default to `t(source)`. Use `` t`已加入 ${name}` `` for dynamic values. Add the optional second
+`comment` solely as translation guidance (for example `t('保存', '工具栏按钮')`). It does not change
+the message ID; do not invent comments for ordinary UI copy.
 
 If `unplugin-auto-import` is registered, omit the import. ai-i18n injects it and generates the
 declaration; do not add it to the external plugin's imports list. Use `configs.react` from
@@ -51,3 +51,7 @@ add Vue Vite plugins to the same build.
 
 For locally linked workspaces, `resolve: { dedupe: ['react', 'react-dom'] }` can prevent a second React
 instance. A normal peer-resolved installation usually does not need this.
+
+Third-party locale state remains application-owned. Derive Ant Design/date-library locale directly
+from `currentLang`. Do not persist already translated strings in long-lived React state; translate
+from source/message data during render.

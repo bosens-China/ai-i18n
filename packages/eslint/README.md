@@ -4,6 +4,8 @@
 `virtual:ai-i18n` 的 `t` binding，以及 Vue/React 模式下 `useI18n()` 解构或对象成员得到的
 `t`。其他库或局部同名函数不受影响。
 
+alpha 阶段请安装 `@ai-i18n/eslint-plugin@alpha`；peer 支持 ESLint 9 和 10。
+
 ## 按模式配置
 
 显式 import 的 Vanilla 项目可以使用 `recommended`。启用 ai-i18n 按需导入时，选择与
@@ -50,8 +52,9 @@ Vue 项目已有的 `@vue/compiler-sfc`，与 Vite 提取器共享编译结果�
 Vue preset 同时覆盖 Vue JSX/TSX，但宿主仍需用 `@vitejs/plugin-vue-jsx` 编译这些文件。
 React 项目使用 React preset；同一个 Vite build 不支持两种框架模式混用。
 
-规则与 Vite 共用静态参数语义，包括 `i18n.t()`、`i18n['t']()` 和省略式
-`t('source', undefined)`。未绑定到 ai-i18n 的 template-only `t()` 不参与检查。
+规则与 Vite 共用静态参数语义，包括 `i18n.t()`、`i18n['t']()`、省略式
+`t('source', undefined)` 和 tagged template。未绑定到 ai-i18n 的 template-only `t()`
+不参与检查。
 
 需要解析 `tsconfig` 路径别名时，可以显式配置规则：
 

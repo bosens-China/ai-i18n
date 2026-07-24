@@ -13,14 +13,18 @@ ai-i18n 在 Vite Dev 与 Build 期间提取显式 `t()`，维护可提交到 Git
 
 - 仅支持 **Vite ≥ 8** 与浏览器端 Runtime（不支持 SSR，若遇 SSR 环境会自动跳过并警告）。
 - 插件会根据最终解析的 Vite 插件推断框架模式，每个 Vite build 只能选择一种模式：`vanilla`、`vue` 或 `react`。
-- 插件只识别并提取显式调用的 `t()` 函数，不会去猜测普通字符串、JSX 文本或 Vue 模板文本。
+- 插件只识别并提取显式 `t()` 或 `` t`...` ``，不会去猜测普通字符串、JSX 文本或 Vue 模板文本。
 - 所有写入和合并由 `vite dev` 或 `vite build` 驱动，不需要单独执行提取命令行。
 
 :::
 
 ### 安装
 
-<PackageManagerTabs command="add @ai-i18n/vite" />
+<PackageManagerTabs command="add @ai-i18n/vite@alpha" />
+
+:::warning Alpha 安装
+当前预发布版本发布在 npm 的 `alpha` dist-tag。正式版发布前请保留 `@alpha`，否则可能安装到较旧的 `latest`。
+:::
 
 :::tip
 Vue 或 React 项目继续使用原有的 Vite 框架插件，不需要为不同框架额外安装特殊的 ai-i18n 适配包。
@@ -136,6 +140,17 @@ Vue 或 React 项目继续使用原有的 Vite 框架插件，不需要为不同
   </Tab>
 </Tabs>
 
+### 动态插值与翻译注释
+
+动态值使用 tagged template。构建期只提取静态文本，并把表达式转换为可重排的编号占位符：
+
+```ts
+const message = t`你好 ${user.name}，你有 ${unreadCount} 条消息`;
+```
+
+需要给翻译模型补充语境时仍可写 `t('保存', '设置弹窗按钮')`。`comment` 只作为翻译提示，
+不参与 message ID；修改或删除注释不会丢失已有翻译。同一 source 的不同调用共享一条翻译。
+
 ### 设置按需导入（可选）
 
 如果不希望每次都显式 `import { useI18n } from 'virtual:ai-i18n'`，你可以启用按需导入。
@@ -193,6 +208,25 @@ i18n/
 :::tip
 Dev 模式具有“渐进式”特点，只提取浏览器实际请求到的模块。如果想要全量验证所有页面的提取，请执行一次 `pnpm build`。
 :::
+
+### Vitest
+
+单元测试通常不需要提取或改写协议文件。使用测试入口解析 `virtual:ai-i18n`，无需维护 alias 和 mock：
+
+```ts
+// vitest.config.ts
+import { aiI18nVitest } from '@ai-i18n/vite/vitest';
+import react from '@vitejs/plugin-react';
+import { defineConfig } from 'vitest/config';
+import { aiI18nOptions } from './ai-i18n.options';
+
+export default defineConfig({
+  plugins: [aiI18nVitest(aiI18nOptions), react()],
+});
+```
+
+测试 Runtime 保留框架 Hook、语言状态和 source fallback，但不会扫描源码、调用 Provider 或写入
+`i18n/`。Vite Dev/Build 继续使用正式的 `aiI18n()`。
 
 ## 下一步
 

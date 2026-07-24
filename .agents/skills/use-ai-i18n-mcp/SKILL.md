@@ -5,22 +5,25 @@ description: Use the ai-i18n local MCP tools to locate files with missing transl
 
 # Use ai-i18n MCP
 
-Use the three ai-i18n tools in a read → translate → write → verify loop. Never scan or edit generated JSON manually when the MCP tools are available.
+Use discovery plus the three translation tools in a read → translate → write → verify loop. Never
+scan or edit generated JSON manually when the MCP tools are available.
 
 `@ai-i18n/mcp` is an independently versioned Node package, not a Vite subpath. Register the package as
-a local stdio server with `npx -y @ai-i18n/mcp`, or call its published `ai-i18n-mcp` executable when
+a local stdio server with `npx -y @ai-i18n/mcp@alpha` during prerelease, or call its published `ai-i18n-mcp` executable when
 it is already installed. Registration takes no project path. Honor the Node range declared by that
 package, and never write non-protocol output to the server's stdout.
 
 ## Establish the project path
 
-1. Read the target project's `vite.config.*`; do not execute the config merely to discover a path.
-2. Resolve Vite `root`, then resolve `aiI18n({ directory })` against it. The defaults are the Vite project root and `i18n`.
-3. Convert the final directory to an absolute path and pass that same value as `i18n_directory` to every tool.
+1. Call `ai_i18n_discover` without arguments. It uses MCP workspace roots and returns absolute
+   `i18n_directory` candidates. Registration still takes no project path.
+2. If exactly one candidate is returned, use it. If multiple candidates are returned, read the
+   target app's `vite.config.*` and match Vite `root` plus `aiI18n({ directory })`; do not execute the
+   config. Pass `cwd` only when the client does not expose workspace roots.
+3. Pass the selected absolute path unchanged to every translation tool.
 
-For a repository at `/workspace/project` and a Vite app in `apps/web` using the defaults, pass
-`/workspace/project/apps/web/i18n`. Never pass a relative path. One MCP registration can serve
-different projects because the target directory is supplied on each tool call.
+Never invent or manually concatenate a path when discovery returns it. One MCP registration can
+serve different projects because the target directory is supplied on each translation tool call.
 
 Require an existing `cache.json`. If the protocol files do not exist yet, run or ask the user to run the project's Vite Dev/Build command before continuing.
 Running `@ai-i18n/eslint-plugin` only validates static `t()` arguments; it never creates or reconciles these protocol files.
@@ -55,6 +58,8 @@ Continue until `next_cursor` is absent, unless the user explicitly requested onl
 For each selected `file`, call `ai_i18n_list_translations` with the same `i18n_directory`, the exact returned file value, and `missing_only: true`. Keep the default `limit: 100` and follow every `next_cursor`.
 
 The server also applies a response character limit, so a page can contain fewer than the requested number of items while still returning `next_cursor`. Cursor presence, not item count, decides whether pagination is complete.
+List tools return the same complete page in JSON text and `structuredContent`; read either form, but
+never treat a summary rendered by the client UI as the full response.
 
 Use these fields while translating:
 
@@ -95,6 +100,10 @@ synchronize those derived files.
 Translation completion does not make previously rendered imperative DOM reactive. For Vanilla
 applications, separately confirm that the host subscribes to Runtime updates and re-renders;
 the MCP tools only maintain translation protocol data.
+
+After Vite reconciliation, commit source changes, generated `ai-i18n.d.ts`, `cache.json`,
+`extracted/**`, and `locales/**` together. MCP writes only extracted; it never makes the other
+protocol files optional.
 
 ## Handle common failures
 

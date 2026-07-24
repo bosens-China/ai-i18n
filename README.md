@@ -21,8 +21,10 @@
 ### 1. 安装依赖
 
 ```bash
-pnpm add @ai-i18n/vite
+pnpm add @ai-i18n/vite@alpha
 ```
+
+当前仍处于 alpha 阶段；不带 `@alpha` 可能安装到较旧的 `latest`。
 
 ### 2. 配置 Vite
 
@@ -39,7 +41,6 @@ export default defineConfig({
         { value: 'zh-CN', label: '简体中文' },
         { value: 'en-US', label: 'English' },
       ],
-      framework: 'vue', // 支持 'vue' | 'react' | 'vanilla'
     }),
   ],
 });
@@ -52,7 +53,10 @@ import { t } from 'virtual:ai-i18n';
 
 // 无需预先定义 Key，直接书写源码文案
 console.log(t('你好，世界！'));
+console.log(t`你好，${user.name}！`);
 ```
+
+`loading.strategy: 'locale'` 只影响浏览器语言包拆分，与 MCP 的目录和工具契约无关。
 
 ## 📄 License
 

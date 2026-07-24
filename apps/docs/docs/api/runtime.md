@@ -22,25 +22,33 @@ import { getLang, getLangs, setLang, subscribe, t } from 'virtual:ai-i18n';
 
 Vue 与 React 业务组件推荐使用 `useI18n()`，以便框架自动响应语言变化。
 
-## `t(source, comment?)`
+## `t(source, comment?)` 与 `` t`...` ``
 
 ```ts
 function t(source: string, comment?: string): string;
+function t(strings: TemplateStringsArray, ...values: unknown[]): string;
 ```
 
 | 参数      | 类型     | 必填 | 默认值      | 作用                             |
 | --------- | -------- | ---- | ----------- | -------------------------------- |
 | `source`  | `string` | 是   | 无          | 源文案，也是翻译缺失时的回退值。 |
-| `comment` | `string` | 否   | `undefined` | 消歧注释，会参与 message ID。    |
+| `comment` | `string` | 否   | `undefined` | 提供给翻译模型的语境提示。       |
 
-日常文案只需 `t(source)`。`comment` 仅在同一源文案需要消歧，或 AI 翻译效果不佳时再补上；
-不要给普通 UI 文案凭空添加注释。两个参数都必须能在构建期静态求值。相同 `source` 配合不同
-`comment` 会生成不同消息。
+日常文案只需 `t(source)`。`comment` 仅在 AI 翻译需要额外语境时再补上；不要给普通 UI
+文案凭空添加注释。两个参数都必须能在构建期静态求值。message ID 只由 `source` 决定，
+因此修改注释不会使翻译失效；同一 source 的不同调用共享翻译。
 
 ```ts
 t('保存');
 t('保存', '按钮');
-t('保存', '草稿状态');
+t('保存', '设置弹窗按钮');
+```
+
+动态值使用 tagged template。表达式不会交给翻译模型，内部会变成 `{{0}}`、`{{1}}` 等占位符；
+译文可以调整占位符顺序，运行时再填入值：
+
+```ts
+t`你好 ${user.name}，你有 ${unreadCount} 条消息`;
 ```
 
 ## `setLang(value)`
@@ -50,7 +58,13 @@ function setLang(value: string): Promise<void>;
 ```
 
 `value` 为必填参数，必须匹配 `locales[].value`。不支持的值会抛出 `RangeError`。
-语言发生变化后，Runtime 会通知订阅者；当前实现不会自动写入 localStorage。
+语言发生变化后，Runtime 会通知订阅者。配置 `persist` 后，切换成功的语言会写入
+localStorage。
+
+:::warning 不要长期保存译后字符串
+`setError(t('请求失败'))` 一类已经写入 state 的字符串不会因后续切换语言自动变化。长期状态
+应保存 source/message 标识，在渲染层调用 `t`；即时 toast 已经显示后保持原语言通常是合理的。
+:::
 
 ## `getLang()`
 
@@ -58,7 +72,8 @@ function setLang(value: string): Promise<void>;
 function getLang(): string;
 ```
 
-返回当前语言的 `value`。首次加载时等于 `defaultLang`。
+返回当前语言的 `value`。首次加载按“有效持久化值 → 浏览器语言 → `defaultLang`”选择；
+按 locale 懒加载时，目标语言资源就绪前暂时返回 `sourceLang`。
 
 ## `getLangs()`
 

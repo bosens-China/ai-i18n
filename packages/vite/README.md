@@ -3,6 +3,8 @@
 Vite 的 ai-i18n 主插件。它在 Dev/Build 中提取显式 `t()`，维护可提交 Git 的
 `cache.json`、`extracted/**`、`locales/**`，并提供浏览器虚拟 Runtime。
 
+alpha 阶段请安装 `@ai-i18n/vite@alpha`，避免无标签安装命中较旧的 `latest`。
+
 JS、TS、JSX、TSX 默认进入框架中立的共享分析器；Vue/React extractor 只补充对应 Hook
 语义，Vue extractor 还负责 SFC 编译。ai-i18n 根据 import binding 自动识别翻译调用，
 不要求 JSX 文件使用框架后缀。宿主编译建议以 React 为 fallback，混合项目只给 Vue JSX
@@ -22,6 +24,12 @@ aiI18n({
   ],
 });
 ```
+
+动态值使用 tagged template：`` t`你好 ${name}` ``。表达式会变成可调整顺序的编号占位符，
+不会交给模型翻译。`t(source, comment?)` 的 comment 仅提供语境，不参与 message ID。
+
+Vitest 使用 `@ai-i18n/vite/vitest` 的 `aiI18nVitest()`，无需手写 alias，也不会读写协议文件。
+语言偏好可用 `persist`、`detect: 'navigator'` 和 `fallback` 配置。
 
 ## Locale Lazy
 

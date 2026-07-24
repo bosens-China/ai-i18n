@@ -1,6 +1,6 @@
 # Vue 3 integration
 
-Install `@ai-i18n/vite` and reuse Vue 3, `@vitejs/plugin-vue`, and `@vue/compiler-sfc`. Do not install
+Install `@ai-i18n/vite@alpha` during prerelease and reuse Vue 3, `@vitejs/plugin-vue`, and `@vue/compiler-sfc`. Do not install
 a separate ai-i18n Vue binding.
 
 ```ts
@@ -44,9 +44,9 @@ const { t, setLang, currentLang, langs } = useI18n()
 </template>
 ```
 
-Default to `t(source)` only. Add the optional second `comment` argument solely when the same
-source text needs disambiguation or AI translation quality is poor (for example
-`t('保存', '工具栏按钮')`). Do not invent comments for ordinary UI copy.
+Default to `t(source)`. Use `` t`已加入 ${name}` `` for dynamic values. Add the optional second
+`comment` only as translation guidance (for example `t('保存', '工具栏按钮')`). It does not change the
+message ID; do not invent comments for ordinary UI copy.
 
 If `unplugin-auto-import` is registered, omit the `useI18n` import. ai-i18n injects it and generates
 its declaration; do not add it to the external plugin's imports list. Use `configs.vue` from

@@ -81,8 +81,9 @@ Vite 配置、插件、extractor 或 schema 变化后需要重启 Watch 进程�
 
 ## 应该提交什么
 
-:::important 全部提交
-`i18n/cache.json`、`i18n/extracted/**`、`i18n/locales/**` **都应提交到 Git**。
+:::important 最小可提交清单
+源码变更、生成的 `src/ai-i18n.d.ts`（或自定义 `dts` 路径）、`i18n/cache.json`、
+`i18n/extracted/**`、`i18n/locales/**` **应在同一 PR 中提交**。
 :::
 
 推荐流程：
@@ -92,6 +93,10 @@ Vite 配置、插件、extractor 或 schema 变化后需要重启 Watch 进程�
 3. 再跑一次 Dev 或 Build。插件会读取磁盘变更，合并进 cache，并同步活动
    extracted 与 locales。
 4. 源码与三类 i18n 文件一起提交，避免只提交派生文件的一部分。
+
+修改 Vite 配置、语言列表、插件版本、extractor/schema 或生成声明配置后，先重启 Dev/Build
+Watch，再执行一次完整 Build。只通过 MCP 填充 extracted 时无需修改 `loading.strategy`；
+下一次 Dev/Build 会同步 cache、重复 extracted 与 locales。
 
 :::warning 合并冲突
 分支合并时请保留 `cache.json`。它承载文件移动或删除后的 Translation Memory。

@@ -36,7 +36,8 @@ Always read [Vite configuration](references/vite.md). Then read only the matchin
 
 ## Implement the smallest complete setup
 
-1. Install `@ai-i18n/vite`; do not add separate ai-i18n Vue or React packages.
+1. While the package is prerelease, install `@ai-i18n/vite@alpha`; do not rely on the older
+   `latest` dist-tag and do not add separate ai-i18n Vue or React packages.
 2. Register one `aiI18n()` in the existing Vite `plugins` array.
 3. Let the final Vite plugin list infer the mode, or set `framework` only when an explicit override is required.
 4. Let an existing `unplugin-auto-import` enable ai-i18n auto imports, or set `autoImport: true/false`
@@ -76,7 +77,8 @@ secrets in the Node-side translator closure and follow [Vite configuration](refe
 
 ## ESLint
 
-Add `@ai-i18n/eslint-plugin` only when checks are requested or auto-imported globals must be declared.
+Add `@ai-i18n/eslint-plugin@alpha` during prerelease only when checks are requested or auto-imported
+globals must be declared.
 Use exactly one of `configs.vanilla`, `configs.vue`, or `configs.react`, matching the resolved Vite
 mode. Preserve the host Vue parser and framework lint rules. The host Auto Import plugin remains
 responsible for ESLint declarations of its own APIs.
@@ -85,18 +87,30 @@ responsible for ESLint declarations of its own APIs.
 
 - Ordinary strings, JSX text, Vue text, and mixed HTML fragments are not guessed.
 - Prefer `t(source)` for ordinary copy. The optional second `comment` is only for
-  disambiguation or poor AI translation quality; do not invent comments by default.
-  Source and comment arguments must be statically evaluable.
+  translation guidance; it is metadata and does not participate in the message ID. Changing it
+  preserves translations. Do not invent comments by default. Source and comment arguments must be
+  statically evaluable.
+- Use tagged templates for dynamic values: `` t`你好 ${name}` ``. Expressions are represented as
+  reorderable `{{0}}`, `{{1}}` placeholders and are not translated.
 - Vue/React Hook bindings work in JS, TS, JSX, and TSX, including composables and custom Hooks.
 - Vue SFC extraction respects compiler-sfc bindings and template-local scopes.
 - Vue JSX/TSX is supported in Vue mode when `@vitejs/plugin-vue-jsx` is present.
 - Missing targets are `null`; runtime lookup falls back to source text.
-- Commit `cache.json`, `extracted/**`, and `locales/**` together.
+- Optional `persist`, `detect: 'navigator'`, and `fallback` configure browser preference and missing
+  translation UX. Persisted locale wins over navigator detection, which wins over `defaultLang`.
+- Commit source, generated `ai-i18n.d.ts`, `cache.json`, `extracted/**`, and `locales/**` together.
+
+## Vitest
+
+Use `aiI18nVitest()` from `@ai-i18n/vite/vitest` in the Vitest config instead of the production
+`aiI18n()` or a hand-written alias. Pass the same source/default locales and keep the host React/Vue
+Vite plugin. The test plugin resolves `virtual:ai-i18n` with source fallback and framework Hooks but
+does not extract, call a Provider, or write protocol files.
 
 ## Verify and report
 
 Check package installation, resolved framework mode, resolved auto-import behavior, Vite config syntax,
 generated declarations, ESLint globals when applicable, one runtime call, and generated protocol
-files. When handing the project to `@ai-i18n/mcp`, report the final output directory as an absolute
-path; MCP registration itself takes no project path. State explicitly when SSR, dynamic messages,
+files. When handing the project to `@ai-i18n/mcp`, call `ai_i18n_discover` first and use its absolute
+directory result; MCP registration itself takes no project path. State explicitly when SSR, dynamic messages,
 unvisited Dev routes, or Build-unreachable modules remain outside the verified scope.

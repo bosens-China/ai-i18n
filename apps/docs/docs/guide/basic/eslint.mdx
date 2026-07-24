@@ -10,7 +10,12 @@ import { PackageManagerTabs } from '@rspress/core/theme';
 
 ## 安装
 
-<PackageManagerTabs command="install -D eslint @ai-i18n/eslint-plugin" />
+<PackageManagerTabs command="install -D eslint @ai-i18n/eslint-plugin@alpha" />
+
+:::warning Alpha 阶段
+预发布期间请显式安装 `@alpha`；npm `latest` 不代表当前推荐的 alpha 版本。插件支持
+ESLint 9 和 10。
+:::
 
 :::tip Vue 项目
 Vue SFC 还需要宿主已有的 `eslint-plugin-vue`、`vue-eslint-parser` 与

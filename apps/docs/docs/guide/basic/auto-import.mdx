@@ -53,7 +53,7 @@ aiI18n({
 
 许多项目已经使用了 [`unplugin-auto-import`](https://github.com/unplugin/unplugin-auto-import) 来自动导入 `vue`, `react` 相关的 API。
 
-ai-i18n 与 `unplugin-auto-import` **完美兼容并高度集成**。你**不需要**去修改 `unplugin-auto-import` 的 `imports` 列表。
+ai-i18n 可以与 `unplugin-auto-import` 同时使用。你**不需要**修改后者的 `imports` 列表。
 
 你只需要保证 `aiI18n` 插件在 `AutoImport` 插件之前注册：
 
@@ -65,7 +65,7 @@ import vue from '@vitejs/plugin-vue';
 export default defineConfig({
   plugins: [
     aiI18n({
-      // 当检测到 AutoImport 时，会自动复用它的逻辑开启 autoImport
+      // 检测到 AutoImport 时，ai-i18n 会开启自己的按需导入
       sourceLang: 'zh-CN',
     }),
     AutoImport({
@@ -76,4 +76,5 @@ export default defineConfig({
 });
 ```
 
-ai-i18n 会**自动探测**后续插件队列中的 `unplugin-auto-import`。如果发现它，就会自动将 `virtual:ai-i18n` 的全局 API 注入到它的处理管线中，复用同一套全局声明流，避免产生多余的 `d.ts` 文件。
+ai-i18n 会探测插件队列中的 `unplugin-auto-import`，并以此启用自己的导入注入和
+`ai-i18n.d.ts` 生成；两个插件的处理管线和声明文件相互独立。

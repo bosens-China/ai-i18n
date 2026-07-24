@@ -12,7 +12,11 @@ AI 翻译是可选能力。未配置 `translator` 时，ai-i18n 仍会完成提�
 
 ## 安装 Provider
 
-<PackageManagerTabs command="add @ai-i18n/openai" />
+<PackageManagerTabs command="add @ai-i18n/openai@alpha" />
+
+:::warning Alpha 阶段
+预发布期间请显式安装 `@alpha`；npm `latest` 不代表当前推荐的 alpha 版本。
+:::
 
 `@ai-i18n/openai` 借助 LangChain `ChatOpenAI` 连接符合 OpenAI-compatible 的 API 接口。它提供完整的超时、重试与链路追踪机制，但它不会替你选择具体的供应商或模型。
 

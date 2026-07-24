@@ -1,6 +1,8 @@
 # Vite configuration
 
 Use Vite ≥ 8 and a supported Node runtime (`^20.19.0` or `>=22.12.0`). Register the plugin once:
+During the alpha period install `@ai-i18n/vite@alpha`; an untagged install may resolve an older
+`latest`.
 
 ```ts
 import { aiI18n } from '@ai-i18n/vite'
@@ -82,13 +84,17 @@ import { useI18n } from 'virtual:ai-i18n'
 - `defaultLang` defaults to `sourceLang`; omit it when both are equal. A non-source value also
   occurs in `locales`.
 - `directory` defaults to `i18n` relative to Vite `root`.
+- `persist` is false by default; `true` uses `ai-i18n:lang`, or pass `{ key }`.
+- `detect` is false by default; `'navigator'` matches exact locale then primary language.
+- `fallback` defaults to `'source'`; supported values are `'source'`, `'key'`, `'empty'`, and
+  `'marked'`.
 - `translator` and `provider` are optional.
 - `cache.maxMessages` and `cache.maxBytes` are optional positive integers.
 - Cleanup defaults should remain unless explicitly changed.
 
 ## Optional Provider
 
-Add `@ai-i18n/openai` only when automatic translation is required:
+Add `@ai-i18n/openai@alpha` during prerelease only when automatic translation is required:
 
 ```ts
 import { openAI } from '@ai-i18n/openai'
@@ -174,3 +180,6 @@ Translation Memory remains available. Restart the Watch process after Vite confi
 or schema changes.
 
 SSR transforms and runtime injection are skipped with a warning.
+
+For Vitest, use `aiI18nVitest(options)` from `@ai-i18n/vite/vitest`. Do not run the production plugin
+or maintain a `virtual:ai-i18n` alias just for unit tests.
