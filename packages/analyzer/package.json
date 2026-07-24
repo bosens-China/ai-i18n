@@ -46,7 +46,7 @@
     "yuku-analyzer": "0.7.3"
   },
   "peerDependencies": {
-    "@vue/compiler-sfc": "^3.5.0"
+    "@vue/compiler-sfc": ">=3.2.0"
   },
   "peerDependenciesMeta": {
     "@vue/compiler-sfc": {

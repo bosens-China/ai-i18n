@@ -1,7 +1,7 @@
 {
   "name": "@ai-i18n/eslint-plugin",
   "version": "1.0.0-alpha.2",
-  "description": "ESLint 9 static-argument checks aligned with ai-i18n extraction semantics.",
+  "description": "ESLint static-argument checks aligned with ai-i18n extraction semantics.",
   "keywords": [
     "eslint",
     "eslintplugin",
@@ -41,9 +41,9 @@
     "@ai-i18n/analyzer": "workspace:^"
   },
   "peerDependencies": {
-    "@vue/compiler-sfc": "^3.5.0",
-    "eslint": "^9.0.0",
-    "vue-eslint-parser": "^10.0.0"
+    "@vue/compiler-sfc": ">=3.2.0",
+    "eslint": ">=9.0.0",
+    "vue-eslint-parser": ">=9.0.0"
   },
   "peerDependenciesMeta": {
     "@vue/compiler-sfc": {
