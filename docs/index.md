@@ -19,3 +19,4 @@
 - [phase-4/ACCEPTANCE.md](./phase-4/ACCEPTANCE.md) — Phase 4 验收证据
 - [mcp/PRD.md](./mcp/PRD.md) — `@ai-i18n/mcp` 自动发现与绝对目录工具契约
 - [mcp/TODO.md](./mcp/TODO.md) — MCP 交付清单
+- [release.md](./release.md) — CI / Release Please / npm Trusted Publishing 与补发说明
