@@ -1,6 +1,6 @@
 # Phase 1 验收记录
 
-> 更新日期：2026-07-23
+> 更新日期：2026-07-25
 
 ## 已通过
 
@@ -10,8 +10,8 @@
 - `pnpm build`：6 个发布包构建通过。
 - Workspace 共 10 个子包：6 发布包 + 3 示例 + 1 文档站。
 - 三个示例的真实 Vite Build 均通过。
-- `pnpm --filter @ai-i18n/vite benchmark`：Babel/Yuku 冷分析、热替换、200 模块 Build 图完成
-  五轮对比。
+- Babel/Yuku 准入对比：冷分析、热替换、200 模块 Build 图完成五轮对比；Yuku 正确性一致且性能更优，
+  已作为唯一分析实现（历史数据见 [YUKU-SPIKE.md](./YUKU-SPIKE.md)；对照代码与 benchmark 脚本已移除）。
 - GitHub Actions `Yuku platform admission #1`：提交 `1a68388` 通过 Linux、Windows、macOS
   的 x64/arm64 六个平台矩阵，共 6 个 job，均执行 Yuku 准入测试。
 

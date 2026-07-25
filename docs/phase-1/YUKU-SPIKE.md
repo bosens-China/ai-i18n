@@ -1,10 +1,10 @@
 # Yuku 准入 Spike
 
-> 日期：2026-07-22（平台矩阵结论按 2026-07-23 ACCEPTANCE 回写）
+> 日期：2026-07-22（平台矩阵结论按 2026-07-23 ACCEPTANCE 回写；Babel 对照代码已于验收后移除）
 >
 > 候选版本：`yuku-analyzer@0.7.3`（精确锁定）
 >
-> 结论：采用 Yuku。六平台 CI 矩阵已通过；Babel 基线仅保留为对照与 benchmark，不是默认回退路径。
+> 结论：采用 Yuku。正确性与性能均已对照 Babel 完成验证，Yuku 可完整替代 Babel 作为默认分析器；仓库内不再保留 Babel 对照实现或 benchmark 脚本。
 
 ## 边界
 
@@ -24,9 +24,9 @@ extractMessages(module, runtimeModuleId?, translationHooks?, autoImportRuntime?)
 
 ## 正确性结果
 
-`packages/vite/test/yuku-spike.test.ts` 覆盖多组场景（含 `it.each`），当前全部通过。主要覆盖：
+`packages/vite/test/yuku-spike.test.ts` 覆盖多组场景（含 `it.each`），当前全部通过。准入阶段曾与旧 Babel extractor 对照，目标语义结果一致；验收后已移除 Babel 对照代码，测试只断言 Yuku 行为。主要覆盖：
 
-- 与旧 Babel extractor 对照：字符串、comment、局部 const、条件分支、静态 template literal。
+- 字符串、comment、局部 const、条件分支、静态 template literal。
 - JS、TS、JSX、TSX。
 - decorators 和 dynamic import。
 - import alias，拒绝其他来源的同名 `t`。
@@ -40,14 +40,10 @@ extractMessages(module, runtimeModuleId?, translationHooks?, autoImportRuntime?)
 
 ## 基准
 
-运行命令：
-
-```sh
-pnpm --filter @ai-i18n/vite benchmark
-```
+准入阶段曾用内部 benchmark 对比 Babel 与 Yuku 的分析边界（不含 bundler、磁盘和 Provider 耗时）。脚本已在验收后移除，下表保留当时五轮中位数作为选型证据。
 
 环境：Apple M1 Pro、darwin-arm64、Node 26.5.0。单文件每轮执行 200 次；Build 使用
-200 个 TypeScript 模块、每轮完整 add/link/walk 10 次。以下为 5 轮中位数：
+200 个 TypeScript 模块、每轮完整 add/link/walk 10 次：
 
 | 操作                              |  中位耗时 |
 | --------------------------------- | --------: |
@@ -57,8 +53,7 @@ pnpm --filter @ai-i18n/vite benchmark
 | Babel Build 完整分析图            | 182.81 ms |
 | Yuku Build 完整分析图             |  52.16 ms |
 
-该 benchmark 固定比较 Babel/Yuku 分析边界，不包含 bundler、磁盘和 Provider 耗时；它用于
-parser 准入，不替代真实项目的端到端性能数据。
+相对 Babel，Yuku 冷分析约快 4.6×，完整 Build 图约快 3.5×。该数据用于 parser 准入，不替代真实项目的端到端性能数据。
 
 ## 平台状态
 
@@ -68,10 +63,8 @@ parser 准入，不替代真实项目的端到端性能数据。
 - 工作流：`.github/workflows/yuku-platform.yml`（`main` push、pull request、`workflow_dispatch`）。
 - 每个 job 执行真实安装、native binding 加载与 Yuku 准入测试。
 
-Babel fixtures / benchmark 基线保留作对照，不作为默认分析回退路径。若未来出现可复现的
-安装或正确性失败，再按 PRD 评估是否回退。
-
 ## 决策
 
 Yuku 在当前目标语义上通过正确性、semantic binding、跨文件链接、增量替换与六平台 CI 验证，
-并明显快于现有 Babel 基线。`@ai-i18n/vite` 以 Yuku 为默认分析器。
+并明显快于 Babel 基线，可完整替代 Babel 完成静态提取分析。`@ai-i18n/vite` 与
+`@ai-i18n/analyzer` 仅以 Yuku 为分析实现，不再保留 Babel 回退或对照路径。

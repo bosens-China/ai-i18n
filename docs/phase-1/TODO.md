@@ -69,7 +69,8 @@
 - [x] 验证 Analyzer add/replace/remove file。
 - [x] 验证 macOS、Linux、Windows x64/arm64 安装。
 - [x] 建立 Babel/Yuku cold parse、warm update、Build benchmark。
-- [x] 记录准入结论：采用 Yuku，或以可复现失败证据回退 Babel。
+- [x] 记录准入结论：采用 Yuku；正确性与性能均已对照 Babel，可完整替代。
+- [x] 验收后移除 Babel 对照代码、devDependencies 与 benchmark 脚本。
 - [x] 不将 parser 选择暴露为公共配置。
 
 ## 4. Vite 8 主插件
@@ -273,7 +274,7 @@
 ## 15. Phase 1 完成定义
 
 - [x] PRD 验收标准全部通过。
-- [x] Yuku 准入结论有 fixtures、平台验证和 benchmark 支撑。
+- [x] Yuku 准入结论有 fixtures、平台验证和历史 benchmark 支撑；Babel 对照路径已移除。
 - [x] 不存在 `src/pages`、路由目录或业务默认值。
 - [x] 不存在独立 sync/scan CLI。
 - [x] cache/extracted/locales 在 Dev、Build、Agent 编辑和 Git 合并场景下不丢翻译。

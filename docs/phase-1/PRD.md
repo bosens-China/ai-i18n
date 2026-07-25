@@ -29,7 +29,7 @@ Vanilla/Vue/React 单一模式的 pnpm monorepo。
 11. 缺失翻译使用 `null`，运行时确定性回退到源语言。
 12. 所有配置语言随模块一起注册，Phase 1 不做语言级懒加载。
 13. 不支持 SSR；Runtime 只承诺浏览器客户端行为。
-14. 优先采用 Yuku；只有兼容性或正确性验证不通过时才回退 Babel。
+14. 采用 Yuku 作为唯一分析实现；准入阶段已对照 Babel 完成正确性与性能验证，不再保留 Babel 回退路径。
 15. 不自研 Rust 原生内核。
 16. 六个公开包独立版本，使用 tsdown/Rolldown 生成 ESM 与类型声明，并以 publint、ATTW
     和真实 tarball 检查作为发布门禁。
@@ -266,7 +266,7 @@ aiI18n({
 
 ### 8.1 Phase 1 默认方案
 
-优先使用 `yuku-analyzer`，而不是只替换 `@babel/parser`：
+使用 `yuku-analyzer` 完成完整静态分析，而不是只替换 `@babel/parser`：
 
 - JS、JSX、TS、TSX 解析。
 - AST traversal。
@@ -285,16 +285,16 @@ extractMessages(module);
 
 ### 8.2 准入门槛
 
-Yuku 必须通过：
+Yuku 必须通过（均已通过，详见 [YUKU-SPIKE.md](./YUKU-SPIKE.md)）：
 
-- 现有提取 fixtures 结果一致性。
+- 现有提取 fixtures 结果一致性（准入阶段曾与 Babel 对照，结果一致）。
 - JS/TS/JSX/TSX、decorators、template literal、dynamic import。
 - import alias、re-export、跨文件静态常量。
 - macOS、Linux、Windows x64/arm64 安装验证。
 - Dev 单文件替换和 Build 完整模块图验证。
-- 与 Babel 基线的冷启动、热更新和 Build benchmark。
+- 与 Babel 基线的冷启动、热更新和 Build benchmark（Yuku 明显更快）。
 
-只有正确性或平台兼容不通过时才回退 Babel；性能提升不足但没有回退风险时，以总体维护成本决定。
+结论：Yuku 可完整替代 Babel；仓库不再保留 Babel 对照实现、回退路径或持续 benchmark 脚本。
 
 ### 8.3 Vue 边界
 
