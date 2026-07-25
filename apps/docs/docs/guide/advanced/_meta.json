@@ -11,6 +11,11 @@
   },
   {
     "type": "file",
+    "name": "testing",
+    "label": "测试（Vitest）"
+  },
+  {
+    "type": "file",
     "name": "ai-tools",
     "label": "接入 Agent"
   }

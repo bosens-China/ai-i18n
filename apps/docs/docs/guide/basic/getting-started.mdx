@@ -226,8 +226,9 @@ export default defineConfig({
 ```
 
 测试 Runtime 保留框架 Hook、语言状态和 source fallback，但不会扫描源码、调用 Provider 或写入
-`i18n/`。Vite Dev/Build 继续使用正式的 `aiI18n()`。
+`i18n/`。Vite Dev/Build 继续使用正式的 `aiI18n()`。共享 options、缺译策略在测试里的表现，以及
+从手写 alias/mock 迁移的步骤，见 [测试（Vitest）](/guide/advanced/testing)。
 
 ## 下一步
 
-接下来，你可以阅读 [目录说明](/guide/advanced/workflow) 了解 Git 提交约定，或直接了解如何通过 [AI 工具接入](/guide/advanced/ai-tools) 自动填充翻译。
+接下来，你可以阅读 [目录说明](/guide/advanced/workflow) 了解 Git 提交约定，[测试（Vitest）](/guide/advanced/testing) 了解单测场景下的 Runtime 行为，或直接了解如何通过 [AI 工具接入](/guide/advanced/ai-tools) 自动填充翻译。
