@@ -37,8 +37,10 @@ extracted 文件位于同一层级。路径分隔符编码为 `_`，源码文件
 }
 ```
 
-插件先按当前 message ID 查找。source language 变化后，如果新 source 文案唯一匹配某条
-历史 translation，插件会反向复用该消息的其他语言翻译。
+插件先按当前 message ID 查找。`comment` 不参与 message ID，只作为翻译语境；同一 source 的
+历史消息（例如去掉/修改 comment 后产生的旧 `source#comment` 遗留 ID）会被自动继承翻译，无需
+人工搬迁。仅当 source language 本身发生变化、且新 source 文案唯一匹配某条历史 translation 时，
+插件才会反向复用该消息的其他语言翻译；这一步不要求 comment 相同。
 
 ## 目录维护：清理策略与容量限制
 
