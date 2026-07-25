@@ -1,6 +1,3 @@
-import { parse } from '@babel/parser';
-import traverse from '@babel/traverse';
-import type { Expression, Node } from '@babel/types';
 import { describe, expect, it } from 'vitest';
 import {
   AI_I18N_VIRTUAL_MODULE_ID,
@@ -21,8 +18,7 @@ describe('Yuku admission spike', () => {
       ],
     ],
     ['t(`静态模板`)', [{ source: '静态模板' }]],
-  ])('matches the Babel baseline for %s', (body, expected) => {
-    const baseline = extractWithBabel(body);
+  ])('extracts static messages for %s', (body, expected) => {
     const module = analyzeModule(
       `import { t } from '${AI_I18N_VIRTUAL_MODULE_ID}';\n${body}`,
       'fixture.ts',
@@ -34,8 +30,7 @@ describe('Yuku admission spike', () => {
       }),
     );
 
-    expect(baseline).toEqual(expected);
-    expect(actual).toEqual(baseline);
+    expect(actual).toEqual(expected);
   });
 
   it.each([
@@ -208,76 +203,3 @@ function render(t) { t('参数遮蔽不提取') }
     });
   });
 });
-
-function extractWithBabel(code: string) {
-  const ast = parse(code, {
-    sourceType: 'module',
-    plugins: ['typescript', 'jsx', 'decorators-legacy'],
-  });
-  const constants = new Map<string, Expression>();
-  const messages: Array<{ source: string; comment?: string }> = [];
-  traverse(ast, {
-    VariableDeclarator(path) {
-      if (
-        path.parentPath.isVariableDeclaration({ kind: 'const' }) &&
-        path.node.id.type === 'Identifier' &&
-        path.node.init?.type !== 'JSXElement' &&
-        path.node.init?.type !== 'JSXFragment'
-      ) {
-        constants.set(path.node.id.name, path.node.init as Expression);
-      }
-    },
-    CallExpression(path) {
-      if (
-        path.node.callee.type !== 'Identifier' ||
-        path.node.callee.name !== 't'
-      ) {
-        return;
-      }
-      const sources = babelStrings(path.node.arguments[0], constants);
-      const comments = path.node.arguments[1]
-        ? babelStrings(path.node.arguments[1], constants)
-        : [''];
-      for (const source of sources) {
-        for (const comment of comments) {
-          messages.push({ source, ...(comment ? { comment } : {}) });
-        }
-      }
-    },
-  });
-  return messages;
-}
-
-function babelStrings(
-  node: Node | null | undefined,
-  constants: ReadonlyMap<string, Expression>,
-  seen = new Set<string>(),
-): string[] {
-  if (!node) return [];
-  switch (node.type) {
-    case 'StringLiteral':
-      return [node.value];
-    case 'TemplateLiteral':
-      return node.expressions.length === 0
-        ? [
-            node.quasis
-              .map((quasi) => quasi.value.cooked ?? quasi.value.raw)
-              .join(''),
-          ]
-        : [];
-    case 'Identifier': {
-      if (seen.has(node.name)) return [];
-      const value = constants.get(node.name);
-      return value
-        ? babelStrings(value, constants, new Set(seen).add(node.name))
-        : [];
-    }
-    case 'ConditionalExpression':
-      return [
-        ...babelStrings(node.consequent, constants, new Set(seen)),
-        ...babelStrings(node.alternate, constants, new Set(seen)),
-      ];
-    default:
-      return [];
-  }
-}

@@ -21,9 +21,7 @@
   "type": "module",
   "sideEffects": false,
   "files": [
-    "dist",
-    "analyzer.d.ts",
-    "analyzer.js"
+    "dist"
   ],
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -31,10 +29,6 @@
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
-    },
-    "./analyzer": {
-      "types": "./analyzer.d.ts",
-      "import": "./analyzer.js"
     },
     "./client": {
       "types": "./dist/client.d.ts",
@@ -60,8 +54,7 @@
   "scripts": {
     "lint": "eslint .",
     "check": "tsc -p tsconfig.json --noEmit && pnpm lint",
-    "test": "pnpm --dir ../.. exec vitest run packages/vite/test --config vitest.config.ts",
-    "benchmark": "node benchmark/yuku-spike.mjs"
+    "test": "pnpm --dir ../.. exec vitest run packages/vite/test --config vitest.config.ts"
   },
   "dependencies": {
     "@ai-i18n/analyzer": "workspace:^",
@@ -88,10 +81,6 @@
     }
   },
   "devDependencies": {
-    "@babel/parser": "^7.29.3",
-    "@babel/traverse": "^7.29.0",
-    "@babel/types": "^7.29.0",
-    "@types/babel__traverse": "^7.28.0",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.3",
