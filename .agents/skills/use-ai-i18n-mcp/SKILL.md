@@ -27,6 +27,9 @@ serve different projects because the target directory is supplied on each transl
 
 Require an existing `cache.json`. If the protocol files do not exist yet, run or ask the user to run the project's Vite Dev/Build command before continuing.
 Running `@ai-i18n/eslint-plugin` only validates static `t()` arguments; it never creates or reconciles these protocol files.
+Source messages may also come from object or array members marked with the import-free
+`defineI18nMessages()` compiler macro. MCP output and write contracts are unchanged: use the
+resulting extracted `source`, `message_id`, and file path exactly as returned.
 The optional LangChain Provider's `batchLength` and `maxConcurrency` govern automatic model calls;
 they do not change MCP pagination limits, write batch limits, or this manual translation workflow.
 Vue and React modes may produce flat extracted files such as `src_components_App.tsx.json`. Tool
