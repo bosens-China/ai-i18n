@@ -5,6 +5,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { build, createServer } from 'vite';
 import { aiI18n } from '../src/index';
 import { ProjectState } from '../src/project-state';
+import { removeTempDir } from './temp-dir';
 
 const tempDirs: string[] = [];
 const locales = [
@@ -15,9 +16,7 @@ const runtimeEntry = path.resolve('packages/vite/src/runtime.ts');
 
 afterEach(async () => {
   await Promise.all(
-    tempDirs
-      .splice(0)
-      .map((directory) => fs.rm(directory, { recursive: true, force: true })),
+    tempDirs.splice(0).map((directory) => removeTempDir(directory)),
   );
 });
 

@@ -6,6 +6,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { build, createServer, type UserConfig } from 'vite';
 import { aiI18n, type AiI18nOptions } from '../src';
 import { buildOutputItems } from './build-output';
+import { removeTempDir } from './temp-dir';
 
 const tempDirs: string[] = [];
 const locales = [
@@ -20,9 +21,7 @@ const aliases = {
 
 afterEach(async () => {
   await Promise.all(
-    tempDirs
-      .splice(0)
-      .map((directory) => fs.rm(directory, { recursive: true, force: true })),
+    tempDirs.splice(0).map((directory) => removeTempDir(directory)),
   );
 });
 
