@@ -4,5 +4,5 @@
   "packages/eslint": "1.0.0-alpha.3",
   "packages/mcp": "1.0.0-alpha.4",
   "packages/openai": "1.0.0-alpha.3",
-  "packages/vite": "1.0.0-alpha.3"
+  "packages/vite": "1.0.0-alpha.4"
 }

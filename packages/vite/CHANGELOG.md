@@ -1,5 +1,12 @@
 # @ai-i18n/vite
 
+## [1.0.0-alpha.4](https://github.com/bosens-China/ai-i18n/compare/vite-v1.0.0-alpha.3...vite-v1.0.0-alpha.4) (2026-07-25)
+
+
+### Bug Fixes
+
+* **vite:** 在非 Windows 平台也归一化依赖路径反斜杠 ([8e8e618](https://github.com/bosens-China/ai-i18n/commit/8e8e6184144ded7dbf7faf033cdf51b2d95e343d))
+
 ## [1.0.0-alpha.3](https://github.com/bosens-China/ai-i18n/compare/vite-v1.0.0-alpha.2...vite-v1.0.0-alpha.3) (2026-07-25)
 
 
