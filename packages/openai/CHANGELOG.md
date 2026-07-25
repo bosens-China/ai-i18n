@@ -1,5 +1,19 @@
 # @ai-i18n/openai
 
+## [1.0.0-alpha.3](https://github.com/bosens-China/ai-i18n/compare/openai-v1.0.0-alpha.2...openai-v1.0.0-alpha.3) (2026-07-25)
+
+
+### Features
+
+* **vite:** improve runtime and extraction reliability ([926734c](https://github.com/bosens-China/ai-i18n/commit/926734cc8a5482a94c685abeca0939b927edc865))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @ai-i18n/core bumped to 1.0.0-alpha.3
+
 ## [1.0.0-alpha.2](https://github.com/bosens-China/ai-i18n/compare/openai-v1.0.0-alpha.1...openai-v1.0.0-alpha.2) (2026-07-24)
 
 
