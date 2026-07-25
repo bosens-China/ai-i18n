@@ -1,5 +1,19 @@
 # @ai-i18n/mcp
 
+## [1.0.0-alpha.4](https://github.com/bosens-China/ai-i18n/compare/mcp-v1.0.0-alpha.3...mcp-v1.0.0-alpha.4) (2026-07-25)
+
+
+### Features
+
+* **mcp:** discover workspace protocol directories ([8f5d819](https://github.com/bosens-China/ai-i18n/commit/8f5d819d12e2b14db117139eb078247b3e9a6107))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @ai-i18n/core bumped to 1.0.0-alpha.3
+
 ## [1.0.0-alpha.3](https://github.com/bosens-China/ai-i18n/compare/mcp-v1.0.0-alpha.2...mcp-v1.0.0-alpha.3) (2026-07-24)
 
 

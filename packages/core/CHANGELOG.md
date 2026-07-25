@@ -1,5 +1,12 @@
 # @ai-i18n/core
 
+## [1.0.0-alpha.3](https://github.com/bosens-China/ai-i18n/compare/core-v1.0.0-alpha.2...core-v1.0.0-alpha.3) (2026-07-25)
+
+
+### Features
+
+* **vite:** improve runtime and extraction reliability ([926734c](https://github.com/bosens-China/ai-i18n/commit/926734cc8a5482a94c685abeca0939b927edc865))
+
 ## [1.0.0-alpha.2](https://github.com/bosens-China/ai-i18n/compare/core-v1.0.0-alpha.1...core-v1.0.0-alpha.2) (2026-07-24)
 
 
