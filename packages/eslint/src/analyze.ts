@@ -4,16 +4,19 @@ import {
   AI_I18N_VIRTUAL_MODULE_ID,
   Analyzer,
   extractMessages,
+  findInvalidDefineI18nMessagesReferences,
   findUnboundCalls,
+  validateRecommendedUsage,
   type Module,
   type ExtractWarningCode,
+  type RecommendedUsageCode,
   type AnalysisLanguage,
   type TranslationHookBinding,
 } from '@ai-i18n/analyzer';
 import { createImportResolver } from './resolve-import.js';
 
 export interface StaticArgsWarning {
-  code: ExtractWarningCode;
+  code: ExtractWarningCode | RecommendedUsageCode;
   line: number;
   column: number;
   message: string;
@@ -37,12 +40,25 @@ export function analyzeStaticArgs(
   if (!hasTranslationCandidate(entry, autoImport)) return [];
   loadDependencies(analyzer, entry, resolve);
   analyzer.link();
-  return extractMessages(
+  const extraction = extractMessages(
     entry,
     AI_I18N_VIRTUAL_MODULE_ID,
     translationHooks(autoImport),
     autoImport,
-  ).warnings.map(({ code: warningCode, line, column, message }) => ({
+  ).warnings;
+  const recommended = validateRecommendedUsage(
+    entry,
+    AI_I18N_VIRTUAL_MODULE_ID,
+    translationHooks(autoImport),
+    autoImport,
+  );
+  const warnings = recommended.length
+    ? [
+        ...extraction.filter((warning) => warning.code === 'parse-error'),
+        ...recommended,
+      ]
+    : extraction;
+  return warnings.map(({ code: warningCode, line, column, message }) => ({
     code: warningCode,
     line,
     column,
@@ -54,10 +70,16 @@ function hasTranslationCandidate(module: Module, autoImport: boolean): boolean {
   return (
     module.imports.some(
       (item) =>
-        !item.typeOnly && (item.name === 't' || item.name === 'useI18n'),
+        !item.typeOnly &&
+        (item.specifier === AI_I18N_VIRTUAL_MODULE_ID ||
+          item.name === 't' ||
+          item.name === 'useI18n'),
     ) ||
-    (autoImport &&
-      findUnboundCalls(module, new Set(['t', 'useI18n'])).length > 0)
+    findInvalidDefineI18nMessagesReferences(module).length > 0 ||
+    findUnboundCalls(
+      module,
+      new Set(['defineI18nMessages', ...(autoImport ? ['t', 'useI18n'] : [])]),
+    ).length > 0
   );
 }
 

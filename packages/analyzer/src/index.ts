@@ -10,27 +10,38 @@ import {
   type Module,
   type NodeOfType,
   type NodeType,
-  type Symbol as YukuSymbol,
 } from 'yuku-analyzer';
 import {
   argumentWarning,
   evaluateStrings,
+  isDefineI18nMessagesCall,
   sourceLocation,
   type StaticWarningCode,
 } from './static-values.js';
+import {
+  validateRecommendedUsage as validateUsage,
+  type RecommendedUsageWarning,
+} from './recommended-usage.js';
+import {
+  createTranslationContext,
+  isTranslationCallee,
+  isTranslationHookCall,
+  isTranslationObject,
+  isTranslationReference,
+  type TranslationHookBinding,
+} from './translation-calls.js';
 
 export type { Module } from 'yuku-analyzer';
+export type {
+  RecommendedUsageCode,
+  RecommendedUsageWarning,
+} from './recommended-usage.js';
+export { findInvalidDefineI18nMessagesReferences } from './static-values.js';
+export type { TranslationHookBinding } from './translation-calls.js';
 
 export const AI_I18N_VIRTUAL_MODULE_ID = 'virtual:ai-i18n';
 
 export type AnalysisLanguage = 'js' | 'jsx' | 'ts' | 'tsx';
-
-export interface TranslationHookBinding {
-  module: string;
-  hook: string;
-  property: string;
-  autoImport?: boolean;
-}
 
 export interface SourceLocation {
   line: number;
@@ -61,6 +72,12 @@ export interface ExtractResult {
 
 type Node = NodeOfType<NodeType>;
 
+export interface DefineI18nMessagesCall {
+  start: number;
+  end: number;
+  argument: { start: number; end: number } | null;
+}
+
 export function analyzeModule(
   code: string,
   id: string,
@@ -88,40 +105,15 @@ export function extractMessages(
   }));
   let pending = false;
   const dependencies = new Set<string>();
-  const translateSymbols = new Set<YukuSymbol>();
-  const translationObjects = new Map<YukuSymbol, Set<string>>();
-  const valueWrappers = new Set<YukuSymbol>();
-
-  for (const item of module.imports) {
-    if (
-      !item.typeOnly &&
-      item.name === 't' &&
-      item.local &&
-      (item.specifier === runtimeModuleId ||
-        item.local.definition()?.module.path === runtimeModuleId)
-    ) {
-      translateSymbols.add(item.local);
-    }
-    if (
-      !item.typeOnly &&
-      item.name === 'unref' &&
-      item.specifier === 'vue' &&
-      item.local
-    ) {
-      valueWrappers.add(item.local);
-    }
-  }
-
-  collectHookTranslationSymbols(
+  const translationContext = createTranslationContext(
     module,
+    runtimeModuleId,
     translationHooks,
-    translateSymbols,
-    translationObjects,
   );
 
   if (
-    !translateSymbols.size &&
-    !translationObjects.size &&
+    !translationContext.translateSymbols.size &&
+    !translationContext.translationObjects.size &&
     !autoImportRuntime
   ) {
     return { messages: [], warnings, dependencies: [], pending };
@@ -154,9 +146,7 @@ export function extractMessages(
         !isTranslationCallee(
           node.callee,
           module,
-          translateSymbols,
-          translationObjects,
-          valueWrappers,
+          translationContext,
           autoImportRuntime,
         )
       ) {
@@ -197,9 +187,7 @@ export function extractMessages(
         !isTranslationCallee(
           node.tag,
           module,
-          translateSymbols,
-          translationObjects,
-          valueWrappers,
+          translationContext,
           autoImportRuntime,
         )
       ) {
@@ -223,102 +211,6 @@ export function extractMessages(
     dependencies: [...dependencies].sort(),
     pending,
   };
-}
-
-function collectHookTranslationSymbols(
-  module: Module,
-  bindings: readonly TranslationHookBinding[],
-  translateSymbols: Set<YukuSymbol>,
-  translationObjects: Map<YukuSymbol, Set<string>>,
-): void {
-  if (!bindings.length) return;
-  const hookProperties = new Map<YukuSymbol, Set<string>>();
-  const autoImports = new Map<string, Set<string>>();
-  for (const binding of bindings) {
-    if (!binding.autoImport) continue;
-    const properties = autoImports.get(binding.hook) ?? new Set<string>();
-    properties.add(binding.property);
-    autoImports.set(binding.hook, properties);
-  }
-  for (const item of module.imports) {
-    if (item.typeOnly || !item.local) continue;
-    for (const binding of bindings) {
-      if (item.name !== binding.hook || item.specifier !== binding.module)
-        continue;
-      const properties = hookProperties.get(item.local) ?? new Set<string>();
-      properties.add(binding.property);
-      hookProperties.set(item.local, properties);
-    }
-  }
-  if (!hookProperties.size && !autoImports.size) return;
-
-  module.walk({
-    VariableDeclarator(node) {
-      if (
-        node.init?.type !== 'CallExpression' ||
-        node.init.callee.type !== 'Identifier'
-      ) {
-        return;
-      }
-      const hookSymbol = module.symbolOf(node.init.callee);
-      const properties = hookSymbol
-        ? hookProperties.get(hookSymbol)
-        : autoImports.get(node.init.callee.name);
-      if (!properties) return;
-      if (node.id.type === 'Identifier') {
-        const symbol = module.symbolOf(node.id);
-        if (symbol) translationObjects.set(symbol, properties);
-        return;
-      }
-      if (node.id.type !== 'ObjectPattern') return;
-      for (const property of node.id.properties) {
-        if (
-          property.type === 'Property' &&
-          property.key.type === 'Identifier' &&
-          properties.has(property.key.name) &&
-          property.value.type === 'Identifier'
-        ) {
-          const symbol = module.symbolOf(property.value);
-          if (symbol) translateSymbols.add(symbol);
-        }
-      }
-    },
-  });
-}
-
-function isTranslationCallee(
-  node: Node,
-  module: Module,
-  translateSymbols: ReadonlySet<YukuSymbol>,
-  translationObjects: ReadonlyMap<YukuSymbol, ReadonlySet<string>>,
-  valueWrappers: ReadonlySet<YukuSymbol>,
-  autoImportRuntime: boolean,
-): boolean {
-  if (
-    autoImportRuntime &&
-    node.type === 'Identifier' &&
-    node.name === 't' &&
-    !module.symbolOf(node)
-  ) {
-    return true;
-  }
-  const symbol = valueSymbol(node, module, valueWrappers);
-  if (symbol && translateSymbols.has(symbol)) return true;
-  if (node.type !== 'MemberExpression') return false;
-  const objectSymbol = valueSymbol(node.object, module, valueWrappers);
-  const properties = objectSymbol
-    ? translationObjects.get(objectSymbol)
-    : undefined;
-  if (!properties) return false;
-  const property = node.computed
-    ? node.property.type === 'Literal' &&
-      typeof node.property.value === 'string'
-      ? node.property.value
-      : null
-    : node.property.type === 'Identifier'
-      ? node.property.name
-      : null;
-  return property !== null && properties.has(property);
 }
 
 export function findUnboundCalls(
@@ -349,28 +241,54 @@ export function findUnboundCalls(
   return [...found];
 }
 
-/** Vue 编译模板时会生成 `_unref(t)(...)`，这里透传到真正的 Hook symbol。 */
-function valueSymbol(
-  node: Node,
+export function findDefineI18nMessagesCalls(
   module: Module,
-  valueWrappers: ReadonlySet<YukuSymbol>,
-): YukuSymbol | null {
-  if (node.type === 'Identifier') return module.symbolOf(node);
-  if (
-    node.type === 'CallExpression' &&
-    node.callee.type === 'Identifier' &&
-    node.arguments.length === 1 &&
-    node.arguments[0]?.type === 'Identifier'
-  ) {
-    const wrapper = module.symbolOf(node.callee);
-    if (wrapper && valueWrappers.has(wrapper)) {
-      return module.symbolOf(node.arguments[0]);
-    }
-  }
-  if (node.type === 'ParenthesizedExpression') {
-    return valueSymbol(node.expression, module, valueWrappers);
-  }
-  return null;
+): DefineI18nMessagesCall[] {
+  const calls: DefineI18nMessagesCall[] = [];
+  module.walk({
+    CallExpression(node) {
+      if (!isDefineI18nMessagesCall(node, module)) return;
+      const argument = node.arguments.length === 1 ? node.arguments[0] : null;
+      calls.push({
+        start: node.start,
+        end: node.end,
+        argument:
+          argument && argument.type !== 'SpreadElement'
+            ? { start: argument.start, end: argument.end }
+            : null,
+      });
+    },
+  });
+  return calls;
+}
+
+export function validateRecommendedUsage(
+  module: Module,
+  runtimeModuleId = AI_I18N_VIRTUAL_MODULE_ID,
+  translationHooks: readonly TranslationHookBinding[] = [],
+  autoImportRuntime = false,
+): RecommendedUsageWarning[] {
+  const translationContext = createTranslationContext(
+    module,
+    runtimeModuleId,
+    translationHooks,
+  );
+  return validateUsage(module, {
+    runtimeModuleId,
+    isTranslationCall: (node) =>
+      isTranslationCallee(
+        node.callee,
+        module,
+        translationContext,
+        autoImportRuntime,
+      ),
+    isTranslationReference: (node) =>
+      isTranslationReference(node, module, translationContext),
+    isTranslationObject: (node) =>
+      isTranslationObject(node, module, translationContext),
+    isTranslationHookCall: (node) =>
+      isTranslationHookCall(node, module, translationHooks),
+  });
 }
 
 function isUnboundUndefined(node: Node | undefined, module: Module): boolean {

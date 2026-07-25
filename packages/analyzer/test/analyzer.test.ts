@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { analyzeModule, extractMessages, findUnboundCalls } from '../src/index';
+import {
+  analyzeModule,
+  extractMessages,
+  findDefineI18nMessagesCalls,
+  findInvalidDefineI18nMessagesReferences,
+  findUnboundCalls,
+  validateRecommendedUsage,
+} from '../src/index';
 
 const hooks = [
   {
@@ -73,5 +80,79 @@ t\`你好 \${name}，你有 \${items.length} 条消息\``,
 
     const autoImported = analyzeModule('t`你好 ${name}`', 'auto.ts');
     expect(findUnboundCalls(autoImported, new Set(['t']))).toEqual(['t']);
+  });
+
+  it('extracts static collection members and finite dynamic indexes', () => {
+    const module = analyzeModule(
+      `import { t } from 'virtual:ai-i18n'
+const shared = { cancel: '取消' }
+const messages = defineI18nMessages({
+  ...shared,
+  save: '保' + '存',
+  states: ['等待中', '处理中', '已完成'],
+})
+t(messages.save)
+t(messages.states[index])
+t(ok && messages.cancel)`,
+      'main.ts',
+    );
+
+    expect(extractMessages(module)).toMatchObject({
+      messages: [
+        { source: '保存' },
+        { source: '等待中' },
+        { source: '处理中' },
+        { source: '已完成' },
+        { source: '取消' },
+      ],
+      warnings: [],
+    });
+    expect(findDefineI18nMessagesCalls(module)).toEqual([
+      expect.objectContaining({
+        argument: expect.objectContaining({
+          start: expect.any(Number),
+          end: expect.any(Number),
+        }),
+      }),
+    ]);
+  });
+
+  it('keeps extraction tolerant while reporting non-recommended syntax', () => {
+    const module = analyzeModule(
+      `import { t } from 'virtual:ai-i18n'
+let label = '可提取但应使用 const'
+const plain = { save: '普通对象' }
+const messages = defineI18nMessages({ save: '保' + '存' })
+t(label)
+t(plain.save)
+t(messages.save)
+t(ok && '逻辑表达式')`,
+      'main.ts',
+    );
+
+    expect(extractMessages(module)).toMatchObject({
+      messages: [
+        { source: '可提取但应使用 const' },
+        { source: '普通对象' },
+        { source: '保存' },
+        { source: '逻辑表达式' },
+      ],
+      warnings: [],
+    });
+    expect(validateRecommendedUsage(module)).toMatchObject([
+      { code: 'mutable-binding' },
+      { code: 'unmarked-member' },
+      { code: 'non-recommended-argument' },
+      { code: 'non-recommended-argument' },
+    ]);
+  });
+
+  it('rejects treating the compiler macro as a runtime value', () => {
+    const module = analyzeModule('const macro = defineI18nMessages', 'main.ts');
+
+    expect(findInvalidDefineI18nMessagesReferences(module)).toHaveLength(1);
+    expect(validateRecommendedUsage(module)).toMatchObject([
+      { code: 'invalid-macro' },
+    ]);
   });
 });

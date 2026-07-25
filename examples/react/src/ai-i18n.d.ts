@@ -16,4 +16,5 @@ declare module 'virtual:ai-i18n' {
   export const useI18n: import('@ai-i18n/vite/react').UseI18n;
 }
 
+declare const defineI18nMessages: <T>(messages: T) => T;
 declare const useI18n: import('@ai-i18n/vite/react').UseI18n;

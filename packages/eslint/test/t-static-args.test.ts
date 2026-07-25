@@ -57,7 +57,12 @@ describe('ai-i18n/t-static-args', () => {
     expect(plugin.configs?.vue).toEqual([
       expect.objectContaining({
         files: ['**/*.{js,mjs,cjs,ts,mts,cts,jsx,tsx,vue}'],
-        languageOptions: { globals: { useI18n: 'readonly' } },
+        languageOptions: {
+          globals: {
+            useI18n: 'readonly',
+            defineI18nMessages: 'readonly',
+          },
+        },
         rules: {
           'ai-i18n/t-static-args': ['error', { autoImport: true }],
         },
@@ -65,7 +70,12 @@ describe('ai-i18n/t-static-args', () => {
     ]);
     expect(plugin.configs?.react).toEqual([
       expect.objectContaining({
-        languageOptions: { globals: { useI18n: 'readonly' } },
+        languageOptions: {
+          globals: {
+            useI18n: 'readonly',
+            defineI18nMessages: 'readonly',
+          },
+        },
         rules: {
           'ai-i18n/t-static-args': ['error', { autoImport: true }],
         },
@@ -118,7 +128,7 @@ describe('ai-i18n/t-static-args', () => {
 
     expect(defaultResult?.messages).toEqual([]);
     expect(vueResult?.messages).toMatchObject([
-      { ruleId: 'ai-i18n/t-static-args', messageId: 'dynamicArg' },
+      { ruleId: 'ai-i18n/t-static-args', messageId: 'invalidUsage' },
     ]);
   });
 
@@ -184,12 +194,25 @@ describe('ai-i18n/t-static-args', () => {
         filename: path.join(sourceRoot, 'auto-tagged-template.ts'),
         options: [{ autoImport: true }],
       },
+      {
+        code: "import { t } from 'virtual:ai-i18n'; const base = { cancel: '取消' }; const messages = defineI18nMessages({ ...base, save: '保存', states: ['等待', '完成'] }); t(messages.save); t(messages.states[index])",
+        filename: path.join(sourceRoot, 'macro-members.ts'),
+      },
+      {
+        code: "import * as i18n from 'virtual:ai-i18n'; i18n.setLang('en-US')",
+        filename: path.join(sourceRoot, 'namespace-runtime.ts'),
+      },
+      {
+        code: "const i18n = useI18n(); const { setLang } = i18n; useI18n().setLang('en-US')",
+        filename: path.join(sourceRoot, 'hook-runtime-members.ts'),
+        options: [{ autoImport: true }],
+      },
     ],
     invalid: [
       {
         code: "import { t } from 'virtual:ai-i18n'; t(props.label)",
         filename: path.join(sourceRoot, 'dynamic.ts'),
-        errors: [{ messageId: 'dynamicArg' }],
+        errors: [{ messageId: 'invalidUsage' }],
       },
       {
         code: "import { t } from 'virtual:ai-i18n'; t('保存', props.comment)",
@@ -205,35 +228,97 @@ describe('ai-i18n/t-static-args', () => {
         code: "import { DYNAMIC } from '@/texts'; import { t } from 'virtual:ai-i18n'; t(DYNAMIC)",
         filename: path.join(sourceRoot, 'cross-file-dynamic.ts'),
         options: [{ tsconfigPath }],
-        errors: [{ messageId: 'dynamicArg' }],
+        errors: [{ messageId: 'invalidUsage' }],
       },
       {
         code: "import { t as translate } from './bridge'; translate(`共 ${count} 条`)",
         filename: path.join(sourceRoot, 're-export-dynamic.ts'),
-        errors: [{ messageId: 'dynamicArg' }],
+        errors: [{ messageId: 'invalidUsage' }],
       },
       {
         code: 'const { t } = useI18n(); t(props.label)',
         filename: path.join(sourceRoot, 'vue-hook-dynamic.ts'),
         options: [{ autoImport: true }],
-        errors: [{ messageId: 'dynamicArg' }],
+        errors: [{ messageId: 'invalidUsage' }],
       },
       {
         code: 'const { t } = useI18n(); export const View = () => <p>{t(props.label)}</p>',
         filename: path.join(sourceRoot, 'View.vue-dynamic.tsx'),
         options: [{ autoImport: true }],
-        errors: [{ messageId: 'dynamicArg' }],
+        errors: [{ messageId: 'invalidUsage' }],
       },
       {
         code: "import { useI18n as useTranslation } from 'virtual:ai-i18n'; const { t: tr } = useTranslation(); tr(props.label)",
         filename: path.join(sourceRoot, 'react-hook-dynamic.tsx'),
-        errors: [{ messageId: 'dynamicArg' }],
+        errors: [{ messageId: 'invalidUsage' }],
       },
       {
         code: 'const i18n = useI18n(); i18n.t(props.label)',
         filename: path.join(sourceRoot, 'react-object-hook-dynamic.tsx'),
         options: [{ autoImport: true }],
-        errors: [{ messageId: 'dynamicArg' }],
+        errors: [{ messageId: 'invalidUsage' }],
+      },
+      {
+        code: "import { t } from 'virtual:ai-i18n'; t('保' + '存')",
+        filename: path.join(sourceRoot, 'concat.ts'),
+        errors: [{ messageId: 'invalidUsage' }],
+      },
+      {
+        code: "import { t } from 'virtual:ai-i18n'; t(ok && '保存')",
+        filename: path.join(sourceRoot, 'logical.ts'),
+        errors: [{ messageId: 'invalidUsage' }],
+      },
+      {
+        code: "import { t } from 'virtual:ai-i18n'; let label = '保存'; t(label)",
+        filename: path.join(sourceRoot, 'mutable.ts'),
+        errors: [{ messageId: 'invalidUsage' }],
+      },
+      {
+        code: "import { t } from 'virtual:ai-i18n'; const messages = { save: '保存' }; t(messages.save)",
+        filename: path.join(sourceRoot, 'unmarked-member.ts'),
+        errors: [{ messageId: 'invalidUsage' }],
+      },
+      {
+        code: "import { t } from 'virtual:ai-i18n'; const messages = defineI18nMessages({ save: '保' + '存' }); t(messages.save)",
+        filename: path.join(sourceRoot, 'macro-concat.ts'),
+        errors: [{ messageId: 'invalidUsage' }],
+      },
+      {
+        code: "let messages = defineI18nMessages({ save: '保存' })",
+        filename: path.join(sourceRoot, 'invalid-macro.ts'),
+        errors: [{ messageId: 'invalidUsage' }],
+      },
+      {
+        code: "import { t } from 'virtual:ai-i18n'; const tr = t; tr('保存')",
+        filename: path.join(sourceRoot, 'local-t-alias.ts'),
+        errors: [{ messageId: 'invalidUsage' }],
+      },
+      {
+        code: "import * as i18n from 'virtual:ai-i18n'; i18n.t('保存')",
+        filename: path.join(sourceRoot, 'namespace.ts'),
+        errors: [{ messageId: 'invalidUsage' }],
+      },
+      {
+        code: "const i18n = useI18n(); const { t } = i18n; t('保存')",
+        filename: path.join(sourceRoot, 'second-destructure.ts'),
+        options: [{ autoImport: true }],
+        errors: [{ messageId: 'invalidUsage' }],
+      },
+      {
+        code: "useI18n().t('保存')",
+        filename: path.join(sourceRoot, 'inline-hook.ts'),
+        options: [{ autoImport: true }],
+        errors: [{ messageId: 'invalidUsage' }],
+      },
+      {
+        code: "const { t } = require('virtual:ai-i18n')",
+        filename: path.join(sourceRoot, 'require.ts'),
+        errors: [{ messageId: 'invalidUsage' }],
+      },
+      {
+        code: 'const macro = defineI18nMessages',
+        filename: path.join(sourceRoot, 'macro-reference.ts'),
+        errors: [{ messageId: 'invalidUsage' }],
       },
     ],
   });
@@ -283,7 +368,7 @@ describe('ai-i18n/t-static-args', () => {
           '</script>',
         ].join('\n'),
         filename: path.join(sourceRoot, 'ScriptDynamic.vue'),
-        errors: [{ messageId: 'dynamicArg', line: 4, column: 1 }],
+        errors: [{ messageId: 'invalidUsage', line: 4, column: 3 }],
       },
       {
         code: [
@@ -296,7 +381,7 @@ describe('ai-i18n/t-static-args', () => {
           '</template>',
         ].join('\n'),
         filename: path.join(sourceRoot, 'TemplateDynamic.vue'),
-        errors: [{ messageId: 'dynamicArg', line: 6, column: 19 }],
+        errors: [{ messageId: 'invalidUsage', line: 6, column: 22 }],
       },
       {
         code: [
@@ -307,7 +392,7 @@ describe('ai-i18n/t-static-args', () => {
           '<template>{{ i18n.t(props.label) }}</template>',
         ].join('\n'),
         filename: path.join(sourceRoot, 'TemplateMemberDynamic.vue'),
-        errors: [{ messageId: 'dynamicArg', line: 5, column: 14 }],
+        errors: [{ messageId: 'invalidUsage', line: 5, column: 21 }],
       },
     ],
   });

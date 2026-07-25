@@ -5,7 +5,13 @@ import type {
   SFCDescriptor,
 } from '@vue/compiler-sfc';
 import { SourceMapConsumer, type RawSourceMap } from 'source-map-js';
-import type { AnalysisLanguage, SourceLocation } from './index.js';
+import {
+  analyzeModule,
+  findDefineI18nMessagesCalls,
+  type AnalysisLanguage,
+  type DefineI18nMessagesCall,
+  type SourceLocation,
+} from './index.js';
 
 export interface VueCompiler {
   parse: typeof parseVue;
@@ -23,6 +29,7 @@ export interface VueAnalysisSource {
   lang: AnalysisLanguage;
   mapLocation(location: SourceLocation): SourceLocation;
   registration: VueRegistrationInsertion;
+  macroCalls: DefineI18nMessagesCall[];
 }
 
 export function analyzeVueSource(
@@ -41,6 +48,7 @@ export function analyzeVueSource(
   }
 
   const registrationBlock = writableScriptBlock(descriptor);
+  const macroCalls = findMacroCalls(descriptor, id);
   const registration = registrationBlock
     ? { offset: registrationBlock.loc.start.offset }
     : {
@@ -58,6 +66,7 @@ export function analyzeVueSource(
         ? createBlockLocationMapper(script)
         : identityLocation,
       registration,
+      macroCalls,
     };
   }
 
@@ -75,10 +84,36 @@ export function analyzeVueSource(
         ? createSourceMapLocationMapper(compiled.map as unknown as RawSourceMap)
         : identityLocation,
       registration,
+      macroCalls,
     };
   } catch (error) {
     throw new Error(`[ai-i18n] failed to compile ${id}: ${formatError(error)}`);
   }
+}
+
+function findMacroCalls(
+  descriptor: SFCDescriptor,
+  id: string,
+): DefineI18nMessagesCall[] {
+  return [descriptor.script, descriptor.scriptSetup].flatMap((block, index) => {
+    if (!block || block.src) return [];
+    const module = analyzeModule(
+      block.content,
+      `${id}?macro=${index}`,
+      undefined,
+      scriptLanguage(block.lang),
+    );
+    return findDefineI18nMessagesCalls(module).map((call) => ({
+      start: call.start + block.loc.start.offset,
+      end: call.end + block.loc.start.offset,
+      argument: call.argument
+        ? {
+            start: call.argument.start + block.loc.start.offset,
+            end: call.argument.end + block.loc.start.offset,
+          }
+        : null,
+    }));
+  });
 }
 
 function createSourceMapLocationMapper(map: RawSourceMap) {

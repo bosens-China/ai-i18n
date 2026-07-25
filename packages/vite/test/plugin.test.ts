@@ -193,6 +193,63 @@ t(label)`,
     ).toBeNull();
   });
 
+  it('erases defineI18nMessages while extracting collection members', async () => {
+    const { transform } = setupPlugin();
+    const result = await transform(
+      `import { t } from 'virtual:ai-i18n'
+const messages = defineI18nMessages({
+  save: '保存',
+  states: ['等待中', '处理中'],
+})
+t(messages.save)
+t(messages.states[index])`,
+      '/workspace/src/messages.ts',
+    );
+
+    expect(result?.code).not.toContain('defineI18nMessages');
+    expect(result?.code).toContain("const messages = ({\n  save: '保存'");
+    expect(result?.code).toContain('register?module=src%2Fmessages.ts');
+  });
+
+  it('does not erase a local defineI18nMessages binding', async () => {
+    const { transform } = setupPlugin();
+    await expect(
+      transform(
+        'const defineI18nMessages = (value) => value; defineI18nMessages({ local: true })',
+        '/workspace/src/local-macro.ts',
+      ),
+    ).resolves.toBeNull();
+  });
+
+  it('rejects using defineI18nMessages as a runtime value', async () => {
+    const { transform } = setupPlugin();
+    await expect(
+      transform(
+        'const macro = defineI18nMessages',
+        '/workspace/src/invalid-macro.ts',
+      ),
+    ).rejects.toThrow('must be called directly');
+  });
+
+  it('erases defineI18nMessages inside Vue script setup', async () => {
+    const { transform } = setupPlugin([], undefined, options, [
+      { name: 'vite:vue' },
+      { name: 'unplugin-auto-import' },
+    ]);
+    const result = await transform(
+      `<script setup lang="ts">
+const { t } = useI18n()
+const messages = defineI18nMessages({ save: '保存' })
+</script>
+<template>{{ t(messages.save) }}</template>`,
+      '/workspace/src/App.vue',
+    );
+
+    expect(result?.code).not.toContain('defineI18nMessages');
+    expect(result?.code).toContain("const messages = ({ save: '保存' })");
+    expect(result?.code).toContain('register?module=src%2FApp.vue');
+  });
+
   it('auto-imports the Vanilla runtime without changing local bindings', async () => {
     const { transform } = setupPlugin([], undefined, options, [
       { name: 'unplugin-auto-import' },
@@ -506,6 +563,15 @@ export const View = () => <p>{t('React JSX')}</p>`,
         { ssr: true },
       ),
     ).resolves.toBeNull();
+    await expect(
+      transform(
+        "const messages = defineI18nMessages({ save: '保存' })",
+        '/workspace/src/ssr-messages.ts',
+        { ssr: true },
+      ),
+    ).resolves.toMatchObject({
+      code: "const messages = ({ save: '保存' })",
+    });
 
     const runtimeId = callHook<string>(plugin.resolveId, 'virtual:ai-i18n');
     const load = objectHandler<

@@ -127,6 +127,9 @@ importers:
 
   examples/vanilla:
     devDependencies:
+      '@ai-i18n/eslint-plugin':
+        specifier: workspace:*
+        version: link:../../packages/eslint
       '@ai-i18n/vite':
         specifier: workspace:*
         version: link:../../packages/vite

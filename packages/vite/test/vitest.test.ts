@@ -22,6 +22,42 @@ test('Vitest plugin resolves a stateless React-compatible virtual runtime', () =
   expect(code).not.toContain('FileStore');
 });
 
+test('Vitest plugin erases defineI18nMessages without a runtime import', async () => {
+  const plugin = aiI18nVitest({
+    sourceLang: 'zh-CN',
+    locales: [{ value: 'zh-CN', label: '中文' }],
+  });
+  callHook<void>(plugin.configResolved, {
+    plugins: [plugin],
+  } as unknown as ResolvedConfig);
+
+  const result = await callHook<Promise<{ code: string; map: unknown } | null>>(
+    plugin.transform,
+    "const messages = defineI18nMessages({ save: '保存' })",
+    '/workspace/src/messages.ts',
+  );
+
+  expect(result?.code).toBe("const messages = ({ save: '保存' })");
+});
+
+test('Vitest plugin rejects using defineI18nMessages as a runtime value', async () => {
+  const plugin = aiI18nVitest({
+    sourceLang: 'zh-CN',
+    locales: [{ value: 'zh-CN', label: '中文' }],
+  });
+  callHook<void>(plugin.configResolved, {
+    plugins: [plugin],
+  } as unknown as ResolvedConfig);
+
+  await expect(
+    callHook<Promise<unknown>>(
+      plugin.transform,
+      'const macro = defineI18nMessages',
+      '/workspace/src/invalid-macro.ts',
+    ),
+  ).rejects.toThrow('must be called directly');
+});
+
 function callHook<T>(hook: Plugin[keyof Plugin], ...args: unknown[]): T {
   const handler =
     typeof hook === 'function'

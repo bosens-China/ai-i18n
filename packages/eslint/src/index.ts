@@ -23,6 +23,9 @@ plugin.configs!.recommended = [
   {
     ignores: ['**/*.vue'],
     plugins: { 'ai-i18n': plugin },
+    languageOptions: {
+      globals: { defineI18nMessages: 'readonly' },
+    },
     rules: { 'ai-i18n/t-static-args': 'error' },
   },
 ];
@@ -31,7 +34,12 @@ plugin.configs!.vue = [
   {
     files: ['**/*.{js,mjs,cjs,ts,mts,cts,jsx,tsx,vue}'],
     plugins: { 'ai-i18n': plugin },
-    languageOptions: { globals: { useI18n: 'readonly' } },
+    languageOptions: {
+      globals: {
+        useI18n: 'readonly',
+        defineI18nMessages: 'readonly',
+      },
+    },
     rules: {
       'ai-i18n/t-static-args': ['error', { autoImport: true }],
     },
@@ -42,7 +50,12 @@ plugin.configs!.react = [
   {
     files: ['**/*.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'],
     plugins: { 'ai-i18n': plugin },
-    languageOptions: { globals: { useI18n: 'readonly' } },
+    languageOptions: {
+      globals: {
+        useI18n: 'readonly',
+        defineI18nMessages: 'readonly',
+      },
+    },
     rules: {
       'ai-i18n/t-static-args': ['error', { autoImport: true }],
     },
@@ -60,6 +73,7 @@ plugin.configs!.vanilla = [
         getLang: 'readonly',
         getLangs: 'readonly',
         subscribe: 'readonly',
+        defineI18nMessages: 'readonly',
       },
     },
     rules: {

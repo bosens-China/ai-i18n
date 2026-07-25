@@ -27,6 +27,7 @@ export const tStaticArgs: Rule.RuleModule = {
       analysisFailed: 'ai-i18n 静态分析失败：{{reason}}',
       dynamicArg:
         't() 参数无法静态提取，请使用字符串字面量、静态模板、条件表达式或可解析的 const 字符串。',
+      invalidUsage: '{{reason}}',
     },
   },
   create(context) {
@@ -70,14 +71,24 @@ export const tStaticArgs: Rule.RuleModule = {
         }
         for (const warning of warnings) {
           const analysisFailed = warning.code === 'parse-error';
+          const invalidUsage =
+            warning.code !== 'dynamic-argument' &&
+            warning.code !== 'unresolved-argument' &&
+            !analysisFailed;
           context.report({
             node,
             loc: {
               start: warning,
               end: { line: warning.line, column: warning.column + 1 },
             },
-            messageId: analysisFailed ? 'analysisFailed' : 'dynamicArg',
-            ...(analysisFailed ? { data: { reason: warning.message } } : {}),
+            messageId: analysisFailed
+              ? 'analysisFailed'
+              : invalidUsage
+                ? 'invalidUsage'
+                : 'dynamicArg',
+            ...(analysisFailed || invalidUsage
+              ? { data: { reason: warning.message } }
+              : {}),
           });
         }
       },

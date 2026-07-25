@@ -1,4 +1,8 @@
-import type { AnalysisLanguage, SourceLocation } from '@ai-i18n/analyzer';
+import type {
+  AnalysisLanguage,
+  DefineI18nMessagesCall,
+  SourceLocation,
+} from '@ai-i18n/analyzer';
 
 export type {
   AnalysisLanguage,
@@ -17,4 +21,5 @@ export interface SourceExtraction {
   analysisLang?: AnalysisLanguage;
   mapLocation(location: SourceLocation): SourceLocation;
   registration?: RegistrationInsertion;
+  macroCalls?: DefineI18nMessagesCall[];
 }

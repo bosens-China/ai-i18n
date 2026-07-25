@@ -37,9 +37,15 @@ import {
   sourceUpdateOptions,
 } from './plugin-utils.js';
 import { runtimeCode, runtimeStubCode } from './virtual-modules.js';
-import { sourceRegistration } from './source-registration.js';
+import {
+  assertDirectDefineI18nMessagesCalls,
+  sourceRegistration,
+  transformDefineI18nMessages,
+} from './source-registration.js';
 import {
   AI_I18N_VIRTUAL_MODULE_ID,
+  analyzeModule,
+  findDefineI18nMessagesCalls,
   findUnboundCalls,
 } from './yuku-analyzer.js';
 
@@ -278,7 +284,16 @@ export function aiI18n(options: AiI18nOptions): Plugin {
             warnedSsr = true;
             this.warn('[ai-i18n] SSR transform skipped; browser runtime only.');
           }
-          return null;
+          const macroModule = analyzeModule(
+            extraction?.analysisCode ?? code,
+            id.split('?')[0] ?? id,
+            undefined,
+            extraction?.analysisLang,
+          );
+          assertDirectDefineI18nMessagesCalls(macroModule);
+          const macroCalls =
+            extraction?.macroCalls ?? findDefineI18nMessagesCalls(macroModule);
+          return transformDefineI18nMessages(code, id, macroCalls);
         }
         if (config?.command === 'serve' && 'hot' in this.environment) {
           devHot = this.environment.hot as NormalizedHotChannel;
@@ -316,6 +331,8 @@ export function aiI18n(options: AiI18nOptions): Plugin {
             force: true,
           })!;
         }
+        const currentModule = project.analyzer.module(moduleId)!;
+        assertDirectDefineI18nMessagesCalls(currentModule);
         const { result } = update;
         for (const warning of result.warnings) {
           this.warn({
@@ -327,7 +344,6 @@ export function aiI18n(options: AiI18nOptions): Plugin {
         const cache = await currentStore().sync(project.snapshot());
         project.hydrateCache(cache);
         requestMissingTranslations(update.affectedModuleIds);
-        const currentModule = project.analyzer.module(moduleId)!;
         // 只注入没有本地 symbol 的调用，避免覆盖用户自己的同名函数。
         const unboundCalls = autoImport
           ? new Set(
@@ -343,7 +359,11 @@ export function aiI18n(options: AiI18nOptions): Plugin {
         const needsRegistration = Boolean(
           result.messages.length || result.pending,
         );
-        if (!needsRegistration && !autoImports.length) return null;
+        const macroCalls =
+          extraction?.macroCalls ?? findDefineI18nMessagesCalls(currentModule);
+        if (!needsRegistration && !autoImports.length && !macroCalls.length) {
+          return null;
+        }
 
         return sourceRegistration({
           code,
@@ -356,6 +376,7 @@ export function aiI18n(options: AiI18nOptions): Plugin {
             : {}),
           autoImports,
           needsRegistration,
+          macroCalls,
         });
       },
     },

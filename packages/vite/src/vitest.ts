@@ -1,11 +1,24 @@
 import type { Plugin } from 'vite';
-import { resolveFramework, type AiI18nFramework } from './framework.js';
+import {
+  extractFrameworkSource,
+  resolveFramework,
+  type AiI18nFramework,
+} from './framework.js';
 import type { AiI18nOptions } from './options.js';
 import { normalizeOptions } from './plugin-utils.js';
+import {
+  assertDirectDefineI18nMessagesCalls,
+  transformDefineI18nMessages,
+} from './source-registration.js';
 import { runtimeCode } from './virtual-modules.js';
-import { AI_I18N_VIRTUAL_MODULE_ID } from './yuku-analyzer.js';
+import {
+  AI_I18N_VIRTUAL_MODULE_ID,
+  analyzeModule,
+  findDefineI18nMessagesCalls,
+} from './yuku-analyzer.js';
 
 const TEST_RUNTIME_ID = '\0virtual:ai-i18n:vitest';
+const SOURCE_RE = /\.(?:[cm]?[jt]sx?|vue)(?:\?.*)?$/;
 
 export type AiI18nVitestOptions = Pick<
   AiI18nOptions,
@@ -39,6 +52,21 @@ export function aiI18nVitest(options: AiI18nVitestOptions): Plugin {
         'ai-i18n:vitest-locale-update',
         framework,
       );
+    },
+    async transform(code, id) {
+      if (!SOURCE_RE.test(id)) return null;
+      const extraction = await extractFrameworkSource(code, id, framework);
+      if (extraction === null) return null;
+      const module = analyzeModule(
+        extraction?.analysisCode ?? code,
+        id.split('?')[0] ?? id,
+        undefined,
+        extraction?.analysisLang,
+      );
+      assertDirectDefineI18nMessagesCalls(module);
+      const calls =
+        extraction?.macroCalls ?? findDefineI18nMessagesCalls(module);
+      return transformDefineI18nMessages(code, id, calls);
     },
   };
 }

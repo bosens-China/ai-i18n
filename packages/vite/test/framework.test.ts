@@ -67,6 +67,9 @@ describe('framework integration', () => {
     expect(source).toContain("declare module 'virtual:ai-i18n'");
     expect(source).toContain("import('@ai-i18n/vite/vue').UseI18n");
     expect(source).toContain('declare const useI18n');
+    expect(source).toContain(
+      'declare const defineI18nMessages: <T>(messages: T) => T;',
+    );
     expect(source).not.toContain('declare const t:');
 
     await writeFrameworkTypes(root, 'vanilla', false);
@@ -77,6 +80,7 @@ describe('framework integration', () => {
     expect(vanilla).toContain("declare module 'virtual:ai-i18n'");
     expect(vanilla).not.toContain('declare const t:');
     expect(vanilla).not.toContain('useI18n');
+    expect(vanilla).toContain('declare const defineI18nMessages');
     expect(vanilla).not.toMatch(/\n\n$/);
   });
 });

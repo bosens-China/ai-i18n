@@ -88,6 +88,7 @@ export async function extractFrameworkSource(
     analysisLang: analysis.lang,
     mapLocation: analysis.mapLocation,
     registration: analysis.registration,
+    macroCalls: analysis.macroCalls,
   };
 }
 
@@ -135,6 +136,7 @@ function frameworkTypes(
         })
         .join('\n')
     : '';
+  const macro = 'declare const defineI18nMessages: <T>(messages: T) => T;';
 
   const virtualModule = `declare module 'virtual:ai-i18n' {
   import type { I18nRuntime } from '@ai-i18n/vite';
@@ -153,6 +155,8 @@ function frameworkTypes(
 /* eslint-disable */
 // @ts-nocheck
 
-${virtualModule}${globals ? `\n\n${globals}` : ''}
+${virtualModule}
+
+${macro}${globals ? `\n${globals}` : ''}
 `;
 }

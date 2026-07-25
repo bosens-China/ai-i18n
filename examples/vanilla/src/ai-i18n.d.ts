@@ -14,3 +14,5 @@ declare module 'virtual:ai-i18n' {
   export const getLangs: I18nRuntime['getLangs'];
   export const subscribe: I18nRuntime['subscribe'];
 }
+
+declare const defineI18nMessages: <T>(messages: T) => T;

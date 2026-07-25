@@ -3,9 +3,12 @@ export {
   Analyzer,
   analyzeModule,
   extractMessages,
+  findDefineI18nMessagesCalls,
+  findInvalidDefineI18nMessagesReferences,
   findUnboundCalls,
 } from '@ai-i18n/analyzer';
 export type {
+  DefineI18nMessagesCall,
   ExtractResult,
   ExtractWarning,
   ExtractWarningCode,
