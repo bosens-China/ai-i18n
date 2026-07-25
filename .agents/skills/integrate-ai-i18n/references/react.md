@@ -55,3 +55,5 @@ instance. A normal peer-resolved installation usually does not need this.
 Third-party locale state remains application-owned. Derive Ant Design/date-library locale directly
 from `currentLang`. Do not persist already translated strings in long-lived React state; translate
 from source/message data during render.
+
+A runnable end-to-end example: fetch `https://bosens-china.github.io/ai-i18n/demo/react.md`.

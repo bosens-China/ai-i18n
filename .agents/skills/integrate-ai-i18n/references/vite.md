@@ -92,6 +92,10 @@ import { useI18n } from 'virtual:ai-i18n'
 - `cache.maxMessages` and `cache.maxBytes` are optional positive integers.
 - Cleanup defaults should remain unless explicitly changed.
 
+The complete field list, nested types (`LangOption`, `HtmlExtractorOptions`, etc.), and defaults
+table live at `api/vite.md` in [SKILL.md](../SKILL.md)'s doc table; fetch it before assuming an
+undocumented field's shape.
+
 ## Optional Provider
 
 Add `@ai-i18n/openai@alpha` during prerelease only when automatic translation is required:
@@ -114,6 +118,9 @@ aiI18n({
 ```
 
 Keep secrets in Vite's Node process. `batchLength` measures serialized request length, not tokens.
+`debounceMs` (default `100`, merges consecutive Dev misses) and `strict` (default `false`, throws on
+`flush` when a translation failed or is still `null`) are also available; see `api/vite.md` for the
+full Provider option table.
 
 ## Optional locale loading
 
@@ -129,14 +136,14 @@ aiI18n({
 })
 ```
 
-Locale loading is opt-in. Each target locale becomes an independent Vite chunk. `preload` emits a
-`modulepreload` hint, `prefetch` emits a lower-priority browser hint, and unlisted targets load on
-their first `setLang()` call. Never include `sourceLang` or place the same locale in both lists.
-Duplicates within one list are harmless and normalized away.
+Locale loading is opt-in and preserves eager all-locale registration when omitted. Each target locale
+becomes an independent Vite chunk. `preload` emits a `modulepreload` hint, `prefetch` emits a
+lower-priority browser hint, and unlisted targets load on their first `setLang()` call. Never include
+`sourceLang` or place the same locale in both lists; duplicates within one list are normalized away.
 
-A non-source `defaultLang` is automatically preloaded. Until it finishes, Runtime and HTML use the
-synchronous source fallback. `setLang()` resolves only after an unloaded target is installed;
-failures preserve the current language. Omitting `loading` preserves eager all-locale registration.
+A non-source `defaultLang` is automatically preloaded and uses the source fallback until it loads; a
+failed `setLang()` keeps the current language. Concurrent-load Promise sharing and other edge cases:
+see `api/vite.md`'s loading section.
 
 ## Optional cache capacity
 
@@ -151,14 +158,13 @@ aiI18n({
 })
 ```
 
-Capacity control is opt-in. Exceeding either configured limit prunes only inactive Translation
-Memory in stable message-ID order. `maxBytes` measures the UTF-8 bytes of the entire stable
-`cache.json` serialization. Messages referenced by existing extracted files or the current
-ProjectState are protected. If protected data alone exceeds a limit, Vite warns and keeps it.
-
-`cleanup.orphanMessages: true` deletes all inactive messages before capacity enforcement.
-`cleanup.missingSourceFiles` continues to decide whether missing source records protect their
-messages.
+Capacity control is opt-in and only prunes inactive Translation Memory, never messages referenced by
+active extracted files or the current ProjectState; if protected data alone exceeds a limit, Vite
+warns and keeps it instead of dropping it. `maxBytes` measures the UTF-8 bytes of the entire stable
+`cache.json` serialization, not just the pruned messages — size it against the whole file.
+`cleanup.orphanMessages: true` deletes all inactive messages first, ahead of these limits;
+`cleanup.missingSourceFiles` separately decides whether missing source records still protect their
+messages. The exact pruning order (a rare debugging detail): see `api/vite.md`'s cache section.
 
 ## Generation behavior
 
@@ -167,10 +173,14 @@ starts a fresh state and follows reachable imports. Both modes reconcile stable 
 `extracted/**`, and `locales/**`.
 
 `cache.json` uses schema v2 and contains only `version` plus messages keyed by readable message ID.
-Each message stores its `sourceLang`, optional comment, and target translations. A source-language
-change first looks up the new message ID, then uniquely reverse-matches the new source against
-historical translations with the same comment. Extracted files are flat (for example,
-`src_components_App.tsx.json`), and locale files are generated only for non-source targets.
+Each message stores its `sourceLang`, optional comment, and target translations. `comment` never
+affects the message ID; a new ID first inherits translations from any historical entry sharing the
+same parsed source (this is what migrates legacy `source#comment` IDs once comment changes). Only
+when no same-source entry exists, and the source language itself changed, does ai-i18n uniquely
+reverse-match the new source against a historical entry whose translation for the new source
+language equals it; comment does not need to match for this reverse match. Extracted files are
+flat (for example, `src_components_App.tsx.json`), and locale files are generated only for
+non-source targets.
 
 `vite build --watch` creates ProjectState on the first build and reuses it on later rebuilds.
 Unchanged source fingerprints reuse their AST; changed static dependencies refresh necessary reverse
@@ -179,7 +189,9 @@ parsing unchanged source. Deleted, renamed, or newly unreachable modules leave t
 Translation Memory remains available. Restart the Watch process after Vite config, plugin, extractor,
 or schema changes.
 
-SSR transforms and runtime injection are skipped with a warning.
+SSR transforms and runtime injection are skipped with a warning. The per-build reuse table (what
+exactly is re-parsed vs. reused) lives in `api/vite.md`'s Build Watch section.
 
 For Vitest, use `aiI18nVitest(options)` from `@ai-i18n/vite/vitest`. Do not run the production plugin
-or maintain a `virtual:ai-i18n` alias just for unit tests.
+or maintain a `virtual:ai-i18n` alias just for unit tests; see `guide/advanced/testing.md` for sharing
+options and migration guidance.

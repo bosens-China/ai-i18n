@@ -34,6 +34,27 @@ Always read [Vite configuration](references/vite.md). Then read only the matchin
 - React JSX/TSX: [React integration](references/react.md)
 - Plain `.js` or `.ts`: [Vanilla integration](references/vanilla.md)
 
+## Fetch published docs for deeper detail
+
+The reference files above cover the common setup. For exhaustive option tables, capacity/loading
+edge cases, or narrative walkthroughs beyond what they cover, fetch the matching page below instead
+of guessing. The docs site is built with Rspress SSG-MD, so every page also exists as clean Markdown
+at the same path with a `.md` extension — fetch that, not the `.html` page:
+
+| Topic | Page |
+| --- | --- |
+| Full `aiI18n()` option table, Provider tuning, capacity/loading edge cases | `https://bosens-china.github.io/ai-i18n/api/vite.md` |
+| Runtime API (`t`, `useI18n`, template placeholders, persist/detect/fallback) | `https://bosens-china.github.io/ai-i18n/api/runtime.md` |
+| Protocol directory layout, Git conventions, message-ID/comment migration | `https://bosens-china.github.io/ai-i18n/guide/advanced/workflow.md` |
+| AI translation Provider setup and prompt tuning | `https://bosens-china.github.io/ai-i18n/guide/advanced/ai-translation.md` |
+| `aiI18nVitest()` usage | `https://bosens-china.github.io/ai-i18n/guide/advanced/testing.md` |
+| ESLint plugin Flat Config examples per framework | `https://bosens-china.github.io/ai-i18n/guide/basic/eslint.md` |
+
+If a link 404s after a docs restructure, fetch `https://bosens-china.github.io/ai-i18n/llms.txt` (a
+generated site index) to relocate the page. These pages reflect the latest deploy from `main` and can
+lag an unreleased repository state; when a fetched page conflicts with this skill or the installed
+package version, trust the reference files and the installed code over a stale fetch.
+
 ## Implement the smallest complete setup
 
 1. While the package is prerelease, install `@ai-i18n/vite@alpha`; do not rely on the older
@@ -81,7 +102,8 @@ Add `@ai-i18n/eslint-plugin@alpha` during prerelease only when checks are reques
 globals must be declared.
 Use exactly one of `configs.vanilla`, `configs.vue`, or `configs.react`, matching the resolved Vite
 mode. Preserve the host Vue parser and framework lint rules. The host Auto Import plugin remains
-responsible for ESLint declarations of its own APIs.
+responsible for ESLint declarations of its own APIs. For per-framework Flat Config examples, fetch
+the ESLint doc page from the table above.
 
 ## Preserve extraction semantics
 

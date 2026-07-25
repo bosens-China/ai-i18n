@@ -30,3 +30,5 @@ Runtime state changes do not mutate existing DOM. Re-render from `subscribe()` a
 updates. Static extraction ignores unrelated strings and dynamic `t(variable)` calls. Vanilla mode
 does not analyze JSX/TSX; select React or Vue mode for those file types. Use `html: true` only when
 `index.html` contains supported translation bindings.
+
+A runnable end-to-end example: fetch `https://bosens-china.github.io/ai-i18n/demo/vanilla.md`.
