@@ -1,6 +1,6 @@
 # @ai-i18n/eslint-plugin
 
-用于提前报告无法被 Vite/Yuku 静态提取的 `t()` 参数。规则检查解析到
+用于提前报告无法被 Vite/Yuku 静态提取或不符合推荐语法的 `t()` 参数。规则检查解析到
 `virtual:ai-i18n` 的 `t` binding，以及 Vue/React 模式下 `useI18n()` 解构或对象成员得到的
 `t`。其他库或局部同名函数不受影响。
 
@@ -19,8 +19,9 @@ export default [
 ];
 ```
 
-这些 preset 只负责 ai-i18n 的 `t`/`useI18n`。宿主 Auto Import 插件管理的其他 API 仍由
-它自己的 ESLint 集成负责。
+这些 preset 只负责 ai-i18n 的 `t`/`useI18n`，并在所有模式下声明只读的
+`defineI18nMessages` 编译宏。宿主 Auto Import 插件管理的其他 API 仍由它自己的 ESLint
+集成负责。
 
 ## Vue SFC
 
@@ -56,6 +57,10 @@ React 项目使用 React preset；同一个 Vite build 不支持两种框架模�
 `t('source', undefined)` 和 tagged template。未绑定到 ai-i18n 的 template-only `t()`
 不参与检查。
 
+对象或数组成员只有在根集合由 `defineI18nMessages()` 标记后才属于推荐写法。字符串拼接、
+逻辑表达式、`let` 文案、普通集合成员、`const tr = t`、命名空间调用、二次 Hook 解构、
+`useI18n().t()` 与 `require()` 都会报错。
+
 需要解析 `tsconfig` 路径别名时，可以显式配置规则：
 
 ```js
@@ -63,6 +68,9 @@ import aiI18n from '@ai-i18n/eslint-plugin';
 
 export default [
   {
+    languageOptions: {
+      globals: { defineI18nMessages: 'readonly' },
+    },
     plugins: { 'ai-i18n': aiI18n },
     rules: {
       'ai-i18n/t-static-args': [

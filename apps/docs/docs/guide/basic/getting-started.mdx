@@ -13,7 +13,7 @@ ai-i18n 在 Vite Dev 与 Build 期间提取显式 `t()`，维护可提交到 Git
 
 - 仅支持 **Vite ≥ 8** 与浏览器端 Runtime（不支持 SSR，若遇 SSR 环境会自动跳过并警告）。
 - 插件会根据最终解析的 Vite 插件推断框架模式，每个 Vite build 只能选择一种模式：`vanilla`、`vue` 或 `react`。
-- 插件只识别并提取显式 `t()` 或 `` t`...` ``，不会去猜测普通字符串、JSX 文本或 Vue 模板文本。
+- 插件只识别显式 `t()`、`` t`...` ``，以及由 `defineI18nMessages()` 标记后传给 `t()` 的消息集合；不会去猜测普通字符串、JSX 文本或 Vue 模板文本。
 - 所有写入和合并由 `vite dev` 或 `vite build` 驱动，不需要单独执行提取命令行。
 
 :::
@@ -151,6 +151,26 @@ const message = t`你好 ${user.name}，你有 ${unreadCount} 条消息`;
 需要给翻译模型补充语境时仍可写 `t('保存', '设置弹窗按钮')`。`comment` 只作为翻译提示，
 不参与 message ID；修改或删除注释不会丢失已有翻译。同一 source 的不同调用共享一条翻译。
 
+### 组织对象或数组文案
+
+需要按属性或索引取文案时，使用无需导入的编译宏：
+
+```ts
+const messages = defineI18nMessages({
+  actions: { save: '保存', cancel: '取消' },
+  states: ['等待中', '处理中', '已完成'],
+});
+
+t(messages.actions.save);
+t(messages.states[index]);
+```
+
+宏在 Vite 与 Vitest 转换时会被消除，运行时仍是原对象。它不会冻结对象，也不会执行任意代码；
+动态索引只提取 AST 中可枚举的有限候选。宏必须直接调用，不能赋值、传递或作为运行时值使用。
+`ai-i18n.d.ts` 会在所有框架模式下提供宏的全局类型，这一点不受 `autoImport` 开关影响。
+声明文件在首次启动 Vite 后生成，建议纳入版本控制并确保位于 `tsconfig` 的 `include`
+范围内，避免先执行独立 `tsc` 时找不到宏。
+
 ### 设置按需导入（可选）
 
 如果不希望每次都显式 `import { useI18n } from 'virtual:ai-i18n'`，你可以启用按需导入。
@@ -158,7 +178,9 @@ const message = t`你好 ${user.name}，你有 ${unreadCount} 条消息`;
 - **如果你没有使用其他自动导入库**，可以直接设置 `autoImport: true`。
 - **如果你在使用 `unplugin-auto-import`**，ai-i18n 会**自动探测**并开启按需导入。你不需要把 `useI18n` 再重复写进 `unplugin-auto-import` 的 `imports` 列表中。
 
-一旦开启，插件会默认在 `src/ai-i18n.d.ts` 生成相关的全局 TypeScript 声明（可以通过 `dts: false` 禁用或通过字符串修改生成路径）。开启后，你在 Vue/React 就可以直接写 `useI18n()`。
+插件默认在 `src/ai-i18n.d.ts` 生成宏的全局 TypeScript 声明；开启按需导入后，同一文件还会
+声明对应的 Runtime API。可以通过 `dts: false` 禁用或通过字符串修改生成路径；禁用后需自行
+提供宏与按需导入 API 的全局声明。
 
 ### 了解进阶配置：分包与按需加载
 
@@ -225,8 +247,8 @@ export default defineConfig({
 });
 ```
 
-测试 Runtime 保留框架 Hook、语言状态和 source fallback，但不会扫描源码、调用 Provider 或写入
-`i18n/`。Vite Dev/Build 继续使用正式的 `aiI18n()`。共享 options 与缺译策略在测试里的表现，见
+测试 Runtime 保留框架 Hook、语言状态和 source fallback，只执行消息集合宏的消除，不会提取翻译、
+调用 Provider 或写入 `i18n/`。Vite Dev/Build 继续使用正式的 `aiI18n()`。共享 options 与缺译策略在测试里的表现，见
 [测试（Vitest）](/guide/advanced/testing)。
 
 ## 下一步

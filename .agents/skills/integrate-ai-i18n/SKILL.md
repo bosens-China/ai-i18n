@@ -112,6 +112,12 @@ the ESLint doc page from the table above.
   translation guidance; it is metadata and does not participate in the message ID. Changing it
   preserves translations. Do not invent comments by default. Source and comment arguments must be
   statically evaluable.
+- For object or array copy, use the import-free compiler macro
+  `const messages = defineI18nMessages({...})`, then pass members such as
+  `messages.save` or `messages.states[index]` to `t()`. The macro is an analysis marker that must be
+  called directly, not assigned or passed as a runtime value. It is not a freeze/validation helper;
+  Vite erases it to the original argument. Do not replace direct literals
+  with concatenation or logical expressions merely because the analyzer can recover candidates.
 - Use tagged templates for dynamic values: `` t`你好 ${name}` ``. Expressions are represented as
   reorderable `{{0}}`, `{{1}}` placeholders and are not translated.
 - Vue/React Hook bindings work in JS, TS, JSX, and TSX, including composables and custom Hooks.
@@ -128,6 +134,7 @@ Use `aiI18nVitest()` from `@ai-i18n/vite/vitest` in the Vitest config instead of
 `aiI18n()` or a hand-written alias. Pass the same source/default locales and keep the host React/Vue
 Vite plugin. The test plugin resolves `virtual:ai-i18n` with source fallback and framework Hooks but
 does not extract, call a Provider, or write protocol files.
+It still erases `defineI18nMessages()` so test modules need no macro import or mock.
 
 ## Verify and report
 

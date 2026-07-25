@@ -31,7 +31,10 @@ export default defineConfig({
 
 ## TypeScript 支持
 
-开启自动导入后，插件会默认在根目录的 `src/ai-i18n.d.ts` 生成相关的全局 TypeScript 声明文件，以确保 IDE 不会报 TS 未定义错误。该文件由插件维护，带有 `@noformat` 等标记，请勿手工编辑。
+插件默认在根目录的 `src/ai-i18n.d.ts` 声明虚拟模块和
+`defineI18nMessages<T>(value)` 编译宏。开启自动导入后，同一文件还会声明当前框架模式下的
+Runtime 全局 API，避免 IDE 报未定义错误。该文件由插件维护，带有 `@noformat` 等标记，
+请勿手工编辑。
 
 你可以通过 `dts` 选项调整生成行为：
 
@@ -46,7 +49,8 @@ aiI18n({
 ```
 
 :::tip
-生成声明文件后，请确保该文件所在的目录已被你的 `tsconfig.json` 的 `include` 字段包含。
+声明文件会在首次启动 Vite 后生成。请将它纳入版本控制，并确保所在目录已被
+`tsconfig.json` 的 `include` 字段包含。
 :::
 
 ## 配合 unplugin-auto-import
@@ -55,7 +59,7 @@ aiI18n({
 
 ai-i18n 可以与 `unplugin-auto-import` 同时使用。你**不需要**修改后者的 `imports` 列表。
 
-你只需要保证 `aiI18n` 插件在 `AutoImport` 插件之前注册：
+ai-i18n 会读取 Vite 最终解析的插件列表，因此不依赖两者在 `plugins` 中的先后顺序：
 
 ```ts
 import { aiI18n } from '@ai-i18n/vite';
@@ -77,4 +81,5 @@ export default defineConfig({
 ```
 
 ai-i18n 会探测插件队列中的 `unplugin-auto-import`，并以此启用自己的导入注入和
-`ai-i18n.d.ts` 生成；两个插件的处理管线和声明文件相互独立。
+Runtime 全局声明；`ai-i18n.d.ts` 本身无论是否自动导入都会生成。两个插件的处理管线和
+声明文件相互独立。

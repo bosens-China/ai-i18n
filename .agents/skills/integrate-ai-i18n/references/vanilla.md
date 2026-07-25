@@ -31,4 +31,8 @@ updates. Static extraction ignores unrelated strings and dynamic `t(variable)` c
 does not analyze JSX/TSX; select React or Vue mode for those file types. Use `html: true` only when
 `index.html` contains supported translation bindings.
 
+For object or array copy, use `defineI18nMessages({...})` without an import and pass its members to
+`t()`. Dynamic indexes enumerate only finite AST candidates; the macro does not execute or freeze
+the collection.
+
 A runnable end-to-end example: fetch `https://bosens-china.github.io/ai-i18n/demo/vanilla.md`.

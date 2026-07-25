@@ -22,6 +22,31 @@ import { getLang, getLangs, setLang, subscribe, t } from 'virtual:ai-i18n';
 
 Vue 与 React 业务组件推荐使用 `useI18n()`，以便框架自动响应语言变化。
 
+## `defineI18nMessages(value)`
+
+`defineI18nMessages()` 是编译宏，不是 `virtual:ai-i18n` 的 Runtime 导出，因此无需 import：
+
+```ts
+const messages = defineI18nMessages({
+  save: '保存',
+  states: ['等待中', '处理中', '已完成'],
+});
+
+t(messages.save);
+t(messages.states[index]);
+```
+
+它接受任意类型，并在 Vite 或 `aiI18nVitest()` 转换时消除为原参数。它不会冻结、拷贝或校验
+对象；作用只是明确告诉静态分析器：这个对象或数组是可枚举的消息集合。动态索引会提取集合中
+可证明有限的候选值，函数调用、getter、`await` 等用户代码仍不会在分析阶段执行。
+
+宏必须直接写成 `defineI18nMessages(value)`，不能赋值给别名、作为值传递或脱离
+`aiI18n()` / `aiI18nVitest()` 处理的 Vite 模块运行；否则插件会报错，或在未经过 Vite
+转换的 Node、Jest 等环境中成为不存在的运行时全局。
+
+插件生成的 `ai-i18n.d.ts` 会声明宏的全局 TypeScript 类型。局部声明同名
+`defineI18nMessages` 时，局部 binding 优先，不会被当作宏处理。
+
 ## `t(source, comment?)` 与 `` t`...` ``
 
 ```ts

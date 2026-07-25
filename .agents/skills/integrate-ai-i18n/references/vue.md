@@ -52,6 +52,9 @@ If `unplugin-auto-import` is registered, omit the `useI18n` import. ai-i18n inje
 its declaration; do not add it to the external plugin's imports list. Use `configs.vue` from
 `@ai-i18n/eslint-plugin` to declare the global and validate static arguments.
 
+For object or array copy, use `defineI18nMessages({...})` without an import and pass its members to
+`t()`. The Vue SFC transform erases the macro and understands compiler-generated `unref` wrappers.
+
 `currentLang` and `langs` are readonly refs and unwrap in templates. Access `.value` in script.
 The Hook works in SFCs, JS/TS composables, and Vue JSX/TSX. Add `@vitejs/plugin-vue-jsx` for JSX/TSX;
 it also identifies the build as Vue. Do not add a React Vite plugin to the same build.

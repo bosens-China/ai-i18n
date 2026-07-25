@@ -28,6 +28,19 @@ aiI18n({
 动态值使用 tagged template：`` t`你好 ${name}` ``。表达式会变成可调整顺序的编号占位符，
 不会交给模型翻译。`t(source, comment?)` 的 comment 仅提供语境，不参与 message ID。
 
+对象或数组文案使用无需导入的编译宏：
+
+```ts
+const messages = defineI18nMessages({
+  save: '保存',
+  states: ['等待中', '处理中'],
+});
+t(messages.states[index]);
+```
+
+宏只能直接调用，不能赋值或传递；它在客户端、SSR transform 与 `aiI18nVitest()` 中消除为
+原参数，不提供冻结或运行时校验。生成的 `ai-i18n.d.ts` 始终包含它的全局类型。
+
 Vitest 使用 `@ai-i18n/vite/vitest` 的 `aiI18nVitest()`，无需手写 alias，也不会读写协议文件。
 语言偏好可用 `persist`、`detect: 'navigator'` 和 `fallback` 配置。
 

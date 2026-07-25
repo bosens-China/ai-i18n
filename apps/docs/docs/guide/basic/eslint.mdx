@@ -6,7 +6,7 @@ description: '@ai-i18n/eslint-plugin 的 Flat Config、预设、规则与选项'
 import { PackageManagerTabs } from '@rspress/core/theme';
 
 `@ai-i18n/eslint-plugin` 面向 ESLint Flat Config。它在 lint 阶段复用 ai-i18n 的静态分析语义，
-提前报告无法被 Vite 提取的 `t()` 参数。
+既报告无法提取的参数，也拒绝“虽然能算出来、但不推荐”的写法。
 
 ## 安装
 
@@ -51,11 +51,11 @@ export default defineConfig([
 ]);
 ```
 
-| 预设              | 文件范围                  | 声明的只读全局                                     |
-| ----------------- | ------------------------- | -------------------------------------------------- |
-| `configs.vanilla` | JS / TS                   | `t`、`setLang`、`getLang`、`getLangs`、`subscribe` |
-| `configs.vue`     | JS / TS / JSX / TSX / Vue | `useI18n`                                          |
-| `configs.react`   | JS / TS / JSX / TSX       | `useI18n`                                          |
+| 预设              | 文件范围                  | 声明的只读全局                                                           |
+| ----------------- | ------------------------- | ------------------------------------------------------------------------ |
+| `configs.vanilla` | JS / TS                   | `t`、`setLang`、`getLang`、`getLangs`、`subscribe`、`defineI18nMessages` |
+| `configs.vue`     | JS / TS / JSX / TSX / Vue | `useI18n`、`defineI18nMessages`                                          |
+| `configs.react`   | JS / TS / JSX / TSX       | `useI18n`、`defineI18nMessages`                                          |
 
 这些预设只负责 ai-i18n 的 API。`unplugin-auto-import` 管理的其他全局仍由它自己的
 ESLint 集成负责。
@@ -94,6 +94,11 @@ import { defineConfig } from 'eslint/config';
 
 export default defineConfig([
   {
+    languageOptions: {
+      globals: {
+        defineI18nMessages: 'readonly',
+      },
+    },
     plugins: {
       'ai-i18n': aiI18n,
     },
@@ -118,3 +123,24 @@ export default defineConfig([
 | `tsconfigPath` | `string`  | 否   | 不读取 tsconfig | 解析 TypeScript `paths` alias。             |
 
 插件不会自动修改宿主 ESLint 配置，也不会生成或更新 `i18n/` 协议文件。
+
+## 推荐语法
+
+规则允许字符串字面量、可解析的 `const`、两个分支都静态的条件表达式、tagged template，
+以及 `defineI18nMessages()` 标记后的对象或数组成员。下列写法会报错：
+
+```ts
+t('保' + '存'); // 字符串拼接
+t(ok && '保存'); // 逻辑表达式
+
+let label = '保存';
+t(label); // 应改为 const
+
+const plain = { save: '保存' };
+t(plain.save); // 集合应使用 defineI18nMessages()
+
+const macro = defineI18nMessages; // 宏只能直接调用，不能赋值或传递
+```
+
+调用来源也保持单一：使用 `t` 的命名导入，或直接从 `useI18n()` 解构；不要二次赋值 `t`、
+使用命名空间导入、二次解构 Hook 结果、写 `useI18n().t()`，也不要使用 CommonJS `require()`。

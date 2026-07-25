@@ -214,7 +214,9 @@ Cache 容量限制。
 
 ## 声明文件
 
-默认生成的 `src/ai-i18n.d.ts` 同时声明虚拟模块和当前模式下的全局 API。该文件由插件维护，
-带有 `@noformat`、`@ts-nocheck` 与 `eslint-disable` 标记，请勿手工编辑。
+默认生成的 `src/ai-i18n.d.ts` 始终声明虚拟模块和
+`defineI18nMessages<T>(value)` 编译宏。启用 `autoImport` 后，同一文件还会声明当前模式下的
+Runtime 全局 API。该文件由插件维护，带有 `@noformat`、`@ts-nocheck` 与
+`eslint-disable` 标记，请勿手工编辑。
 
 只有在宿主项目用其他方式维护等价声明时，才建议设置 `dts: false`。

@@ -44,6 +44,9 @@ If `unplugin-auto-import` is registered, omit the import. ai-i18n injects it and
 declaration; do not add it to the external plugin's imports list. Use `configs.react` from
 `@ai-i18n/eslint-plugin` to declare the global and validate static arguments.
 
+For object or array copy, use `defineI18nMessages({...})` without an import and pass its members to
+`t()`. Vite and `aiI18nVitest()` erase the marker before runtime.
+
 The Hook uses `useSyncExternalStore`, and its `t` function identity changes with the Runtime revision,
 so language and translation updates also invalidate React Compiler caches. It is recognized in JS,
 TS, JSX, and TSX, including custom Hooks in `.ts`. JSX text is not translated automatically. Do not

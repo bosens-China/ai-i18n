@@ -10,8 +10,13 @@ description: 使用 aiI18nVitest() 在 Vitest 中提供 virtual:ai-i18n，无需
 后 mock 很容易过期。
 
 `@ai-i18n/vite/vitest` 导出的 `aiI18nVitest()` 提供一个只驻留在内存里的测试期 Runtime：解析
-`virtual:ai-i18n` 时复用与生产环境相同的 Runtime 生成逻辑，但不扫描源码、不调用 Provider、也
-不接触磁盘上的任何协议文件。
+`virtual:ai-i18n` 时复用与生产环境相同的 Runtime 生成逻辑，但不提取翻译、不调用 Provider、
+也不接触磁盘上的任何协议文件。
+
+测试插件仍会执行 `defineI18nMessages()` 的编译期消除，因此使用消息集合宏的业务模块无需
+额外 mock 或 import。它只做宏转换，不在测试期间生成提取文件。
+不经过 Vite 转换的 Jest、直接 Node 执行等环境不会识别该宏，需要改用
+`aiI18nVitest()`，或避免执行包含宏的源码。
 
 ## 快速开始
 

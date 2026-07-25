@@ -64,10 +64,11 @@ With auto import enabled, the available globals are:
 
 ai-i18n writes `src/ai-i18n.d.ts` by default. Set `dts: 'path/file.d.ts'` to move it or `dts: false`
 only when declarations are managed elsewhere. The file declares both `virtual:ai-i18n` and the
-mode-specific globals. This is separate from the external Auto Import plugin's declarations for
-its own APIs. The generated file carries noformat, ts-nocheck, and eslint-disable markers. Prettier
-honors noformat for the whole file when `--check-ignore-pragma` is enabled; the generated declarations
-also use stable Prettier-compatible formatting when that option is absent.
+global `defineI18nMessages<T>(value)` macro. With auto import enabled, it additionally declares the
+mode-specific Runtime globals. This is separate from the external Auto Import plugin's declarations
+for its own APIs. The generated file carries noformat, ts-nocheck, and eslint-disable markers.
+Prettier honors noformat for the whole file when `--check-ignore-pragma` is enabled; the generated
+declarations also use stable Prettier-compatible formatting when that option is absent.
 
 Explicit imports are always supported:
 
@@ -95,6 +96,12 @@ import { useI18n } from 'virtual:ai-i18n'
 The complete field list, nested types (`LangOption`, `HtmlExtractorOptions`, etc.), and defaults
 table live at `api/vite.md` in [SKILL.md](../SKILL.md)'s doc table; fetch it before assuming an
 undocumented field's shape.
+
+`defineI18nMessages<T>(value)` is independent of `autoImport`: it is an import-free compiler macro
+declared in every generated `ai-i18n.d.ts`. Vite erases it to `(value)` in browser and SSR
+transforms, while `aiI18nVitest()` applies the same erasure. A local binding with that name shadows
+the macro. It must be called directly rather than assigned or passed as a runtime value. It accepts
+any `T` and does not freeze, clone, validate, or execute collection members.
 
 ## Optional Provider
 
@@ -189,8 +196,9 @@ parsing unchanged source. Deleted, renamed, or newly unreachable modules leave t
 Translation Memory remains available. Restart the Watch process after Vite config, plugin, extractor,
 or schema changes.
 
-SSR transforms and runtime injection are skipped with a warning. The per-build reuse table (what
-exactly is re-parsed vs. reused) lives in `api/vite.md`'s Build Watch section.
+SSR extraction, registration, and runtime injection are skipped with a warning, but compiler-macro
+erasure still runs. The per-build reuse table (what exactly is re-parsed vs. reused) lives in
+`api/vite.md`'s Build Watch section.
 
 For Vitest, use `aiI18nVitest(options)` from `@ai-i18n/vite/vitest`. Do not run the production plugin
 or maintain a `virtual:ai-i18n` alias just for unit tests; see `guide/advanced/testing.md` for the
