@@ -106,34 +106,6 @@ export default defineConfig({
 `i18n/locales/en-US.json`；也可以在 CI 里额外跑一次真实的 `vite build`（使用正式 `aiI18n()`）
 作为集成校验。
 
-## 从手写 alias / mock 迁移
-
-如果此前用类似写法绕开正式插件：
-
-```ts
-// 迁移前：手写 alias
-resolve: {
-  alias: {
-    'virtual:ai-i18n': path.resolve(rootDir, 'src/test/ai-i18n-mock.ts'),
-  },
-},
-```
-
-```ts
-// 迁移前：src/test/ai-i18n-mock.ts
-export const t = (source: string) => source;
-export const useI18n = () => ({ t, setLang, currentLang: 'zh-CN', langs });
-```
-
-迁移后删除 alias 配置和 mock 文件，直接注册 `aiI18nVitest()`：
-
-- 不用再手动同步 `t` 的签名——tagged template 插值、`persist`、`detect`、`fallback`
-  等新增能力会随包升级自动跟上，不需要重写 mock。
-- 不用再维护 `useI18n()` 返回值的形状，Hook 行为直接复用 `@ai-i18n/vite/react` 或
-  `@ai-i18n/vite/vue` 的实现。
-- Windows 下不会再触发正式插件的 registration 与静态依赖加载逻辑，从根源避开与文件系统路径
-  相关的问题。
-
 ## 常见问题
 
 **测试环境需要先跑过 `vite build` 或存在 `i18n/cache.json` 吗？**

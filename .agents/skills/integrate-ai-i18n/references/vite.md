@@ -193,5 +193,5 @@ SSR transforms and runtime injection are skipped with a warning. The per-build r
 exactly is re-parsed vs. reused) lives in `api/vite.md`'s Build Watch section.
 
 For Vitest, use `aiI18nVitest(options)` from `@ai-i18n/vite/vitest`. Do not run the production plugin
-or maintain a `virtual:ai-i18n` alias just for unit tests; see `guide/advanced/testing.md` for sharing
-options and migration guidance.
+or maintain a `virtual:ai-i18n` alias just for unit tests; see `guide/advanced/testing.md` for the
+shared-options pattern and test-environment capability scope.
