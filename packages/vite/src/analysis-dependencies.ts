@@ -29,8 +29,8 @@ export async function resolveAnalysisDependencies(
     if (!resolved || resolved.external || resolved.id.startsWith('\0')) {
       continue;
     }
-    // Vite 的模块 ID 统一归一化，避免 Windows 反斜杠进入 load/watch。
-    const resolvedId = normalizePath(resolved.id);
+    // Vite 的 normalizePath 仅在 win32 会 slash；CI/Linux 上需先替换反斜杠。
+    const resolvedId = normalizePath(resolved.id.replaceAll('\\', '/'));
     context.addWatchFile(resolvedId);
     changed =
       project.setResolution(importer, imported.specifier, resolvedId) ||
