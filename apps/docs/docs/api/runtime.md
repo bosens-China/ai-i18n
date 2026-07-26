@@ -128,7 +128,8 @@ function getLang(): string;
 function getLangs(): readonly LangOption[];
 ```
 
-返回配置的语言列表。每一项都包含必填的 `value` 与 `label`。
+返回配置的语言列表快照。每一项都包含必填的 `value` 与 `label`；修改返回值不会影响
+Runtime 的内部配置。
 
 ## `subscribe(listener)`
 

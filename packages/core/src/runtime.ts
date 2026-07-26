@@ -211,7 +211,7 @@ export function createI18nRuntime(options: I18nRuntimeOptions): I18nRuntime {
       return currentLang;
     },
     getLangs() {
-      return locales;
+      return locales.map((locale) => ({ ...locale }));
     },
     subscribe(listener) {
       listeners.add(listener);

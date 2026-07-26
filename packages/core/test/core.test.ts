@@ -193,6 +193,21 @@ describe('@ai-i18n/core schemas', () => {
 });
 
 describe('@ai-i18n/core runtime', () => {
+  it('does not expose its internal locale objects', async () => {
+    const runtime = createI18nRuntime({
+      sourceLang: 'zh-CN',
+      defaultLang: 'zh-CN',
+      locales,
+    });
+
+    runtime.getLangs()[0]!.value = 'changed';
+
+    expect(runtime.getLangs()).toEqual(locales);
+    await expect(runtime.setLang('changed')).rejects.toThrow(
+      '[ai-i18n] unsupported locale "changed"',
+    );
+  });
+
   it('uses explicit IDs and object comments', () => {
     const runtime = createI18nRuntime({
       sourceLang: 'zh-CN',
