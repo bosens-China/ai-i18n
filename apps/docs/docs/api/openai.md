@@ -38,10 +38,12 @@ Provider 不主动读取宿主的 `OPENAI_API_KEY`。密钥必须显式传入，
 
 ## `systemPrompt`
 
-`systemPrompt` 只需要描述翻译要求。Provider 会在末尾追加目标语言、`正文#comment` 约定
-和固定的 JSON Schema 输出约束，不要在自定义提示词中重复定义返回 JSON 的字段。
+`systemPrompt` 只需要描述翻译要求。Provider 会在末尾追加目标语言、`source` / `comment`
+输入约定和固定的 JSON Schema 输出约束，不要在自定义提示词中重复定义返回 JSON 的字段。
 
-模型收到的是按消息合并后的字符串数组，不包含 `messageId`。返回值使用
+模型收到的是按消息合并后的 `{ source, comment? }` 对象数组，不包含 `messageId`。模型只
+翻译 `source`，`comment` 只提供语境；两个字段相互独立，因此正文中的 `#` 不会被误判。
+返回值使用
 `{"translations":[{"en-US":"...","ja-JP":"..."}]}` 这样的语言矩阵，数组下标与输入
 下标对应；Provider 再在内部还原为公开的 `TranslationResult[]`。缺失目标 locale 集合
 相同的消息共享一次模型调用，不同集合分别调用，避免重新生成已有缓存的语言。

@@ -79,24 +79,29 @@ describe('openAI', () => {
     expect(messages[0]!.content).toContain(
       '{"translations":[{"en-US":"","ja-JP":""}]}',
     );
-    expect(JSON.parse(messages[1]!.content)).toEqual(['查询', '查询#按钮']);
+    expect(JSON.parse(messages[1]!.content)).toEqual([
+      { source: '查询' },
+      { source: '查询', comment: '按钮' },
+    ]);
   });
 
   it('groups messages by the same missing locale set', async () => {
-    const inputs: string[][] = [];
+    const inputs: Array<Array<{ source: string }>> = [];
     const baseURL = await startServer(async (_request, body) => {
       const messages = body.messages as Array<{ content: string }>;
-      const input = JSON.parse(messages[1]!.content) as string[];
+      const input = JSON.parse(messages[1]!.content) as Array<{
+        source: string;
+      }>;
       inputs.push(input);
       return completion(
         input.length === 3
           ? {
-              translations: input.map((source) => ({
+              translations: input.map(({ source }) => ({
                 'ja-JP': `ja:${source}`,
               })),
             }
           : {
-              translations: input.map((source) => ({
+              translations: input.map(({ source }) => ({
                 'en-US': `en:${source}`,
                 'ja-JP': `ja:${source}`,
               })),
@@ -123,8 +128,34 @@ describe('openAI', () => {
       { messageId: '5', locale: 'ja-JP', value: 'ja:5' },
     ]);
     expect(inputs).toEqual([
-      ['1', '2', '3'],
-      ['4', '5'],
+      [{ source: '1' }, { source: '2' }, { source: '3' }],
+      [{ source: '4' }, { source: '5' }],
+    ]);
+  });
+
+  it('keeps hashes in source text separate from comments', async () => {
+    let input: unknown;
+    const baseURL = await startServer(async (_request, body) => {
+      const messages = body.messages as Array<{ content: string }>;
+      input = JSON.parse(messages[1]!.content);
+      return completion({
+        translations: [{ 'en-US': 'Issue #123' }, { 'en-US': 'C# button' }],
+      });
+    });
+
+    await openAI(validOptions(baseURL))([
+      { messageId: 'issue', source: 'Issue #123', locale: 'en-US' },
+      {
+        messageId: 'button',
+        source: 'C#',
+        comment: 'button # label',
+        locale: 'en-US',
+      },
+    ]);
+
+    expect(input).toEqual([
+      { source: 'Issue #123' },
+      { source: 'C#', comment: 'button # label' },
     ]);
   });
 

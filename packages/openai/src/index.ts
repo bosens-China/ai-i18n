@@ -48,11 +48,10 @@ interface TranslationRow {
 interface TranslationGroup {
   rows: TranslationRow[];
   locales: string[];
-  messageIds: Set<string>;
 }
 
 const DEFAULT_SYSTEM_PROMPT =
-  '你是一名专业的软件界面翻译助手。请把用户输入翻译为指定目标语言，并结合 # 后的注释理解业务语境。保持 HTML、Markdown、ICU 语法、快捷键和产品名称不变；无法可靠翻译时返回 null。';
+  '你是一名专业的软件界面翻译助手。请把用户输入翻译为指定目标语言，并结合随正文提供的 comment 理解业务语境。保持 HTML、Markdown、ICU 语法、快捷键和产品名称不变；无法可靠翻译时返回 null。';
 
 const TEMPLATE_PLACEHOLDER_RULE =
   '`{{0}}`、`{{1}}` 等不带等号的编号标记代表运行时插值，可以按目标语言语序调整位置；`{{=0}}`、`{{==0}}` 等带等号的编号标记代表转义后的字面文本。两类标记都必须原样保留且出现相同次数，不能互换。';
@@ -99,9 +98,7 @@ export function openAI(options: OpenAIOptions): Translator {
   return async (requests) => {
     if (requests.length === 0) return [];
     const translated: TranslationResult[] = [];
-    for (const { rows, locales, messageIds } of createTranslationGroups(
-      requests,
-    )) {
+    for (const { rows, locales } of createTranslationGroups(requests)) {
       const systemPrompt = `${basePrompt}\n\n${TEMPLATE_PLACEHOLDER_RULE}\n\n${outputInstructions(locales, rows.length)}`;
       const model = chatModel.withStructuredOutput<TranslationPayload>(
         translationSchema(locales, rows.length),
@@ -124,14 +121,7 @@ export function openAI(options: OpenAIOptions): Translator {
       } catch (error) {
         throw safeProviderError(error);
       }
-      translated.push(
-        ...validateResults(
-          requests.filter((request) => messageIds.has(request.messageId)),
-          rows,
-          locales,
-          parsePayload(payload),
-        ),
-      );
+      translated.push(...validateResults(rows, locales, parsePayload(payload)));
     }
     const byKey = new Map(
       translated.map((result) => [requestKey(result), result]),
@@ -178,19 +168,18 @@ function createTranslationGroups(requests: readonly TranslationRequest[]) {
     const group = groups.get(key) ?? {
       rows: [],
       locales,
-      messageIds: new Set<string>(),
     };
     group.rows.push(row);
-    group.messageIds.add(row.messageId);
     groups.set(key, group);
   }
   return groups.values();
 }
 
-function promptInput(row: TranslationRow): string {
-  return row.comment === undefined
-    ? row.source
-    : `${row.source}#${row.comment.replaceAll('#', '＃')}`;
+function promptInput(row: TranslationRow) {
+  return {
+    source: row.source,
+    ...(row.comment === undefined ? {} : { comment: row.comment }),
+  };
 }
 
 function outputInstructions(locales: readonly string[], rowCount: number) {
@@ -199,7 +188,7 @@ function outputInstructions(locales: readonly string[], rowCount: number) {
   };
   return [
     `目标语言：${locales.join('、')}。`,
-    '用户输入是字符串数组；每项只翻译正文。存在 comment 时，最后一个半角 # 后的内容仅用于理解业务语境，不得出现在译文中。',
+    '用户输入是对象数组；每项包含 source 和可选的 comment。只翻译 source，comment 仅用于理解业务语境，不得出现在译文中。',
     `返回 JSON 对象，其中 translations 是长度为 ${rowCount} 的数组，并与输入下标一一对应。每项必须且只能包含这些语言键：${locales.join('、')}。`,
     `不要使用 Markdown 或添加解释。格式示例：${JSON.stringify(example)}`,
   ].join('\n');
@@ -264,7 +253,6 @@ function parsePayload(
 }
 
 function validateResults(
-  requests: readonly TranslationRequest[],
   rows: readonly TranslationRow[],
   locales: readonly string[],
   results: readonly Record<string, TranslationValue>[],
@@ -273,7 +261,7 @@ function validateResults(
     throw new Error('[ai-i18n/openai] invalid translation result');
   }
   const expectedKeys = new Set(locales);
-  const received = new Map<string, TranslationResult>();
+  const translated: TranslationResult[] = [];
   for (const [index, result] of results.entries()) {
     if (
       !isRecord(result) ||
@@ -293,19 +281,10 @@ function validateResults(
           '[ai-i18n/openai] translation result changed template placeholders',
         );
       }
-      if (row.locales.has(locale)) {
-        received.set(requestKey({ messageId: row.messageId, locale }), {
-          messageId: row.messageId,
-          locale,
-          value,
-        });
-      }
+      translated.push({ messageId: row.messageId, locale, value });
     }
   }
-  if (received.size !== requests.length) {
-    throw new Error('[ai-i18n/openai] invalid translation result');
-  }
-  return requests.map((request) => received.get(requestKey(request))!);
+  return translated;
 }
 
 function safeProviderError(error: unknown): Error {
