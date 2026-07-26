@@ -27,7 +27,7 @@ export function runtimeCode(
   });`
     : '';
   return `
-import { createI18nRuntime } from '@ai-i18n/vite/runtime';
+import { createI18nRuntime, formatTemplateMessage } from '@ai-i18n/vite/runtime';
 ${adapter}
 const runtime = createI18nRuntime({
   ...${JSON.stringify(options)},
@@ -39,7 +39,8 @@ export const setLang = runtime.setLang;
 export const getLang = runtime.getLang;
 export const getLangs = runtime.getLangs;
 export const subscribe = runtime.subscribe;
-export const __translate = runtime.translate;
+export const __translate = (messageId, source) =>
+  formatTemplateMessage(runtime.translate(messageId, source), []);
 export const __registerModule = (moduleId, messages) => {
   activeModules.add(moduleId);
   runtime.registerModule(moduleId, messages);
@@ -64,6 +65,7 @@ export function runtimeStubCode(framework: AiI18nFramework): string {
       ? ''
       : 'export const useI18n = () => ({ t, setLang, currentLang: getLang(), langs: getLangs() });';
   return `
+import { formatTemplateMessage } from '@ai-i18n/vite/runtime';
 export const t = (source, ...values) =>
   typeof source === 'string'
     ? source
@@ -72,7 +74,8 @@ export const setLang = async () => {};
 export const getLang = () => '';
 export const getLangs = () => [];
 export const subscribe = () => () => {};
-export const __translate = (messageId, source) => source;
+export const __translate = (messageId, source) =>
+  formatTemplateMessage(source, []);
 export const __registerModule = () => {};
 export const __unregisterModule = () => {};
 ${hook}

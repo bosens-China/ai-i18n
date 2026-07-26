@@ -1,5 +1,6 @@
 import path from 'node:path';
 import {
+  hasSameTemplateTokens,
   mergeCacheMessages,
   parseCacheFile,
   parseExtractedFile,
@@ -190,6 +191,16 @@ export class AiI18nProjectService {
       if (!(update.locale in effective.translations)) {
         throw new Error(
           `[ai-i18n/mcp] unknown locale "${update.locale}" for message "${update.message_id}"`,
+        );
+      }
+      if (
+        !hasSameTemplateTokens(
+          parseMessageId(update.message_id).source,
+          update.value,
+        )
+      ) {
+        throw new Error(
+          `[ai-i18n/mcp] translation changed template tokens for message "${update.message_id}"`,
         );
       }
       const current = effective.translations[update.locale];

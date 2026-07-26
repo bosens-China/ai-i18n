@@ -1,6 +1,7 @@
 import {
   createMessageId,
   createTemplateMessage,
+  escapeTemplateLiteral,
   normalizeComment,
 } from '@ai-i18n/core';
 import {
@@ -178,7 +179,7 @@ export function extractMessages(
 
       for (const source of sources) {
         for (const rawComment of comments) {
-          addMessage(source, rawComment, node.start);
+          addMessage(escapeTemplateLiteral(source), rawComment, node.start);
         }
       }
     },

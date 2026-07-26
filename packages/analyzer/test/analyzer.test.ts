@@ -82,6 +82,23 @@ t\`你好 \${name}，你有 \${items.length} 条消息\``,
     expect(findUnboundCalls(autoImported, new Set(['t']))).toEqual(['t']);
   });
 
+  it('escapes placeholder-shaped text in calls and template literals', () => {
+    const module = analyzeModule(
+      `import { t } from 'virtual:ai-i18n'
+t('字面 {{0}} 与 {{=1}}')
+t\`字面 {{0}}，当前值 \${value}\``,
+      'main.ts',
+    );
+
+    expect(extractMessages(module)).toMatchObject({
+      messages: [
+        { source: '字面 {{=0}} 与 {{==1}}' },
+        { source: '字面 {{=0}}，当前值 {{0}}' },
+      ],
+      warnings: [],
+    });
+  });
+
   it('extracts static collection members and finite dynamic indexes', () => {
     const module = analyzeModule(
       `import { t } from 'virtual:ai-i18n'

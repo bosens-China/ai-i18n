@@ -1,6 +1,6 @@
 import MagicString from 'magic-string';
 import { parse, type DefaultTreeAdapterTypes } from 'parse5';
-import type { ModuleMessages } from '@ai-i18n/core';
+import { formatTemplateMessage, type ModuleMessages } from '@ai-i18n/core';
 import {
   AI_I18N_VIRTUAL_MODULE_ID,
   analyzeModule,
@@ -89,7 +89,10 @@ export function transformHtml(
         return;
       }
       addMessage(messages, message, position);
-      const initialValue = initialValues?.[message.id] ?? message.source;
+      const initialValue = formatTemplateMessage(
+        initialValues?.[message.id] ?? message.source,
+        [],
+      );
       const before = node.value.slice(0, leading(node.value));
       const after = node.value.slice(node.value.length - trailing(node.value));
       const replacement = `${before}${escapeText(initialValue)}${after}`;
@@ -164,7 +167,12 @@ export function transformHtml(
       transformed.overwrite(
         valueRange.start,
         valueRange.end,
-        escapeAttribute(initialValues?.[message.id] ?? message.source),
+        escapeAttribute(
+          formatTemplateMessage(
+            initialValues?.[message.id] ?? message.source,
+            [],
+          ),
+        ),
       );
       bindings.push({
         kind: 'attribute',

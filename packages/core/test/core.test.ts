@@ -4,6 +4,7 @@ import {
   TranslationConflictError,
   createI18nRuntime,
   createMessageId,
+  hasSameTemplateTokens,
   mergeCacheMessages,
   parseCacheFile,
   parseExtractedFile,
@@ -110,6 +111,20 @@ describe('@ai-i18n/core schemas', () => {
     ).toThrow('comment conflicts with legacy');
   });
 
+  it('distinguishes runtime and escaped literal template tokens', () => {
+    expect(
+      hasSameTemplateTokens(
+        '语法 {{=0}}，当前 {{0}}',
+        'Current {{0}}; syntax {{=0}}',
+      ),
+    ).toBe(true);
+    expect(
+      hasSameTemplateTokens(
+        '语法 {{=0}}，当前 {{0}}',
+        'Syntax {{0}}; current {{0}}',
+      ),
+    ).toBe(false);
+  });
   it('merges global Translation Memory without losing non-null values', () => {
     const result = mergeCacheMessages(
       {
@@ -162,6 +177,35 @@ describe('@ai-i18n/core runtime', () => {
     expect(runtime.t`你好 ${name}，共有 ${count} 项`).toBe('2 items for Ada');
   });
 
+  it('keeps literal template tokens separate from runtime values', () => {
+    const runtime = createI18nRuntime({
+      sourceLang: 'zh-CN',
+      defaultLang: 'en-US',
+      locales,
+    });
+    runtime.registerModule('src/template-literals.ts', {
+      'zh-CN': {
+        '占位符是 {{=0}}，当前值为 {{0}}': '占位符是 {{=0}}，当前值为 {{0}}',
+        '仅显示 {{=0}}': '仅显示 {{=0}}',
+        '转义示例 {{==0}}': '转义示例 {{==0}}',
+        '表达式值为 {{0}}': '表达式值为 {{0}}',
+      },
+      'en-US': {
+        '占位符是 {{=0}}，当前值为 {{0}}':
+          'Current value: {{0}}; placeholder: {{=0}}',
+        '仅显示 {{=0}}': 'Display {{=0}}',
+        '转义示例 {{==0}}': 'Escaped {{==0}}',
+        '表达式值为 {{0}}': 'Expression: {{0}}',
+      },
+    });
+
+    expect(runtime.t`占位符是 {{0}}，当前值为 ${'saved'}`).toBe(
+      'Current value: saved; placeholder: {{0}}',
+    );
+    expect(runtime.t('仅显示 {{0}}')).toBe('Display {{0}}');
+    expect(runtime.t('转义示例 {{=0}}')).toBe('Escaped {{=0}}');
+    expect(runtime.t`表达式值为 ${'{{0}}'}`).toBe('Expression: {{0}}');
+  });
   it('detects and persists supported browser language preferences', async () => {
     const values = new Map<string, string>([['preferred', 'zh-CN']]);
     const storage: Storage = {

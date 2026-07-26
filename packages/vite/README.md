@@ -26,7 +26,8 @@ aiI18n({
 ```
 
 动态值使用 tagged template：`` t`你好 ${name}` ``。表达式会变成可调整顺序的编号占位符，
-不会交给模型翻译。`t(source, comment?)` 的 comment 仅提供语境，不参与 message ID。
+不会交给模型翻译。源码中原样出现的 `{{0}}` 会在内部转义为 `{{=0}}`，运行时仍按原文显示。
+`t(source, comment?)` 的 comment 仅提供语境，不参与 message ID。
 
 对象或数组文案使用无需导入的编译宏：
 

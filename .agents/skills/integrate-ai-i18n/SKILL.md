@@ -119,7 +119,8 @@ the ESLint doc page from the table above.
   Vite erases it to the original argument. Do not replace direct literals
   with concatenation or logical expressions merely because the analyzer can recover candidates.
 - Use tagged templates for dynamic values: `` t`你好 ${name}` ``. Expressions are represented as
-  reorderable `{{0}}`, `{{1}}` placeholders and are not translated.
+  reorderable `{{0}}`, `{{1}}` placeholders and are not translated. Placeholder-shaped source text
+  is escaped internally (`{{0}}` becomes `{{=0}}`) and is restored before display.
 - Vue/React Hook bindings work in JS, TS, JSX, and TSX, including composables and custom Hooks.
 - Vue SFC extraction respects compiler-sfc bindings and template-local scopes.
 - Vue JSX/TSX is supported in Vue mode when `@vitejs/plugin-vue-jsx` is present.

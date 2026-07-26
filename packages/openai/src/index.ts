@@ -6,7 +6,7 @@ import type {
   TranslationResult,
   Translator,
 } from '@ai-i18n/core';
-import { templatePlaceholderIndexes } from '@ai-i18n/core';
+import { hasSameTemplateTokens } from '@ai-i18n/core';
 
 export interface LangSmithOptions {
   apiKey: string;
@@ -41,7 +41,7 @@ const DEFAULT_SYSTEM_PROMPT =
   '你是一名专业的软件界面本地化译者。请将每条 source 翻译为请求指定的 locale，并结合 comment 判断语境。保持占位符、HTML、Markdown、ICU 语法、快捷键和产品名称不变。不要添加解释；无法可靠翻译时返回 null。';
 
 const TEMPLATE_PLACEHOLDER_RULE =
-  '`{{0}}`、`{{1}}` 等编号标记代表运行时插值，可以按目标语言语序调整位置，但每个标记必须原样保留且出现相同次数。';
+  '`{{0}}`、`{{1}}` 等不带等号的编号标记代表运行时插值，可以按目标语言语序调整位置；`{{=0}}`、`{{==0}}` 等带等号的编号标记代表转义后的字面文本。两类标记都必须原样保留且出现相同次数，不能互换。';
 
 const JSON_OUTPUT_SUFFIX =
   '请仅以 JSON 返回，不要使用 Markdown 代码块或添加解释。最小示例：{"translations":[{"messageId":"save","locale":"en-US","value":"Save"}]}';
@@ -189,8 +189,7 @@ function validateResults(
     }
     if (
       result.value !== null &&
-      placeholderSignature(request.source) !==
-        placeholderSignature(result.value)
+      !hasSameTemplateTokens(request.source, result.value)
     ) {
       throw new Error(
         '[ai-i18n/openai] translation result changed template placeholders',
@@ -203,12 +202,6 @@ function validateResults(
     throw new Error('[ai-i18n/openai] invalid translation result');
   }
   return requests.map((request) => received.get(requestKey(request))!);
-}
-
-function placeholderSignature(value: string): string {
-  return templatePlaceholderIndexes(value)
-    .sort((left, right) => left - right)
-    .join(',');
 }
 
 function safeProviderError(error: unknown): Error {

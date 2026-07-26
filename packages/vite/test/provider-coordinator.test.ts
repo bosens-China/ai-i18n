@@ -119,6 +119,29 @@ describe('ProviderCoordinator', () => {
     );
   });
 
+  it('rejects provider results that change template tokens', async () => {
+    const warning = vi.fn();
+    const coordinator = new ProviderCoordinator(
+      async (requests) =>
+        requests.map((request) => ({
+          messageId: request.messageId,
+          locale: request.locale,
+          value: 'Syntax {{0}}; current {{0}}',
+        })),
+      { batchLength: 1, onWarning: warning },
+    );
+
+    await expect(
+      coordinator.request(
+        translationRequest('语法 {{=0}}，当前 {{0}}', 'en-US'),
+      ),
+    ).resolves.toBeNull();
+    await coordinator.flush();
+    expect(warning).toHaveBeenCalledWith(
+      'Translator batch failed; translations remain null.',
+    );
+  });
+
   it('reports accumulated provider failures during a strict flush', async () => {
     const coordinator = new ProviderCoordinator(
       async () => {

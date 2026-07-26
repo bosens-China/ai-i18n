@@ -28,14 +28,19 @@ describe('HTML extractor integration', () => {
     await fs.writeFile(
       path.join(root, 'index.html'),
       `<!doctype html><html><head><title>t('首页')</title></head>
-       <body><input placeholder="t('请输入')"><script type="module" src="/src/main.ts"></script></body></html>`,
+       <body><p>t('示例 {{0}}')</p><input placeholder="t('请输入')"><script type="module" src="/src/main.ts"></script></body></html>`,
     );
     await fs.writeFile(path.join(root, 'src/main.ts'), 'console.log("ready")');
     const translator: Translator = vi.fn<Translator>(async (requests) =>
       requests.map((request) => ({
         messageId: request.messageId,
         locale: request.locale,
-        value: request.source === '首页' ? 'Home' : 'Type here',
+        value:
+          request.source === '首页'
+            ? 'Home'
+            : request.source === '示例 {{=0}}'
+              ? 'Example {{=0}}'
+              : 'Type here',
       })),
     );
 
@@ -80,6 +85,7 @@ describe('HTML extractor integration', () => {
     expect(builtHtml).toContain('data-ai-i18n-text=');
     expect(builtHtml).toContain('data-ai-i18n-attr-placeholder=');
     expect(builtHtml).toContain('>Home</title>');
+    expect(builtHtml).toContain('>Example {{0}}</p>');
     expect(builtHtml).toContain('placeholder="Type here"');
     expect(clientCode).toContain('首页');
     expect(clientCode).toContain('Home');
@@ -92,13 +98,21 @@ describe('HTML extractor integration', () => {
       source: 'index.html',
       messages: [
         { id: '请输入', translations: { 'en-US': 'Type here' } },
+        {
+          id: '示例 {{=0}}',
+          translations: { 'en-US': 'Example {{=0}}' },
+        },
         { id: '首页', translations: { 'en-US': 'Home' } },
       ],
     });
     expect(
       await readJson(path.join(root, 'i18n/locales/en-US.json')),
     ).toMatchObject({
-      messages: { 首页: 'Home', 请输入: 'Type here' },
+      messages: {
+        首页: 'Home',
+        请输入: 'Type here',
+        '示例 {{=0}}': 'Example {{=0}}',
+      },
     });
   });
 

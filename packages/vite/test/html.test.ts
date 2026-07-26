@@ -55,6 +55,20 @@ describe('HTML extractor', () => {
     expect(result.code).toContain('title="Say &quot;hi&quot;"');
   });
 
+  it('renders placeholder-shaped HTML text literally', () => {
+    const result = transformHtml(
+      `<p>t('示例 {{0}}')</p>`,
+      '/workspace/index.html',
+      html(),
+      { '示例 {{=0}}': 'Example {{=0}}' },
+    );
+
+    expect(result.messages).toMatchObject([
+      { id: '示例 {{=0}}', source: '示例 {{=0}}' },
+    ]);
+    expect(result.code).toContain('>Example {{0}}</p>');
+  });
+
   it('leaves ordinary, mixed and invalid expressions unchanged', () => {
     const source = `<main>
       <p>前缀 t('不提取')</p>

@@ -77,7 +77,7 @@ Prefer file-scoped reads before writes because the write tool accepts one extrac
 
 ### 3. Translate and write
 
-Translate only locales present in `missing_locales`. Preserve placeholders, HTML-like tokens, interpolation syntax, product names, whitespace intent, and the meaning supplied by `comment`. Never invent or alter `message_id`, `source`, locale names, or file paths.
+Translate only locales present in `missing_locales`. Preserve placeholders, HTML-like tokens, interpolation syntax, product names, whitespace intent, and the meaning supplied by `comment`. `{{0}}`, `{{1}}` are reorderable runtime values; `{{=0}}`, `{{==0}}` are escaped literal tokens. Preserve every token exactly and never exchange the two forms. Never invent or alter `message_id`, `source`, locale names, or file paths.
 
 Group writes by exact `file`. Call `ai_i18n_write_translations` with no more than 100 entries per call. Each `(message_id, locale)` pair must occur once in a request. Write batches sequentially when they touch the same file.
 

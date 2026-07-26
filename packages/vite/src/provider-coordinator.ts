@@ -1,8 +1,9 @@
-import type {
-  TranslationRequest,
-  TranslationResult,
-  TranslationValue,
-  Translator,
+import {
+  hasSameTemplateTokens,
+  type TranslationRequest,
+  type TranslationResult,
+  type TranslationValue,
+  type Translator,
 } from '@ai-i18n/core';
 
 export interface ProviderCoordinatorOptions {
@@ -243,7 +244,13 @@ function validateResults(
       throw new Error('invalid translator result');
     }
     const key = requestKey(result.messageId, result.locale);
-    if (!expected.has(key) || received.has(key)) {
+    const request = expected.get(key);
+    if (
+      !request ||
+      received.has(key) ||
+      (result.value !== null &&
+        !hasSameTemplateTokens(request.source, result.value))
+    ) {
       throw new Error('invalid translator result');
     }
     received.set(key, result);

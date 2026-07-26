@@ -34,7 +34,9 @@ export type {
 } from './runtime.js';
 export {
   createTemplateMessage,
+  escapeTemplateLiteral,
   formatTemplateMessage,
+  hasSameTemplateTokens,
   templatePlaceholderIndexes,
 } from './template.js';
 export type {

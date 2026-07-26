@@ -1,7 +1,11 @@
 import { createMessageId } from './message-id.js';
 import type { LangOption, TranslationValue } from './schema.js';
 import { TranslationConflictError } from './schema.js';
-import { createTemplateMessage, formatTemplateMessage } from './template.js';
+import {
+  createTemplateMessage,
+  escapeTemplateLiteral,
+  formatTemplateMessage,
+} from './template.js';
 
 export type ModuleMessages = Record<string, Record<string, TranslationValue>>;
 
@@ -185,7 +189,11 @@ export function createI18nRuntime(options: I18nRuntimeOptions): I18nRuntime {
     ...values: unknown[]
   ) => {
     if (typeof source === 'string') {
-      return translate(createMessageId(source, values[0] as string), source);
+      const message = escapeTemplateLiteral(source);
+      return formatTemplateMessage(
+        translate(createMessageId(message, values[0] as string), message),
+        [],
+      );
     }
     const message = createTemplateMessage(source);
     return formatTemplateMessage(

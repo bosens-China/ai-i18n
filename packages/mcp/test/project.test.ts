@@ -115,6 +115,66 @@ test('fills null values atomically and refuses conflicting overwrites', async ()
   ).rejects.toThrow('refusing to overwrite');
 });
 
+test('preserves template tokens before writing a translation batch', async () => {
+  const root = await fixture();
+  const directory = path.join(root, 'apps/web/i18n');
+  const extractedPath = path.join(directory, 'extracted/src_home.ts.json');
+  const cachePath = path.join(directory, 'cache.json');
+  const messageId = '语法 {{=0}}，当前 {{0}}';
+  const cache = JSON.parse(await fs.readFile(cachePath, 'utf8')) as {
+    messages: Record<string, unknown>;
+  };
+  cache.messages[messageId] = {
+    sourceLang: 'zh-CN',
+    translations: { 'en-US': null, 'ja-JP': null },
+  };
+  await fs.writeFile(cachePath, JSON.stringify(cache));
+  const extracted = JSON.parse(await fs.readFile(extractedPath, 'utf8')) as {
+    messages: Array<Record<string, unknown>>;
+  };
+  extracted.messages.push({
+    id: messageId,
+    source: messageId,
+    locations: [{ line: 3, column: 0 }],
+    translations: { 'en-US': null, 'ja-JP': null },
+  });
+  await fs.writeFile(extractedPath, JSON.stringify(extracted));
+  const service = new AiI18nProjectService();
+
+  await expect(
+    service.writeTranslations({
+      i18n_directory: directory,
+      file: 'src/home.ts',
+      translations: [
+        { message_id: '保存', locale: 'en-US', value: 'Save' },
+        {
+          message_id: messageId,
+          locale: 'en-US',
+          value: 'Syntax {{0}}; current {{0}}',
+        },
+      ],
+    }),
+  ).rejects.toThrow('changed template tokens');
+  expect(
+    JSON.parse(await fs.readFile(extractedPath, 'utf8')).messages[0]
+      .translations['en-US'],
+  ).toBeNull();
+
+  await expect(
+    service.writeTranslations({
+      i18n_directory: directory,
+      file: 'src/home.ts',
+      translations: [
+        {
+          message_id: messageId,
+          locale: 'en-US',
+          value: 'Current {{0}}; syntax {{=0}}',
+        },
+      ],
+    }),
+  ).resolves.toMatchObject({ applied_count: 1 });
+});
+
 test('requires an absolute directory and rejects unknown source files', async () => {
   const root = await fixture();
   const directory = path.join(root, 'apps/web/i18n');

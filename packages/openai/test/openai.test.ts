@@ -56,6 +56,7 @@ describe('openAI', () => {
     expect(messages[0]!.content).toMatch(
       /^Translate product interface messages\.\n\n`\{\{0\}\}`/,
     );
+    expect(messages[0]!.content).toContain('`{{=0}}`');
     expect(messages[0]!.content).toContain('请仅以 JSON 返回');
     expect(messages[0]!.content).toContain(
       '{"translations":[{"messageId":"save","locale":"en-US","value":"Save"}]}',
@@ -154,6 +155,50 @@ describe('openAI', () => {
         {
           messageId: 'welcome',
           source: '你好 {{0}}',
+          locale: 'en-US',
+        },
+      ]),
+    ).rejects.toThrow('changed template placeholders');
+  });
+
+  it('preserves escaped literal tokens separately from runtime values', async () => {
+    const validURL = await startServer(async () =>
+      completion({
+        translations: [
+          {
+            messageId: 'example',
+            locale: 'en-US',
+            value: 'Current: {{0}}; syntax: {{=0}}',
+          },
+        ],
+      }),
+    );
+    await expect(
+      openAI(validOptions(validURL))([
+        {
+          messageId: 'example',
+          source: '语法：{{=0}}；当前：{{0}}',
+          locale: 'en-US',
+        },
+      ]),
+    ).resolves.toHaveLength(1);
+
+    const invalidURL = await startServer(async () =>
+      completion({
+        translations: [
+          {
+            messageId: 'example',
+            locale: 'en-US',
+            value: 'Syntax: {{0}}; current: {{0}}',
+          },
+        ],
+      }),
+    );
+    await expect(
+      openAI(validOptions(invalidURL))([
+        {
+          messageId: 'example',
+          source: '语法：{{=0}}；当前：{{0}}',
           locale: 'en-US',
         },
       ]),

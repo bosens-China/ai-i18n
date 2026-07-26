@@ -1,1 +1,1 @@
-export { createI18nRuntime } from '@ai-i18n/core';
+export { createI18nRuntime, formatTemplateMessage } from '@ai-i18n/core';
