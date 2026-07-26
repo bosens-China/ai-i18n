@@ -1,9 +1,9 @@
 # Phase 4 PRD：真实项目接入改进
 
-> 状态：Implemented
+> 状态：历史实施记录（非规范）
 >
-> MCP workspace 自动发现属于本阶段的历史实现，已被最终 MCP 契约取代。当前调用方必须传入
-> 目标构建的绝对 `i18n_directory`，服务端不会扫描 workspace。参见
+> 本文记录 Phase 4 当时的接入改进；现行持久化、诊断与 MCP 契约分别见
+> [Phase 7](../phase-7/PRD.md)、[Phase 8](../phase-8/PRD.md) 与
 > [`docs/mcp/PRD.md`](../mcp/PRD.md)。
 
 ## 目标
@@ -23,8 +23,6 @@
 - `@ai-i18n/vite/vitest` 提供不读写协议文件的测试期虚拟模块。
 - Runtime 支持语言偏好持久化；初始语言使用有效持久化值或 `defaultLang`，缺译固定返回
   source。已写入业务 state 的译后字符串不自动更新，应用应在展示层调用 `t` 或保存 message ID。
-- （历史契约，现已取代）MCP 可自动发现 workspace 内协议目录，发现和列表结果同时提供完整
-  JSON 文本与结构化数据。
 - alpha 阶段所有面向用户和 Agent 的安装说明显式使用 `@alpha`。
 
 ## 非目标

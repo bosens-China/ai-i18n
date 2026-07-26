@@ -2,6 +2,10 @@
 
 > 日期：2026-07-22（平台矩阵结论按 2026-07-23 ACCEPTANCE 回写；Babel 对照代码已于验收后移除）
 >
+> 本文是历史 Spike 记录，不是当前实现规范；现行持久化、诊断与 MCP 契约见
+> [Phase 7](../phase-7/PRD.md)、[Phase 8](../phase-8/PRD.md) 与
+> [`docs/mcp/PRD.md`](../mcp/PRD.md)。
+>
 > 候选版本：`yuku-analyzer@0.7.3`（精确锁定）
 >
 > 结论：采用 Yuku。正确性与性能均已对照 Babel 完成验证，Yuku 可完整替代 Babel 作为默认分析器；仓库内不再保留 Babel 对照实现或 benchmark 脚本。

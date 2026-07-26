@@ -14,7 +14,10 @@
 
 ## 发版流程
 
-1. 影响 `packages/**` 或发布相关配置的提交合并到 `main` 后，`release.yml` 运行。纯文档、Agent skills、示例站点等路径不会触发；被跳过的 Conventional Commit 会在下次相关 push 时一并纳入。
+1. 影响 `packages/**` 或发布相关配置的提交合并到 `main` 后，`release.yml` 运行。纯文档、
+   Agent skills 和示例站点提交本身不会触发该 workflow。后续相关路径 push 触发工作流时，
+   Release Please 只处理组件范围内符合发布规则的提交；不要假设先前的纯文档提交会自动进入
+   某个包的 Release PR。
 2. **先**在 macOS runner 执行 Core Translation Memory 的原生文件锁并发测试，再在 Linux
    执行 `pnpm check` / `pnpm test`；全部通过后才跑 Release Please。Linux 测试不能替代
    macOS 原生扩展加载与锁语义验证。禁止先打 tag 再测，以免测挂后留下未发布的 GitHub

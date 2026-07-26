@@ -1,8 +1,14 @@
 # Phase 1 PRD：Vite 8 渐进式 AI i18n
 
-> 状态：Implemented，等待外部验收
+> 状态：历史实施记录（非规范）
 >
 > 目标版本：1.0.0-alpha
+>
+> 本文记录 Phase 1 当时的产品范围，不定义当前持久化或 MCP 契约。为避免传播从未发布的旧
+> 协议，涉及持久化文件的段落已按现行职责回写；这些回写不代表 Phase 1 当时的交付边界。现行持久化协议见
+> [Phase 7](../phase-7/PRD.md)，开发者诊断见 [Phase 8](../phase-8/PRD.md)，MCP 工具契约见
+> [`docs/mcp/PRD.md`](../mcp/PRD.md)。本文中的旧文件名、旧 schema 和阶段性默认值不得作为
+> 新实现、兼容层或迁移代码的依据。
 >
 > 六个公开包统一使用正式 npm scope `@ai-i18n`。GitHub 仓库仍由
 > `bosens-China/ai-i18n` 承载，两者相互独立。
@@ -19,7 +25,7 @@ Vanilla/Vue/React 单一模式的 pnpm monorepo。
 1. 只支持 Vite 8，不维护旧版 Vite 兼容层。
 2. Dev 采用渐进式提取：只处理 Vite 实际请求的模块。
 3. Build 采用完整提取：处理 Vite 构建入口可达的完整模块图。
-4. Dev 和 Build 都更新工作区中的提取文件、缓存和 locale 文件。
+4. Dev 和 Build 都更新工作区中的协议文件；当前文件职责以 Phase 7 为准。
 5. 除 `vite dev`、`vite build` 及 Vite 原生命令形态外，不提供额外 CLI。
 6. 默认模式为 Vanilla；最终 Vite 插件列表可推断 Vue/React，显式 `framework` 可覆盖推断。
 7. 只提取显式 `t()`，不自动扫描普通字符串、JSX 文本或 Vue 模板文本。
@@ -40,15 +46,17 @@ Vanilla/Vue/React 单一模式的 pnpm monorepo。
 
 Phase 1 必须交付：
 
+> 下列持久化文件名是现行替代说明，不是 Phase 1 当时的协议版本记录。
+
 - 可发布、可测试的 pnpm monorepo。
 - 框架无关的 Core Runtime 和 Vite 8 插件。
 - Vanilla JS/TS、Vue（含 JSX/TSX）和 React JSX/TSX 三种互斥模式。
 - 基于宿主 Auto Import 插件的按需导入默认值，以及可强制覆盖的配置。
 - 自动生成虚拟模块和全局 API 的 TypeScript 声明。
 - Dev 渐进、Build 完整的统一模块状态模型。
-- 基于源码路径的 extracted 文件。
-- 可提交且包含翻译记忆的 `cache.json`。
-- 按语言拆分、由插件生成的 `locales/`。
+- 插件生成、只保存源码结构的 extracted 文件。
+- 分离保存 AI Translation Memory 与人工审校结果的 `translations.json`、`overrides.json`。
+- 按语言拆分、由插件派生的 `locales/`。
 - 模块级 Runtime 注册与 HMR。
 - 自动 Provider 调度、缓存复用、防抖和批处理。
 - Vanilla、React、Vue 三个项目示例。
@@ -116,7 +124,7 @@ t('保存', { comment: '草稿保存按钮' }) -> 保存#草稿保存按钮
 - `undefined`、空注释与无注释等价。
 - comment 去除首尾空白后参与 ID，source 保持静态求值后的实际内容。source 或 comment
   任一变化都会形成新的待翻译消息。
-- key 转义协议必须版本化并有兼容测试。
+- 当前 key 转义规则必须有稳定性和无碰撞测试。
 
 ### 5.3 缺失翻译
 
@@ -148,7 +156,7 @@ type TranslationValue = string | null;
 │   ├── vue/
 │   └── react/
 ├── apps/
-│   └── docs/                  # @ai-i18n/docs，Astro Starlight 用户文档站
+│   └── docs/                  # @ai-i18n/docs，Rspress 用户文档站
 ├── docs/                      # 内部 PRD / TODO / 验收（见 docs/index.md）
 ├── package.json
 ├── pnpm-workspace.yaml
@@ -164,7 +172,7 @@ type TranslationValue = string | null;
 - Translation Memory 合并规则。
 - 框架无关 Runtime。
 - 模块注册、取消注册和 subscription。
-- cache、extracted、locale schema。
+- translations、overrides、extracted、locale schema。
 
 不得依赖 Vite、Vue、React、Yuku 或具体 Provider SDK。
 
@@ -325,8 +333,8 @@ Hook 的静态绑定要求使用 `<script setup>`；不追踪 Options API `setup
 - 跟随 Vite/Rolldown 构建入口的完整可达模块图。
 - 包含 Vite 能解析的静态和动态 import。
 - 不额外 glob 扫描不可达文件。
-- Build 完成时校准活动模块、extracted、cache 和 locales。
-- Build 不得因为模块当前不可达而删除仍存在的源码文件记录。
+- Build 完成时以最终模块图校准活动模块、extracted 和派生 locales。
+- 完整 Build 以最终模块图为权威，删除失效 extracted，并从派生 locales 移除非活动消息。
 
 ### 9.3 复用的 Vite 8 能力
 
@@ -386,7 +394,8 @@ registerModule('src/pages/order.ts', {
 - Runtime 按 message ID 全局去重，并按 module ID 维护引用。
 - 动态 chunk 加载时再注册该 chunk 中模块的 messages。
 - HMR 时替换当前 module 的注册数据，不重复累加。
-- 模块移除时降低引用计数；没有活动引用时从 Runtime 活动表移除，但 cache 仍保留历史翻译。
+- 模块移除时降低引用计数；没有活动引用时从 Runtime 活动表移除，Translation Memory
+  是否保留由当前容量和清理配置决定。
 - 注入必须保留 directive prologue、shebang 和 sourcemap。
 
 ## 11. Provider 调度
@@ -420,7 +429,7 @@ type Translator = (
 
 - Dev 自动翻译渐进发现的 `null`。
 - Build 自动翻译完整可达模块中的 `null`。
-- cache 命中直接复用，不调用 Provider。
+- Translation Memory 命中直接复用，不调用 Provider。
 
 ### 11.2 去重、批次与防抖
 
@@ -446,141 +455,31 @@ Dev 首次模块响应不得等待网络翻译：
 
 1. 立即写入 `null` 并使用源语言响应。
 2. 后台防抖、批量调用 Provider。
-3. 翻译成功后更新 cache、全部同 ID extracted、locales。
+3. 翻译成功后事务更新 `translations.json`，再刷新受影响的派生 locales；extracted 不写译文。
 4. 通过 HMR 更新相关注册模块和 UI。
 
 ### 11.4 Build 完整性
 
 Build 必须等待当前可达模块所需 Provider 批次完成，再完成最终注册数据和 locale 文件写入。Provider 失败时保留 `null`，构建默认 warning 并继续；可通过严格配置升级为 error。
 
-## 12. 落盘协议
+## 12. 当前落盘协议引用
 
-默认目录：
+Phase 1 曾采用过未发布的旧持久化方案；该方案不再是产品契约，也不需要兼容或迁移。当前目录
+职责如下：
 
 ```text
 i18n/
-├── cache.json
-├── extracted/
-│   ├── src/pages/home.tsx.json
-│   ├── src/views/order.vue.json
-│   └── index.html.json
-└── locales/
-    ├── zh-CN.json
-    ├── en-US.json
-    └── ja-JP.json
+├── translations.json   # AI / Provider Translation Memory
+├── overrides.json      # 人工审校
+├── extracted/*.json    # 插件生成的单层源码结构，不含译文
+└── locales/**          # 插件根据活动结构、Memory 与人工覆盖派生
 ```
 
-三类文件均由 `vite dev` 和 `vite build` 更新。
-
-### 12.1 `cache.json`
-
-`cache.json` 必须提交 Git，它同时承担：
-
-- 文件内容 fingerprint。
-- framework/config/schema 版本 fingerprint。
-- 文件引用的 message IDs。
-- 全项目 Translation Memory。
-- 已删除或暂时不活动 message 的历史翻译。
-
-示例：
-
-```json
-{
-  "version": 1,
-  "files": {
-    "src/pages/order.ts": {
-      "fingerprint": "sha256:...",
-      "messageIds": ["提交订单#订单确认按钮"]
-    }
-  },
-  "messages": {
-    "提交订单#订单确认按钮": {
-      "source": "提交订单",
-      "comment": "订单确认按钮",
-      "translations": {
-        "en-US": "Submit order",
-        "ja-JP": null
-      }
-    }
-  }
-}
-```
-
-不得保存 API key、完整 Prompt、Provider 原始响应、错误响应和绝对路径。
-
-### 12.2 `extracted/**`
-
-extracted 文件按照源码相对路径生成，并作为 Agent/人工编辑入口：
-
-```json
-{
-  "version": 1,
-  "source": "src/pages/order.ts",
-  "messages": [
-    {
-      "id": "提交订单#订单确认按钮",
-      "source": "提交订单",
-      "comment": "订单确认按钮",
-      "locations": [{ "line": 18, "column": 12 }],
-      "translations": {
-        "en-US": "Submit order",
-        "ja-JP": null
-      }
-    }
-  ]
-}
-```
-
-不保存完整 AST。插件重新提取时必须保留相同 ID 的翻译，并使用 cache 补齐已有结果。
-
-相同 ID 出现在多个文件时：
-
-- 任一文件的新翻译写入 cache。
-- 插件同步其他活动 extracted 文件。
-- 多个文件存在不同非空值时明确报冲突，不允许 last-write-wins。
-
-### 12.3 `locales/<locale>.json`
-
-locale 文件完全由插件生成，项目和虚拟 Runtime 消费，不作为人工编辑入口：
-
-```json
-{
-  "locale": {
-    "value": "ja-JP",
-    "label": "日本語"
-  },
-  "messages": {
-    "提交订单#订单确认按钮": null
-  }
-}
-```
-
-- 源语言文件的值始终是 source。
-- 目标语言缺失值保持 `null`。
-- 只包含当前活动 message。
-- 输出稳定排序。
-
-### 12.4 写入一致性
-
-- 所有写入使用临时文件 + rename。
-- 单进程内使用串行 writer queue。
-- 写入前重新读取当前磁盘版本，合并 Agent 变更。
-- 插件自身写入不得形成 watcher 无限循环。
-- cache 最后写入，确保异常中断后下次可以重新校准。
-
-### 12.5 清理
-
-```ts
-cleanup: {
-  missingSourceFiles: true,
-  orphanMessages: false,
-}
-```
-
-- `missingSourceFiles` 只根据源码是否真实存在判断，不根据 Build 是否访问判断。
-- 删除的源码可以删除对应 extracted 和 cache file record。
-- `orphanMessages: false` 时保留 cache 中的历史翻译，未来相同 ID 可直接复用。
-- 只有显式 `orphanMessages: true` 才删除无人引用的 Translation Memory。
+- MCP fill 只写 `translations.json`，review 只写 `overrides.json`。
+- extracted 与 locales 都由 Vite Dev/Build 维护，不作为人工翻译入口。
+- Vite 与 MCP 通过 `@ai-i18n/core/translation-memory` 的加锁事务更新 Translation Memory。
+- 当前 schema、写入一致性、清理和优先级以 [Phase 7](../phase-7/PRD.md) 为准。
+- MCP 的目录参数、读写边界和工具返回以 [`docs/mcp/PRD.md`](../mcp/PRD.md) 为准。
 
 ## 13. HTML extractor
 
@@ -626,7 +525,7 @@ HTML 源文件不在磁盘上被改写。插件使用 `transformIndexHtml`：
 - `setLang()` 后只更新带内部 marker 的文本和属性。
 - 翻译文本和属性必须经过正确的 HTML escaping。
 
-HTML 同样生成 `extracted/index.html.json`，参与 cache、Provider 去重和 locales 聚合。
+HTML 同样生成结构型 extracted 文件，参与 Translation Memory、Provider 去重和 locales 聚合。
 
 ## 14. Runtime API
 
@@ -678,7 +577,7 @@ aiI18n({
 - `getLang()` 返回 value。
 - `getLangs()` 返回 label/value，供 UI 渲染。
 - `setLang()` 接受 value。
-- 所有语言随模块一起注册，但保留异步签名为未来懒加载留出兼容空间。
+- `setLang()` 保持异步签名，为后续按 locale 加载扩展保留空间。
 
 ## 15. SSR 边界
 
@@ -705,9 +604,9 @@ Phase 1 明确只支持浏览器 Runtime：
 
 - 相同 source/comment 在多个文件中只触发一次目标语言翻译。
 - 文件移动不会重新翻译。
-- 文件删除后 cache 默认仍保留 translation memory。
-- Agent 编辑任一 extracted 文件后，相同 ID 的活动文件、cache 和 locales 一致。
-- 冲突翻译不会被静默覆盖。
+- 文件删除后，Translation Memory 按当前容量和清理配置处理。
+- MCP fill 更新 `translations.json`，review 更新 `overrides.json`，均不修改 extracted 或 locales。
+- `byId > default > translations.json > null/source fallback` 的优先级稳定，冲突写入不会被静默覆盖。
 
 ### 16.3 Provider
 
@@ -728,9 +627,9 @@ Phase 1 明确只支持浏览器 Runtime：
 
 ### 16.5 文件
 
-- Dev 和 Build 都更新 cache、extracted、locales。
-- 三类文件稳定排序并原子写入。
-- cache 可提交且不包含 secret、绝对路径和完整 Prompt。
+- Dev 和 Build 维护结构型 extracted 与派生 locales；Provider 通过事务更新 `translations.json`。
+- `translations.json`、`overrides.json`、extracted 和 locales 输出稳定，Translation Memory 写入原子。
+- 协议文件可提交，且不包含 secret、绝对路径和完整 Prompt。
 - locales 按语言拆分，缺失项保留 `null`。
 - 不存在 sync/scan 独立命令。
 
@@ -753,7 +652,7 @@ Phase 1 明确只支持浏览器 Runtime：
 ## 17. 实现阶段不再需要产品确认的默认项
 
 - 工作区目录默认 `i18n/`。
-- `cache.json`、`extracted/**`、`locales/**` 均提交 Git。
+- `translations.json`、`overrides.json`、`extracted/**`、`locales/**` 均可提交 Git。
 - Provider debounce 默认 100ms，batch length 默认 `12_000`，并发上限默认 `5`，均可配置。
 - 缺失翻译默认 warning，不阻止 Build；严格模式可升级为 error。
 - `cleanup.missingSourceFiles` 默认开启，`cleanup.orphanMessages` 默认关闭。

@@ -2,6 +2,11 @@
 
 > 对应文档：[Phase 1 PRD](./PRD.md)
 >
+> 本清单是历史实施记录，不是当前实现规范。现行持久化、诊断与 MCP 契约分别见
+> [Phase 7](../phase-7/PRD.md)、[Phase 8](../phase-8/PRD.md) 与
+> [`docs/mcp/PRD.md`](../mcp/PRD.md)；未发布的旧 schema 不要求兼容或迁移。为避免继续传播
+> 旧协议，持久化相关任务已按现行替代结果回写，不代表 Phase 1 当时完成了后续阶段的能力。
+>
 > 只通过 `vite dev`、`vite build` 驱动产品流程，不新增 scan/sync CLI。
 
 ## 0. 已确认约束
@@ -9,9 +14,9 @@
 - [x] Vite 8 only。
 - [x] pnpm monorepo。
 - [x] Dev 渐进提取，Build 完整处理入口可达模块图。
-- [x] Dev/Build 都写 `cache.json`、`extracted/**`、`locales/**`。
-- [x] cache 提交 Git并保留 Translation Memory。
-- [x] locales 按语言拆分并由插件生成。
+- [x] Dev/Build 维护结构型 `extracted/**` 与派生 `locales/**`。
+- [x] `translations.json` 保存 AI Translation Memory，`overrides.json` 保存人工审校。
+- [x] locales 按语言拆分并由插件派生。
 - [x] 只提取显式 `t()`。
 - [x] message ID 为 source + optional comment，不包含路径。
 - [x] 缺失翻译为 `null`，Runtime 回退源语言。
@@ -31,7 +36,7 @@
 - [x] 创建 `packages/core`、`packages/vite`、`packages/openai`。
 - [x] 创建 `packages/eslint`，迁移并发布现有 AI 静态检查。
 - [x] 创建 Vanilla、Vue、React examples workspace 节点。
-- [x] 创建 `apps/docs`（Astro Starlight）用户文档站，并纳入 pnpm workspace。
+- [x] 创建 `apps/docs` 用户文档站，并纳入 pnpm workspace；当前实现为 Rspress。
 - [x] 配置 ESM、类型声明、exports、files、MCP engines、publishConfig。
 - [x] 添加 MIT License、README、repository metadata。
 - [x] 建立 Release Please + npm OIDC 发布流程。
@@ -43,12 +48,10 @@
 
 - [x] 定义 `LangOption { value, label }`。
 - [x] 定义 `TranslationValue = string | null`。
-- [x] 定义 cache v1 schema。
-- [x] 定义 extracted v1 schema。
-- [x] 定义 locale v1 schema。
+- [x] 定义当前 translations、overrides、extracted 与 locale schema。
 - [x] 为所有 schema 添加运行时校验和明确版本错误。
-- [x] 保留并测试现有 source/context key 转义语义。
-- [x] 将 context 对外命名统一为 comment，并提供必要迁移兼容。
+- [x] 测试当前 source/comment key 转义语义。
+- [x] 将公开命名统一为 comment，不保留未发布的 context 兼容层。
 - [x] 规范 comment 首尾空白与空值行为。
 - [x] 实现相同 message ID 的全局 Translation Memory。
 - [x] 实现非空翻译冲突检测，禁止 last-write-wins。
@@ -134,7 +137,7 @@
 - [x] 实现可配置 `maxConcurrency`，默认最多并发 5 个 Provider 批次。
 - [x] Provider 只接收 `null` 项。
 - [x] Dev transform 不等待 Provider 网络请求。
-- [x] Dev 翻译完成后更新 cache、重复 extracted、locales。
+- [x] Dev 翻译完成后事务更新 `translations.json`，并刷新受影响的派生 locales。
 - [x] Dev 翻译完成后只 HMR 受影响注册模块。
 - [x] Build 在结束前等待必要批次完成。
 - [x] 校验 Provider 返回行数、精确 locale 键、string/null 类型和模板占位符。
@@ -144,29 +147,15 @@
 
 ## 7. 文件协议与写入
 
-- [x] 默认创建 `i18n/cache.json`。
-- [x] 按源码相对路径创建 `i18n/extracted/**/<file>.json`。
-- [x] 为每个 locale 创建 `i18n/locales/<locale>.json`。
-- [x] cache 保存 file fingerprints、message references 和 Translation Memory。
-- [x] extracted 保存 source/comment/location/translations，不保存完整 AST。
-- [x] locale 保存 label/value 和活动 messages。
-- [x] 源语言 locale 永远输出 source。
-- [x] 目标语言缺失项输出 `null`，不输出空字符串。
-- [x] Agent 编辑 extracted 后合并回 cache。
-- [x] cache 命中时自动补充新 extracted 文件。
-- [x] 相同 ID 的活动 extracted 文件自动同步。
-- [x] 相同 ID 的不同非空翻译产生冲突错误和文件列表。
-- [x] 配置新增 locale 时，为 extracted/cache 补 null。
-- [x] 配置移除 locale 时，cache 默认保留历史值以便未来恢复。
-- [x] 所有 JSON 稳定排序并使用统一格式。
-- [x] 使用临时文件 + rename 原子写入。
-- [x] 使用单进程串行 writer queue。
-- [x] 写入前读取最新磁盘版本，避免覆盖 Agent 变更。
+- [x] 使用 `translations.json` 保存 AI Translation Memory。
+- [x] 使用 `overrides.json` 保存人工审校，并按 `byId > default > translations.json` 解析最终译文。
+- [x] extracted 使用单层文件，只保存 source/comment/location 等源码结构，不保存译文。
+- [x] locales 由插件根据活动结构、Memory 与人工覆盖派生，不作为反向写入入口。
+- [x] MCP fill 只写 translations，review 只写 overrides，不修改 extracted 或 locales。
+- [x] Vite 与 MCP 统一通过加锁事务更新 Translation Memory，避免并发整文件覆盖。
+- [x] 所有 JSON 稳定排序并使用统一格式；事务写入保持原子。
 - [x] 忽略插件自身文件事件，防止 watcher 循环。
-- [x] 最后写 cache，异常中断后可重新校准。
-- [x] `cleanup.missingSourceFiles` 默认 true。
-- [x] `cleanup.orphanMessages` 默认 false。
-- [x] 验证 cache 可直接提交且不包含绝对路径/时间戳/secret。
+- [x] 验证协议文件可提交且不包含绝对路径、时间戳或 secret。
 
 ## 8. HTML 提取
 
@@ -183,7 +172,7 @@
 - [x] 注入内部 message markers。
 - [x] 注入最小 client bridge，并注册 HTML module 全部语言。
 - [x] `setLang()` 更新 marker 文本和属性。
-- [x] HTML 生成对应 extracted 文件并接入 cache/Provider/locales。
+- [x] HTML 生成对应结构型 extracted 文件并接入 Translation Memory、Provider 与派生 locales。
 - [x] HTML Provider 完成后在 Dev 正确更新或 reload。
 - [x] 添加单入口、多入口、属性、转义和错误表达式测试。
 
@@ -249,7 +238,7 @@
 - [x] Dev 首屏不被 Provider 阻塞。
 - [x] Dev 防抖、batch length 和并发上限行为可测。
 - [x] Build 等待 Provider 并把结果写入当前注册数据/locales。
-- [x] 文件移动复用相同 message ID cache。
+- [x] 文件移动复用相同 message ID 的 Translation Memory。
 - [x] 文件删除清理 extracted 但默认保留 Translation Memory。
 - [x] `null` 从任意切换历史稳定回退源语言。
 - [x] 全部语言随模块注册，不发起 locale 网络请求。
@@ -277,7 +266,8 @@
 - [x] Yuku 准入结论有 fixtures、平台验证和历史 benchmark 支撑；Babel 对照路径已移除。
 - [x] 不存在 `src/pages`、路由目录或业务默认值。
 - [x] 不存在独立 sync/scan CLI。
-- [x] cache/extracted/locales 在 Dev、Build、Agent 编辑和 Git 合并场景下不丢翻译。
+- [x] translations、overrides、结构型 extracted 与派生 locales 在 Dev、Build、MCP 和 Git
+      合并场景下职责清晰且不丢翻译。
 - [x] 每个 Vite build 只启用一种框架模式并复用一次公共 JS AST。
 - [x] HTML 构建初始文本和运行时切换都正确。
 - [x] 发布包没有跨层依赖泄漏。

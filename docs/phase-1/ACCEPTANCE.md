@@ -1,6 +1,10 @@
 # Phase 1 验收记录
 
 > 更新日期：2026-07-25
+>
+> 本文仅保存 Phase 1 当时的验收证据，不定义当前协议。现行持久化、诊断和 MCP 契约分别见
+> [Phase 7](../phase-7/PRD.md)、[Phase 8](../phase-8/PRD.md) 与
+> [`docs/mcp/PRD.md`](../mcp/PRD.md)。
 
 ## 已通过
 
@@ -34,7 +38,8 @@
 - JS/TS 词法遮蔽、`.mjs/.mts`、CommonJS `require()` 负向边界、TS wrapper、computed member、
   Vue slot scope 和 SFC line/column 映射已补充专项回归。
 - Dev 渐进访问、Build 静态/动态入口、文件移动/删除、Windows 路径、monorepo 非 cwd root 已覆盖。
-- Agent 编辑、重复 ID 同步、cache 历史保留、orphan 同进程清理、Git 合并后兼容编辑合并和非空冲突拒绝覆盖已覆盖。
+- 后续 Phase 7 回归另已覆盖 MCP fill/review 分离写入、重复 ID 复用、Translation Memory
+  容量清理、Git 合并与并发事务，以及非空冲突拒绝覆盖；这不属于 Phase 1 当时的验收范围。
 - HTML Build 初始翻译和 `setLang()` 后 text/attribute/comment DOM binding 更新已执行验证。
 - `@ai-i18n/vite/vue` 与 `/react` adapter 只在对应模式的虚拟模块中加载；Vanilla 入口
   不加载 Vue、React 或 compiler，相关框架依赖保持可选 peer。

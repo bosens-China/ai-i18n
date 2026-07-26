@@ -2,6 +2,10 @@
 
 > 日期：2026-07-24
 >
+> 本文是历史 Spike 记录，不是当前实现规范；现行持久化、诊断与 MCP 契约见
+> [Phase 7](../phase-7/PRD.md)、[Phase 8](../phase-8/PRD.md) 与
+> [`docs/mcp/PRD.md`](../mcp/PRD.md)。
+>
 > 结论：P0 通过，Phase 2 可以按 Build Watch → Cache 容量 → Locale Lazy 的顺序实施。
 
 ## 1. Vite Build Watch
@@ -60,4 +64,4 @@ P3 实施时，复杂 Vue 模块图补充暴露了两个时序边界：
 - Watch 中移除 import 后，已不可达模块退出活动 ProjectState，但 Translation Memory 继续保留。
 - 不同 locale 的并发 `setLang()` 采用最后一次调用获胜。
 - Locale Lazy 下 HTML 首屏使用同步 source fallback，目标 locale 加载后再更新。
-- Cache 的 `maxBytes` 若因受保护 file records 或活动 messages 无法满足，保留数据并 warning。
+- `cache.maxBytes` 若因受保护的活动 messages 无法满足，保留数据并 warning。

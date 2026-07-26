@@ -34,7 +34,8 @@
 - `cursor`：可选 opaque cursor。
 - `limit`：默认 50，范围 1～200。
 
-只返回当前 Translation Memory 中仍有 `null` 的源码文件，并按 source 稳定排序。
+按 `byId > default > AI Memory` 解析每条消息和 locale 的有效值，只返回仍有有效值为
+`null` 的源码文件，并按 source 稳定排序。
 
 ### 3.2 `ai_i18n_list_translations`
 
@@ -45,7 +46,8 @@
 - `cursor`：可选。
 - `limit`：默认 100，范围 1～200。
 
-返回 source、comment、translations、缺失语言、代表文件和出现次数。单次结构化响应限制约
+`missing_only: true` 使用与文件列表相同的有效值优先级，不能只检查 AI Memory。返回
+source、comment、有效 translations、缺失语言、代表文件和出现次数。单次结构化响应限制约
 25,000 字符，超限时缩短当前页并返回 cursor。
 
 ### 3.3 `ai_i18n_write_translations`
@@ -61,7 +63,8 @@
 - `fill` 模式遇到不同非空值时整批失败。
 - `review` 模式写独立人工覆盖，不替换 AI Memory。
 - 翻译必须保留源码中的模板占位符。
-- 整批验证和写入在同一个 Translation Memory 事务中完成。
+- `fill` 在 `translations.json` 的共享事务内复验并写入；`review` 在 `overrides.json`
+  的共享事务内复验并写入。
 
 ## 4. 一致性
 
@@ -69,8 +72,10 @@
 Core 的共享实现：
 
 1. 锁定系统临时目录中的稳定 sidecar 文件；原子替换数据文件不会改变锁身份。
-2. 取得锁后重新读取对应目标文件，不能使用锁外旧快照覆盖。
-3. `fill` 只填充 AI Memory 的 `null`；`review` 写人工 default 或 comment-specific 覆盖。
+2. 取得锁后重新读取对应目标文件，并基于最新内容判断目标字段是否变化，不能使用锁外旧快照
+   覆盖。
+3. `fill` 只在按 `byId > default > AI Memory` 解析后的有效值为 `null` 时写入 AI Memory；
+   `review` 写人工 default 或 comment-specific 覆盖。
 4. translations 内容实际变化时递增 `revision`。
 5. 使用 `atomically` 写临时文件并原子替换，最后释放锁。
 

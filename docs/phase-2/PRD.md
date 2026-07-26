@@ -1,15 +1,20 @@
 # Phase 2 PRD：增量构建、按需语言与有界缓存
 
-> 状态：Implemented，等待外部验收
+> 状态：历史实施记录（非规范）
 >
-> 前置条件：Phase 1 的默认协议、Runtime 和文件格式保持稳定。
+> 本文记录 Phase 2 当时的增量构建、Locale Lazy 与容量控制决策，不定义当前协议。现行
+> 持久化、诊断与 MCP 契约见 [Phase 7](../phase-7/PRD.md)、[Phase 8](../phase-8/PRD.md)
+> 与 [`docs/mcp/PRD.md`](../mcp/PRD.md)。未发布的阶段性协议不要求兼容或迁移；文中的
+> 持久化文件名已按现行职责回写，不代表 Phase 2 当时采用了 Phase 7 协议。
+>
+> 前置条件：以当前默认行为作为回归基线。
 
 ## 1. 背景
 
 Phase 1 已建立以下稳定能力：
 
 - Dev 渐进分析，Build 处理入口可达模块图。
-- 可提交到 Git 的 Translation Memory cache。
+- 可提交到 Git 的 Translation Memory。
 - 按源码路径生成的 extracted 文件。
 - 按语言生成的 locales 文件。
 - 模块注册携带全部配置语言。
@@ -20,23 +25,23 @@ Phase 2 不重做上述能力。本阶段解决三个明确问题：
 
 1. `vite build --watch` 每轮 Build 都会重建 ProjectState，无法复用上一轮分析状态。
 2. 模块注册携带全部语言，无法按语言加载，也无法声明资源加载优先级。
-3. Translation Memory 默认永久保留，但项目无法限制 `cache.json` 的最大条数或体积。
+3. Translation Memory 默认永久保留，但项目无法限制 `translations.json` 的最大条数或体积。
 
 本阶段不以性能 benchmark 为启动条件，也不建设性能测试体系。所有测试只验证行为、
-兼容性和数据安全。
+当前行为回归和数据安全。
 
 ## 2. 产品目标
 
 1. 让 `vite build --watch` 复用 ProjectState，并按正确的依赖闭包增量更新。
 2. 提供按 locale 加载的语言资产。
 3. 支持预加载、预取和完全按需加载三种资源提示。
-4. 允许限制 `cache.json` 的 message 数量或序列化体积。
+4. 允许限制 `translations.json` 的 message 数量或序列化体积。
 5. Cache 超限时只淘汰非活跃 Translation Memory，不删除活动翻译。
-6. 保持 Phase 1 默认模式和文件协议兼容。
+6. 保持当前默认模式、Runtime 行为和文件职责回归通过。
 
 ## 3. 实现原则
 
-- 未配置 Phase 2 选项时，行为与 Phase 1 一致。
+- 未配置 Phase 2 选项时，当前默认行为保持稳定。
 - 只依赖 Vite 公开插件 API。
 - 相同输入生成稳定内容，不引入时间戳、运行次数或访问计数。
 - 活动翻译优先保证正确性，容量限制不能导致活动翻译丢失。
@@ -72,7 +77,7 @@ Phase 2 不包括：
 `vite build --watch` 在首轮构建时创建 ProjectState。后续重建复用该状态，不在每次
 `buildStart` 时执行全量 reset。
 
-重新启动 Watch 进程时，插件继续从磁盘 cache 恢复 Translation Memory。分析状态允许重建，
+重新启动 Watch 进程时，插件继续从磁盘恢复 Translation Memory。分析状态允许重建，
 Translation Memory 不得丢失。
 
 ### 5.2 失效规则
@@ -81,11 +86,11 @@ Translation Memory 不得丢失。
 - 静态依赖变化：重新分析依赖该文件且提取结果可能变化的模块。
 - source 移除静态或动态 import：不再可达的模块退出活动 ProjectState，历史 Translation
   Memory 继续保留。
-- extracted 翻译变化：只合并 cache、locale 和 registration，不重新 parse source。
-- locale 文件变化：只恢复对应翻译并更新受影响的 registration。
+- Translation Memory 或 overrides 变化：只重算 locale 和 registration，不重新 parse source。
+- locale 是派生产物，外部变化不反向写入 Translation Memory。
 - source 删除：删除活动文件引用，并刷新必要的 dependents。
 - source 重命名：按删除旧模块和新增新模块处理，不重复请求已有 Translation Memory。
-- extractor、schema 或提取配置不兼容：重启 Watch 进程并重建分析状态，保留兼容的
+- extractor、schema 或提取配置变化：重启 Watch 进程并重建分析状态，保留当前有效的
   Translation Memory。
 
 Vite 配置文件及其依赖变化后，用户需要重启 `vite build --watch`。插件不在 Watch 进程内
@@ -93,7 +98,7 @@ Vite 配置文件及其依赖变化后，用户需要重启 `vite build --watch`
 
 ### 5.3 写入与产物
 
-- 没有内容变化时，不重写 cache、extracted 或 locale 文件。
+- 没有内容变化时，不重写 translations、overrides、extracted 或 locale 文件。
 - 没有 registration 变化时，生成内容保持稳定。
 - Watch 重建不得重复请求已有翻译。
 - 文件删除或重命名后，不保留错误的活动 module reference。
@@ -101,10 +106,9 @@ Vite 配置文件及其依赖变化后，用户需要重启 `vite build --watch`
 
 ## 6. Locale Lazy
 
-### 6.1 默认兼容
+### 6.1 当前默认行为
 
-未配置 `loading` 时，继续使用 Phase 1 的全语言模块注册模式。现有项目无需修改配置，
-Runtime API 和文件协议保持不变。
+未配置 `loading` 时，当前默认加载行为、Runtime API 和文件职责保持稳定，并作为回归基线。
 
 ### 6.2 配置
 
@@ -167,7 +171,7 @@ aiI18n({
 ### 6.6 HMR
 
 - source message 变化时，只更新包含该 message 的语言资产和 registration。
-- extracted 翻译变化时，只更新对应 locale。
+- Translation Memory 或 overrides 变化时，只更新对应 locale。
 - 已加载 locale 通过 HMR 替换数据。
 - 未加载 locale 只更新后续请求的资源，不触发无意义加载。
 - HMR 不重复注册 module，也不累计旧翻译。
@@ -176,10 +180,10 @@ aiI18n({
 
 ### 7.1 默认行为
 
-未配置容量限制时，`cache.json` 继续永久保留 Translation Memory。文件移动、删除和暂时不可达
-都不会自动删除历史翻译。
+在默认 cleanup 配置下，未配置容量限制时，`translations.json` 永久保留 Translation
+Memory。文件移动、删除和暂时不可达都不会自动删除历史翻译。
 
-本阶段继续使用单个 `cache.json`，不实现 cache 分片。
+当前使用单个 `translations.json`，不实现 Translation Memory 分片。
 
 ### 7.2 配置
 
@@ -194,8 +198,8 @@ aiI18n({
 
 配置规则：
 
-- `maxMessages` 是 `cache.messages` 允许保留的最大条数。
-- `maxBytes` 是稳定序列化后整个 `cache.json` 的最大字节数。
+- `maxMessages` 是 `translations.messages` 允许保留的最大条数。
+- `maxBytes` 是稳定序列化后整个 `translations.json` 的最大字节数。
 - 两项都省略时，不启用容量清理。
 - 两项同时配置时，任一限制超出都会启动清理。
 - 两项必须是正整数。
@@ -204,7 +208,7 @@ aiI18n({
 
 message 满足以下任一条件时视为活动：
 
-- 当前 cache file record 的 `messageIds` 仍引用该 message。
+- 当前 extracted 结构仍引用该 message。
 - 当前 ProjectState 中的活动模块仍引用该 message。
 
 活动 message 及其翻译不得因容量限制被删除。
@@ -214,7 +218,7 @@ message 满足以下任一条件时视为活动：
 ### 7.4 淘汰规则
 
 1. 先完成磁盘变更合并、缺失 source 清理和活动引用校准。
-2. 只有 cache 超出配置限制时才开始淘汰。
+2. 只有 Translation Memory 超出配置限制时才开始淘汰。
 3. 只选择非活跃 messages。
 4. 候选项按 message ID 升序稳定排序，并按该顺序删除。
 5. 持续删除，直到同时满足 `maxMessages` 和 `maxBytes`。
@@ -222,14 +226,14 @@ message 满足以下任一条件时视为活动：
 
 容量控制不保存访问时间、运行次数或 LRU 计数，避免每次运行产生无意义 Git diff。
 
-如果活动 messages 或受保护的 file records 本身已超过限制，插件保留全部受保护数据并输出
+如果活动 messages 本身已超过限制，插件保留全部受保护数据并输出
 warning。容量限制是软上限，不能以破坏当前项目翻译为代价强制满足。
 
 ### 7.5 与现有清理配置的关系
 
 - `cleanup.orphanMessages: false`：默认保留全部历史；配置容量后只在超限时删除非活跃记录。
 - `cleanup.orphanMessages: true`：继续删除全部非活跃记录，优先级高于容量限制。
-- `cleanup.missingSourceFiles`：继续决定不存在的 source 是否从活动 file records 中移除。
+- `cleanup.missingSourceFiles`：继续决定不存在的 source 是否从活动 extracted 结构中移除。
 
 ## 8. Provider 现状
 
@@ -260,14 +264,14 @@ Rust 或其他 native extraction 方案等待 Vite 或 Rolldown 提供正式、�
 - 不把 Vite 生命周期、Vue compiler、Runtime 或文件协议迁入 Rust。
 - 不把 native 支持列入 Phase 2 验收条件。
 
-## 10. Schema 与兼容
+## 10. Schema 与当前行为回归
 
-- Cache 继续使用 Phase 1 单文件 schema。
-- extracted 和 locale 持久化文件继续使用 Phase 1 schema。
-- Cache 容量控制不写入时间戳、活跃度或额外运行时 metadata。
+- Translation Memory、overrides、extracted 与 locale 使用 Phase 7 定义的当前职责。
+- `cache` 配置控制 `translations.json` 的容量，不改变文件职责。
+- 容量控制不写入时间戳、活跃度或额外运行时 metadata。
 - Locale Lazy 可以增加 Runtime manifest，但不得静默改写现有持久化文件语义。
 - 未知更高版本 schema 继续停止写入。
-- Phase 1 示例和默认配置无需迁移。
+- 当前示例和默认配置必须通过回归。
 
 ## 11. 验收标准
 
@@ -276,7 +280,7 @@ Rust 或其他 native extraction 方案等待 Vite 或 Rolldown 提供正式、�
 - 首轮 Build 后，后续 Watch 重建不全量 reset ProjectState。
 - source 变化只刷新当前模块及必要 dependents。
 - import 被移除后，不再可达的模块退出活动集合，但历史 Translation Memory 保留。
-- extracted 或 locale 变化不重新 parse source。
+- Translation Memory 或 overrides 变化不重新 parse source。
 - 删除和重命名不遗留活动引用。
 - 已有 Translation Memory 不重复请求 Provider。
 - 内容未变化时不重写文件或改变 registration 内容。
@@ -303,9 +307,9 @@ Rust 或其他 native extraction 方案等待 Vite 或 Rolldown 提供正式、�
 - 清理结果稳定、原子且不包含活跃度 metadata。
 - 不创建 cache 分片文件。
 
-### 11.4 兼容与质量
+### 11.4 当前行为回归与质量
 
-- Phase 1 默认模式、Runtime 和文件协议保持兼容。
+- 当前默认模式、Runtime 行为和文件职责通过回归。
 - `pnpm check`、`pnpm test` 和 `pnpm build` 通过。
-- 新增测试只验证功能、兼容性和数据安全，不新增性能 benchmark。
+- 新增测试只验证功能、当前行为回归和数据安全，不新增性能 benchmark。
 - SSR、普通文本自动提取、全目录扫描和额外 CLI 仍然不存在。

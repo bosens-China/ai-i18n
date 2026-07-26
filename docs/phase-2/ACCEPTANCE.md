@@ -2,8 +2,12 @@
 
 > 更新日期：2026-07-26
 >
-> 当前范围：P0 + P1（Build Watch）+ P2（Cache 容量）+ P3（Locale Lazy）。
-> Phase 2 已实现，等待外部验收。
+> 本文仅保存 Phase 2 当时的验收证据，不定义当前协议。现行持久化、诊断和 MCP 契约分别见
+> [Phase 7](../phase-7/PRD.md)、[Phase 8](../phase-8/PRD.md) 与
+> [`docs/mcp/PRD.md`](../mcp/PRD.md)。
+>
+> 当时范围：P0 + P1（Build Watch）+ P2（Cache 容量）+ P3（Locale Lazy）。
+> 当时状态：已实现，等待外部验收。
 
 ## P0
 
@@ -17,13 +21,13 @@
 - 普通 Build 继续 reset 分析状态；Build Watch 后续轮次复用 ProjectState。
 - 未变化 source 通过 fingerprint 复用 AST。
 - 静态依赖变化重新 parse 当前文件，并刷新必要 reverse dependents。
-- extracted 和目标 locale 编辑只恢复翻译与 registration，不重新 parse source。
+- Translation Memory 与 overrides 变化只刷新派生 locale 和 registration，不重新 parse source。
 - source 删除、重命名和 import 移除会校准当前活动模块。
 - Translation Memory 在移动和暂时不可达后继续保留，已有翻译不重复请求 Provider。
-- 相同内容重建不改写 cache、extracted 或 locale 文件。
+- 相同内容重建不改写 translations、overrides、extracted 或 locale 文件。
 
-真实 `vite build --watch` 测试覆盖直接 source、静态依赖、extracted、locale、删除、重命名、
-不可达模块、Provider 复用和稳定文件写入。
+真实 `vite build --watch` 测试覆盖直接 source、静态依赖、Translation Memory、overrides、
+删除、重命名、不可达模块、Provider 复用和稳定文件写入。
 
 ## P3 Locale Lazy
 
@@ -38,8 +42,8 @@
   构建测试。
 - Runtime 覆盖 source 同步切换、已加载直接切换、Promise 去重、加载失败原子性、最后调用
   获胜、目标默认语言后台加载和 `null` source fallback。
-- HMR 对已加载 locale 替换数据；未加载 locale 记录最新数据但不触发动态 import。extracted
-  编辑只发送实际变化 locale 的更新。
+- HMR 对已加载 locale 替换数据；未加载 locale 记录最新数据但不触发动态 import。
+  Translation Memory 或 overrides 变化只发送实际变化 locale 的更新。
 - Vanilla、Vue、React 和 HTML 均覆盖 Build 或 Dev 资产行为及异步切换后的订阅更新。
 - Vue Demo 以 `en-US` 默认预加载、`ja-JP` 首次切换加载完成真实浏览器验证；同一轮使用
   `@ai-i18n/mcp` 三项 stdio 工具写入 9 条日语翻译并回读缺失为 0。
@@ -47,16 +51,16 @@
 ## P2 Cache 容量
 
 - 新增可选的 `cache.maxMessages` 与 `cache.maxBytes`；两者独立生效，必须是正整数，全部
-  省略时保持永久 Translation Memory 的兼容行为。
-- 容量检查位于磁盘编辑合并、missing source 清理和 orphan cleanup 之后，Dev、Build、
+  省略时保持当前默认的永久 Translation Memory 行为。
+- 容量检查位于事务合并、missing source 清理和 orphan cleanup 之后，Dev、Build、
   Build Watch、Provider 与 locale reconciliation 共用同一 FileStore 路径。
-- 活动 message IDs 同时取 cache file records 与当前 ProjectState 的并集。活动翻译永不
+- 活动 message IDs 同时取 extracted 结构与当前 ProjectState 的并集。活动翻译永不
   参与容量淘汰；受保护数据自身超限时保留并通过 Vite logger 输出 warning。
 - 非活跃候选按 message ID 稳定排序。`maxBytes` 使用最终稳定序列化内容的 UTF-8 字节数；
   两项同时配置时，删除到同时满足两个限制。
-- 实现不增加时间戳、访问次数、LRU metadata、cache 分片或额外依赖，继续使用原子写入。
+- 实现不增加时间戳、访问次数、LRU metadata、Translation Memory 分片或额外依赖，继续使用原子写入。
 - 9 个专项测试覆盖默认保留、两个独立限制、组合限制、稳定淘汰、活动保护、cleanup
-  优先级、missing source、Agent/Git 磁盘编辑合并和无变化不重写。
+  优先级、missing source、MCP/Git 合并和无变化不重写。
 
 ## 质量门禁
 

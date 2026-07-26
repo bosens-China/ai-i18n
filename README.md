@@ -25,6 +25,8 @@ pnpm add @ai-i18n/vite@alpha
 ```
 
 当前仍处于 alpha 阶段；不带 `@alpha` 可能安装到较旧的 `latest`。
+main 分支文档可能先于 npm 的 `alpha` 包更新；若 API 有差异，请以已安装版本的类型定义和
+包内 README 为准，或等待下一次 alpha 发布。
 
 ### 2. 配置 Vite
 

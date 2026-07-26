@@ -27,10 +27,12 @@ server 使用 stdio 通信，标准输出专用于 MCP 协议。
 - `ai_i18n_list_translations`
 - `ai_i18n_write_translations`
 
-列表工具同时返回完整 JSON 文本和 `structuredContent`，大结果使用 cursor 分页。
+列表工具同时返回完整 JSON 文本和 `structuredContent`，大结果使用 cursor 分页。缺失状态按
+`byId > default > AI Memory` 解析；只有最终有效值为 `null` 时才算缺失。
 写入工具默认使用 `mode: "fill"`，只填充缺失值。人工确认修订时可显式使用
-`mode: "review"`；默认影响同一原文的全部调用，`review_scope: "message"` 只影响带显式
-ID 的消息。fill 写 `translations.json`，review 写 `overrides.json`，两者都在跨进程锁内重读；
+`mode: "review"`；默认影响同一原文的全部调用，`review_scope: "message"` 只影响带
+`comment` 的目标消息。`fill` 写 `translations.json`，`review` 写 `overrides.json`。两种模式都会
+在各自目标文件的共享事务内加锁、重读并复验，确认后才写入。
 运行中的 Vite Dev 会自动重建 locales，未运行时由下一次 `vite dev` 或 `vite build`
 校准派生文件。
 

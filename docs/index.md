@@ -3,7 +3,11 @@
 面向 Agent / 维护者。先读本文件，再按需打开下列文档。
 用户文档见 `apps/docs`（Rspress）。
 
-- [phase-1/PRD.md](./phase-1/PRD.md) — Phase 1 产品规格（含当前 `t(source, { comment })`、Translator 与 Vite Provider 契约）
+Phase 1–6 均为历史非规范记录，仅用于追溯需求、实现与验收，不作为当前实现依据。当前契约以
+`apps/docs`、[Phase 7 PRD](./phase-7/PRD.md)、[Phase 8 PRD](./phase-8/PRD.md) 和
+[MCP PRD](./mcp/PRD.md) 为准。
+
+- [phase-1/PRD.md](./phase-1/PRD.md) — Phase 1 初始产品规格历史记录
 - [phase-1/TODO.md](./phase-1/TODO.md) — Phase 1 任务清单
 - [phase-1/ACCEPTANCE.md](./phase-1/ACCEPTANCE.md) — Phase 1 验收证据
 - [phase-1/YUKU-SPIKE.md](./phase-1/YUKU-SPIKE.md) — Yuku 历史准入 Spike（现有回归已并入 Analyzer）
@@ -11,13 +15,13 @@
 - [phase-2/TODO.md](./phase-2/TODO.md) — Phase 2 任务清单
 - [phase-2/SPIKES.md](./phase-2/SPIKES.md) — Phase 2 Vite Watch / Locale 资产 Spike
 - [phase-2/ACCEPTANCE.md](./phase-2/ACCEPTANCE.md) — Phase 2 验收证据
-- [phase-3/PRD.md](./phase-3/PRD.md) — Phase 3 持久化协议与 React 响应式修复规格
+- [phase-3/PRD.md](./phase-3/PRD.md) — Phase 3 早期持久化协议与 React 响应式修复历史记录（现行协议见 Phase 7）
 - [phase-3/TODO.md](./phase-3/TODO.md) — Phase 3 交付清单
 - [phase-3/ACCEPTANCE.md](./phase-3/ACCEPTANCE.md) — Phase 3 验收证据
-- [phase-4/PRD.md](./phase-4/PRD.md) — DropRoom 实接反馈与精简运行时 / Vite / MCP 改进规格（含已被最终 MCP 契约取代的历史方案）
+- [phase-4/PRD.md](./phase-4/PRD.md) — Phase 4 DropRoom 实接反馈与 Runtime / Vite 改进历史记录
 - [phase-4/TODO.md](./phase-4/TODO.md) — Phase 4 交付清单
 - [phase-4/ACCEPTANCE.md](./phase-4/ACCEPTANCE.md) — Phase 4 验收证据
-- [phase-5/PRD.md](./phase-5/PRD.md) — Windows 文件 IO 与 Build 写放大规格
+- [phase-5/PRD.md](./phase-5/PRD.md) — Phase 5 Windows 文件 IO 与 Build 写放大历史记录（现行事务写入见 Phase 7）
 - [phase-5/TODO.md](./phase-5/TODO.md) — Phase 5 交付清单
 - [phase-5/ACCEPTANCE.md](./phase-5/ACCEPTANCE.md) — Phase 5 验收证据
 - [phase-6/PRD.md](./phase-6/PRD.md) — 静态消息集合宏、宽松提取与推荐语法规格
