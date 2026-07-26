@@ -4,6 +4,7 @@ import { Client } from 'langsmith';
 import type {
   TranslationRequest,
   TranslationResult,
+  TranslationValue,
   Translator,
 } from '@ai-i18n/core';
 import { hasSameTemplateTokens } from '@ai-i18n/core';
@@ -34,38 +35,27 @@ export interface OpenAIOptions {
 }
 
 interface TranslationPayload {
-  translations: TranslationResult[];
+  translations: Array<Record<string, TranslationValue>>;
+}
+
+interface TranslationRow {
+  messageId: string;
+  source: string;
+  comment?: string;
+  locales: Set<string>;
+}
+
+interface TranslationGroup {
+  rows: TranslationRow[];
+  locales: string[];
+  messageIds: Set<string>;
 }
 
 const DEFAULT_SYSTEM_PROMPT =
-  '你是一名专业的软件界面本地化译者。请将每条 source 翻译为请求指定的 locale，并结合 comment 判断语境。保持占位符、HTML、Markdown、ICU 语法、快捷键和产品名称不变。不要添加解释；无法可靠翻译时返回 null。';
+  '你是一名专业的软件界面翻译助手。请把用户输入翻译为指定目标语言，并结合 # 后的注释理解业务语境。保持 HTML、Markdown、ICU 语法、快捷键和产品名称不变；无法可靠翻译时返回 null。';
 
 const TEMPLATE_PLACEHOLDER_RULE =
   '`{{0}}`、`{{1}}` 等不带等号的编号标记代表运行时插值，可以按目标语言语序调整位置；`{{=0}}`、`{{==0}}` 等带等号的编号标记代表转义后的字面文本。两类标记都必须原样保留且出现相同次数，不能互换。';
-
-const JSON_OUTPUT_SUFFIX =
-  '请仅以 JSON 返回，不要使用 Markdown 代码块或添加解释。最小示例：{"translations":[{"messageId":"save","locale":"en-US","value":"Save"}]}';
-
-const TRANSLATION_SCHEMA = {
-  type: 'object',
-  properties: {
-    translations: {
-      type: 'array',
-      items: {
-        type: 'object',
-        properties: {
-          messageId: { type: 'string' },
-          locale: { type: 'string' },
-          value: { type: ['string', 'null'] },
-        },
-        required: ['messageId', 'locale', 'value'],
-        additionalProperties: false,
-      },
-    },
-  },
-  required: ['translations'],
-  additionalProperties: false,
-} as const;
 
 export function openAI(options: OpenAIOptions): Translator {
   const baseURL = requiredOption(options.baseURL, 'baseURL').replace(
@@ -77,7 +67,6 @@ export function openAI(options: OpenAIOptions): Translator {
     options.systemPrompt === undefined
       ? DEFAULT_SYSTEM_PROMPT
       : requiredOption(options.systemPrompt, 'systemPrompt');
-  const systemPrompt = `${basePrompt}\n\n${TEMPLATE_PLACEHOLDER_RULE}\n\n${JSON_OUTPUT_SUFFIX}`;
   const temperature = nonNegativeNumber(
     options.temperature ?? 1,
     'temperature',
@@ -92,7 +81,7 @@ export function openAI(options: OpenAIOptions): Translator {
   const apiKey = options.apiKey?.trim() || 'local-no-auth';
   const callbacks = createLangSmithCallbacks(options.langSmith);
 
-  const model = new ChatOpenAI({
+  const chatModel = new ChatOpenAI({
     model: modelName,
     apiKey,
     temperature,
@@ -105,26 +94,139 @@ export function openAI(options: OpenAIOptions): Translator {
       baseURL,
       ...(headers ? { defaultHeaders: headers } : {}),
     },
-  }).withStructuredOutput<TranslationPayload>(TRANSLATION_SCHEMA, {
-    name: 'ai_i18n_translations',
-    method: 'jsonSchema',
-    strict: true,
   });
 
   return async (requests) => {
     if (requests.length === 0) return [];
+    const translated: TranslationResult[] = [];
+    for (const { rows, locales, messageIds } of createTranslationGroups(
+      requests,
+    )) {
+      const systemPrompt = `${basePrompt}\n\n${TEMPLATE_PLACEHOLDER_RULE}\n\n${outputInstructions(locales, rows.length)}`;
+      const model = chatModel.withStructuredOutput<TranslationPayload>(
+        translationSchema(locales, rows.length),
+        {
+          name: 'ai_i18n_translations',
+          method: 'jsonSchema',
+          strict: true,
+        },
+      );
 
-    let payload: TranslationPayload;
-    try {
-      payload = await model.invoke([
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: JSON.stringify({ requests }) },
-      ]);
-    } catch (error) {
-      throw safeProviderError(error);
+      let payload: TranslationPayload;
+      try {
+        payload = await model.invoke([
+          { role: 'system', content: systemPrompt },
+          {
+            role: 'user',
+            content: JSON.stringify(rows.map(promptInput)),
+          },
+        ]);
+      } catch (error) {
+        throw safeProviderError(error);
+      }
+      translated.push(
+        ...validateResults(
+          requests.filter((request) => messageIds.has(request.messageId)),
+          rows,
+          locales,
+          parsePayload(payload),
+        ),
+      );
     }
-    return validateResults(requests, parsePayload(payload));
+    const byKey = new Map(
+      translated.map((result) => [requestKey(result), result]),
+    );
+    return requests.map((request) => byKey.get(requestKey(request))!);
   };
+}
+
+function createTranslationGroups(requests: readonly TranslationRequest[]) {
+  const rows: TranslationRow[] = [];
+  const byMessageId = new Map<string, TranslationRow>();
+  const keys = new Set<string>();
+
+  for (const request of requests) {
+    const key = requestKey(request);
+    if (keys.has(key)) {
+      throw new Error('[ai-i18n/openai] invalid translation request');
+    }
+    keys.add(key);
+    const existing = byMessageId.get(request.messageId);
+    if (existing) {
+      if (
+        existing.source !== request.source ||
+        existing.comment !== request.comment
+      ) {
+        throw new Error('[ai-i18n/openai] invalid translation request');
+      }
+      existing.locales.add(request.locale);
+      continue;
+    }
+    const row: TranslationRow = {
+      messageId: request.messageId,
+      source: request.source,
+      ...(request.comment === undefined ? {} : { comment: request.comment }),
+      locales: new Set([request.locale]),
+    };
+    byMessageId.set(request.messageId, row);
+    rows.push(row);
+  }
+  const groups = new Map<string, TranslationGroup>();
+  for (const row of rows) {
+    const locales = [...row.locales].sort();
+    const key = JSON.stringify(locales);
+    const group = groups.get(key) ?? {
+      rows: [],
+      locales,
+      messageIds: new Set<string>(),
+    };
+    group.rows.push(row);
+    group.messageIds.add(row.messageId);
+    groups.set(key, group);
+  }
+  return groups.values();
+}
+
+function promptInput(row: TranslationRow): string {
+  return row.comment === undefined
+    ? row.source
+    : `${row.source}#${row.comment.replaceAll('#', '＃')}`;
+}
+
+function outputInstructions(locales: readonly string[], rowCount: number) {
+  const example = {
+    translations: [Object.fromEntries(locales.map((locale) => [locale, '']))],
+  };
+  return [
+    `目标语言：${locales.join('、')}。`,
+    '用户输入是字符串数组；每项只翻译正文。存在 comment 时，最后一个半角 # 后的内容仅用于理解业务语境，不得出现在译文中。',
+    `返回 JSON 对象，其中 translations 是长度为 ${rowCount} 的数组，并与输入下标一一对应。每项必须且只能包含这些语言键：${locales.join('、')}。`,
+    `不要使用 Markdown 或添加解释。格式示例：${JSON.stringify(example)}`,
+  ].join('\n');
+}
+
+function translationSchema(locales: readonly string[], rowCount: number) {
+  const properties = Object.fromEntries(
+    locales.map((locale) => [locale, { type: ['string', 'null'] }]),
+  );
+  return {
+    type: 'object',
+    properties: {
+      translations: {
+        type: 'array',
+        minItems: rowCount,
+        maxItems: rowCount,
+        items: {
+          type: 'object',
+          properties,
+          required: locales,
+          additionalProperties: false,
+        },
+      },
+    },
+    required: ['translations'],
+    additionalProperties: false,
+  } as const;
 }
 
 function createLangSmithCallbacks(options: LangSmithOptions | undefined) {
@@ -148,7 +250,9 @@ function createLangSmithCallbacks(options: LangSmithOptions | undefined) {
   ];
 }
 
-function parsePayload(value: unknown): readonly TranslationResult[] {
+function parsePayload(
+  value: unknown,
+): readonly Record<string, TranslationValue>[] {
   if (
     !isRecord(value) ||
     !hasExactKeys(value, ['translations']) ||
@@ -156,49 +260,49 @@ function parsePayload(value: unknown): readonly TranslationResult[] {
   ) {
     throw new Error('[ai-i18n/openai] invalid translation payload');
   }
-  return value.translations as TranslationResult[];
+  return value.translations as Array<Record<string, TranslationValue>>;
 }
 
 function validateResults(
   requests: readonly TranslationRequest[],
-  results: readonly TranslationResult[],
+  rows: readonly TranslationRow[],
+  locales: readonly string[],
+  results: readonly Record<string, TranslationValue>[],
 ): TranslationResult[] {
-  // Provider 返回值必须与批次一一对应，避免错误结果进入 Translation Memory。
-  const expected = new Map(
-    requests.map((request) => [requestKey(request), request]),
-  );
-  const received = new Map<string, TranslationResult>();
-  if (expected.size !== requests.length) {
-    throw new Error('[ai-i18n/openai] invalid translation request');
+  if (results.length !== rows.length) {
+    throw new Error('[ai-i18n/openai] invalid translation result');
   }
-
-  for (const result of results) {
+  const expectedKeys = new Set(locales);
+  const received = new Map<string, TranslationResult>();
+  for (const [index, result] of results.entries()) {
     if (
       !isRecord(result) ||
-      !hasExactKeys(result, ['messageId', 'locale', 'value']) ||
-      typeof result.messageId !== 'string' ||
-      typeof result.locale !== 'string' ||
-      (typeof result.value !== 'string' && result.value !== null)
+      Object.keys(result).length !== expectedKeys.size ||
+      Object.keys(result).some((key) => !expectedKeys.has(key))
     ) {
       throw new Error('[ai-i18n/openai] invalid translation result');
     }
-    const key = requestKey(result);
-    const request = expected.get(key);
-    if (!request || received.has(key)) {
-      throw new Error('[ai-i18n/openai] invalid translation result');
+    const row = rows[index]!;
+    for (const locale of locales) {
+      const value = result[locale];
+      if (typeof value !== 'string' && value !== null) {
+        throw new Error('[ai-i18n/openai] invalid translation result');
+      }
+      if (value !== null && !hasSameTemplateTokens(row.source, value)) {
+        throw new Error(
+          '[ai-i18n/openai] translation result changed template placeholders',
+        );
+      }
+      if (row.locales.has(locale)) {
+        received.set(requestKey({ messageId: row.messageId, locale }), {
+          messageId: row.messageId,
+          locale,
+          value,
+        });
+      }
     }
-    if (
-      result.value !== null &&
-      !hasSameTemplateTokens(request.source, result.value)
-    ) {
-      throw new Error(
-        '[ai-i18n/openai] translation result changed template placeholders',
-      );
-    }
-    received.set(key, result);
   }
-
-  if (received.size !== expected.size) {
+  if (received.size !== requests.length) {
     throw new Error('[ai-i18n/openai] invalid translation result');
   }
   return requests.map((request) => received.get(requestKey(request))!);

@@ -29,8 +29,16 @@ const translator = openAI({
 
 `temperature`、`timeoutMs`、`maxRetries` 默认分别为 `1`、`120_000`、`3`；`maxTokens`
 不设置时交给模型决定。Provider 使用内部 JSON Schema 结构化响应，并在用户提示词尾部固定
-追加纯 JSON 约束和最小示例，然后严格校验每个 `messageId + locale` 结果。传入
+追加纯 JSON 约束和最小示例，然后按输入下标和目标语言严格校验结果。传入
 `langSmith` 即启用 tracing，不传则不会创建 LangSmith client。
+
+同一批中的消息先按“缺失目标 locale 集合”分组，再在每组内合并成行和语言列。两条消息都
+缺少英文、日文时仍只调用一次；已有英文的旧消息只会进入“缺日文”组，不会重复生成英文。
+模型收到的用户输入类似 `["查询", "查询#按钮"]`：`#` 后的 comment 只用于理解语境，
+不进入译文。返回结构类似
+`{"translations":[{"en-US":"Search","ja-JP":"検索"}, ...]}`，数组下标与输入行一致。
+`messageId`、文件路径和源码位置都不会发送给模型；Provider 在内部用原请求顺序把每格结果
+还原为 `messageId + locale` 并写回。
 
 `` t`...${value}` `` 产生的 `{{0}}` 等运行时占位符，以及表示字面文本的 `{{=0}}`、
 `{{==0}}` 等转义标记都会追加到系统约束；译文可调整其顺序，但增删、重复或在两类标记间

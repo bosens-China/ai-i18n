@@ -98,9 +98,43 @@ AI_API_KEY=replace-me
 不要给密钥添加 `VITE_` 前缀，也不要在客户端源码中导入 Provider。
 :::
 
+## 多语言请求里会发送什么
+
+每个缺失的“消息 + 目标 locale”在插件内部仍是一条请求，但同一批交给
+`@ai-i18n/openai` 时会先按“缺失目标 locale 集合”分组，再在每组内按消息合并成行、按
+目标语言合并成列。例如两条中文都缺少英文和日文，它们同属 `{ en-US, ja-JP }` 组，
+仍然只调用一次，模型收到的用户内容是：
+
+```json
+["查询", "查询#按钮"]
+```
+
+没有 comment 时只发送正文；有 comment 时发送 `正文#comment`。最后一个半角 `#` 后的
+内容只帮助模型理解业务语境，不应出现在译文中。目标语言和返回约束在系统提示中说明，返回
+结构为：
+
+```json
+{
+  "translations": [
+    { "en-US": "Search", "ja-JP": "検索" },
+    { "en-US": "Search", "ja-JP": "検索" }
+  ]
+}
+```
+
+`translations` 的下标与输入下标固定对应，各语言键是同一行的译文。最外层对象用于
+LangChain/OpenAI 的严格 JSON Schema；模型不需要看到 `messageId`、文件路径或源码位置。
+Provider 会在内部保留这些路由信息，并按原请求顺序写回每个 `messageId + locale`。
+
+如果缓存中的旧消息已有英文、只缺日文，而新消息同时缺少英文和日文，Provider 会拆成
+`{ ja-JP }` 与 `{ en-US, ja-JP }` 两组。这样旧消息不会重复生成英文；同组消息仍会合并，
+外层请求仍可能由 Vite 按 `batchLength` 拆成多个批次。
+
 ## 如何编写 `systemPrompt`
 
-`systemPrompt` 只需要描述翻译要求。Provider 内部会利用 LangChain 在末尾追加固定的 JSON Schema 输出约束，**不要在自定义提示词中重复定义返回 JSON 的格式字段**。
+`systemPrompt` 只需要描述翻译要求。Provider 内部会利用 LangChain 在末尾追加目标语言、
+`#comment` 规则和固定的 JSON Schema 输出约束，**不要在自定义提示词中重复定义返回 JSON
+的格式字段**。
 
 推荐把提示词写成短规则，而不是长篇角色设定。每条规则只约束一件事。
 

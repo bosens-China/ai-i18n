@@ -30,7 +30,7 @@ describe('ProviderCoordinator', () => {
     expect(translator).toHaveBeenCalledTimes(1);
   });
 
-  it('flushes a full batch immediately and keeps locales separate', async () => {
+  it('flushes a full batch immediately across locales', async () => {
     const translator: Translator = vi.fn<Translator>(async (requests) =>
       requests.map((request) => ({
         messageId: request.messageId,
@@ -39,7 +39,7 @@ describe('ProviderCoordinator', () => {
       })),
     );
     const firstRequest = translationRequest('一', 'en-US');
-    const secondRequest = translationRequest('二', 'en-US');
+    const secondRequest = translationRequest('二', 'ja-JP');
     const coordinator = new ProviderCoordinator(translator, {
       debounceMs: 60_000,
       batchLength: JSON.stringify({
@@ -51,12 +51,12 @@ describe('ProviderCoordinator', () => {
     expect(translator).not.toHaveBeenCalled();
     const second = coordinator.request(secondRequest);
     expect(translator).toHaveBeenCalledTimes(1);
-    const third = coordinator.request(translationRequest('三', 'ja-JP'));
+    const third = coordinator.request(translationRequest('三', 'en-US'));
     await coordinator.flush();
 
     await expect(first).resolves.toBe('en-US:一');
-    await expect(second).resolves.toBe('en-US:二');
-    await expect(third).resolves.toBe('ja-JP:三');
+    await expect(second).resolves.toBe('ja-JP:二');
+    await expect(third).resolves.toBe('en-US:三');
     expect(translator).toHaveBeenCalledTimes(2);
     expect(
       vi
@@ -66,8 +66,8 @@ describe('ProviderCoordinator', () => {
           ...new Set(requests.map((request) => request.locale)),
         ]),
     ).toEqual([
-      [2, 'en-US'],
-      [1, 'ja-JP'],
+      [2, 'en-US', 'ja-JP'],
+      [1, 'en-US'],
     ]);
   });
 

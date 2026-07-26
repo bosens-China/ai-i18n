@@ -32,7 +32,7 @@ export class ProviderCoordinator {
   private readonly onResults?: ProviderCoordinatorOptions['onResults'];
   private readonly onWarning: (message: string) => void;
   private readonly active = new Map<string, PendingRequest>();
-  private readonly queued = new Map<string, Map<string, PendingRequest>>();
+  private readonly queued = new Map<string, PendingRequest>();
   private readonly inFlight = new Set<Promise<void>>();
   private readonly errors: Error[] = [];
   private timer: ReturnType<typeof setTimeout> | undefined;
@@ -76,10 +76,7 @@ export class ProviderCoordinator {
     };
     this.active.set(key, pending);
 
-    // Provider 按目标语言分批，避免一个批次混入多个目标语言。
-    const localeQueue = this.queued.get(request.locale) ?? new Map();
-    localeQueue.set(key, pending);
-    this.queued.set(request.locale, localeQueue);
+    this.queued.set(key, pending);
 
     this.dispatchReadyBatches();
     if (this.hasQueued()) this.schedule();
@@ -115,38 +112,24 @@ export class ProviderCoordinator {
   }
 
   private dispatchReadyBatches(): void {
-    for (const locale of [...this.queued.keys()]) {
-      let queue = this.queued.get(locale);
-      while (
-        queue &&
-        this.inFlight.size < this.maxConcurrency &&
-        batchPayloadLength(queue.values()) >= this.batchLength
-      ) {
-        this.dispatch(locale);
-        queue = this.queued.get(locale);
-      }
-      if (this.inFlight.size >= this.maxConcurrency) return;
+    while (
+      this.queued.size &&
+      this.inFlight.size < this.maxConcurrency &&
+      batchPayloadLength(this.queued.values()) >= this.batchLength
+    ) {
+      this.dispatch();
     }
   }
 
   private dispatchAll(): void {
-    for (const locale of [...this.queued.keys()]) {
-      while (
-        this.inFlight.size < this.maxConcurrency &&
-        this.queued.has(locale)
-      ) {
-        this.dispatch(locale);
-      }
-      if (this.inFlight.size >= this.maxConcurrency) return;
+    while (this.queued.size && this.inFlight.size < this.maxConcurrency) {
+      this.dispatch();
     }
   }
 
-  private dispatch(locale: string): void {
-    const queue = this.queued.get(locale);
-    if (!queue?.size) return;
-    const batch = takeBatch(queue.values(), this.batchLength);
-    for (const pending of batch) queue.delete(pending.key);
-    if (!queue.size) this.queued.delete(locale);
+  private dispatch(): void {
+    const batch = takeBatch(this.queued.values(), this.batchLength);
+    for (const pending of batch) this.queued.delete(pending.key);
     this.startBatch(batch);
   }
 

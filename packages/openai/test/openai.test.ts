@@ -20,7 +20,9 @@ afterEach(async () => {
 describe('openAI', () => {
   it('sends a structured batch with user configuration and the required suffix', async () => {
     let captured: CapturedRequest | undefined;
+    let requestCount = 0;
     const baseURL = await startServer(async (request, body) => {
+      requestCount += 1;
       captured = { request, body };
       return completion(validPayload());
     });
@@ -38,7 +40,8 @@ describe('openAI', () => {
 
     const results = await translator(translationRequests());
 
-    expect(results).toEqual(validPayload().translations);
+    expect(results).toEqual(validResults());
+    expect(requestCount).toBe(1);
     expect(captured?.request.url).toBe('/v1/chat/completions');
     expect(captured?.request.headers.authorization).toBe('Bearer secret-key');
     expect(captured?.request.headers['x-provider-version']).toBe('2026-07-22');
@@ -49,7 +52,22 @@ describe('openAI', () => {
       messages: [{ role: 'system' }, { role: 'user' }],
       response_format: {
         type: 'json_schema',
-        json_schema: { name: 'ai_i18n_translations', strict: true },
+        json_schema: {
+          name: 'ai_i18n_translations',
+          strict: true,
+          schema: {
+            properties: {
+              translations: {
+                minItems: 2,
+                maxItems: 2,
+                items: {
+                  required: ['en-US', 'ja-JP'],
+                  additionalProperties: false,
+                },
+              },
+            },
+          },
+        },
       },
     });
     const messages = captured?.body.messages as Array<{ content: string }>;
@@ -57,13 +75,57 @@ describe('openAI', () => {
       /^Translate product interface messages\.\n\n`\{\{0\}\}`/,
     );
     expect(messages[0]!.content).toContain('`{{=0}}`');
-    expect(messages[0]!.content).toContain('请仅以 JSON 返回');
+    expect(messages[0]!.content).toContain('与输入下标一一对应');
     expect(messages[0]!.content).toContain(
-      '{"translations":[{"messageId":"save","locale":"en-US","value":"Save"}]}',
+      '{"translations":[{"en-US":"","ja-JP":""}]}',
     );
-    expect(JSON.parse(messages[1]!.content)).toEqual({
-      requests: translationRequests(),
+    expect(JSON.parse(messages[1]!.content)).toEqual(['查询', '查询#按钮']);
+  });
+
+  it('groups messages by the same missing locale set', async () => {
+    const inputs: string[][] = [];
+    const baseURL = await startServer(async (_request, body) => {
+      const messages = body.messages as Array<{ content: string }>;
+      const input = JSON.parse(messages[1]!.content) as string[];
+      inputs.push(input);
+      return completion(
+        input.length === 3
+          ? {
+              translations: input.map((source) => ({
+                'ja-JP': `ja:${source}`,
+              })),
+            }
+          : {
+              translations: input.map((source) => ({
+                'en-US': `en:${source}`,
+                'ja-JP': `ja:${source}`,
+              })),
+            },
+      );
     });
+    const requests = [
+      { messageId: '1', source: '1', locale: 'ja-JP' },
+      { messageId: '2', source: '2', locale: 'ja-JP' },
+      { messageId: '3', source: '3', locale: 'ja-JP' },
+      { messageId: '4', source: '4', locale: 'en-US' },
+      { messageId: '4', source: '4', locale: 'ja-JP' },
+      { messageId: '5', source: '5', locale: 'en-US' },
+      { messageId: '5', source: '5', locale: 'ja-JP' },
+    ];
+
+    await expect(openAI(validOptions(baseURL))(requests)).resolves.toEqual([
+      { messageId: '1', locale: 'ja-JP', value: 'ja:1' },
+      { messageId: '2', locale: 'ja-JP', value: 'ja:2' },
+      { messageId: '3', locale: 'ja-JP', value: 'ja:3' },
+      { messageId: '4', locale: 'en-US', value: 'en:4' },
+      { messageId: '4', locale: 'ja-JP', value: 'ja:4' },
+      { messageId: '5', locale: 'en-US', value: 'en:5' },
+      { messageId: '5', locale: 'ja-JP', value: 'ja:5' },
+    ]);
+    expect(inputs).toEqual([
+      ['1', '2', '3'],
+      ['4', '5'],
+    ]);
   });
 
   it('uses safe defaults and does not leak an environment key to a local endpoint', async () => {
@@ -72,7 +134,7 @@ describe('openAI', () => {
     const baseURL = await startServer(async (request, body) => {
       captured = { request, body };
       return completion({
-        translations: [{ messageId: 'save', locale: 'en-US', value: 'Save' }],
+        translations: [{ 'en-US': 'Save' }],
       });
     });
 
@@ -86,14 +148,14 @@ describe('openAI', () => {
     expect(captured?.body.temperature).toBe(1);
     expect(
       (captured?.body.messages as Array<{ content: string }>)[0]!.content,
-    ).toContain('你是一名专业的软件界面本地化译者');
+    ).toContain('你是一名专业的软件界面翻译助手');
   });
 
   it('applies the configured request timeout', async () => {
     const baseURL = await startServer(async () => {
       await new Promise((resolve) => setTimeout(resolve, 50));
       return completion({
-        translations: [{ messageId: 'save', locale: 'en-US', value: 'Save' }],
+        translations: [{ 'en-US': 'Save' }],
       });
     });
 
@@ -107,29 +169,15 @@ describe('openAI', () => {
     ).rejects.toThrow('[ai-i18n/openai] translation request failed');
   });
 
-  it('rejects missing, duplicate, extra, and malformed results', async () => {
+  it('rejects missing, extra, and malformed result rows', async () => {
     const invalidPayloads = [
       { translations: [] },
       {
-        translations: [
-          { messageId: 'save', locale: 'en-US', value: 'Save' },
-          { messageId: 'save', locale: 'en-US', value: 'Again' },
-        ],
+        translations: [{ 'en-US': 'Save' }, { 'en-US': 'Again' }],
       },
-      {
-        translations: [{ messageId: 'other', locale: 'en-US', value: 'Other' }],
-      },
-      { translations: [{ messageId: 'save', locale: 'en-US', value: 1 }] },
-      {
-        translations: [
-          {
-            messageId: 'save',
-            locale: 'en-US',
-            value: 'Save',
-            unexpected: true,
-          },
-        ],
-      },
+      { translations: [{}] },
+      { translations: [{ 'en-US': 'Save', 'ja-JP': '保存' }] },
+      { translations: [{ 'en-US': 1 }] },
     ];
 
     for (const payload of invalidPayloads) {
@@ -144,9 +192,7 @@ describe('openAI', () => {
   it('rejects translations that change tagged-template placeholders', async () => {
     const baseURL = await startServer(async () =>
       completion({
-        translations: [
-          { messageId: 'welcome', locale: 'en-US', value: 'Hello' },
-        ],
+        translations: [{ 'en-US': 'Hello' }],
       }),
     );
 
@@ -166,9 +212,7 @@ describe('openAI', () => {
       completion({
         translations: [
           {
-            messageId: 'example',
-            locale: 'en-US',
-            value: 'Current: {{0}}; syntax: {{=0}}',
+            'en-US': 'Current: {{0}}; syntax: {{=0}}',
           },
         ],
       }),
@@ -187,9 +231,7 @@ describe('openAI', () => {
       completion({
         translations: [
           {
-            messageId: 'example',
-            locale: 'en-US',
-            value: 'Syntax: {{0}}; current: {{0}}',
+            'en-US': 'Syntax: {{0}}; current: {{0}}',
           },
         ],
       }),
@@ -276,11 +318,18 @@ function validOptions(baseURL = 'http://localhost') {
 
 function translationRequests() {
   return [
-    { messageId: 'save', source: '保存', locale: 'en-US' },
+    { messageId: 'search', source: '查询', locale: 'en-US' },
     {
-      messageId: 'save',
-      source: '保存',
-      comment: 'button',
+      messageId: 'search.button',
+      source: '查询',
+      comment: '按钮',
+      locale: 'en-US',
+    },
+    { messageId: 'search', source: '查询', locale: 'ja-JP' },
+    {
+      messageId: 'search.button',
+      source: '查询',
+      comment: '按钮',
       locale: 'ja-JP',
     },
   ];
@@ -289,10 +338,19 @@ function translationRequests() {
 function validPayload() {
   return {
     translations: [
-      { messageId: 'save', locale: 'en-US', value: 'Save' },
-      { messageId: 'save', locale: 'ja-JP', value: '保存' },
+      { 'en-US': 'Search', 'ja-JP': '検索' },
+      { 'en-US': 'Search', 'ja-JP': '検索' },
     ],
   };
+}
+
+function validResults() {
+  return [
+    { messageId: 'search', locale: 'en-US', value: 'Search' },
+    { messageId: 'search.button', locale: 'en-US', value: 'Search' },
+    { messageId: 'search', locale: 'ja-JP', value: '検索' },
+    { messageId: 'search.button', locale: 'ja-JP', value: '検索' },
+  ];
 }
 
 function completion(payload: unknown): MockResponse {
