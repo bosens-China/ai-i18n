@@ -61,7 +61,17 @@ export class ProviderCoordinator {
   request(request: TranslationRequest): Promise<TranslationValue> {
     const key = requestKey(request.messageId, request.locale);
     const existing = this.active.get(key);
-    if (existing) return existing.promise;
+    if (existing && sameRequest(existing.request, request)) {
+      return existing.promise;
+    }
+    if (existing && this.queued.get(key) === existing) {
+      existing.request = request;
+      existing.serializedLength = JSON.stringify(request).length;
+      this.dispatchReadyBatches();
+      if (this.hasQueued()) this.schedule();
+      else this.clearTimer();
+      return existing.promise;
+    }
 
     let resolve!: (value: TranslationValue) => void;
     const promise = new Promise<TranslationValue>((done) => {
@@ -153,8 +163,14 @@ export class ProviderCoordinator {
         batch.map((pending) => pending.request),
         await this.translator(batch.map((pending) => pending.request)),
       );
-      await this.onResults?.(results);
-      const missing = results.filter((result) => result.value === null).length;
+      // 同一 ID 的源码可能在 Provider 返回前发生变化，只持久化最新请求。
+      const currentResults = results.filter(
+        (_, index) => this.active.get(batch[index]!.key) === batch[index],
+      );
+      if (currentResults.length) await this.onResults?.(currentResults);
+      const missing = currentResults.filter(
+        (result) => result.value === null,
+      ).length;
       if (missing) {
         this.onWarning(
           diagnosticMessage(
@@ -177,6 +193,9 @@ export class ProviderCoordinator {
         batch[index]!.resolve(results[index]!.value);
       }
     } catch (cause) {
+      const hasCurrentRequest = batch.some(
+        (pending) => this.active.get(pending.key) === pending,
+      );
       const reason = cause instanceof Error ? cause.message : String(cause);
       const error = new Error(
         diagnosticMessage(
@@ -185,13 +204,15 @@ export class ProviderCoordinator {
         ),
         { cause },
       );
-      this.errors.push(error);
-      this.onWarning(
-        diagnosticMessage(
-          `翻译批次失败；本批结果保持为空。原因：${reason}`,
-          `Translator batch failed; this batch remains null. Cause: ${reason}`,
-        ),
-      );
+      if (hasCurrentRequest) {
+        this.errors.push(error);
+        this.onWarning(
+          diagnosticMessage(
+            `翻译批次失败；本批结果保持为空。原因：${reason}`,
+            `Translator batch failed; this batch remains null. Cause: ${reason}`,
+          ),
+        );
+      }
       for (const pending of batch) pending.resolve(null);
     }
   }
@@ -301,6 +322,13 @@ function validateResults(
 
 function requestKey(messageId: string, locale: string): string {
   return JSON.stringify([messageId, locale]);
+}
+
+function sameRequest(
+  left: TranslationRequest,
+  right: TranslationRequest,
+): boolean {
+  return left.source === right.source && left.comment === right.comment;
 }
 
 function nonNegativeNumber(value: number, name: string): number {

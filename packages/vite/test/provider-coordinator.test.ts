@@ -30,6 +30,76 @@ describe('ProviderCoordinator', () => {
     expect(translator).toHaveBeenCalledTimes(1);
   });
 
+  it('replaces a queued request when its source changes', async () => {
+    const translator: Translator = vi.fn<Translator>(async (requests) =>
+      requests.map((request) => ({
+        messageId: request.messageId,
+        locale: request.locale,
+        value: request.source,
+      })),
+    );
+    const coordinator = new ProviderCoordinator(translator, {
+      debounceMs: 60_000,
+    });
+    const first = coordinator.request({
+      ...translationRequest('旧文案', 'en-US'),
+      messageId: 'stable',
+    });
+    const latest = coordinator.request({
+      ...translationRequest('新文案', 'en-US'),
+      messageId: 'stable',
+    });
+
+    expect(first).toBe(latest);
+    await coordinator.flush();
+    await expect(latest).resolves.toBe('新文案');
+    expect(translator).toHaveBeenCalledWith([
+      expect.objectContaining({ messageId: 'stable', source: '新文案' }),
+    ]);
+  });
+
+  it('does not persist a superseded in-flight result', async () => {
+    const releases: Array<() => void> = [];
+    const translator: Translator = vi.fn<Translator>(
+      (requests) =>
+        new Promise((resolve) => {
+          releases.push(() =>
+            resolve(
+              requests.map((request) => ({
+                messageId: request.messageId,
+                locale: request.locale,
+                value: request.source,
+              })),
+            ),
+          );
+        }),
+    );
+    const onResults = vi.fn();
+    const coordinator = new ProviderCoordinator(translator, {
+      batchLength: 1,
+      onResults,
+    });
+    const first = coordinator.request({
+      ...translationRequest('旧文案', 'en-US'),
+      messageId: 'stable',
+    });
+    const latest = coordinator.request({
+      ...translationRequest('新文案', 'en-US'),
+      messageId: 'stable',
+    });
+
+    releases[0]!();
+    await expect(first).resolves.toBe('旧文案');
+    expect(onResults).not.toHaveBeenCalled();
+    releases[1]!();
+    await expect(latest).resolves.toBe('新文案');
+    await coordinator.flush();
+    expect(onResults).toHaveBeenCalledOnce();
+    expect(onResults).toHaveBeenCalledWith([
+      { messageId: 'stable', locale: 'en-US', value: '新文案' },
+    ]);
+  });
+
   it('flushes a full batch immediately across locales', async () => {
     const translator: Translator = vi.fn<Translator>(async (requests) =>
       requests.map((request) => ({
