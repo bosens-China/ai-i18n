@@ -5,7 +5,6 @@ import {
   createI18nRuntime,
   createMessageId,
   hasSameTemplateTokens,
-  mergeCacheMessages,
   parseExtractedFile,
   parseLocaleFile,
   parseTranslationOverridesFile,
@@ -18,14 +17,15 @@ const locales = [
 ];
 
 afterEach(() => {
+  vi.restoreAllMocks();
   vi.unstubAllGlobals();
 });
 
 describe('@ai-i18n/core message IDs', () => {
   it('keeps IDs stable when comments change', () => {
-    expect(createMessageId(' 保存 ', '  按钮  ')).toBe(' 保存 ');
-    expect(createMessageId('保存', '   ')).toBe('保存');
-    expect(createMessageId('A#B\\C', 'D#E')).toBe('A#B\\C');
+    expect(createMessageId(' 保存 ', { comment: '  按钮  ' })).toBe(' 保存 ');
+    expect(createMessageId('保存', { comment: '   ' })).toBe('保存');
+    expect(createMessageId('A#B\\C', { comment: 'D#E' })).toBe('A#B\\C');
   });
 
   it('uses trimmed explicit IDs and rejects empty ones', () => {
@@ -36,6 +36,10 @@ describe('@ai-i18n/core message IDs', () => {
     expect(() => createMessageId('提交', { id: '   ' })).toThrow(
       'translation id must not be empty',
     );
+    expect(() =>
+      // @ts-expect-error 字符串 comment 已从公开 API 移除。
+      createMessageId('提交', '按钮'),
+    ).toThrow('translation options must be an object');
   });
 });
 
@@ -64,35 +68,89 @@ describe('@ai-i18n/core schemas', () => {
     );
   });
 
-  it('rejects obsolete persistence fields instead of migrating them', () => {
-    expect(() =>
-      parseTranslationMemoryFile({
+  it.each([
+    {
+      path: 'translation memory.unknown',
+      parse: parseTranslationMemoryFile,
+      value: { version: 1, revision: 0, messages: {}, unknown: true },
+    },
+    {
+      path: 'translation memory.messages.保存.unknown',
+      parse: parseTranslationMemoryFile,
+      value: {
         version: 1,
         revision: 0,
         messages: {
           保存: {
             sourceLang: 'zh-CN',
-            comment: '按钮',
-            context: '标题',
             translations: {},
+            unknown: true,
           },
         },
-      }),
-    ).toThrow('context was replaced by comment');
-    expect(() =>
-      parseExtractedFile({
+      },
+    },
+    {
+      path: 'extracted.unknown',
+      parse: parseExtractedFile,
+      value: {
+        version: 1,
+        source: 'src/app.ts',
+        messages: [],
+        unknown: true,
+      },
+    },
+    {
+      path: 'extracted.messages.0.unknown',
+      parse: parseExtractedFile,
+      value: {
         version: 1,
         source: 'src/app.ts',
         messages: [
           {
             id: '保存',
             source: '保存',
-            translations: { 'en-US': 'Save' },
-            locations: [{ line: 1, column: 0 }],
+            locations: [],
+            unknown: true,
           },
         ],
-      }),
-    ).toThrow('translations is not part of the extracted schema');
+      },
+    },
+    {
+      path: 'extracted.messages.0.locations.0.unknown',
+      parse: parseExtractedFile,
+      value: {
+        version: 1,
+        source: 'src/app.ts',
+        messages: [
+          {
+            id: '保存',
+            source: '保存',
+            locations: [{ line: 1, column: 0, unknown: true }],
+          },
+        ],
+      },
+    },
+    {
+      path: 'locale.unknown',
+      parse: parseLocaleFile,
+      value: {
+        version: 1,
+        locale: locales[1],
+        messages: {},
+        unknown: true,
+      },
+    },
+    {
+      path: 'locale.locale.unknown',
+      parse: parseLocaleFile,
+      value: {
+        version: 1,
+        locale: { ...locales[1], unknown: true },
+        messages: {},
+      },
+    },
+  ])('rejects unknown schema field $path', ({ parse, value, path }) => {
+    expect(() => parse(value)).toThrow(`${path} is not part of the schema`);
   });
 
   it('strictly parses string-only translation overrides', () => {
@@ -139,44 +197,10 @@ describe('@ai-i18n/core schemas', () => {
       ),
     ).toBe(false);
   });
-
-  it('merges global Translation Memory without losing non-null values', () => {
-    const result = mergeCacheMessages(
-      {
-        保存: {
-          sourceLang: 'zh-CN',
-          translations: { 'en-US': 'Save', ja: null },
-        },
-      },
-      {
-        保存: {
-          sourceLang: 'zh-CN',
-          translations: { 'en-US': null, ja: '保存する' },
-        },
-      },
-    );
-    expect(result.保存?.translations).toEqual({
-      'en-US': 'Save',
-      ja: '保存する',
-    });
-  });
-
-  it('rejects conflicting non-null translations', () => {
-    expect(() =>
-      mergeCacheMessages(
-        {
-          保存: { sourceLang: 'zh-CN', translations: { en: 'Save' } },
-        },
-        {
-          保存: { sourceLang: 'zh-CN', translations: { en: 'Store' } },
-        },
-      ),
-    ).toThrow(TranslationConflictError);
-  });
 });
 
 describe('@ai-i18n/core runtime', () => {
-  it('uses explicit IDs while keeping string comments compatible', () => {
+  it('uses explicit IDs and object comments', () => {
     const runtime = createI18nRuntime({
       sourceLang: 'zh-CN',
       defaultLang: 'en-US',
@@ -190,7 +214,11 @@ describe('@ai-i18n/core runtime', () => {
     expect(
       runtime.t('提交', { id: ' checkout.submit ', comment: '结算按钮' }),
     ).toBe('Place order');
-    expect(runtime.t('保存', '按钮')).toBe('Save');
+    expect(runtime.t('保存', { comment: '按钮' })).toBe('Save');
+    expect(() =>
+      // @ts-expect-error 字符串 comment 已从公开 API 移除。
+      runtime.t('保存', '按钮'),
+    ).toThrow('translation options must be an object');
   });
 
   it('translates tagged templates and lets targets reorder placeholders', () => {
@@ -207,6 +235,39 @@ describe('@ai-i18n/core runtime', () => {
     const count = 2;
 
     expect(runtime.t`你好 ${name}，共有 ${count} 项`).toBe('2 items for Ada');
+  });
+
+  it('warns once per locale, message, and mismatched translation', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const runtime = createI18nRuntime({
+      sourceLang: 'zh-CN',
+      defaultLang: 'en-US',
+      locales: [...locales, { value: 'ja-JP', label: '日本語' }],
+    });
+    runtime.registerModule('src/app.ts', {
+      'zh-CN': { '欢迎 {{0}}': '欢迎 {{0}}' },
+      'en-US': { '欢迎 {{0}}': 'Welcome' },
+      'ja-JP': { '欢迎 {{0}}': 'ようこそ {{1}}' },
+    });
+
+    expect(runtime.t`欢迎 ${'Ada'}`).toBe('Welcome');
+    expect(runtime.t`欢迎 ${'Ada'}`).toBe('Welcome');
+    expect(warn).toHaveBeenCalledTimes(1);
+
+    await runtime.setLang('ja-JP');
+    expect(runtime.t`欢迎 ${'Ada'}`).toBe('ようこそ {{1}}');
+    expect(warn).toHaveBeenCalledTimes(2);
+
+    runtime.replaceModule('src/app.ts', {
+      'zh-CN': { '欢迎 {{0}}': '欢迎 {{0}}' },
+      'en-US': { '欢迎 {{0}}': 'Welcome' },
+      'ja-JP': { '欢迎 {{0}}': '変更 {{2}}' },
+    });
+    expect(runtime.t`欢迎 ${'Ada'}`).toBe('変更 {{2}}');
+    expect(warn).toHaveBeenCalledTimes(3);
+    expect(warn).toHaveBeenLastCalledWith(
+      '[ai-i18n] locale "ja-JP" message "欢迎 {{0}}" 的模板占位符与源文不一致 / template placeholders differ from source',
+    );
   });
 
   it('keeps literal template tokens separate from runtime values', () => {

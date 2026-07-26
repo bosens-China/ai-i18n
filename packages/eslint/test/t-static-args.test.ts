@@ -135,7 +135,7 @@ describe('ai-i18n/t-static-args', () => {
   tester.run('t-static-args', tStaticArgs, {
     valid: [
       {
-        code: "import { t } from 'virtual:ai-i18n'; t('保存', '按钮')",
+        code: "import { t } from 'virtual:ai-i18n'; t('保存', { comment: '按钮' })",
         filename: path.join(sourceRoot, 'literal.ts'),
       },
       {
@@ -215,12 +215,17 @@ describe('ai-i18n/t-static-args', () => {
         errors: [{ messageId: 'invalidUsage' }],
       },
       {
-        code: "import { t } from 'virtual:ai-i18n'; t('保存', props.comment)",
+        code: "import { t } from 'virtual:ai-i18n'; t('保存', { comment: props.comment })",
         filename: path.join(sourceRoot, 'comment.ts'),
         errors: [{ messageId: 'dynamicArg' }],
       },
       {
-        code: "import { t } from 'virtual:ai-i18n'; t('保存', '按钮', 'extra')",
+        code: "import { t } from 'virtual:ai-i18n'; t('保存', '按钮')",
+        filename: path.join(sourceRoot, 'legacy-string-comment.ts'),
+        errors: [{ messageId: 'dynamicArg' }],
+      },
+      {
+        code: "import { t } from 'virtual:ai-i18n'; t('保存', { comment: '按钮' }, 'extra')",
         filename: path.join(sourceRoot, 'arity.ts'),
         errors: [{ messageId: 'dynamicArg' }],
       },

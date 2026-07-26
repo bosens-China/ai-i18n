@@ -5,6 +5,7 @@ import {
   createTemplateMessage,
   escapeTemplateLiteral,
   formatTemplateMessage,
+  hasSameTemplateTokens,
 } from './template.js';
 
 export type ModuleMessages = Record<string, Record<string, TranslationValue>>;
@@ -14,7 +15,7 @@ export type LocaleLoader = () => Promise<LocaleMessages>;
 export type MissingTranslationFallback = 'source' | 'key' | 'empty' | 'marked';
 
 export interface Translate {
-  (source: string, commentOrOptions?: string | TranslationOptions): string;
+  (source: string, options?: TranslationOptions): string;
   (strings: TemplateStringsArray, ...values: unknown[]): string;
 }
 
@@ -73,6 +74,7 @@ export function createI18nRuntime(options: I18nRuntimeOptions): I18nRuntime {
   const loadedLocales = new Map<string, LocaleMessages>();
   const pendingLocaleUpdates = new Map<string, LocaleMessages>();
   const localeLoads = new Map<string, Promise<LocaleMessages>>();
+  const templateWarnings = new Set<string>();
   let modules = new Map<string, ModuleMessages>();
   let catalog = new Map<string, Map<string, TranslationValue>>();
   let currentLang = lazy ? options.sourceLang : initialLang;
@@ -140,7 +142,18 @@ export function createI18nRuntime(options: I18nRuntimeOptions): I18nRuntime {
 
   function translate(messageId: string, sourceFallback: string) {
     const value = catalog.get(currentLang)?.get(messageId);
-    if (value !== null && value !== undefined) return value;
+    if (value !== null && value !== undefined) {
+      if (!hasSameTemplateTokens(sourceFallback, value)) {
+        const warningKey = `${currentLang}\0${messageId}\0${value}`;
+        if (!templateWarnings.has(warningKey)) {
+          templateWarnings.add(warningKey);
+          console.warn(
+            `[ai-i18n] locale "${currentLang}" message "${messageId}" 的模板占位符与源文不一致 / template placeholders differ from source`,
+          );
+        }
+      }
+      return value;
+    }
     if (options.fallback === 'key') return messageId;
     if (options.fallback === 'empty') return '';
     if (options.fallback === 'marked') return `⟦${sourceFallback}⟧`;
@@ -192,10 +205,7 @@ export function createI18nRuntime(options: I18nRuntimeOptions): I18nRuntime {
       const message = escapeTemplateLiteral(source);
       return formatTemplateMessage(
         translate(
-          createMessageId(
-            message,
-            values[0] as string | TranslationOptions | undefined,
-          ),
+          createMessageId(message, values[0] as TranslationOptions | undefined),
           message,
         ),
         [],

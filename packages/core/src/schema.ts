@@ -69,6 +69,7 @@ export function parseTranslationMemoryFile(
   value: unknown,
 ): TranslationMemoryFile {
   const root = record(value, 'translation memory');
+  exactKeys(root, ['version', 'revision', 'messages'], 'translation memory');
   exactVersion(root, 'translation memory', 1);
   const messages = record(root.messages, 'translation memory.messages');
 
@@ -106,27 +107,22 @@ export function parseTranslationOverridesFile(
 
 export function parseExtractedFile(value: unknown): ExtractedFile {
   const root = record(value, 'extracted');
+  exactKeys(root, ['version', 'source', 'messages'], 'extracted');
   exactVersion(root, 'extracted', 1);
   string(root.source, 'extracted.source');
   if (!Array.isArray(root.messages)) fail('extracted.messages', 'an array');
   root.messages.forEach((message, index) => {
     const path = `extracted.messages.${index}`;
     const entry = record(message, path);
+    exactKeys(entry, ['id', 'source', 'comment', 'locations'], path);
     string(entry.id, `${path}.id`);
     string(entry.source, `${path}.source`);
-    if ('translations' in entry) {
-      throw new AiI18nSchemaError(
-        `${path}.translations is not part of the extracted schema`,
-      );
-    }
-    if ('context' in entry) {
-      throw new AiI18nSchemaError(`${path}.context was replaced by comment`);
-    }
     if (entry.comment !== undefined) string(entry.comment, `${path}.comment`);
     if (!Array.isArray(entry.locations)) fail(`${path}.locations`, 'an array');
     entry.locations.forEach((location, locationIndex) => {
       const locationPath = `${path}.locations.${locationIndex}`;
       const item = record(location, locationPath);
+      exactKeys(item, ['line', 'column'], locationPath);
       integer(item.line, `${locationPath}.line`, 1);
       integer(item.column, `${locationPath}.column`, 0);
     });
@@ -136,51 +132,20 @@ export function parseExtractedFile(value: unknown): ExtractedFile {
 
 export function parseLocaleFile(value: unknown): LocaleFileV1 {
   const root = record(value, 'locale');
+  exactKeys(root, ['version', 'locale', 'messages'], 'locale');
   exactVersion(root, 'locale', 1);
   const locale = record(root.locale, 'locale.locale');
+  exactKeys(locale, ['value', 'label'], 'locale.locale');
   string(locale.value, 'locale.locale.value');
   string(locale.label, 'locale.locale.label');
   translations(root.messages, 'locale.messages');
   return value as LocaleFileV1;
 }
 
-export function mergeCacheMessages(
-  current: Record<string, CacheMessage>,
-  incoming: Record<string, CacheMessage>,
-): Record<string, CacheMessage> {
-  const merged = cloneMessages(current);
-
-  for (const [id, next] of Object.entries(incoming)) {
-    const previous = merged[id];
-    if (!previous) {
-      merged[id] = cloneMessage(next);
-      continue;
-    }
-    if (!previous.comment && next.comment) previous.comment = next.comment;
-    if (!previous.sourceLang && next.sourceLang) {
-      previous.sourceLang = next.sourceLang;
-    }
-
-    for (const [locale, value] of Object.entries(next.translations)) {
-      const oldValue = previous.translations[locale];
-      if (oldValue != null && value != null && oldValue !== value) {
-        throw new TranslationConflictError(id, locale);
-      }
-      if (oldValue == null && value !== null)
-        previous.translations[locale] = value;
-      else if (!(locale in previous.translations))
-        previous.translations[locale] = null;
-    }
-  }
-  return merged;
-}
-
 function validateCacheMessage(value: unknown, path: string): void {
   const message = record(value, path);
+  exactKeys(message, ['sourceLang', 'comment', 'translations'], path);
   string(message.sourceLang, `${path}.sourceLang`);
-  if ('context' in message) {
-    throw new AiI18nSchemaError(`${path}.context was replaced by comment`);
-  }
   if (message.comment !== undefined) string(message.comment, `${path}.comment`);
   translations(message.translations, `${path}.translations`);
 }
@@ -246,23 +211,4 @@ function integer(value: unknown, path: string, minimum: number): void {
 
 function fail(path: string, expected: string): never {
   throw new AiI18nSchemaError(`${path} must be ${expected}`);
-}
-
-function cloneMessage(message: CacheMessage): CacheMessage {
-  return {
-    sourceLang: message.sourceLang,
-    ...(message.comment === undefined ? {} : { comment: message.comment }),
-    translations: { ...message.translations },
-  };
-}
-
-function cloneMessages(
-  messages: Record<string, CacheMessage>,
-): Record<string, CacheMessage> {
-  return Object.fromEntries(
-    Object.entries(messages).map(([id, message]) => [
-      id,
-      cloneMessage(message),
-    ]),
-  );
 }

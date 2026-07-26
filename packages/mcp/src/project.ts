@@ -158,7 +158,7 @@ export class AiI18nProjectService {
       );
       if (!local) {
         throw new Error(
-          `[ai-i18n/mcp] message "${update.message_id}" does not belong to "${input.file}"; run Vite Dev/Build, list the file again, and copy message_id exactly`,
+          `[ai-i18n/mcp] message "${update.message_id}" does not exist in "${input.file}"; call ai_i18n_list_translations for this file and use the returned message_id`,
         );
       }
       const targetId =

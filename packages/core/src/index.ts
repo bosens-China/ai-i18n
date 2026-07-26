@@ -7,7 +7,6 @@ export type { TranslationOptions } from './message-id.js';
 export {
   AiI18nSchemaError,
   TranslationConflictError,
-  mergeCacheMessages,
   parseExtractedFile,
   parseLocaleFile,
   parseTranslationOverridesFile,
@@ -40,7 +39,6 @@ export {
   escapeTemplateLiteral,
   formatTemplateMessage,
   hasSameTemplateTokens,
-  templatePlaceholderIndexes,
 } from './template.js';
 export type {
   TranslationRequest,

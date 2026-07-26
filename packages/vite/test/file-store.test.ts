@@ -146,7 +146,8 @@ describe('FileStore', () => {
   it('keeps translations when comments change', async () => {
     const { root, state, store } = await setup();
     const source = path.join(root, 'src/main.ts');
-    const oldCode = "import { t } from 'virtual:ai-i18n'; t('保存', '旧注释')";
+    const oldCode =
+      "import { t } from 'virtual:ai-i18n'; t('保存', { comment: '旧注释' })";
     await fs.writeFile(source, oldCode);
     state.update(oldCode, source);
     await store.sync(state.snapshot());
@@ -162,7 +163,8 @@ describe('FileStore', () => {
     await fs.writeFile(cachePath, `${JSON.stringify(cache, null, 2)}\n`);
 
     const next = new ProjectState(root, options);
-    const newCode = "import { t } from 'virtual:ai-i18n'; t('保存', '新注释')";
+    const newCode =
+      "import { t } from 'virtual:ai-i18n'; t('保存', { comment: '新注释' })";
     await fs.writeFile(source, newCode);
     next.update(newCode, source);
     await store.sync(next.snapshot());

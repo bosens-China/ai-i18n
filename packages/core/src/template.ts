@@ -31,12 +31,6 @@ export function formatTemplateMessage(
   );
 }
 
-export function templatePlaceholderIndexes(message: string): number[] {
-  return [...message.matchAll(TEMPLATE_TOKEN_RE)].flatMap((match) =>
-    match[1] ? [] : [Number(match[2])],
-  );
-}
-
 function templateTokenSignature(message: string): string {
   return JSON.stringify(
     [...message.matchAll(TEMPLATE_TOKEN_RE)].map((match) => match[0]).sort(),

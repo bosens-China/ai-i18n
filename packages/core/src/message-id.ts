@@ -10,29 +10,32 @@ export function normalizeComment(comment?: string): string | undefined {
 
 export function createMessageId(
   source: string,
-  commentOrOptions?: string | TranslationOptions,
+  options?: TranslationOptions,
 ): string {
-  if (
-    typeof commentOrOptions !== 'object' ||
-    commentOrOptions === null ||
-    commentOrOptions.id === undefined
-  ) {
-    return source;
-  }
-  if (typeof commentOrOptions.id !== 'string') {
+  const resolved = validateTranslationOptions(options);
+  if (resolved?.id === undefined) return source;
+  if (typeof resolved.id !== 'string') {
     throw new Error('[ai-i18n] translation id must be a string');
   }
-  const id = commentOrOptions.id.trim();
+  const id = resolved.id.trim();
   if (!id) throw new Error('[ai-i18n] translation id must not be empty');
   return id;
 }
 
 export function translationComment(
-  commentOrOptions?: string | TranslationOptions,
+  options?: TranslationOptions,
 ): string | undefined {
-  const comment =
-    typeof commentOrOptions === 'string'
-      ? commentOrOptions
-      : commentOrOptions?.comment;
-  return normalizeComment(comment);
+  return normalizeComment(validateTranslationOptions(options)?.comment);
+}
+
+function validateTranslationOptions(
+  options: TranslationOptions | undefined,
+): TranslationOptions | undefined {
+  if (
+    options !== undefined &&
+    (typeof options !== 'object' || options === null || Array.isArray(options))
+  ) {
+    throw new Error('[ai-i18n] translation options must be an object');
+  }
+  return options;
 }

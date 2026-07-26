@@ -47,10 +47,6 @@ export function evaluateTranslationOptions(
   const options: TranslationOptions[] = [];
 
   for (const value of values) {
-    if (value.kind === 'primitive' && typeof value.value === 'string') {
-      options.push({ comment: value.value });
-      continue;
-    }
     if (
       value.kind !== 'object' ||
       [...value.properties.keys()].some(
@@ -526,8 +522,8 @@ export function argumentWarning(
     file: module.path,
     ...sourceLocation(module.source, offset),
     message: diagnosticMessage(
-      't() 的参数必须是可静态提取的字符串或选项。',
-      't() arguments must be statically extractable strings or options.',
+      't() 的 source 必须是可静态提取的字符串，options 必须是可静态提取的对象。',
+      't() source must be a statically extractable string and options must be a statically extractable object.',
     ),
   };
 }

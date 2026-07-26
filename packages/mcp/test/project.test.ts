@@ -120,6 +120,25 @@ test('fills null values atomically and refuses conflicting overwrites', async ()
   ).rejects.toThrow('refusing to overwrite');
 });
 
+test('reports a missing message id and points to the list tool', async () => {
+  const root = await fixture();
+  const directory = path.join(root, 'apps/web/i18n');
+
+  await expect(
+    new AiI18nProjectService().writeTranslations({
+      i18n_directory: directory,
+      file: 'src/home.ts',
+      translations: [
+        { message_id: '不存在', locale: 'en-US', value: 'Missing' },
+      ],
+    }),
+  ).rejects.toThrowError(
+    new Error(
+      '[ai-i18n/mcp] message "不存在" does not exist in "src/home.ts"; call ai_i18n_list_translations for this file and use the returned message_id',
+    ),
+  );
+});
+
 test('writes human review to overrides without replacing AI memory', async () => {
   const root = await fixture();
   const directory = path.join(root, 'apps/web/i18n');
@@ -424,6 +443,23 @@ test('requires both translation input files', async () => {
       limit: 50,
     }),
   ).rejects.toThrow('required ai-i18n file is missing: overrides.json');
+});
+
+test('ignores nested extracted directories outside the current protocol', async () => {
+  const root = await fixture();
+  const directory = path.join(root, 'apps/web/i18n');
+  const nested = path.join(directory, 'extracted/legacy');
+  await fs.mkdir(nested);
+  await fs.writeFile(path.join(nested, 'obsolete.json'), 'invalid');
+
+  await expect(
+    new AiI18nProjectService().listFiles({
+      i18n_directory: directory,
+      limit: 50,
+    }),
+  ).resolves.toMatchObject({
+    items: [{ file: 'src/home.ts' }],
+  });
 });
 
 test('registers callable MCP tools with defaults and structured output', async () => {

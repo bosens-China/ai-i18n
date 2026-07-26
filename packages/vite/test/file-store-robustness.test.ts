@@ -3,6 +3,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { FileStore } from '../src/file-store';
+import { listJsonFiles } from '../src/json-files';
 import {
   ProjectState,
   type NormalizedAiI18nOptions,
@@ -59,10 +60,27 @@ describe('FileStore robustness', () => {
     const warnings: string[] = [];
     const readingStore = createStore(root, warnings);
 
-    await expect(readingStore.load()).resolves.toBeDefined();
+    await expect(readingStore.sync(state.snapshot())).resolves.toBeDefined();
     expect(warnings).toEqual([
       expect.stringContaining('disappeared while reading'),
     ]);
+  });
+
+  it('only accepts and scans flat extracted JSON files', async () => {
+    const { root, store } = await setup();
+    const directory = path.join(root, 'i18n/extracted');
+    const direct = path.join(directory, 'src_a%5Fb.ts.json');
+    const nested = path.join(directory, 'src/a_b.ts.json');
+    await fs.mkdir(path.dirname(nested), { recursive: true });
+    await Promise.all([
+      fs.writeFile(direct, '{}'),
+      fs.writeFile(nested, '{}'),
+      fs.writeFile(path.join(directory, 'ignored.txt'), ''),
+    ]);
+
+    expect(store.extractedSource(direct)).toBe('src/a_b.ts');
+    expect(store.extractedSource(nested)).toBeUndefined();
+    expect(await listJsonFiles(directory)).toEqual([direct]);
   });
 
   it('keeps source structure when an externally edited extracted file is stale', async () => {

@@ -35,7 +35,6 @@ import {
   hydrateExtracted,
   hydrateLocale,
   mergeProjectMessages,
-  withConflictFiles,
 } from './file-store-merge.js';
 import type {
   FileStoreLoadOptions,
@@ -59,7 +58,7 @@ export class FileStore {
   }
 
   async load(): Promise<TranslationMemoryFile> {
-    return this.updateMemory(await this.readExtractedFiles());
+    return this.updateMemory();
   }
 
   loadOverrides(): Promise<TranslationOverridesFile> {
@@ -107,14 +106,13 @@ export class FileStore {
     if (
       relative.startsWith(`..${path.sep}`) ||
       relative === '..' ||
+      relative.includes(path.sep) ||
       !relative.endsWith('.json')
     ) {
       return undefined;
     }
     const filename = relative.slice(0, -'.json'.length);
-    return relative.includes(path.sep)
-      ? filename.split(path.sep).join('/')
-      : decodeExtractedSource(filename);
+    return decodeExtractedSource(filename);
   }
 
   loadOptions(files: Iterable<string>): FileStoreLoadOptions {
@@ -169,11 +167,7 @@ export class FileStore {
     const activeMessageIds = activeFiles.flatMap((file) =>
       file.messages.map((message) => message.id),
     );
-    const cache = await this.updateMemory(
-      diskExtracted,
-      snapshot,
-      activeMessageIds,
-    );
+    const cache = await this.updateMemory(snapshot, activeMessageIds);
     const activeExtracted = new Set(Object.keys(snapshot.extracted));
     const staleSources = options.complete
       ? diskExtracted.map((file) => file.source)
@@ -210,42 +204,34 @@ export class FileStore {
   }
 
   private async updateMemory(
-    extractedFiles: readonly ExtractedFile[],
     snapshot?: ProjectSnapshot,
     activeMessageIds?: readonly string[],
   ): Promise<TranslationMemoryFile> {
-    try {
-      return await transactTranslationMemory(
-        translationMemoryPath(this.directory),
-        (memory) => {
-          if (snapshot) {
-            memory.messages = mergeProjectMessages(
-              memory.messages,
-              snapshot.cache.messages,
-            );
-          }
-          this.ensureCurrentLocales(memory.messages);
-          if (activeMessageIds) {
-            removeOrphanMessages(
-              memory,
-              activeMessageIds,
-              Boolean(this.options.cleanupOrphanMessages),
-            );
-            enforceCacheCapacity(
-              memory,
-              activeMessageIds,
-              this.options.cache,
-              this.options.onWarning,
-            );
-          }
-        },
-      );
-    } catch (error) {
-      throw withConflictFiles(error, [
-        ...extractedFiles,
-        ...Object.values(snapshot?.extracted ?? {}),
-      ]);
-    }
+    return transactTranslationMemory(
+      translationMemoryPath(this.directory),
+      (memory) => {
+        if (snapshot) {
+          memory.messages = mergeProjectMessages(
+            memory.messages,
+            snapshot.cache.messages,
+          );
+        }
+        this.ensureCurrentLocales(memory.messages);
+        if (activeMessageIds) {
+          removeOrphanMessages(
+            memory,
+            activeMessageIds,
+            Boolean(this.options.cleanupOrphanMessages),
+          );
+          enforceCacheCapacity(
+            memory,
+            activeMessageIds,
+            this.options.cache,
+            this.options.onWarning,
+          );
+        }
+      },
+    );
   }
 
   private ensureCurrentLocales(messages: Record<string, CacheMessage>): void {

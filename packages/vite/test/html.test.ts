@@ -8,7 +8,7 @@ describe('HTML extractor', () => {
 <html><head><title>t('控制台')</title></head><body>
   <div>普通文本</div>
   <div>t('<保存 &>')</div>
-  <input placeholder="t('请输入', '表单')" title="普通" />
+  <input placeholder="t('请输入', { comment: '表单' })" title="普通" />
   <script type="module">t('脚本不处理')</script>
 </body></html>`;
     const result = transformHtml(source, '/workspace/index.html', html());

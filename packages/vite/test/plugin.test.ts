@@ -28,7 +28,7 @@ afterEach(async () => {
 describe('@ai-i18n/vite plugin', () => {
   it('injects a stable register import after shebang and directives', async () => {
     const { plugin, transform } = setupPlugin();
-    const code = `#!/usr/bin/env node\n'use strict';\nimport { t as tr } from 'virtual:ai-i18n';\nconsole.log(tr('保存', '按钮'));`;
+    const code = `#!/usr/bin/env node\n'use strict';\nimport { t as tr } from 'virtual:ai-i18n';\nconsole.log(tr('保存', { comment: '按钮' }));`;
     const result = await transform(code, '/workspace/src/main.ts');
 
     expect(result?.code).toMatch(

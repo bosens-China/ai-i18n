@@ -17,13 +17,6 @@ export async function readJson(file: string): Promise<unknown | undefined> {
   }
 }
 
-export async function readJsonRequired(file: string): Promise<unknown> {
-  const value = await readJson(file);
-  if (value === undefined)
-    throw new Error(`[ai-i18n] file disappeared "${file}"`);
-  return value;
-}
-
 export async function readText(file: string): Promise<string | undefined> {
   try {
     return await fs.readFile(file, 'utf8');
@@ -36,15 +29,10 @@ export async function readText(file: string): Promise<string | undefined> {
 export async function listJsonFiles(directory: string): Promise<string[]> {
   try {
     const entries = await fs.readdir(directory, { withFileTypes: true });
-    const files = await Promise.all(
-      entries.map((entry) => {
-        const file = path.join(directory, entry.name);
-        return entry.isDirectory()
-          ? listJsonFiles(file)
-          : Promise.resolve(entry.name.endsWith('.json') ? [file] : []);
-      }),
-    );
-    return files.flat().sort();
+    return entries
+      .filter((entry) => entry.isFile() && entry.name.endsWith('.json'))
+      .map((entry) => path.join(directory, entry.name))
+      .sort();
   } catch (error) {
     if (isNotFound(error)) return [];
     throw error;

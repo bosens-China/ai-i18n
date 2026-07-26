@@ -8,10 +8,10 @@ import {
 
 describe('Yuku admission spike', () => {
   it.each([
-    ["t('保存', '按钮')", [{ source: '保存', comment: '按钮' }]],
+    ["t('保存', { comment: '按钮' })", [{ source: '保存', comment: '按钮' }]],
     ["const LABEL = '取消'; t(LABEL)", [{ source: '取消' }]],
     [
-      "t(ok ? '成功' : '失败', '结果')",
+      "t(ok ? '成功' : '失败', { comment: '结果' })",
       [
         { source: '成功', comment: '结果' },
         { source: '失败', comment: '结果' },

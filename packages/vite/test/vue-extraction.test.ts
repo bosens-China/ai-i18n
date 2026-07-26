@@ -18,7 +18,7 @@ const i18n = useI18n()
 const hookText = translate('Hook 文案')
 </script>
 <template>
-  <h1>{{ translate(LABEL, '标题上下文') }}</h1>
+  <h1>{{ translate(LABEL, { comment: '标题上下文' }) }}</h1>
   <p :title="i18n.t('提示')">普通文本</p>
   <span title="t('静态属性不提取')">普通 t('文本不提取')</span>
 </template>`;
@@ -51,7 +51,7 @@ const hookText = translate('Hook 文案')
     expect(messages.map((message) => message.locations[0])).toEqual([
       locationOf(source, "tr('脚本文案')"),
       locationOf(source, "translate('Hook 文案')"),
-      locationOf(source, "translate(LABEL, '标题上下文')"),
+      locationOf(source, "translate(LABEL, { comment: '标题上下文' })"),
       locationOf(source, "i18n.t('提示')"),
     ]);
     expect(extraction.registration?.offset).toBe(source.indexOf('\n'));

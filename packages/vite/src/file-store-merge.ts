@@ -1,5 +1,4 @@
 import {
-  TranslationConflictError,
   type CacheMessage,
   type ExtractedFile,
   type ExtractedMessage,
@@ -121,18 +120,4 @@ function keepCommittedTranslations(
       target.translations[locale] = value;
     }
   }
-}
-
-export function withConflictFiles(
-  error: unknown,
-  extractedFiles: readonly ExtractedFile[],
-): unknown {
-  if (!(error instanceof TranslationConflictError)) return error;
-  const files = extractedFiles
-    .filter((file) =>
-      file.messages.some((message) => message.id === error.messageId),
-    )
-    .map((file) => file.source);
-  const locations = ['i18n/translations.json', ...new Set(files)].join(', ');
-  return new Error(`${error.message}; files: ${locations}`);
 }

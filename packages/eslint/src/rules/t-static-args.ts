@@ -98,8 +98,8 @@ export const tStaticArgs: Rule.RuleModule = {
                 : invalidUsage
                   ? warning.message
                   : diagnosticMessage(
-                      't() 的参数无法静态提取。请使用字符串字面量、静态模板、条件表达式或可解析的 const 字符串。',
-                      'The t() argument cannot be statically extracted. Use a string literal, static template, conditional expression, or resolvable const string.',
+                      't() 的参数无法静态提取。source 请使用静态字符串，options 请使用只包含 id、comment 的静态对象。',
+                      'The t() arguments cannot be statically extracted. Use a static string for source and a static object containing only id and comment for options.',
                     ),
             },
           });

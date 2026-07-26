@@ -74,14 +74,10 @@ export async function listJsonFiles(directory: string): Promise<string[]> {
     if (isNotFound(error)) return [];
     throw error;
   }
-  const nested = await Promise.all(
-    entries.map(async (entry) => {
-      const file = path.join(directory, entry.name);
-      if (entry.isDirectory()) return listJsonFiles(file);
-      return entry.isFile() && entry.name.endsWith('.json') ? [file] : [];
-    }),
-  );
-  return nested.flat().sort();
+  return entries
+    .filter((entry) => entry.isFile() && entry.name.endsWith('.json'))
+    .map((entry) => path.join(directory, entry.name))
+    .sort();
 }
 
 export async function loadProject(

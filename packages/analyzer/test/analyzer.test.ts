@@ -34,12 +34,12 @@ i18n['t']('计算成员')`,
     });
   });
 
-  it('extracts static options and keeps string comments compatible', () => {
+  it('extracts static translation options', () => {
     const module = analyzeModule(
       `import { t } from 'virtual:ai-i18n'
 const options = { id: ' checkout.submit ', comment: '结算按钮' }
 t('提交', options)
-t('保存', '工具栏按钮')`,
+t('保存', { comment: '工具栏按钮' })`,
       'View.tsx',
     );
 
@@ -53,6 +53,20 @@ t('保存', '工具栏按钮')`,
         { id: '保存', source: '保存', comment: '工具栏按钮' },
       ],
       warnings: [],
+      pending: false,
+    });
+  });
+
+  it('rejects legacy string comments', () => {
+    const module = analyzeModule(
+      `import { t } from 'virtual:ai-i18n'
+t('保存', '工具栏按钮')`,
+      'View.tsx',
+    );
+
+    expect(extractMessages(module)).toMatchObject({
+      messages: [],
+      warnings: [{ code: 'dynamic-argument', line: 2 }],
       pending: false,
     });
   });
