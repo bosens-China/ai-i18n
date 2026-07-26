@@ -13,13 +13,9 @@ import {
 } from '@ai-i18n/core';
 import type { TranslationFileItem } from './project.js';
 
-export interface LoadedExtracted {
-  value: ExtractedFile;
-}
-
 export interface LoadedProject {
   directory: string;
-  extracted: LoadedExtracted[];
+  extracted: ExtractedFile[];
   messages: Record<string, CacheMessage>;
   overrides: TranslationOverridesFile;
   locales: Set<string>;
@@ -115,20 +111,20 @@ export async function loadProject(
   ]);
   const extractedPaths = await listJsonFiles(extractedDirectory);
   const extracted = await Promise.all(
-    extractedPaths.map(async (file) => ({
-      value: parseExtractedFile(await readJsonRequired(file)),
-    })),
+    extractedPaths.map(async (file) =>
+      parseExtractedFile(await readJsonRequired(file)),
+    ),
   );
   const sources = new Set<string>();
   const messageSources = new Map<string, string>();
   for (const item of extracted) {
-    if (sources.has(item.value.source)) {
+    if (sources.has(item.source)) {
       throw new Error(
-        `[ai-i18n/mcp] duplicate extracted source "${item.value.source}"`,
+        `[ai-i18n/mcp] duplicate extracted source "${item.source}"`,
       );
     }
-    sources.add(item.value.source);
-    for (const message of item.value.messages) {
+    sources.add(item.source);
+    for (const message of item.messages) {
       const previous = messageSources.get(message.id);
       if (previous !== undefined && previous !== message.source) {
         throw new Error(
@@ -184,7 +180,9 @@ export function filterTranslations(
   translations: Record<string, string | null>,
   locale?: string,
 ): Record<string, string | null> {
-  return locale ? { [locale]: translations[locale]! } : { ...translations };
+  return locale
+    ? { [locale]: translations[locale] ?? null }
+    : { ...translations };
 }
 
 export function validateLocale(project: LoadedProject, locale?: string): void {
@@ -196,16 +194,14 @@ export function validateLocale(project: LoadedProject, locale?: string): void {
 export function findExtracted(
   project: LoadedProject,
   source: string,
-): LoadedExtracted {
-  const extracted = project.extracted.find(
-    (item) => item.value.source === source,
-  );
+): ExtractedFile {
+  const extracted = project.extracted.find((item) => item.source === source);
   if (!extracted)
     throw new Error(`[ai-i18n/mcp] extracted source not found: "${source}"`);
   return extracted;
 }
 
-export function collectOccurrences(files: readonly LoadedExtracted[]): Map<
+export function collectOccurrences(files: readonly ExtractedFile[]): Map<
   string,
   Array<{
     file: string;
@@ -225,11 +221,11 @@ export function collectOccurrences(files: readonly LoadedExtracted[]): Map<
       locations: Array<{ line: number; column: number }>;
     }>
   >();
-  for (const { value } of files) {
-    for (const message of value.messages) {
+  for (const file of files) {
+    for (const message of file.messages) {
       const items = occurrences.get(message.id) ?? [];
       items.push({
-        file: value.source,
+        file: file.source,
         id: message.id,
         source: message.source,
         ...(message.comment ? { comment: message.comment } : {}),

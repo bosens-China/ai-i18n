@@ -5,9 +5,16 @@ import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
 import { afterEach, expect, test } from 'vitest';
 import { AiI18nProjectService } from '../src/project';
+import { filterTranslations } from '../src/project-files';
 import { createAiI18nMcpServer } from '../src/server';
 
 const tempDirectories: string[] = [];
+
+test('treats a missing scoped locale as an untranslated value', () => {
+  expect(filterTranslations({ 'en-US': null }, 'ja-JP')).toEqual({
+    'ja-JP': null,
+  });
+});
 
 afterEach(async () => {
   await Promise.all(

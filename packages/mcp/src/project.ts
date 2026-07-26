@@ -80,7 +80,7 @@ export class AiI18nProjectService {
     const project = await loadProject(input.i18n_directory);
     validateLocale(project, input.locale);
     const items = project.extracted
-      .map(({ value }) => summarizeFile(value, project, input.locale))
+      .map((file) => summarizeFile(file, project, input.locale))
       .filter((item) => item.missing_count > 0)
       .sort((left, right) => left.file.localeCompare(right.file));
     return paginate(items, (item) => item.file, input.limit, input.cursor);
@@ -96,9 +96,7 @@ export class AiI18nProjectService {
       : project.extracted;
     const occurrences = collectOccurrences(project.extracted);
     const messageIds = new Set(
-      selected.flatMap(({ value }) =>
-        value.messages.map((message) => message.id),
-      ),
+      selected.flatMap((file) => file.messages.map((message) => message.id)),
     );
     const items = [...messageIds]
       .map((messageId) => {
@@ -139,13 +137,7 @@ export class AiI18nProjectService {
     );
   }
 
-  writeTranslations(
-    input: WriteTranslationsInput,
-  ): Promise<WriteTranslationsResult> {
-    return this.applyTranslations(input);
-  }
-
-  private async applyTranslations(
+  async writeTranslations(
     input: WriteTranslationsInput,
   ): Promise<WriteTranslationsResult> {
     const project = await loadProject(input.i18n_directory);
@@ -153,7 +145,7 @@ export class AiI18nProjectService {
     const updates = new Set<string>();
 
     for (const update of input.translations) {
-      const local = extracted.value.messages.find(
+      const local = extracted.messages.find(
         (message) => message.id === update.message_id,
       );
       if (!local) {
@@ -203,7 +195,7 @@ export class AiI18nProjectService {
         path.join(project.directory, 'overrides.json'),
         (overrides) => {
           for (const update of input.translations) {
-            const local = extracted.value.messages.find(
+            const local = extracted.messages.find(
               (message) => message.id === update.message_id,
             )!;
             const message = (overrides.messages[local.source] ??= {});
@@ -225,7 +217,7 @@ export class AiI18nProjectService {
         path.join(project.directory, 'translations.json'),
         (memory) => {
           for (const update of input.translations) {
-            const local = extracted.value.messages.find(
+            const local = extracted.messages.find(
               (message) => message.id === update.message_id,
             )!;
             const message = memory.messages[local.id];
@@ -249,7 +241,7 @@ export class AiI18nProjectService {
             }
           }
           for (const update of input.translations) {
-            const local = extracted.value.messages.find(
+            const local = extracted.messages.find(
               (message) => message.id === update.message_id,
             )!;
             const translations = memory.messages[local.id]!.translations;
