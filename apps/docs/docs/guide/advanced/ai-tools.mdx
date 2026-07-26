@@ -5,6 +5,10 @@ description: 为你的项目配置 Agent Skills、MCP 服务器与文档索引�
 
 import { Prompt } from '@rspress/core/theme';
 
+Agent + MCP 是 ai-i18n 提供的两种 AI 翻译方式之一，适合由 AI 编码工具在明确指令下检查、
+补齐并验证翻译。如果希望 Vite Dev 或 Build 自动调用模型补译，请改用
+[OpenAI Provider](/guide/advanced/ai-translation)。
+
 把 ai-i18n 接到 AI 编码工具时，可以通过三种途径增强 Agent 的能力：
 
 1. **Skills**：安装任务指令集，告诉 Agent 如何按安全流程调用工具补译。

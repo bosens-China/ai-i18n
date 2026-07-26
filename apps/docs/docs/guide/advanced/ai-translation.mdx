@@ -1,13 +1,25 @@
 ---
 title: AI 翻译
-description: 配置 OpenAI-compatible Provider，并编写稳定、可维护的翻译提示词
+description: 选择 Agent + MCP 或 OpenAI-compatible Provider 完成翻译
 ---
 
 import { PackageManagerTabs } from '@rspress/core/theme';
 
-:::tip 可选能力
-AI 翻译是可选能力。未配置 `translator` 时，ai-i18n 仍会完成提取、Runtime 和协议文件维护，
-目标语言的缺失值保持为 `null`。
+## 选择翻译方式
+
+ai-i18n 提供两种 AI 翻译方式：
+
+| 方式            | 适用场景                                     | 需要的能力                            |
+| --------------- | -------------------------------------------- | ------------------------------------- |
+| OpenAI Provider | 在 Vite Dev 或 Build 期间自动补齐缺失翻译    | 安装 `@ai-i18n/openai`                |
+| Agent + MCP     | 由 AI 编码工具按指令检查、补齐并验证缺失翻译 | 为 Agent 配置 `@ai-i18n/mcp` 和 Skill |
+
+两种方式任选其一即可。希望插件自动完成翻译时，使用 OpenAI Provider；希望由 Agent 在明确
+指令下补译时，参阅[接入 Agent](/guide/advanced/ai-tools)。
+
+:::tip 本页介绍 OpenAI Provider
+未配置 `translator` 时，ai-i18n 仍会完成提取、Runtime 和协议文件维护，目标语言的缺失值
+保持为 `null`，可以留给 Agent + MCP 补齐。
 :::
 
 ## 安装 Provider
