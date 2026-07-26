@@ -177,7 +177,7 @@ messages. The exact pruning order (a rare debugging detail): see `api/vite.md`'s
 
 Vite Dev accumulates browser-requested modules; visit lazy routes before judging coverage. Vite Build
 starts a fresh state and follows reachable imports. Both modes reconcile stable `translations.json`,
-`overrides.json`, `extracted/**`, and `locales/**`.
+`overrides.json`, `extracted/*.json`, and `locales/**`.
 
 `translations.json` uses schema v1 and contains `version`, monotonic `revision`, and messages keyed
 by readable message ID. Each message stores its `sourceLang`, optional comment, and target

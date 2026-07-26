@@ -47,7 +47,7 @@ t(messages.states[index]);
 插件生成的 `ai-i18n.d.ts` 会声明宏的全局 TypeScript 类型。局部声明同名
 `defineI18nMessages` 时，局部 binding 优先，不会被当作宏处理。
 
-## `t(source, commentOrOptions?)` 与 `` t`...` ``
+## `t(source, options?)` 与 `` t`...` ``
 
 ```ts
 interface TranslationOptions {
@@ -55,24 +55,21 @@ interface TranslationOptions {
   comment?: string;
 }
 
-function t(
-  source: string,
-  commentOrOptions?: string | TranslationOptions,
-): string;
+function t(source: string, options?: TranslationOptions): string;
 function t(strings: TemplateStringsArray, ...values: unknown[]): string;
 ```
 
-| 参数               | 类型                           | 必填 | 默认值      | 作用                                       |
-| ------------------ | ------------------------------ | ---- | ----------- | ------------------------------------------ |
-| `source`           | `string`                       | 是   | 无          | 源文案，也是翻译缺失时的回退值。           |
-| `commentOrOptions` | `string \| TranslationOptions` | 否   | `undefined` | 字符串表示注释；对象可指定稳定 ID 与注释。 |
+| 参数      | 类型                 | 必填 | 默认值      | 作用                             |
+| --------- | -------------------- | ---- | ----------- | -------------------------------- |
+| `source`  | `string`             | 是   | 无          | 源文案，也是翻译缺失时的回退值。 |
+| `options` | `TranslationOptions` | 否   | `undefined` | 指定稳定 ID 或翻译注释。         |
 
-日常文案只需 `t(source)`。第二个字符串参数继续表示翻译注释；需要显式 ID 时再传对象。
-参数必须能在构建期静态求值。
+日常文案只需 `t(source)`。需要翻译语境或显式 ID 时传入 options 对象。source 与 options
+必须能在构建期静态求值。
 
 ```ts
 t('保存');
-t('保存', '按钮');
+t('保存', { comment: '按钮' });
 t('提交', { id: 'git.commit', comment: '创建 Git 提交' });
 ```
 
@@ -90,6 +87,10 @@ t`你好 ${user.name}，你有 ${unreadCount} 条消息`;
 源码中原样出现的编号标记会自动转义。例如 `` t`写法 {{0}}，值为 ${value}` `` 在协议文件中
 表示为 `写法 {{=0}}，值为 {{0}}`：带等号的标记是字面文本，不带等号的标记才是运行时值。
 转义只存在于内部协议，最终仍显示为 `{{0}}`。
+
+Runtime 替换动态值前会比较源文与译文的占位符。占位符缺失、多出或编号改变时，
+`console.warn` 会报告 locale 与 message ID，但 Runtime 仍继续使用该译文；该问题不会抛错，
+也不会自动回退到源文。
 
 ## `setLang(value)`
 

@@ -81,8 +81,9 @@ The write operation:
 MCP never writes extracted or locales. Do not bypass its guards by editing those derived files or by
 replacing `message_id` with `source`.
 
-On an overwrite refusal, unknown locale, missing message, or stale file error, run Vite Dev/Build,
-re-list the file, and rebuild the batch from current results.
+On an overwrite refusal or unknown locale, re-list the file and rebuild the batch from current
+results. A missing-message error means only that the requested `message_id` does not exist in the
+selected source file; re-list that file and use the returned ID without inferring another cause.
 
 ### 4. Apply human review
 
@@ -104,7 +105,7 @@ pages. Report applied, unchanged, remaining, and failed counts.
 Running Vite Dev/Build Watch observes `translations.json` and `overrides.json` and rebuilds locales
 without reparsing unchanged source. Otherwise ask the user to run the next Dev/Build command. After
 reconciliation, commit source changes, generated `ai-i18n.d.ts`, both translation files,
-`extracted/**`, and `locales/**` together.
+`extracted/*.json`, and `locales/**` together.
 
 ## Handle common failures
 

@@ -117,7 +117,7 @@ AI_API_KEY=replace-me
 - JSON 字段、Schema 或返回示例；
 - API key、内部地址或其他秘密。
 - 与翻译无关的通用模型行为说明。
-- 每次都会变化的业务上下文；这类信息更适合放在 `t(source, comment)` 的 `comment` 中。
+- 每次都会变化的业务上下文；这类信息更适合放在 `t(source, { comment })` 的 `comment` 中。
 
 建议把提示词保存在 Vite 配置可导入的独立常量中，并纳入代码评审。术语发生变化时只修改一处。
 

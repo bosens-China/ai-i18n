@@ -85,9 +85,8 @@ claude mcp add --transport stdio --scope local ai-i18n -- npx -y @ai-i18n/mcp@al
 
 接入后，Agent 会获得 `ai_i18n_discover`、列表与写入工具。注册命令不需要项目路径；
 `ai_i18n_discover` 优先读取客户端暴露的 workspace roots，并返回可直接传给其他工具的绝对
-`i18n_directory`。discover 从 `@ai-i18n/mcp@1.0.0-alpha.4` 起提供；如果工具列表只有三个
-翻译工具，请升级并重启 MCP 进程。暂时无法升级时，可从目标应用的 Vite root 与
-`aiI18n({ directory })` 推导最终绝对目录。不支持 roots 的客户端可让 Agent 传当前工作目录。
+`i18n_directory`。客户端未提供 workspace roots 时，discover 回退 MCP 进程目录；也可以
+显式传入 `cwd` 作为回退。
 
 所有列表工具同时返回完整 JSON 文本与 MCP `structuredContent`。即使客户端不展示结构化
 字段，Agent 也能读取明细；结果较大时继续按 `next_cursor` 分页。
@@ -101,8 +100,8 @@ claude mcp add --transport stdio --scope local ai-i18n -- npx -y @ai-i18n/mcp@al
    `review_scope: "message"` 只影响带显式 ID 的目标消息。
 3. **自动校准与同步**：Vite Dev 运行时会自动重建 locales；否则在下一次
    `vite dev` 或 `vite build` 时完成。
-4. **写入失败先重读**：message 不属于文件时，先运行 Vite Dev/Build，再重新 list 并原样复制
-   `message_id`；不要用 `source` 字段代替。
+4. **消息不存在时重新读取**：MCP 只报告指定 `message_id` 在该文件中不存在，不推断原因。
+   重新 list 该文件并原样复制返回的 `message_id`；不要用 `source` 字段代替。
 
 ## 文档索引 (llms.txt)
 

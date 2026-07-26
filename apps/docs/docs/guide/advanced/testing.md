@@ -90,13 +90,13 @@ export default defineConfig({
 
 ## 测试环境的能力范围
 
-| 能力                        | 测试环境行为                                                                                         |
-| --------------------------- | ---------------------------------------------------------------------------------------------------- |
-| `t(source)` / `` t`...` ``  | 可用。测试 Runtime 没有加载任何目标语言译文，返回值始终遵循 `fallback` 策略。                        |
-| `setLang(value)`            | 可用，可用于测试语言切换触发的重渲染、`persist` 写入 localStorage、`detect` 探测逻辑。               |
-| `useI18n()`                 | Vue / React 模式下可用，Hook 行为与生产环境一致（`t` 的引用会随语言/Runtime 版本变化）。             |
-| 静态提取 / `i18n/` 协议文件 | 不会发生，不会创建、读取或修改 `translations.json`、`overrides.json`、`extracted/**`、`locales/**`。 |
-| Provider / AI 自动翻译      | 不会调用；`translator`、`provider` 不属于 `AiI18nVitestOptions`。                                    |
+| 能力                        | 测试环境行为                                                                                             |
+| --------------------------- | -------------------------------------------------------------------------------------------------------- |
+| `t(source)` / `` t`...` ``  | 可用。测试 Runtime 没有加载任何目标语言译文，返回值始终遵循 `fallback` 策略。                            |
+| `setLang(value)`            | 可用，可用于测试语言切换触发的重渲染、`persist` 写入 localStorage、`detect` 探测逻辑。                   |
+| `useI18n()`                 | Vue / React 模式下可用，Hook 行为与生产环境一致（`t` 的引用会随语言/Runtime 版本变化）。                 |
+| 静态提取 / `i18n/` 协议文件 | 不会发生，不会创建、读取或修改 `translations.json`、`overrides.json`、`extracted/*.json`、`locales/**`。 |
+| Provider / AI 自动翻译      | 不会调用；`translator`、`provider` 不属于 `AiI18nVitestOptions`。                                        |
 
 由于没有加载任何目标语言译文，`fallback` 策略决定了测试里能看到的文案：
 

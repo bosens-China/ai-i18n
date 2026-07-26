@@ -13,7 +13,7 @@
 i18n/
 ├── translations.json   # AI / Provider Translation Memory
 ├── overrides.json      # 人工审校
-├── extracted/**        # 插件生成的源码结构，不含译文
+├── extracted/*.json    # 插件生成的单层源码结构，不含译文
 └── locales/**          # 插件根据活动结构、Memory 与人工覆盖生成
 ```
 
@@ -46,8 +46,8 @@ Vite 与 MCP 必须统一调用 `@ai-i18n/core/translation-memory`：
 - 最终优先级为 `byId > default > translations.json > null/source fallback`。
 - 缺少覆盖字段表示继续回退；空字符串是有效人工译文。
 
-普通 `t(source)` 继续以 source 为 ID。只有同一原文确有不同语义时才传静态
-`{ id, comment? }`。同一显式 ID 不能映射到不同 source。
+普通 `t(source)` 继续以 source 为 ID。补充翻译语境时传静态 `{ comment }`；只有同一原文
+确有不同语义时才传 `{ id, comment? }`。同一显式 ID 不能映射到不同 source。
 
 ## 5. 验收
 

@@ -19,8 +19,8 @@
   传入 `cwd`。
 - 发现过程只识别同时含有合法 `translations.json`、`overrides.json` 与 `extracted/` 的目录。
 - `i18n_directory` 必须是经 realpath 校验的绝对目录。
-- MCP 读取 extracted 来校验 source 与 message 的归属；fill 写 `translations.json`，
-  review 写 `overrides.json`。
+- MCP 只读取单层 `extracted/*.json` 来校验 source 与 message 的归属；嵌套目录不属于当前
+  协议并会被忽略。fill 写 `translations.json`，review 写 `overrides.json`。
 - extracted 与 locales 继续由 Vite Dev/Build 维护。
 
 ## 3. 工具
@@ -56,7 +56,8 @@
 
 - `mode` 默认为 `fill`；人工确认修订时显式传入 `review`。
 - `review_scope` 默认为 `default`；`message` 只接受显式 message ID。
-- message 必须属于指定 source，locale 必须已存在。
+- message ID 必须存在于指定 source；找不到时只报告不存在，不推断文件或提取状态。locale
+  必须已存在。
 - `''` 是合法翻译。
 - 已有相同值视为幂等成功。
 - `fill` 模式遇到不同非空值时整批失败。

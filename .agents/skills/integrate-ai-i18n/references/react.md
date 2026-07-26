@@ -36,9 +36,9 @@ export function SaveButton() {
 }
 ```
 
-Default to `t(source)`. Use `` t`已加入 ${name}` `` for dynamic values. Add the optional second
-`comment` solely as translation guidance (for example `t('保存', '工具栏按钮')`). It does not change
-the message ID; do not invent comments for ordinary UI copy.
+Default to `t(source)`. Use `` t`已加入 ${name}` `` for dynamic values. Pass an options object with
+`comment` only as translation guidance (for example `t('保存', { comment: '工具栏按钮' })`). It does
+not change the message ID; do not invent comments for ordinary UI copy.
 
 If `unplugin-auto-import` is registered, omit the import. ai-i18n injects it and generates the
 declaration; do not add it to the external plugin's imports list. Use `configs.react` from

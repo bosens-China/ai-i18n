@@ -18,9 +18,9 @@ await setLang('en-US')
 console.log(getLang(), getLangs())
 ```
 
-Default to `t(source)`. Use `` t`已加入 ${name}` `` for dynamic values. Add the optional second
-`comment` only as translation guidance (for example `t('保存', '工具栏按钮')`). It does not change the
-message ID; do not invent comments for ordinary UI copy.
+Default to `t(source)`. Use `` t`已加入 ${name}` `` for dynamic values. Pass an options object with
+`comment` only as translation guidance (for example `t('保存', { comment: '工具栏按钮' })`). It does
+not change the message ID; do not invent comments for ordinary UI copy.
 
 If `unplugin-auto-import` is already registered, these runtime APIs can be used without imports.
 ai-i18n injects them and generates `src/ai-i18n.d.ts`; do not add them to the external plugin's

@@ -77,7 +77,7 @@
 const msg = t`你好`;
 
 // 带上下文的用法
-const status = t("待审核", "金融风控业务状态");
+const status = t("待审核", { comment: "金融风控业务状态" });
 ```
 
 这样的语法带来几个直接收益：
@@ -302,7 +302,7 @@ function saveLocales(messages: AllMessages) {
 function scanForI18nTexts(code: string): PendingItem[] {
   // 伪逻辑示意：
   // 1. 遍历代码 AST
-  // 2. 找到 t`xxx` 或 t('xxx', 'context')
+  // 2. 找到 t`xxx` 或 t('xxx', { comment: 'context' })
   // 3. 返回 PendingItem 列表
   return [];
 }
@@ -432,7 +432,7 @@ export default function aiI18nPlugin(options: {
 
 ```vue
 <div>{{ t`你好` }}</div>
-<button>{{ t('提交', '表单操作') }}</button>
+<button>{{ t('提交', { comment: '表单操作' }) }}</button>
 ```
 
 切换语言：

@@ -23,12 +23,12 @@
 - [phase-6/PRD.md](./phase-6/PRD.md) — 静态消息集合宏、宽松提取与推荐语法规格
 - [phase-6/TODO.md](./phase-6/TODO.md) — Phase 6 交付清单
 - [phase-6/ACCEPTANCE.md](./phase-6/ACCEPTANCE.md) — Phase 6 验收证据
-- [phase-7/PRD.md](./phase-7/PRD.md) — 并发安全 AI Memory、人工覆盖与派生文件职责
+- [phase-7/PRD.md](./phase-7/PRD.md) — 并发安全 AI Memory、人工覆盖与单层 extracted 协议
 - [phase-7/TODO.md](./phase-7/TODO.md) — Phase 7 交付清单
 - [phase-7/ACCEPTANCE.md](./phase-7/ACCEPTANCE.md) — Phase 7 验收证据
 - [phase-8/PRD.md](./phase-8/PRD.md) — Analyzer、ESLint 与 Vite 开发者诊断中英文切换规格
 - [phase-8/TODO.md](./phase-8/TODO.md) — Phase 8 交付清单
 - [phase-8/ACCEPTANCE.md](./phase-8/ACCEPTANCE.md) — Phase 8 验收证据
-- [mcp/PRD.md](./mcp/PRD.md) — `@ai-i18n/mcp` 自动发现与绝对目录工具契约
+- [mcp/PRD.md](./mcp/PRD.md) — `@ai-i18n/mcp` 自动发现、绝对目录与单层 extracted 契约
 - [mcp/TODO.md](./mcp/TODO.md) — MCP 交付清单
 - [release.md](./release.md) — CI / Release Please / npm Trusted Publishing 与补发说明

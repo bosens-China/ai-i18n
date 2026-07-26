@@ -1,7 +1,7 @@
 # @ai-i18n/vite
 
 Vite 的 ai-i18n 主插件。它在 Dev/Build 中提取显式 `t()`，维护可提交 Git 的
-`translations.json`、`overrides.json`、`extracted/**`、`locales/**`，并提供浏览器虚拟
+`translations.json`、`overrides.json`、`extracted/*.json`、`locales/**`，并提供浏览器虚拟
 Runtime。
 
 alpha 阶段请安装 `@ai-i18n/vite@alpha`，避免无标签安装命中较旧的 `latest`。
@@ -28,8 +28,9 @@ aiI18n({
 
 动态值使用 tagged template：`` t`你好 ${name}` ``。表达式会变成可调整顺序的编号占位符，
 不会交给模型翻译。源码中原样出现的 `{{0}}` 会在内部转义为 `{{=0}}`，运行时仍按原文显示。
-`t(source, comment?)` 的字符串 comment 仅提供语境，不参与默认 message ID。同一句原文需要
-不同语义时可写 `t('提交', { id: 'git.commit', comment: '创建 Git 提交' })`。
+Runtime 发现译文占位符不匹配时会输出 console warning，但仍继续使用该译文。
+`t(source, options?)` 的 `comment` 仅提供语境，不参与默认 message ID。同一句原文需要不同
+语义时可写 `t('提交', { id: 'git.commit', comment: '创建 Git 提交' })`。
 
 对象或数组文案使用无需导入的编译宏：
 

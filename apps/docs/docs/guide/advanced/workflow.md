@@ -19,7 +19,7 @@ i18n/
 
 四类文件各做一件事：
 
-- `extracted/**` 是源码提取清单，只由 Vite 插件维护消息结构。
+- `extracted/*.json` 是单层源码提取清单，只由 Vite 插件维护消息结构。
 - `translations.json` 是 AI Translation Memory。Provider 和 MCP 的 `fill` 只补缺失值。
 - `overrides.json` 是人工审校文件。MCP 的 `review` 或人工编辑在这里保存最终决定。
 - `locales/**` 是运行时产物，只由插件根据 extracted、AI Memory 和人工覆盖生成。
@@ -119,7 +119,7 @@ aiI18n({
 
 :::important 最小可提交清单
 源码变更、生成的 `src/ai-i18n.d.ts`（或自定义 `dts` 路径）、
-`i18n/translations.json`、`i18n/overrides.json`、`i18n/extracted/**`、`i18n/locales/**`
+`i18n/translations.json`、`i18n/overrides.json`、`i18n/extracted/*.json`、`i18n/locales/**`
 **应在同一 PR 中提交**。
 :::
 
@@ -142,7 +142,7 @@ aiI18n({
 ## Agent 协作边界
 
 - Agent 的普通补译只写 `translations.json`，人工审校只写 `overrides.json`。
-- `extracted/**` 与 `locales/**` 都是插件产物，不接受译文编辑。
+- `extracted/*.json` 与 `locales/**` 都是插件产物，不接受译文编辑。
 - MCP 默认 `mode: "fill"`。只有用户明确要求人工审校时，Agent 才能使用 `mode: "review"`，
   并根据影响全部调用还是某个显式 ID 选择 review scope。
 - 使用约定以本文档和 [接入 Agent](/guide/advanced/ai-tools) 为准。

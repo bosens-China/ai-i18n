@@ -109,11 +109,11 @@ the ESLint doc page from the table above.
 ## Preserve extraction semantics
 
 - Ordinary strings, JSX text, Vue text, and mixed HTML fragments are not guessed.
-- Prefer `t(source)` for ordinary copy. A second string is a translation comment and does not
-  participate in the default message ID. For one source that truly needs a distinct semantic
-  translation, use `t(source, { id: 'stable.semantic.id', comment? })`. IDs must be stable,
-  non-empty, and not derived from file paths or line numbers. Source and options must be statically
-  evaluable.
+- Prefer `t(source)` for ordinary copy. Pass `{ comment: '...' }` only when translation guidance is
+  needed; it does not participate in the default message ID. For one source that truly needs a
+  distinct semantic translation, use `t(source, { id: 'stable.semantic.id', comment? })`. IDs must
+  be stable, non-empty, and not derived from file paths or line numbers. Source and options must be
+  statically evaluable.
 - For object or array copy, use the import-free compiler macro
   `const messages = defineI18nMessages({...})`, then pass members such as
   `messages.save` or `messages.states[index]` to `t()`. The macro is an analysis marker that must be
@@ -122,7 +122,8 @@ the ESLint doc page from the table above.
   with concatenation or logical expressions merely because the analyzer can recover candidates.
 - Use tagged templates for dynamic values: `` t`你好 ${name}` ``. Expressions are represented as
   reorderable `{{0}}`, `{{1}}` placeholders and are not translated. Placeholder-shaped source text
-  is escaped internally (`{{0}}` becomes `{{=0}}`) and is restored before display.
+  is escaped internally (`{{0}}` becomes `{{=0}}`) and is restored before display. Runtime logs a
+  console warning when translation placeholders differ, then continues using that translation.
 - Vue/React Hook bindings work in JS, TS, JSX, and TSX, including composables and custom Hooks.
 - Vue SFC extraction respects compiler-sfc bindings and template-local scopes.
 - Vue JSX/TSX is supported in Vue mode when `@vitejs/plugin-vue-jsx` is present.
@@ -131,7 +132,7 @@ the ESLint doc page from the table above.
   translation UX. Persisted locale wins over navigator detection, which wins over `defaultLang`.
 - Persist semantic codes, counters, and stable filenames rather than translated strings. Translate at
   the display boundary; never parse localized output for identifiers, storage state, or numbering.
-- Commit source, generated `ai-i18n.d.ts`, `translations.json`, `overrides.json`, `extracted/**`,
+- Commit source, generated `ai-i18n.d.ts`, `translations.json`, `overrides.json`, `extracted/*.json`,
   and `locales/**` together.
 
 ## Vitest
