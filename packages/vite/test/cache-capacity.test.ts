@@ -2,7 +2,7 @@ import { Buffer } from 'node:buffer';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import type { CacheFileV2 } from '@ai-i18n/core';
+import type { TranslationMemoryFile } from '@ai-i18n/core';
 import { afterEach, describe, expect, it } from 'vitest';
 import { aiI18n } from '../src';
 import { FileStore } from '../src/file-store';
@@ -58,15 +58,15 @@ describe('Cache capacity', () => {
     const store = capacityStore(root, { maxMessages: 2 });
     const result = await store.sync(state.snapshot());
     const content = await fs.readFile(
-      path.join(root, 'i18n/cache.json'),
+      path.join(root, 'i18n/translations.json'),
       'utf8',
     );
 
     expect(messageIds(result)).toEqual(['active', 'history-c']);
     await store.sync(state.snapshot());
-    expect(await fs.readFile(path.join(root, 'i18n/cache.json'), 'utf8')).toBe(
-      content,
-    );
+    expect(
+      await fs.readFile(path.join(root, 'i18n/translations.json'), 'utf8'),
+    ).toBe(content);
   });
 
   it('enforces maxBytes against stable UTF-8 serialization', async () => {
@@ -159,21 +159,15 @@ describe('Cache capacity', () => {
     expect(warnings).toHaveLength(1);
   });
 
-  it('merges Agent and Git edits before pruning inactive history', async () => {
+  it('preserves external field edits before pruning inactive history', async () => {
     const { root, state, cache } = await prepareCache(
       ['active', 'history-a', 'history-b'],
       ['active'],
     );
-    const cachePath = path.join(root, 'i18n/cache.json');
+    const cachePath = path.join(root, 'i18n/translations.json');
     cache.messages['history-b']!.translations['en-US'] = 'Git history';
+    cache.messages['active']!.translations['en-US'] = 'Agent active';
     await fs.writeFile(cachePath, stableJson(cache));
-
-    const extractedPath = path.join(root, 'i18n/extracted/src_active.ts.json');
-    const extracted = JSON.parse(await fs.readFile(extractedPath, 'utf8')) as {
-      messages: Array<{ translations: Record<string, string | null> }>;
-    };
-    extracted.messages[0]!.translations['en-US'] = 'Agent active';
-    await fs.writeFile(extractedPath, stableJson(extracted));
 
     const result = await capacityStore(root, { maxMessages: 2 }).sync(
       state.snapshot(),
@@ -245,10 +239,10 @@ function capacityStore(
   });
 }
 
-function messageIds(cache: CacheFileV2): string[] {
+function messageIds(cache: TranslationMemoryFile): string[] {
   return Object.keys(cache.messages).sort();
 }
 
-function byteLength(cache: CacheFileV2): number {
+function byteLength(cache: TranslationMemoryFile): number {
   return Buffer.byteLength(stableJson(cache), 'utf8');
 }

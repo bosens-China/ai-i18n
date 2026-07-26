@@ -77,7 +77,8 @@ describe('ProjectState incremental analysis', () => {
       '/workspace/src/lazy.ts',
     );
     state.hydrateCache({
-      version: 2,
+      version: 1,
+      revision: 1,
       messages: {
         保留: {
           sourceLang: 'zh-CN',
@@ -95,5 +96,83 @@ describe('ProjectState incremental analysis', () => {
     });
     state.retain(['/workspace/src/main.ts']);
     expect(state.localeMessages('en-US')).toEqual({ 保留: 'Keep' });
+  });
+
+  it('prefers exact human overrides, then default human overrides, then AI memory', () => {
+    const state = new ProjectState('/workspace', options);
+    state.updateExtracted('', '/workspace/src/main.ts', [
+      {
+        id: 'git.commit',
+        source: '提交',
+        locations: [{ line: 1, column: 0 }],
+      },
+      {
+        id: '提交',
+        source: '提交',
+        locations: [{ line: 2, column: 0 }],
+      },
+      {
+        id: '取消',
+        source: '取消',
+        locations: [{ line: 3, column: 0 }],
+      },
+    ]);
+    state.hydrateCache({
+      version: 1,
+      revision: 1,
+      messages: {
+        'git.commit': {
+          sourceLang: 'zh-CN',
+          translations: { 'en-US': 'AI commit' },
+        },
+        提交: {
+          sourceLang: 'zh-CN',
+          translations: { 'en-US': 'AI submit' },
+        },
+        取消: {
+          sourceLang: 'zh-CN',
+          translations: { 'en-US': 'Cancel' },
+        },
+      },
+    });
+    state.hydrateOverrides({
+      version: 1,
+      messages: {
+        提交: {
+          default: { 'en-US': 'Submit' },
+          byId: { 'git.commit': { 'en-US': 'Commit' } },
+        },
+      },
+    });
+
+    expect(state.registration('src/main.ts', 'en-US')).toEqual({
+      'en-US': {
+        'git.commit': 'Commit',
+        提交: 'Submit',
+        取消: 'Cancel',
+      },
+    });
+  });
+
+  it('rejects one explicit message ID pointing at different source text', () => {
+    const state = new ProjectState('/workspace', options);
+    state.updateExtracted('', '/workspace/src/main.ts', [
+      {
+        id: 'action.submit',
+        source: '提交',
+        locations: [{ line: 1, column: 0 }],
+      },
+    ]);
+    state.updateExtracted('', '/workspace/src/other.ts', [
+      {
+        id: 'action.submit',
+        source: '保存',
+        locations: [{ line: 1, column: 0 }],
+      },
+    ]);
+
+    expect(() => state.snapshot()).toThrow(
+      'message ID "action.submit" is used by both "提交" and "保存"',
+    );
   });
 });

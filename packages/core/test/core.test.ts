@@ -6,10 +6,10 @@ import {
   createMessageId,
   hasSameTemplateTokens,
   mergeCacheMessages,
-  parseCacheFile,
   parseExtractedFile,
   parseLocaleFile,
-  parseMessageId,
+  parseTranslationOverridesFile,
+  parseTranslationMemoryFile,
 } from '../src/index';
 
 const locales = [
@@ -25,17 +25,17 @@ describe('@ai-i18n/core message IDs', () => {
   it('keeps IDs stable when comments change', () => {
     expect(createMessageId(' 保存 ', '  按钮  ')).toBe(' 保存 ');
     expect(createMessageId('保存', '   ')).toBe('保存');
-    expect(createMessageId('A#B\\C', 'D#E')).toBe('A\\#B\\\\C');
+    expect(createMessageId('A#B\\C', 'D#E')).toBe('A#B\\C');
   });
 
-  it('parses current and legacy comment-bearing IDs', () => {
-    expect(parseMessageId(createMessageId('A#B\\C'))).toEqual({
-      source: 'A#B\\C',
-    });
-    expect(parseMessageId('A\\#B\\\\C#D\\#E')).toEqual({
-      source: 'A#B\\C',
-      comment: 'D#E',
-    });
+  it('uses trimmed explicit IDs and rejects empty ones', () => {
+    expect(createMessageId('提交', { id: ' checkout.submit ' })).toBe(
+      'checkout.submit',
+    );
+    expect(createMessageId('提交', { comment: '按钮' })).toBe('提交');
+    expect(() => createMessageId('提交', { id: '   ' })).toThrow(
+      'translation id must not be empty',
+    );
   });
 });
 
@@ -51,64 +51,78 @@ describe('@ai-i18n/core schemas', () => {
   });
 
   it('reports unsupported schema versions clearly', () => {
-    expect(() => parseCacheFile({ version: 3, messages: {} })).toThrow(
-      new AiI18nSchemaError('cache schema version must be 2; received 3'),
-    );
-  });
-
-  it('migrates legacy context metadata to comment', () => {
-    const cache = parseCacheFile(
-      {
-        version: 1,
-        files: {},
-        messages: {
-          '保存#按钮': {
-            source: '保存',
-            context: '按钮',
-            translations: { 'en-US': 'Save' },
-          },
-        },
-      },
-      'zh-CN',
-    );
-    const extracted = parseExtractedFile({
-      version: 1,
-      source: 'src/app.ts',
-      messages: [
-        {
-          id: '保存#按钮',
-          source: '保存',
-          context: '按钮',
-          translations: { 'en-US': 'Save' },
-          locations: [{ line: 1, column: 0 }],
-        },
-      ],
-    });
-
-    expect(cache.messages['保存#按钮']).toMatchObject({
-      sourceLang: 'zh-CN',
-      comment: '按钮',
-    });
-    expect(extracted.messages[0]).toMatchObject({ comment: '按钮' });
-    expect(cache.messages['保存#按钮']).not.toHaveProperty('context');
-    expect(extracted.messages[0]).not.toHaveProperty('context');
-  });
-
-  it('rejects conflicting legacy context and comment metadata', () => {
     expect(() =>
-      parseCacheFile({
+      parseTranslationMemoryFile({
+        version: 2,
+        revision: 0,
+        messages: {},
+      }),
+    ).toThrow(
+      new AiI18nSchemaError(
+        'translation memory schema version must be 1; received 2',
+      ),
+    );
+  });
+
+  it('rejects obsolete persistence fields instead of migrating them', () => {
+    expect(() =>
+      parseTranslationMemoryFile({
         version: 1,
-        files: {},
+        revision: 0,
         messages: {
           保存: {
-            source: '保存',
+            sourceLang: 'zh-CN',
             comment: '按钮',
             context: '标题',
             translations: {},
           },
         },
       }),
-    ).toThrow('comment conflicts with legacy');
+    ).toThrow('context was replaced by comment');
+    expect(() =>
+      parseExtractedFile({
+        version: 1,
+        source: 'src/app.ts',
+        messages: [
+          {
+            id: '保存',
+            source: '保存',
+            translations: { 'en-US': 'Save' },
+            locations: [{ line: 1, column: 0 }],
+          },
+        ],
+      }),
+    ).toThrow('translations is not part of the extracted schema');
+  });
+
+  it('strictly parses string-only translation overrides', () => {
+    expect(
+      parseTranslationOverridesFile({
+        version: 1,
+        messages: {
+          提交: {
+            default: { 'en-US': 'Submit', ja: '' },
+            byId: { 'checkout.submit': { 'en-US': 'Place order' } },
+          },
+        },
+      }).messages.提交,
+    ).toEqual({
+      default: { 'en-US': 'Submit', ja: '' },
+      byId: { 'checkout.submit': { 'en-US': 'Place order' } },
+    });
+    expect(() =>
+      parseTranslationOverridesFile({
+        version: 1,
+        messages: { 提交: { default: { 'en-US': null } } },
+      }),
+    ).toThrow('must be a string');
+    expect(() =>
+      parseTranslationOverridesFile({
+        version: 1,
+        messages: {},
+        revision: 1,
+      }),
+    ).toThrow('revision is not part of the schema');
   });
 
   it('distinguishes runtime and escaped literal template tokens', () => {
@@ -125,6 +139,7 @@ describe('@ai-i18n/core schemas', () => {
       ),
     ).toBe(false);
   });
+
   it('merges global Translation Memory without losing non-null values', () => {
     const result = mergeCacheMessages(
       {
@@ -161,6 +176,23 @@ describe('@ai-i18n/core schemas', () => {
 });
 
 describe('@ai-i18n/core runtime', () => {
+  it('uses explicit IDs while keeping string comments compatible', () => {
+    const runtime = createI18nRuntime({
+      sourceLang: 'zh-CN',
+      defaultLang: 'en-US',
+      locales,
+    });
+    runtime.registerModule('src/app.ts', {
+      'zh-CN': { 'checkout.submit': '提交', 保存: '保存' },
+      'en-US': { 'checkout.submit': 'Place order', 保存: 'Save' },
+    });
+
+    expect(
+      runtime.t('提交', { id: ' checkout.submit ', comment: '结算按钮' }),
+    ).toBe('Place order');
+    expect(runtime.t('保存', '按钮')).toBe('Save');
+  });
+
   it('translates tagged templates and lets targets reorder placeholders', () => {
     const runtime = createI18nRuntime({
       sourceLang: 'zh-CN',
@@ -206,6 +238,7 @@ describe('@ai-i18n/core runtime', () => {
     expect(runtime.t('转义示例 {{=0}}')).toBe('Escaped {{=0}}');
     expect(runtime.t`表达式值为 ${'{{0}}'}`).toBe('Expression: {{0}}');
   });
+
   it('detects and persists supported browser language preferences', async () => {
     const values = new Map<string, string>([['preferred', 'zh-CN']]);
     const storage: Storage = {
@@ -254,7 +287,7 @@ describe('@ai-i18n/core runtime', () => {
         fallback,
       });
 
-    expect(create('key').t('A#B')).toBe('A\\#B');
+    expect(create('key').t('A#B')).toBe('A#B');
     expect(create('marked').t('缺失')).toBe('⟦缺失⟧');
     expect(create('empty').t('缺失')).toBe('');
   });

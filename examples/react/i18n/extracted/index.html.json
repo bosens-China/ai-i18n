@@ -8,10 +8,7 @@
           "line": 6
         }
       ],
-      "source": "ai-i18n React 示例",
-      "translations": {
-        "en-US": "ai-i18n React demo"
-      }
+      "source": "ai-i18n React 示例"
     }
   ],
   "source": "index.html",

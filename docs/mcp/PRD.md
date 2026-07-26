@@ -4,89 +4,85 @@
 
 ## 1. 目标
 
-提供一个独立、本地、stdio 传输的 `@ai-i18n/mcp`，让 Agent 无需自行遍历 i18n 协议文件即可：
+提供独立、本地、stdio 传输的 `@ai-i18n/mcp`，让 Agent 无需自行遍历协议文件即可：
 
 1. 列出仍有缺失翻译的源码文件。
 2. 分页读取文件或全项目的具体翻译内容。
-3. 批量填充 extracted 文件中的缺失翻译。
-4. 从客户端 workspace roots 自动发现可用的协议目录。
+3. 批量填充缺失翻译，或提交人工审校后的修订。
+4. 从客户端 workspace roots 自动发现可用协议目录。
 
 ## 2. 边界
 
 - MCP 不扫描业务源码，不执行或解析 `vite.config.*`。
 - MCP 注册与启动不接收项目路径，同一 server 可以处理不同项目。
-- `ai_i18n_discover` 优先扫描客户端提供的 workspace roots；客户端未实现 roots 时回退到
-  MCP 进程目录，也可显式传入 `cwd`。
-- 发现过程只识别同时含有合法 `cache.json` 与 `extracted/` 的协议目录，不解析业务源码
-  或 Vite 配置。
-- Agent 从发现结果中选择目录，再向其余工具传入绝对 `i18n_directory`。
-- `i18n_directory` 必须是绝对路径；MCP 通过 realpath 校验目录存在且确实是目录。
-- MCP 只修改 `extracted/**`；cache、重复 extracted 和 locales 继续由 Vite Dev/Build 校准。
-- 不提供 manifest、临时注册表或 node_modules 缓存。
+- `ai_i18n_discover` 优先扫描客户端 workspace roots；未提供时回退 MCP 进程目录，也可显式
+  传入 `cwd`。
+- 发现过程只识别同时含有合法 `translations.json`、`overrides.json` 与 `extracted/` 的目录。
+- `i18n_directory` 必须是经 realpath 校验的绝对目录。
+- MCP 读取 extracted 来校验 source 与 message 的归属；fill 写 `translations.json`，
+  review 写 `overrides.json`。
+- extracted 与 locales 继续由 Vite Dev/Build 维护。
 
 ## 3. 工具
 
 ### 3.1 `ai_i18n_discover`
 
-输入：
-
-- `cwd`：可选，仅在客户端未提供正确 workspace roots 时作为显式回退目录。
-
-返回所有已发现项目的绝对 `i18n_directory` 和对应 `workspace_root`。注册 MCP 时无需配置
-项目路径。
+返回所有已发现项目的绝对 `i18n_directory` 和 `workspace_root`。`cwd` 仅作为显式回退。
 
 ### 3.2 `ai_i18n_list_translation_files`
 
-输入：
-
-- `i18n_directory`：必填，最终协议目录的绝对路径。
-- `locale`：可选，只统计指定目标语言。
-- `cursor`：可选，上一页返回的 opaque cursor。
+- `i18n_directory`：必填。
+- `locale`：可选。
+- `cursor`：可选 opaque cursor。
 - `limit`：默认 50，范围 1～200。
 
-只返回有效 Translation Memory 合并后仍存在 `null` 的源码文件，并按 source 稳定排序。
+只返回当前 Translation Memory 中仍有 `null` 的源码文件，并按 source 稳定排序。
 
 ### 3.3 `ai_i18n_list_translations`
 
-输入：
-
 - `i18n_directory`：必填。
-- `file`：可选，使用第一个工具返回的 source；省略时按 message ID 全项目去重。
-- `locale`：可选，只返回指定目标语言。
+- `file`：可选；省略时按 message ID 全项目去重。
+- `locale`：可选。
 - `missing_only`：默认 true。
 - `cursor`：可选。
 - `limit`：默认 100，范围 1～200。
 
-返回 source、comment、有效 translations、缺失语言、代表文件和出现次数。单次结构化响应限制约
-25,000 字符，超限时缩短当前页并返回下一页 cursor。
+返回 source、comment、translations、缺失语言、代表文件和出现次数。单次结构化响应限制约
+25,000 字符，超限时缩短当前页并返回 cursor。
 
 ### 3.4 `ai_i18n_write_translations`
 
 输入一个 source 文件和最多 100 个 `message_id + locale + value`：
 
-- 只允许填充当前有效值为 `null` 的项。
+- `mode` 默认为 `fill`；人工确认修订时显式传入 `review`。
+- `review_scope` 默认为 `default`；`message` 只接受显式 message ID。
+- message 必须属于指定 source，locale 必须已存在。
 - `''` 是合法翻译。
 - 已有相同值视为幂等成功。
-- 已有不同非空值时整批失败，不允许 last-write-wins。
-- message 必须属于指定 source，locale 必须已存在。
-- 整批校验后通过临时文件 + rename 原子写入。
-- 单个 MCP 进程内串行执行写任务。
+- `fill` 模式遇到不同非空值时整批失败。
+- `review` 模式写独立人工覆盖，不替换 AI Memory。
+- 翻译必须保留源码中的模板占位符。
+- 整批验证和写入在同一个 Translation Memory 事务中完成。
 
 ## 4. 一致性
 
-查询时先读取并校验 `cache.json` 与所有 `extracted/**/*.json`，再复用 Core 冲突合并规则计算
-有效 Translation Memory。这样 extracted 中的旧 `null` 不会覆盖 cache 已有值，也不会重复翻译。
+`translations.json` 保存 AI Memory，`overrides.json` 保存人工决定。MCP 写事务统一调用
+Core 的共享实现：
 
-列表和发现工具同时返回完整格式化 JSON 文本与 `structuredContent`，避免只展示摘要的客户端
-丢失明细；大结果仍由 cursor 分页和字符上限控制。
+1. 锁定系统临时目录中的稳定 sidecar 文件；原子替换数据文件不会改变锁身份。
+2. 取得锁后重新读取对应目标文件，不能使用锁外旧快照覆盖。
+3. `fill` 只填充 AI Memory 的 `null`；`review` 写人工 default 或显式 ID 覆盖。
+4. translations 内容实际变化时递增 `revision`。
+5. 使用 `atomically` 写临时文件并原子替换，最后释放锁。
 
-写入前重新读取最新磁盘状态。Vite Dev 运行时会通过现有 watcher 自动同步；否则下一次 Dev
-或 Build 校准 cache、其他活动 extracted 和 locales。
+Vite 使用同一事务入口，因此 Vite Provider 与 MCP 并发提交不同字段时不会整文件互相覆盖。
+同一 AI 字段默认采用先提交的非空值。有效值按 `byId > default > AI Memory` 读取。
 
 ## 5. 非目标
 
 - 读取动态 Vite 配置。
 - 调用翻译 Provider。
-- 覆盖或删除已有翻译。
-- 直接编辑 locales 或 cache。
+- 自动覆盖或删除已有非空翻译。
+- 兼容未发布的旧持久化协议。
+- 直接编辑 extracted 或 locales。
 - Streamable HTTP、远程服务、鉴权和多租户。

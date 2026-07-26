@@ -33,8 +33,7 @@ export async function loadRegistration(
   }
   if (options.build) {
     await options.flush();
-    const cache = await store.sync(project.snapshot());
-    project.hydrateCache(cache);
+    project.hydrateOverrides(await store.loadOverrides());
   }
   const messages = project.registration(moduleId, options.locale);
   return messages ? registerCode(moduleId, messages) : 'export {}';

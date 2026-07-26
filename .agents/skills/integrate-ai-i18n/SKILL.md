@@ -45,7 +45,7 @@ at the same path with a `.md` extension — fetch that, not the `.html` page:
 | --- | --- |
 | Full `aiI18n()` option table, Provider tuning, capacity/loading edge cases | `https://bosens-china.github.io/ai-i18n/api/vite.md` |
 | Runtime API (`t`, `useI18n`, template placeholders, persist/detect/fallback) | `https://bosens-china.github.io/ai-i18n/api/runtime.md` |
-| Protocol directory layout, Git conventions, message-ID/comment migration | `https://bosens-china.github.io/ai-i18n/guide/advanced/workflow.md` |
+| Protocol directory layout, Git conventions, and message-ID/comment behavior | `https://bosens-china.github.io/ai-i18n/guide/advanced/workflow.md` |
 | AI translation Provider setup and prompt tuning | `https://bosens-china.github.io/ai-i18n/guide/advanced/ai-translation.md` |
 | `aiI18nVitest()` usage | `https://bosens-china.github.io/ai-i18n/guide/advanced/testing.md` |
 | ESLint plugin Flat Config examples per framework | `https://bosens-china.github.io/ai-i18n/guide/basic/eslint.md` |
@@ -70,8 +70,9 @@ package version, trust the reference files and the installed code over a stale f
 7. For TypeScript, keep the generated `src/ai-i18n.d.ts` in the project or configure `dts` to another
    included path. The generated file carries noformat, ts-nocheck, and eslint-disable markers; do
    not hand-maintain or reformat duplicate global declarations.
-8. Run the app's type check and Vite build, then confirm the messages-only cache v2,
-   flat `extracted/*.json`, and target-only `locales/*.json` under the resolved output directory.
+8. Run the app's type check and Vite build, then confirm schema-v1 `translations.json`,
+   `overrides.json`, flat translation-free `extracted/*.json`, and target-only `locales/*.json`
+   under the resolved output directory.
 
 When the user requests smaller initial bundles, configure `loading: { strategy: 'locale' }`.
 Use `preload` only for target locales expected immediately, `prefetch` for likely later choices, and
@@ -108,10 +109,11 @@ the ESLint doc page from the table above.
 ## Preserve extraction semantics
 
 - Ordinary strings, JSX text, Vue text, and mixed HTML fragments are not guessed.
-- Prefer `t(source)` for ordinary copy. The optional second `comment` is only for
-  translation guidance; it is metadata and does not participate in the message ID. Changing it
-  preserves translations. Do not invent comments by default. Source and comment arguments must be
-  statically evaluable.
+- Prefer `t(source)` for ordinary copy. A second string is a translation comment and does not
+  participate in the default message ID. For one source that truly needs a distinct semantic
+  translation, use `t(source, { id: 'stable.semantic.id', comment? })`. IDs must be stable,
+  non-empty, and not derived from file paths or line numbers. Source and options must be statically
+  evaluable.
 - For object or array copy, use the import-free compiler macro
   `const messages = defineI18nMessages({...})`, then pass members such as
   `messages.save` or `messages.states[index]` to `t()`. The macro is an analysis marker that must be
@@ -127,7 +129,10 @@ the ESLint doc page from the table above.
 - Missing targets are `null`; runtime lookup falls back to source text.
 - Optional `persist`, `detect: 'navigator'`, and `fallback` configure browser preference and missing
   translation UX. Persisted locale wins over navigator detection, which wins over `defaultLang`.
-- Commit source, generated `ai-i18n.d.ts`, `cache.json`, `extracted/**`, and `locales/**` together.
+- Persist semantic codes, counters, and stable filenames rather than translated strings. Translate at
+  the display boundary; never parse localized output for identifiers, storage state, or numbering.
+- Commit source, generated `ai-i18n.d.ts`, `translations.json`, `overrides.json`, `extracted/**`,
+  and `locales/**` together.
 
 ## Vitest
 

@@ -8,11 +8,7 @@
           "line": 36
         }
       ],
-      "source": "当前语言",
-      "translations": {
-        "en-US": "Current language",
-        "ja-JP": "現在の言語"
-      }
+      "source": "当前语言"
     },
     {
       "id": "交互式语言切换演示",
@@ -22,11 +18,7 @@
           "line": 34
         }
       ],
-      "source": "交互式语言切换演示",
-      "translations": {
-        "en-US": "Interactive language switch demo",
-        "ja-JP": "インタラクティブ言語切り替えデモ"
-      }
+      "source": "交互式语言切换演示"
     },
     {
       "id": "模板会自动响应 Runtime 状态。",
@@ -36,11 +28,7 @@
           "line": 48
         }
       ],
-      "source": "模板会自动响应 Runtime 状态。",
-      "translations": {
-        "en-US": "The template reacts to Runtime state automatically.",
-        "ja-JP": "テンプレートは Runtime の状態に自動的に反応します。"
-      }
+      "source": "模板会自动响应 Runtime 状态。"
     },
     {
       "id": "文案变化",
@@ -50,11 +38,7 @@
           "line": 45
         }
       ],
-      "source": "文案变化",
-      "translations": {
-        "en-US": "Copy changes",
-        "ja-JP": "テキストの変化"
-      }
+      "source": "文案变化"
     },
     {
       "id": "响应式文案会随语言立即更新",
@@ -64,11 +48,7 @@
           "line": 47
         }
       ],
-      "source": "响应式文案会随语言立即更新",
-      "translations": {
-        "en-US": "Reactive copy updates immediately with the language",
-        "ja-JP": "リアクティブなテキストは言語に合わせて即座に更新されます"
-      }
+      "source": "响应式文案会随语言立即更新"
     },
     {
       "id": "语言",
@@ -78,11 +58,7 @@
           "line": 21
         }
       ],
-      "source": "语言",
-      "translations": {
-        "en-US": "Language",
-        "ja-JP": "言語"
-      }
+      "source": "语言"
     },
     {
       "id": "Vue 示例",
@@ -92,11 +68,7 @@
           "line": 17
         }
       ],
-      "source": "Vue 示例",
-      "translations": {
-        "en-US": "Vue demo",
-        "ja-JP": "Vue デモ"
-      }
+      "source": "Vue 示例"
     }
   ],
   "source": "src/App.vue",

@@ -8,10 +8,7 @@
           "line": 35
         }
       ],
-      "source": "当前语言",
-      "translations": {
-        "en-US": "Current language"
-      }
+      "source": "当前语言"
     },
     {
       "id": "订阅 Runtime 后重新渲染原生 DOM。",
@@ -21,10 +18,7 @@
           "line": 49
         }
       ],
-      "source": "订阅 Runtime 后重新渲染原生 DOM。",
-      "translations": {
-        "en-US": "Subscribe to the Runtime to re-render the native DOM."
-      }
+      "source": "订阅 Runtime 后重新渲染原生 DOM。"
     },
     {
       "id": "交互式语言切换演示",
@@ -34,10 +28,7 @@
           "line": 33
         }
       ],
-      "source": "交互式语言切换演示",
-      "translations": {
-        "en-US": "Interactive language switch demo"
-      }
+      "source": "交互式语言切换演示"
     },
     {
       "id": "切换后，这段文案会立即更新。",
@@ -47,10 +38,7 @@
           "line": 48
         }
       ],
-      "source": "切换后，这段文案会立即更新。",
-      "translations": {
-        "en-US": "This copy updates immediately after switching."
-      }
+      "source": "切换后，这段文案会立即更新。"
     },
     {
       "id": "文案变化",
@@ -60,10 +48,7 @@
           "line": 46
         }
       ],
-      "source": "文案变化",
-      "translations": {
-        "en-US": "Copy changes"
-      }
+      "source": "文案变化"
     },
     {
       "id": "语言",
@@ -73,10 +58,7 @@
           "line": 20
         }
       ],
-      "source": "语言",
-      "translations": {
-        "en-US": "Language"
-      }
+      "source": "语言"
     },
     {
       "id": "Vanilla 示例",
@@ -86,10 +68,7 @@
           "line": 16
         }
       ],
-      "source": "Vanilla 示例",
-      "translations": {
-        "en-US": "Vanilla demo"
-      }
+      "source": "Vanilla 示例"
     }
   ],
   "source": "src/main.ts",

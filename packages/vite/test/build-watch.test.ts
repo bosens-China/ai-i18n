@@ -81,7 +81,7 @@ console.log(t(LABEL));`;
     }
   });
 
-  it('reconciles extracted and locale edits without parsing source again', async () => {
+  it('reconciles memory edits and restores derived files without parsing source again', async () => {
     const root = await fixtureRoot();
     await write(root, 'src/main.ts', translatedModule('首页'));
     const observations: Observation[] = [];
@@ -92,11 +92,10 @@ console.log(t(LABEL));`;
       await waitForBuild(watcher, observations, 0);
       addFile.mockClear();
       const extractedPath = path.join(root, 'i18n/extracted/src_main.ts.json');
-      const extracted = await readJson<ExtractedFile>(extractedPath);
-      extracted.messages[0]!.translations['en-US'] = 'Home';
-      await rebuild(watcher, observations, () =>
-        writeJson(extractedPath, extracted),
-      );
+      const memoryPath = path.join(root, 'i18n/translations.json');
+      const memory = await readJson<CacheFile>(memoryPath);
+      memory.messages['首页']!.translations['en-US'] = 'Home';
+      await rebuild(watcher, observations, () => writeJson(memoryPath, memory));
 
       expect(addFile).not.toHaveBeenCalled();
       expect(lastRegistration(observations, 'src/main.ts')).toContain(
@@ -110,16 +109,17 @@ console.log(t(LABEL));`;
 
       expect(addFile).not.toHaveBeenCalled();
       expect(lastRegistration(observations, 'src/main.ts')).toContain(
-        '"en-US":{"首页":"Start"}',
+        '"en-US":{"首页":"Home"}',
       );
-      expect(
-        await readJson<CacheFile>(path.join(root, 'i18n/cache.json')),
-      ).toMatchObject({
-        messages: { 首页: { translations: { 'en-US': 'Start' } } },
+      expect(await readJson<CacheFile>(memoryPath)).toMatchObject({
+        messages: { 首页: { translations: { 'en-US': 'Home' } } },
       });
-      expect(await readJson<ExtractedFile>(extractedPath)).toMatchObject({
-        messages: [{ translations: { 'en-US': 'Start' } }],
+      expect(await readJson<LocaleFile>(localePath)).toMatchObject({
+        messages: { 首页: 'Home' },
       });
+      expect(JSON.stringify(await readJson(extractedPath))).not.toContain(
+        'translations',
+      );
     } finally {
       addFile.mockRestore();
       await watcher.close();
@@ -151,7 +151,7 @@ console.log(t(LABEL));`;
           path.join(root, 'i18n/extracted/src_new.ts.json'),
         ),
       ).toMatchObject({
-        messages: [{ translations: { 'en-US': 'Moved text' } }],
+        messages: [{ id: '可移动文案' }],
       });
 
       await rebuild(watcher, observations, () => fs.rm(oldSource));
@@ -163,7 +163,7 @@ console.log(t(LABEL));`;
         fs.writeFile(main, "console.log('done');"),
       );
       const cache = await readJson<CacheFile>(
-        path.join(root, 'i18n/cache.json'),
+        path.join(root, 'i18n/translations.json'),
       );
       const locale = await readJson<LocaleFile>(
         path.join(root, 'i18n/locales/en-US.json'),
@@ -194,7 +194,7 @@ interface Observation {
 }
 
 interface ExtractedFile {
-  messages: Array<{ translations: Record<string, string | null> }>;
+  messages: Array<{ id: string }>;
 }
 
 interface LocaleFile {
@@ -322,7 +322,7 @@ async function protocolModifiedTimes(
   root: string,
 ): Promise<Record<string, bigint>> {
   const files = [
-    'i18n/cache.json',
+    'i18n/translations.json',
     'i18n/extracted/src_main.ts.json',
     'i18n/locales/en-US.json',
   ];

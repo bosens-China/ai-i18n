@@ -4,6 +4,7 @@ import {
   type NodeOfType,
   type NodeType,
 } from 'yuku-analyzer';
+import type { TranslationOptions } from '@ai-i18n/core';
 
 type Node = NodeOfType<NodeType>;
 type Primitive = string | number | boolean | bigint | null | undefined;
@@ -26,6 +27,77 @@ export function evaluateStrings(
 ): string[] | null | undefined {
   const values = evaluateValue(node, module, seen, dependencies);
   if (values === undefined || values === null) return values;
+  const strings = values.flatMap((value) =>
+    value.kind === 'primitive' && typeof value.value === 'string'
+      ? [value.value]
+      : [],
+  );
+  return strings.length ? [...new Set(strings)] : null;
+}
+
+export function evaluateTranslationOptions(
+  node: Node | undefined,
+  module: Module,
+  seen = new Set<string>(),
+  dependencies = new Set<string>(),
+): TranslationOptions[] | null | undefined {
+  const values = evaluateValue(node, module, seen, dependencies);
+  if (values === undefined || values === null) return values;
+  const options: TranslationOptions[] = [];
+
+  for (const value of values) {
+    if (value.kind === 'primitive' && typeof value.value === 'string') {
+      options.push({ comment: value.value });
+      continue;
+    }
+    if (
+      value.kind !== 'object' ||
+      [...value.properties.keys()].some(
+        (key) => key !== 'id' && key !== 'comment',
+      )
+    ) {
+      continue;
+    }
+    const ids = optionalStrings(value, 'id');
+    const comments = optionalStrings(value, 'comment');
+    if (ids === undefined || comments === undefined) return undefined;
+    if (
+      !ids ||
+      !comments ||
+      ids.length * comments.length > MAX_STATIC_CANDIDATES
+    ) {
+      continue;
+    }
+    for (const id of ids) {
+      for (const comment of comments) {
+        options.push({
+          ...(id === undefined ? {} : { id }),
+          ...(comment === undefined ? {} : { comment }),
+        });
+      }
+    }
+  }
+
+  return options.length
+    ? [
+        ...new Map(
+          options.map((option) => [
+            JSON.stringify([option.id, option.comment]),
+            option,
+          ]),
+        ).values(),
+      ]
+    : null;
+}
+
+function optionalStrings(
+  object: Extract<StaticValue, { kind: 'object' }>,
+  property: string,
+): Array<string | undefined> | null | undefined {
+  if (!object.properties.has(property)) return [undefined];
+  const values = object.properties.get(property);
+  if (values === undefined) return undefined;
+  if (values === null) return null;
   const strings = values.flatMap((value) =>
     value.kind === 'primitive' && typeof value.value === 'string'
       ? [value.value]
@@ -452,7 +524,7 @@ export function argumentWarning(
     code,
     file: module.path,
     ...sourceLocation(module.source, offset),
-    message: 't() arguments must be statically evaluable strings',
+    message: 't() arguments must be statically evaluable strings or options',
   };
 }
 

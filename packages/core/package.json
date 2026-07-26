@@ -29,6 +29,10 @@
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
+    },
+    "./translation-memory": {
+      "types": "./dist/translation-memory.d.ts",
+      "import": "./dist/translation-memory.js"
     }
   },
   "scripts": {
@@ -38,5 +42,9 @@
   },
   "publishConfig": {
     "access": "public"
+  },
+  "dependencies": {
+    "atomically": "2.1.1",
+    "fs-native-extensions": "1.5.0"
   }
 }

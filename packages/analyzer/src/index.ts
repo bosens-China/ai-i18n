@@ -2,7 +2,8 @@ import {
   createMessageId,
   createTemplateMessage,
   escapeTemplateLiteral,
-  normalizeComment,
+  translationComment,
+  type TranslationOptions,
 } from '@ai-i18n/core';
 import {
   analyze,
@@ -15,6 +16,7 @@ import {
 import {
   argumentWarning,
   evaluateStrings,
+  evaluateTranslationOptions,
   isDefineI18nMessagesCall,
   sourceLocation,
   type StaticWarningCode,
@@ -56,7 +58,8 @@ export interface ExtractedMessage {
   locations: SourceLocation[];
 }
 
-export type ExtractWarningCode = StaticWarningCode;
+export type ExtractWarningCode =
+  StaticWarningCode | 'invalid-message-id' | 'conflicting-message-id';
 
 export interface ExtractWarning extends SourceLocation {
   code: ExtractWarningCode;
@@ -122,14 +125,34 @@ export function extractMessages(
 
   const addMessage = (
     source: string,
-    rawComment: string | undefined,
+    options: TranslationOptions | undefined,
     offset: number,
   ) => {
-    const comment = normalizeComment(rawComment);
-    const id = createMessageId(source, comment);
     const location = sourceLocation(module.source, offset);
+    const comment = translationComment(options);
+    let id: string;
+    try {
+      id = createMessageId(source, options);
+    } catch (error) {
+      warnings.push({
+        code: 'invalid-message-id',
+        file: module.path,
+        ...location,
+        message: error instanceof Error ? error.message : String(error),
+      });
+      return;
+    }
     const previous = messages.get(id);
     if (previous) {
+      if (previous.source !== source || previous.comment !== comment) {
+        warnings.push({
+          code: 'conflicting-message-id',
+          file: module.path,
+          ...location,
+          message: `t() id "${id}" refers to conflicting source or comment values`,
+        });
+        return;
+      }
       previous.locations.push(location);
       return;
     }
@@ -160,26 +183,31 @@ export function extractMessages(
         new Set(),
         dependencies,
       );
-      const comments =
+      const options =
         node.arguments.length < 2 ||
         isUnboundUndefined(node.arguments[1], module)
-          ? ['']
-          : evaluateStrings(node.arguments[1], module, new Set(), dependencies);
-      if (sources === undefined || comments === undefined) {
+          ? [{}]
+          : evaluateTranslationOptions(
+              node.arguments[1],
+              module,
+              new Set(),
+              dependencies,
+            );
+      if (sources === undefined || options === undefined) {
         pending = true;
         warnings.push(
           argumentWarning(module, node.start, 'unresolved-argument'),
         );
         return;
       }
-      if (sources === null || comments === null || node.arguments.length > 2) {
+      if (sources === null || options === null || node.arguments.length > 2) {
         warnings.push(argumentWarning(module, node.start, 'dynamic-argument'));
         return;
       }
 
       for (const source of sources) {
-        for (const rawComment of comments) {
-          addMessage(escapeTemplateLiteral(source), rawComment, node.start);
+        for (const messageOptions of options) {
+          addMessage(escapeTemplateLiteral(source), messageOptions, node.start);
         }
       }
     },

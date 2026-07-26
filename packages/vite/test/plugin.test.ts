@@ -155,17 +155,18 @@ t(label)`,
     ).resolves.toEqual([]);
     expect(hotSend).not.toHaveBeenCalled();
 
-    const edited = JSON.parse(generated) as {
-      messages: Array<{ translations: Record<string, string | null> }>;
+    const memoryFile = path.join(directory, 'translations.json');
+    const edited = (await readJson(memoryFile)) as {
+      messages: Record<string, { translations: Record<string, string | null> }>;
     };
-    edited.messages[0]!.translations['en-US'] = 'Store';
+    edited.messages['保存']!.translations['en-US'] = 'Store';
     const editedContent = `${JSON.stringify(edited, null, 2)}\n`;
-    await fs.writeFile(extractedFile, editedContent);
+    await fs.writeFile(memoryFile, editedContent);
     await hotUpdate.call(
       { environment: { name: 'client' } },
       {
         type: 'update',
-        file: extractedFile,
+        file: memoryFile,
         timestamp: 3,
         modules: [],
         read: async () => editedContent,
@@ -178,9 +179,45 @@ t(label)`,
         'en-US': { 保存: 'Store' },
       },
     });
-    expect(await readJson(path.join(directory, 'cache.json'))).toMatchObject({
+    expect(
+      await readJson(path.join(directory, 'translations.json')),
+    ).toMatchObject({
       messages: { 保存: { translations: { 'en-US': 'Store' } } },
     });
+
+    const overridesFile = path.join(directory, 'overrides.json');
+    const overridesContent = `${JSON.stringify(
+      {
+        version: 1,
+        messages: {
+          保存: { default: { 'en-US': 'Keep' } },
+        },
+      },
+      null,
+      2,
+    )}\n`;
+    await fs.writeFile(overridesFile, overridesContent);
+    hotSend.mockClear();
+    await hotUpdate.call(
+      { environment: { name: 'client' } },
+      {
+        type: 'update',
+        file: overridesFile,
+        timestamp: 4,
+        modules: [],
+        read: async () => overridesContent,
+      },
+    );
+    expect(hotSend).toHaveBeenCalledWith('ai-i18n:update', {
+      moduleId: 'src/provider.ts',
+      messages: {
+        'zh-CN': { 保存: '保存' },
+        'en-US': { 保存: 'Keep' },
+      },
+    });
+    expect(
+      await readJson(path.join(directory, 'locales/en-US.json')),
+    ).toMatchObject({ messages: { 保存: 'Keep' } });
   });
 
   it('does not change modules without an imported t call', async () => {
@@ -492,16 +529,13 @@ export const View = () => <p>{t('React JSX')}</p>`,
       "import { t } from 'virtual:ai-i18n'; t('保存')",
       '/workspace/src/lazy-hot.ts',
     );
-    const extractedFile = path.join(
-      directory,
-      'extracted/src_lazy-hot.ts.json',
-    );
-    const edited = (await readJson(extractedFile)) as {
-      messages: Array<{ translations: Record<string, string | null> }>;
+    const memoryFile = path.join(directory, 'translations.json');
+    const edited = (await readJson(memoryFile)) as {
+      messages: Record<string, { translations: Record<string, string | null> }>;
     };
-    edited.messages[0]!.translations['en-US'] = 'Save';
+    edited.messages['保存']!.translations['en-US'] = 'Save';
     const editedContent = `${JSON.stringify(edited, null, 2)}\n`;
-    await fs.writeFile(extractedFile, editedContent);
+    await fs.writeFile(memoryFile, editedContent);
     hotSend.mockClear();
 
     const hotUpdate = objectHandler<
@@ -520,7 +554,7 @@ export const View = () => <p>{t('React JSX')}</p>`,
       { environment: { name: 'client' } },
       {
         type: 'update',
-        file: extractedFile,
+        file: memoryFile,
         timestamp: 4,
         modules: [],
         read: async () => editedContent,

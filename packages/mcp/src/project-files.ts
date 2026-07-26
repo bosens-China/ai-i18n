@@ -1,6 +1,29 @@
-import { randomUUID } from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import {
+  parseExtractedFile,
+  parseTranslationMemoryFile,
+  parseTranslationOverridesFile,
+  resolveTranslationOverride,
+  type CacheMessage,
+  type ExtractedFile,
+  type ExtractedMessage,
+  type TranslationOverridesFile,
+  type TranslationValue,
+} from '@ai-i18n/core';
+import type { TranslationFileItem } from './project.js';
+
+export interface LoadedExtracted {
+  value: ExtractedFile;
+}
+
+export interface LoadedProject {
+  directory: string;
+  extracted: LoadedExtracted[];
+  messages: Record<string, CacheMessage>;
+  overrides: TranslationOverridesFile;
+  locales: Set<string>;
+}
 
 export async function resolveI18nDirectory(input: string): Promise<string> {
   if (!path.isAbsolute(input)) {
@@ -61,32 +84,175 @@ export async function listJsonFiles(directory: string): Promise<string[]> {
   return nested.flat().sort();
 }
 
-export async function writeJsonAtomic(
-  file: string,
-  value: unknown,
-): Promise<void> {
-  const temporary = `${file}.${process.pid}.${randomUUID()}.tmp`;
-  try {
-    await fs.writeFile(temporary, stableJson(value), 'utf8');
-    await fs.rename(temporary, file);
-  } catch (error) {
-    await fs.rm(temporary, { force: true });
-    throw error;
+export async function loadProject(
+  i18nDirectory: string,
+): Promise<LoadedProject> {
+  const directory = await resolveI18nDirectory(i18nDirectory);
+  const [memory, overrides] = await Promise.all([
+    readJsonRequired(path.join(directory, 'translations.json')).then(
+      parseTranslationMemoryFile,
+    ),
+    readJsonRequired(path.join(directory, 'overrides.json')).then(
+      parseTranslationOverridesFile,
+    ),
+  ]);
+  const extractedPaths = await listJsonFiles(path.join(directory, 'extracted'));
+  const extracted = await Promise.all(
+    extractedPaths.map(async (file) => ({
+      value: parseExtractedFile(await readJsonRequired(file)),
+    })),
+  );
+  const sources = new Set<string>();
+  const messageSources = new Map<string, string>();
+  for (const item of extracted) {
+    if (sources.has(item.value.source)) {
+      throw new Error(
+        `[ai-i18n/mcp] duplicate extracted source "${item.value.source}"`,
+      );
+    }
+    sources.add(item.value.source);
+    for (const message of item.value.messages) {
+      const previous = messageSources.get(message.id);
+      if (previous !== undefined && previous !== message.source) {
+        throw new Error(
+          `[ai-i18n/mcp] message ID "${message.id}" refers to both "${previous}" and "${message.source}"`,
+        );
+      }
+      messageSources.set(message.id, message.source);
+    }
+  }
+  const messages = memory.messages;
+  return {
+    directory,
+    extracted,
+    messages,
+    overrides,
+    locales: new Set(
+      Object.values(messages).flatMap((message) =>
+        Object.keys(message.translations),
+      ),
+    ),
+  };
+}
+
+export function summarizeFile(
+  file: ExtractedFile,
+  project: LoadedProject,
+  locale?: string,
+): TranslationFileItem {
+  const missingByLocale: Record<string, number> = {};
+  for (const extractedMessage of file.messages) {
+    const translations = filterTranslations(
+      effectiveTranslations(project, extractedMessage),
+      locale,
+    );
+    for (const [targetLocale, value] of Object.entries(translations)) {
+      if (value === null)
+        missingByLocale[targetLocale] =
+          (missingByLocale[targetLocale] ?? 0) + 1;
+    }
+  }
+  return {
+    file: file.source,
+    message_count: file.messages.length,
+    missing_count: Object.values(missingByLocale).reduce(
+      (sum, count) => sum + count,
+      0,
+    ),
+    missing_by_locale: missingByLocale,
+  };
+}
+
+export function filterTranslations(
+  translations: Record<string, string | null>,
+  locale?: string,
+): Record<string, string | null> {
+  return locale ? { [locale]: translations[locale]! } : { ...translations };
+}
+
+export function validateLocale(project: LoadedProject, locale?: string): void {
+  if (locale && project.locales.size > 0 && !project.locales.has(locale)) {
+    throw new Error(`[ai-i18n/mcp] unknown target locale "${locale}"`);
   }
 }
 
-function stableJson(value: unknown): string {
-  return `${JSON.stringify(sortValue(value), null, 2)}\n`;
+export function findExtracted(
+  project: LoadedProject,
+  source: string,
+): LoadedExtracted {
+  const extracted = project.extracted.find(
+    (item) => item.value.source === source,
+  );
+  if (!extracted)
+    throw new Error(`[ai-i18n/mcp] extracted source not found: "${source}"`);
+  return extracted;
 }
 
-function sortValue(value: unknown): unknown {
-  if (Array.isArray(value)) return value.map(sortValue);
-  if (!value || typeof value !== 'object') return value;
+export function collectOccurrences(files: readonly LoadedExtracted[]): Map<
+  string,
+  Array<{
+    file: string;
+    id: string;
+    source: string;
+    comment?: string;
+    locations: Array<{ line: number; column: number }>;
+  }>
+> {
+  const occurrences = new Map<
+    string,
+    Array<{
+      file: string;
+      id: string;
+      source: string;
+      comment?: string;
+      locations: Array<{ line: number; column: number }>;
+    }>
+  >();
+  for (const { value } of files) {
+    for (const message of value.messages) {
+      const items = occurrences.get(message.id) ?? [];
+      items.push({
+        file: value.source,
+        id: message.id,
+        source: message.source,
+        ...(message.comment ? { comment: message.comment } : {}),
+        locations: message.locations,
+      });
+      occurrences.set(message.id, items);
+    }
+  }
+  for (const items of occurrences.values()) {
+    items.sort((left, right) => left.file.localeCompare(right.file));
+  }
+  return occurrences;
+}
+
+export function effectiveTranslations(
+  project: LoadedProject,
+  message: Pick<ExtractedMessage, 'id' | 'source'>,
+): Record<string, TranslationValue> {
+  const cached = cacheMessage(project, message).translations;
   return Object.fromEntries(
-    Object.entries(value)
-      .sort(([left], [right]) => left.localeCompare(right))
-      .map(([key, entry]) => [key, sortValue(entry)]),
+    Object.keys(cached).map((locale) => [
+      locale,
+      resolveTranslationOverride(project.overrides, message, locale) ??
+        cached[locale] ??
+        null,
+    ]),
   );
+}
+
+export function cacheMessage(
+  project: LoadedProject,
+  message: Pick<ExtractedMessage, 'id' | 'source'>,
+): CacheMessage {
+  const cached = project.messages[message.id];
+  if (!cached) {
+    throw new Error(
+      `[ai-i18n/mcp] message "${message.id}" is missing from translations.json; run Vite Dev/Build and retry`,
+    );
+  }
+  return cached;
 }
 
 function isNotFound(error: unknown): boolean {

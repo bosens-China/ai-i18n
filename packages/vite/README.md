@@ -1,7 +1,8 @@
 # @ai-i18n/vite
 
 Vite 的 ai-i18n 主插件。它在 Dev/Build 中提取显式 `t()`，维护可提交 Git 的
-`cache.json`、`extracted/**`、`locales/**`，并提供浏览器虚拟 Runtime。
+`translations.json`、`overrides.json`、`extracted/**`、`locales/**`，并提供浏览器虚拟
+Runtime。
 
 alpha 阶段请安装 `@ai-i18n/vite@alpha`，避免无标签安装命中较旧的 `latest`。
 
@@ -27,7 +28,8 @@ aiI18n({
 
 动态值使用 tagged template：`` t`你好 ${name}` ``。表达式会变成可调整顺序的编号占位符，
 不会交给模型翻译。源码中原样出现的 `{{0}}` 会在内部转义为 `{{=0}}`，运行时仍按原文显示。
-`t(source, comment?)` 的 comment 仅提供语境，不参与 message ID。
+`t(source, comment?)` 的字符串 comment 仅提供语境，不参与默认 message ID。同一句原文需要
+不同语义时可写 `t('提交', { id: 'git.commit', comment: '创建 Git 提交' })`。
 
 对象或数组文案使用无需导入的编译宏：
 
@@ -86,15 +88,17 @@ aiI18n({
 
 两个限制都是可选正整数；任一限制超出时，插件按 message ID 稳定淘汰非活跃的
 Translation Memory，直到同时满足已配置的限制。`maxBytes` 按稳定序列化后整个
-`cache.json` 的 UTF-8 字节数计算。
+`translations.json` 的 UTF-8 字节数计算。
 
 现有 extracted 或 ProjectState 引用的 message 始终受保护。若活动数据自身超限，插件保留
 数据并输出 warning。省略 `cache` 时不执行容量淘汰；
 `cleanup.orphanMessages: true` 仍会优先删除全部非活跃消息。
 
-普通 `vite build` 每次使用新的分析状态；`vite build --watch` 会跨重建复用 ProjectState，
-只重新 parse 变化 source，并刷新必要的 reverse dependents。extracted 或目标 locale 文件
-变化只合并翻译和注册内容，不重新 parse source。删除、重命名或移除 import 后，插件会校准
+普通 `vite build` 每次使用新的分析状态，并在完整模块图可用后统一写协议文件；
+`vite build --watch` 会跨重建复用 ProjectState，
+只重新 parse 变化 source，并刷新必要的 reverse dependents。`translations.json` 或
+`overrides.json` 变化会更新翻译和注册内容，不重新 parse source；extracted 与 locale 始终
+由插件重建。删除、重命名或移除 import 后，插件会校准
 当前入口可达模块，同时继续保留可复用的 Translation Memory。Vite 配置、插件、extractor
 或 schema 变化后需要重启 Watch 进程。
 

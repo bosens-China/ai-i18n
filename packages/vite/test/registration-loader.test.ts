@@ -14,7 +14,7 @@ test('registration watches Windows dependency paths without loading the dependen
     registration: () => null,
   } as unknown as ProjectState;
   const store = {
-    watchFiles: () => [String.raw`E:\DropRoom\apps\web\i18n\cache.json`],
+    watchFiles: () => [String.raw`E:\DropRoom\apps\web\i18n\translations.json`],
   } as unknown as FileStore;
 
   const load = vi.fn();
@@ -33,7 +33,7 @@ test('registration watches Windows dependency paths without loading the dependen
   expect(addWatchFile.mock.calls.flat()).toEqual([
     String.raw`E:\DropRoom\apps\web\src\page.ts`,
     String.raw`E:\DropRoom\apps\web\src\utils\roomRegistry.ts`,
-    String.raw`E:\DropRoom\apps\web\i18n\cache.json`,
+    String.raw`E:\DropRoom\apps\web\i18n\translations.json`,
   ]);
   expect(load).not.toHaveBeenCalled();
 });

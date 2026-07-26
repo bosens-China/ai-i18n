@@ -5,11 +5,13 @@ import type { Translator } from '@ai-i18n/core';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { build } from 'vite';
 import { aiI18n } from '../src';
+import { FileStore } from '../src/file-store';
 import { buildOutputItems } from './build-output';
 
 const tempDirs: string[] = [];
 
 afterEach(async () => {
+  vi.restoreAllMocks();
   await Promise.all(
     tempDirs
       .splice(0)
@@ -45,6 +47,7 @@ describe('@ai-i18n/vite provider build', () => {
         value: request.source === '首页' ? 'Home' : 'Lazy',
       })),
     );
+    const sync = vi.spyOn(FileStore.prototype, 'sync');
     const output = await build({
       root,
       configFile: false,
@@ -86,12 +89,15 @@ describe('@ai-i18n/vite provider build', () => {
     expect(code).toContain('Home');
     expect(code).toContain('Lazy');
     expect(translator).toHaveBeenCalled();
+    expect(sync).toHaveBeenCalledTimes(1);
     expect(
       chunks.some((chunk) =>
         chunk.map?.sources.some((source) => source.endsWith('/src/main.ts')),
       ),
     ).toBe(true);
-    expect(await readJson(path.join(root, 'i18n/cache.json'))).toMatchObject({
+    expect(
+      await readJson(path.join(root, 'i18n/translations.json')),
+    ).toMatchObject({
       messages: {
         首页: { translations: { 'en-US': 'Home' } },
         懒加载: { translations: { 'en-US': 'Lazy' } },

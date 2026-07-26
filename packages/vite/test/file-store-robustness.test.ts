@@ -1,0 +1,123 @@
+import fs from 'node:fs/promises';
+import os from 'node:os';
+import path from 'node:path';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { FileStore } from '../src/file-store';
+import {
+  ProjectState,
+  type NormalizedAiI18nOptions,
+} from '../src/project-state';
+import { removeTempDir } from './temp-dir';
+
+const tempDirs: string[] = [];
+const options: NormalizedAiI18nOptions = {
+  sourceLang: 'zh-CN',
+  defaultLang: 'en-US',
+  locales: [
+    { value: 'zh-CN', label: '中文' },
+    { value: 'en-US', label: 'English' },
+  ],
+};
+
+afterEach(async () => {
+  vi.restoreAllMocks();
+  await Promise.all(tempDirs.splice(0).map(removeTempDir));
+});
+
+describe('FileStore robustness', () => {
+  it('keeps atomic-write temporary and lock files outside the project', async () => {
+    const { root, state, store, source } = await setup();
+    const code = "import { t } from 'virtual:ai-i18n'; t('保存')";
+    await fs.writeFile(source, code);
+    state.update(code, source);
+
+    await expect(store.sync(state.snapshot())).resolves.toBeDefined();
+    expect((await fs.readdir(path.join(root, 'i18n'))).sort()).toEqual([
+      'extracted',
+      'locales',
+      'overrides.json',
+      'translations.json',
+    ]);
+  });
+
+  it('skips an extracted file that disappears after directory listing', async () => {
+    const { root, state, store, source } = await setup();
+    const code = "import { t } from 'virtual:ai-i18n'; t('保存')";
+    await fs.writeFile(source, code);
+    state.update(code, source);
+    await store.sync(state.snapshot());
+    const extractedPath = path.join(root, 'i18n/extracted/src_main.ts.json');
+    const originalReadFile = fs.readFile.bind(fs);
+    vi.spyOn(fs, 'readFile').mockImplementation((file, readOptions) => {
+      if (path.resolve(String(file)) === extractedPath) {
+        return Promise.reject(
+          Object.assign(new Error('gone'), { code: 'ENOENT' }),
+        );
+      }
+      return originalReadFile(file, readOptions);
+    });
+    const warnings: string[] = [];
+    const readingStore = createStore(root, warnings);
+
+    await expect(readingStore.load()).resolves.toBeDefined();
+    expect(warnings).toEqual([
+      expect.stringContaining('disappeared while reading'),
+    ]);
+  });
+
+  it('keeps source structure when an externally edited extracted file is stale', async () => {
+    const warnings: string[] = [];
+    const { root, state, source } = await setup();
+    const store = createStore(root, warnings);
+    const code = `import { t } from 'virtual:ai-i18n';
+t('一'); t('二'); t('三'); t('四'); t('五');`;
+    await fs.writeFile(source, code);
+    state.update(code, source);
+    await store.sync(state.snapshot());
+    const extractedPath = path.join(root, 'i18n/extracted/src_main.ts.json');
+    const extracted = await readJson<{ messages: unknown[] }>(extractedPath);
+    extracted.messages = extracted.messages.slice(0, 1);
+    await fs.writeFile(
+      extractedPath,
+      `${JSON.stringify(extracted, null, 2)}\n`,
+    );
+
+    await store.sync(state.snapshot(), {
+      preferredSources: ['src/main.ts'],
+    });
+
+    expect(
+      (await readJson<{ messages: unknown[] }>(extractedPath)).messages,
+    ).toHaveLength(5);
+    expect(warnings).toEqual([
+      expect.stringContaining('stale message structure'),
+    ]);
+  });
+});
+
+async function setup() {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'ai-i18n-files-'));
+  tempDirs.push(root);
+  await fs.mkdir(path.join(root, 'src'));
+  return {
+    root,
+    source: path.join(root, 'src/main.ts'),
+    state: new ProjectState(root, options),
+    store: createStore(root),
+  };
+}
+
+function createStore(root: string, warnings?: string[]): FileStore {
+  return new FileStore({
+    root,
+    sourceLang: options.sourceLang,
+    locales: options.locales,
+    ...(warnings
+      ? { onWarning: (message: string) => warnings.push(message) }
+      : {}),
+  });
+}
+
+async function readJson<T = unknown>(file: string): Promise<T> {
+  return JSON.parse(await fs.readFile(file, 'utf8')) as T;
+}

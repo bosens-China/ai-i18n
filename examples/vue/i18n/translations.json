@@ -71,5 +71,6 @@
       }
     }
   },
-  "version": 2
+  "revision": 0,
+  "version": 1
 }

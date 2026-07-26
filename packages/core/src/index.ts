@@ -1,25 +1,27 @@
 export {
-  MESSAGE_ID_VERSION,
   createMessageId,
-  escapeMessageIdPart,
   normalizeComment,
-  parseMessageId,
+  translationComment,
 } from './message-id.js';
+export type { TranslationOptions } from './message-id.js';
 export {
   AiI18nSchemaError,
   TranslationConflictError,
   mergeCacheMessages,
-  parseCacheFile,
   parseExtractedFile,
   parseLocaleFile,
+  parseTranslationOverridesFile,
+  parseTranslationMemoryFile,
 } from './schema.js';
 export type {
-  CacheFileV2,
   CacheMessage,
-  ExtractedFileV1,
+  ExtractedFile,
   ExtractedMessage,
   LangOption,
   LocaleFileV1,
+  TranslationMemoryFile,
+  TranslationOverrideMessage,
+  TranslationOverridesFile,
   TranslationValue,
 } from './schema.js';
 export { createI18nRuntime } from './runtime.js';
@@ -32,6 +34,7 @@ export type {
   ModuleMessages,
   Translate,
 } from './runtime.js';
+export { resolveTranslationOverride } from './translation-override.js';
 export {
   createTemplateMessage,
   escapeTemplateLiteral,

@@ -1,19 +1,22 @@
 import path from 'node:path';
 import {
   hasSameTemplateTokens,
-  mergeCacheMessages,
-  parseCacheFile,
-  parseExtractedFile,
-  parseMessageId,
-  type CacheMessage,
-  type ExtractedFileV1,
+  resolveTranslationOverride,
 } from '@ai-i18n/core';
+import {
+  transactTranslationOverrides,
+  transactTranslationMemory,
+} from '@ai-i18n/core/translation-memory';
 import { paginate, type Page } from './pagination.js';
 import {
-  listJsonFiles,
-  readJsonRequired,
-  resolveI18nDirectory,
-  writeJsonAtomic,
+  cacheMessage,
+  collectOccurrences,
+  effectiveTranslations,
+  filterTranslations,
+  findExtracted,
+  loadProject,
+  summarizeFile,
+  validateLocale,
 } from './project-files.js';
 
 const TRANSLATION_CHARACTER_LIMIT = 25_000;
@@ -61,6 +64,8 @@ export interface TranslationWrite {
 export interface WriteTranslationsInput {
   i18n_directory: string;
   file: string;
+  mode?: 'fill' | 'review';
+  review_scope?: 'default' | 'message';
   translations: readonly TranslationWrite[];
 }
 
@@ -70,25 +75,12 @@ export interface WriteTranslationsResult {
   unchanged_count: number;
 }
 
-interface LoadedExtracted {
-  path: string;
-  value: ExtractedFileV1;
-}
-
-interface LoadedProject {
-  extracted: LoadedExtracted[];
-  messages: Record<string, CacheMessage>;
-  locales: Set<string>;
-}
-
 export class AiI18nProjectService {
-  private writeQueue = Promise.resolve();
-
   async listFiles(input: ListFilesInput): Promise<Page<TranslationFileItem>> {
-    const project = await this.load(input.i18n_directory);
+    const project = await loadProject(input.i18n_directory);
     validateLocale(project, input.locale);
     const items = project.extracted
-      .map(({ value }) => summarizeFile(value, project.messages, input.locale))
+      .map(({ value }) => summarizeFile(value, project, input.locale))
       .filter((item) => item.missing_count > 0)
       .sort((left, right) => left.file.localeCompare(right.file));
     return paginate(items, (item) => item.file, input.limit, input.cursor);
@@ -97,7 +89,7 @@ export class AiI18nProjectService {
   async listTranslations(
     input: ListTranslationsInput,
   ): Promise<Page<TranslationItem>> {
-    const project = await this.load(input.i18n_directory);
+    const project = await loadProject(input.i18n_directory);
     validateLocale(project, input.locale);
     const selected = input.file
       ? [findExtracted(project, input.file)]
@@ -110,21 +102,19 @@ export class AiI18nProjectService {
     );
     const items = [...messageIds]
       .map((messageId) => {
-        const message = project.messages[messageId]!;
         const matching = occurrences.get(messageId)!;
         const selectedOccurrence = input.file
           ? matching.find((item) => item.file === input.file)!
           : matching[0]!;
+        const message = cacheMessage(project, selectedOccurrence);
         const translations = filterTranslations(
-          message.translations,
+          effectiveTranslations(project, selectedOccurrence),
           input.locale,
         );
-        const parsedId = parseMessageId(messageId);
-        const comment =
-          selectedOccurrence.comment ?? message.comment ?? parsedId.comment;
+        const comment = selectedOccurrence.comment ?? message.comment;
         return {
           message_id: messageId,
-          source: parsedId.source,
+          source: selectedOccurrence.source,
           ...(comment ? { comment } : {}),
           translations,
           missing_locales: Object.entries(translations)
@@ -152,227 +142,139 @@ export class AiI18nProjectService {
   writeTranslations(
     input: WriteTranslationsInput,
   ): Promise<WriteTranslationsResult> {
-    const task = this.writeQueue.then(
-      () => this.applyTranslations(input),
-      () => this.applyTranslations(input),
-    );
-    this.writeQueue = task.then(
-      () => undefined,
-      () => undefined,
-    );
-    return task;
+    return this.applyTranslations(input);
   }
 
   private async applyTranslations(
     input: WriteTranslationsInput,
   ): Promise<WriteTranslationsResult> {
-    const project = await this.load(input.i18n_directory);
+    const project = await loadProject(input.i18n_directory);
     const extracted = findExtracted(project, input.file);
     const updates = new Set<string>();
-    let unchangedCount = 0;
 
     for (const update of input.translations) {
-      const updateKey = `${update.message_id}\0${update.locale}`;
-      if (updates.has(updateKey)) {
-        throw new Error(
-          `[ai-i18n/mcp] duplicate translation "${update.message_id}" / "${update.locale}"`,
-        );
-      }
-      updates.add(updateKey);
       const local = extracted.value.messages.find(
         (message) => message.id === update.message_id,
       );
       if (!local) {
         throw new Error(
-          `[ai-i18n/mcp] message "${update.message_id}" does not belong to "${input.file}"`,
+          `[ai-i18n/mcp] message "${update.message_id}" does not belong to "${input.file}"; run Vite Dev/Build, list the file again, and copy message_id exactly`,
         );
       }
-      const effective = project.messages[update.message_id]!;
+      const targetId =
+        input.mode !== 'review'
+          ? local.id
+          : input.review_scope === 'message'
+            ? local.id
+            : local.source;
+      const updateKey = `${targetId}\0${update.locale}`;
+      if (updates.has(updateKey)) {
+        throw new Error(
+          `[ai-i18n/mcp] duplicate translation target "${targetId}" / "${update.locale}"`,
+        );
+      }
+      updates.add(updateKey);
+      if (!hasSameTemplateTokens(local.source, update.value)) {
+        throw new Error(
+          `[ai-i18n/mcp] translation changed template tokens for message "${update.message_id}"`,
+        );
+      }
+      const effective = cacheMessage(project, local);
       if (!(update.locale in effective.translations)) {
         throw new Error(
           `[ai-i18n/mcp] unknown locale "${update.locale}" for message "${update.message_id}"`,
         );
       }
       if (
-        !hasSameTemplateTokens(
-          parseMessageId(update.message_id).source,
-          update.value,
-        )
+        input.mode === 'review' &&
+        input.review_scope === 'message' &&
+        local.id === local.source
       ) {
         throw new Error(
-          `[ai-i18n/mcp] translation changed template tokens for message "${update.message_id}"`,
-        );
-      }
-      const current = effective.translations[update.locale];
-      if (current !== null) {
-        if (current === update.value) {
-          unchangedCount += 1;
-          continue;
-        }
-        throw new Error(
-          `[ai-i18n/mcp] refusing to overwrite "${update.message_id}" / "${update.locale}"; current value is non-null`,
+          `[ai-i18n/mcp] review_scope "message" requires an explicit message id`,
         );
       }
     }
 
-    const applicable = input.translations.filter((update) => {
-      return (
-        project.messages[update.message_id]!.translations[update.locale] ===
-        null
+    let appliedCount = 0;
+    let unchangedCount = 0;
+    if (input.mode === 'review') {
+      await transactTranslationOverrides(
+        path.join(project.directory, 'overrides.json'),
+        (overrides) => {
+          for (const update of input.translations) {
+            const local = extracted.value.messages.find(
+              (message) => message.id === update.message_id,
+            )!;
+            const message = (overrides.messages[local.source] ??= {});
+            const translations =
+              input.review_scope === 'message'
+                ? ((message.byId ??= {})[local.id] ??= {})
+                : (message.default ??= {});
+            if (translations[update.locale] === update.value) {
+              unchangedCount += 1;
+            } else {
+              translations[update.locale] = update.value;
+              appliedCount += 1;
+            }
+          }
+        },
       );
-    });
-    for (const update of applicable) {
-      const message = extracted.value.messages.find(
-        (item) => item.id === update.message_id,
-      )!;
-      message.translations[update.locale] = update.value;
+    } else {
+      await transactTranslationMemory(
+        path.join(project.directory, 'translations.json'),
+        (memory) => {
+          for (const update of input.translations) {
+            const local = extracted.value.messages.find(
+              (message) => message.id === update.message_id,
+            )!;
+            const message = memory.messages[local.id];
+            if (!message) {
+              throw new Error(
+                `[ai-i18n/mcp] message "${local.id}" is missing from translations.json; run Vite Dev/Build and retry`,
+              );
+            }
+            const current =
+              resolveTranslationOverride(
+                project.overrides,
+                local,
+                update.locale,
+              ) ??
+              message.translations[update.locale] ??
+              null;
+            if (current !== null && current !== update.value) {
+              throw new Error(
+                `[ai-i18n/mcp] refusing to overwrite "${update.message_id}" / "${update.locale}"; current value is non-null`,
+              );
+            }
+          }
+          for (const update of input.translations) {
+            const local = extracted.value.messages.find(
+              (message) => message.id === update.message_id,
+            )!;
+            const translations = memory.messages[local.id]!.translations;
+            if (
+              (resolveTranslationOverride(
+                project.overrides,
+                local,
+                update.locale,
+              ) ??
+                translations[update.locale] ??
+                null) === update.value
+            ) {
+              unchangedCount += 1;
+            } else {
+              translations[update.locale] = update.value;
+              appliedCount += 1;
+            }
+          }
+        },
+      );
     }
-    if (applicable.length)
-      await writeJsonAtomic(extracted.path, extracted.value);
     return {
       file: input.file,
-      applied_count: applicable.length,
+      applied_count: appliedCount,
       unchanged_count: unchangedCount,
     };
   }
-
-  private async load(i18nDirectory: string): Promise<LoadedProject> {
-    const directory = await resolveI18nDirectory(i18nDirectory);
-    const cache = parseCacheFile(
-      await readJsonRequired(path.join(directory, 'cache.json')),
-    );
-    const extractedPaths = await listJsonFiles(
-      path.join(directory, 'extracted'),
-    );
-    const extracted = await Promise.all(
-      extractedPaths.map(async (file) => ({
-        path: file,
-        value: parseExtractedFile(await readJsonRequired(file)),
-      })),
-    );
-    const sources = new Set<string>();
-    let messages = cache.messages;
-    for (const item of extracted) {
-      if (sources.has(item.value.source)) {
-        throw new Error(
-          `[ai-i18n/mcp] duplicate extracted source "${item.value.source}"`,
-        );
-      }
-      sources.add(item.value.source);
-      messages = mergeCacheMessages(
-        messages,
-        messagesFromExtracted(item.value),
-      );
-    }
-    return {
-      extracted,
-      messages,
-      locales: new Set(
-        Object.values(messages).flatMap((message) =>
-          Object.keys(message.translations),
-        ),
-      ),
-    };
-  }
-}
-
-function messagesFromExtracted(
-  file: ExtractedFileV1,
-): Record<string, CacheMessage> {
-  return Object.fromEntries(
-    file.messages.map((message) => [
-      message.id,
-      {
-        sourceLang: '',
-        ...(message.comment ? { comment: message.comment } : {}),
-        translations: message.translations,
-      },
-    ]),
-  );
-}
-
-function summarizeFile(
-  file: ExtractedFileV1,
-  messages: Record<string, CacheMessage>,
-  locale?: string,
-): TranslationFileItem {
-  const missingByLocale: Record<string, number> = {};
-  for (const extractedMessage of file.messages) {
-    const translations = filterTranslations(
-      messages[extractedMessage.id]!.translations,
-      locale,
-    );
-    for (const [targetLocale, value] of Object.entries(translations)) {
-      if (value === null)
-        missingByLocale[targetLocale] =
-          (missingByLocale[targetLocale] ?? 0) + 1;
-    }
-  }
-  return {
-    file: file.source,
-    message_count: file.messages.length,
-    missing_count: Object.values(missingByLocale).reduce(
-      (sum, count) => sum + count,
-      0,
-    ),
-    missing_by_locale: missingByLocale,
-  };
-}
-
-function filterTranslations(
-  translations: Record<string, string | null>,
-  locale?: string,
-): Record<string, string | null> {
-  return locale ? { [locale]: translations[locale]! } : { ...translations };
-}
-
-function validateLocale(project: LoadedProject, locale?: string): void {
-  if (locale && project.locales.size > 0 && !project.locales.has(locale)) {
-    throw new Error(`[ai-i18n/mcp] unknown target locale "${locale}"`);
-  }
-}
-
-function findExtracted(
-  project: LoadedProject,
-  source: string,
-): LoadedExtracted {
-  const extracted = project.extracted.find(
-    (item) => item.value.source === source,
-  );
-  if (!extracted)
-    throw new Error(`[ai-i18n/mcp] extracted source not found: "${source}"`);
-  return extracted;
-}
-
-function collectOccurrences(files: readonly LoadedExtracted[]): Map<
-  string,
-  Array<{
-    file: string;
-    comment?: string;
-    locations: Array<{ line: number; column: number }>;
-  }>
-> {
-  const occurrences = new Map<
-    string,
-    Array<{
-      file: string;
-      comment?: string;
-      locations: Array<{ line: number; column: number }>;
-    }>
-  >();
-  for (const { value } of files) {
-    for (const message of value.messages) {
-      const items = occurrences.get(message.id) ?? [];
-      items.push({
-        file: value.source,
-        ...(message.comment ? { comment: message.comment } : {}),
-        locations: message.locations,
-      });
-      occurrences.set(message.id, items);
-    }
-  }
-  for (const items of occurrences.values()) {
-    items.sort((left, right) => left.file.localeCompare(right.file));
-  }
-  return occurrences;
 }

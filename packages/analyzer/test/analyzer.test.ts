@@ -34,6 +34,62 @@ i18n['t']('计算成员')`,
     });
   });
 
+  it('extracts static options and keeps string comments compatible', () => {
+    const module = analyzeModule(
+      `import { t } from 'virtual:ai-i18n'
+const options = { id: ' checkout.submit ', comment: '结算按钮' }
+t('提交', options)
+t('保存', '工具栏按钮')`,
+      'View.tsx',
+    );
+
+    expect(extractMessages(module)).toMatchObject({
+      messages: [
+        {
+          id: 'checkout.submit',
+          source: '提交',
+          comment: '结算按钮',
+        },
+        { id: '保存', source: '保存', comment: '工具栏按钮' },
+      ],
+      warnings: [],
+      pending: false,
+    });
+  });
+
+  it('reports invalid and conflicting explicit IDs', () => {
+    const module = analyzeModule(
+      `import { t } from 'virtual:ai-i18n'
+t('无效', { id: ' ' })
+t('提交', { id: 'action', comment: '结算' })
+t('保存', { id: 'action', comment: '工具栏' })`,
+      'View.tsx',
+    );
+
+    expect(extractMessages(module)).toMatchObject({
+      messages: [{ id: 'action', source: '提交', comment: '结算' }],
+      warnings: [
+        { code: 'invalid-message-id', line: 2 },
+        { code: 'conflicting-message-id', line: 4 },
+      ],
+    });
+  });
+
+  it('keeps unresolved option fields pending', () => {
+    const module = analyzeModule(
+      `import { id } from './options'
+import { t } from 'virtual:ai-i18n'
+t('提交', { id })`,
+      'View.tsx',
+    );
+
+    expect(extractMessages(module)).toMatchObject({
+      messages: [],
+      warnings: [{ code: 'unresolved-argument', line: 3 }],
+      pending: true,
+    });
+  });
+
   it('returns a shared diagnostic kind for dynamic arguments', () => {
     const module = analyzeModule(
       `const { t } = useI18n()

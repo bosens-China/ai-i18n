@@ -168,7 +168,7 @@ aiI18n({
 Capacity control is opt-in and only prunes inactive Translation Memory, never messages referenced by
 active extracted files or the current ProjectState; if protected data alone exceeds a limit, Vite
 warns and keeps it instead of dropping it. `maxBytes` measures the UTF-8 bytes of the entire stable
-`cache.json` serialization, not just the pruned messages — size it against the whole file.
+`translations.json` serialization, not just the pruned messages — size it against the whole file.
 `cleanup.orphanMessages: true` deletes all inactive messages first, ahead of these limits;
 `cleanup.missingSourceFiles` separately decides whether missing source records still protect their
 messages. The exact pruning order (a rare debugging detail): see `api/vite.md`'s cache section.
@@ -176,25 +176,27 @@ messages. The exact pruning order (a rare debugging detail): see `api/vite.md`'s
 ## Generation behavior
 
 Vite Dev accumulates browser-requested modules; visit lazy routes before judging coverage. Vite Build
-starts a fresh state and follows reachable imports. Both modes reconcile stable `cache.json`,
-`extracted/**`, and `locales/**`.
+starts a fresh state and follows reachable imports. Both modes reconcile stable `translations.json`,
+`overrides.json`, `extracted/**`, and `locales/**`.
 
-`cache.json` uses schema v2 and contains only `version` plus messages keyed by readable message ID.
-Each message stores its `sourceLang`, optional comment, and target translations. `comment` never
-affects the message ID; a new ID first inherits translations from any historical entry sharing the
-same parsed source (this is what migrates legacy `source#comment` IDs once comment changes). Only
-when no same-source entry exists, and the source language itself changed, does ai-i18n uniquely
-reverse-match the new source against a historical entry whose translation for the new source
-language equals it; comment does not need to match for this reverse match. Extracted files are
-flat (for example, `src_components_App.tsx.json`), and locale files are generated only for
+`translations.json` uses schema v1 and contains `version`, monotonic `revision`, and messages keyed
+by readable message ID. Each message stores its `sourceLang`, optional comment, and target
+translations. Provider/fill writes target this file; `overrides.json` stores human review values.
+Extracted v1 stores only source structure, and locales are derived. `comment` never affects
+the default source-based message ID. Use static `{ id, comment? }` only when one source needs a
+distinct semantic translation. When the source language changes, ai-i18n can uniquely reverse-match the new source
+against a historical entry whose translation for the new source language equals it. Extracted files
+are flat (for example, `src_components_App.tsx.json`), and locale files are generated only for
 non-source targets.
 
 `vite build --watch` creates ProjectState on the first build and reuses it on later rebuilds.
 Unchanged source fingerprints reuse their AST; changed static dependencies refresh necessary reverse
-dependents. Edits to extracted or target locale files update translations and registration without
-parsing unchanged source. Deleted, renamed, or newly unreachable modules leave the active graph while
-Translation Memory remains available. Restart the Watch process after Vite config, plugin, extractor,
-or schema changes.
+dependents. Edits to `translations.json` or `overrides.json` update translations and registration
+without parsing unchanged source. Effective precedence is exact explicit-ID override, source default
+override, then AI memory. Edits to extracted or target locale files are replaced from source
+structure and the two translation inputs. Deleted, renamed, or newly unreachable modules leave the
+active graph while Translation Memory remains available. Restart the Watch process after Vite config,
+plugin, extractor, or schema changes.
 
 SSR extraction, registration, and runtime injection are skipped with a warning, but compiler-macro
 erasure still runs. The per-build reuse table (what exactly is re-parsed vs. reused) lives in

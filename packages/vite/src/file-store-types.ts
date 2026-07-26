@@ -14,6 +14,5 @@ export interface FileStoreOptions {
 
 export interface FileStoreLoadOptions {
   preferredSources?: readonly string[];
-  preferredLocales?: readonly string[];
   complete?: boolean;
 }

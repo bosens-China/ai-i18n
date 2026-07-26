@@ -126,13 +126,20 @@ export function createAiI18nMcpServer(): McpServer {
   server.registerTool(
     'ai_i18n_write_translations',
     {
-      title: 'Fill missing ai-i18n translations',
+      title: 'Write ai-i18n translations',
       description:
-        'Atomically fill null translations in one extracted source file. The tool never overwrites a different non-null value. Run Vite Dev or Build to reconcile cache, duplicate extracted files, and locales.',
+        'Atomically write translations for one extracted source file. mode fill writes only AI translation memory and never overwrites an effective human value. mode review writes overrides.json; review_scope defaults to default (all occurrences of the source) and message targets an explicit message id.',
       inputSchema: z
         .object({
           i18n_directory: DirectorySchema,
           file: z.string().min(1).max(4_096),
+          mode: z.enum(['fill', 'review']).default('fill'),
+          review_scope: z
+            .enum(['default', 'message'])
+            .default('default')
+            .describe(
+              'Human review scope. default affects every occurrence of the source; message requires an explicit message id.',
+            ),
           translations: z
             .array(
               z
@@ -154,7 +161,7 @@ export function createAiI18nMcpServer(): McpServer {
       }),
       annotations: {
         readOnlyHint: false,
-        destructiveHint: false,
+        destructiveHint: true,
         idempotentHint: true,
         openWorldHint: false,
       },

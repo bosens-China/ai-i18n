@@ -85,15 +85,24 @@ claude mcp add --transport stdio --scope local ai-i18n -- npx -y @ai-i18n/mcp@al
 
 接入后，Agent 会获得 `ai_i18n_discover`、列表与写入工具。注册命令不需要项目路径；
 `ai_i18n_discover` 优先读取客户端暴露的 workspace roots，并返回可直接传给其他工具的绝对
-`i18n_directory`。不支持 roots 的客户端可让 Agent 传当前工作目录。
+`i18n_directory`。discover 从 `@ai-i18n/mcp@1.0.0-alpha.4` 起提供；如果工具列表只有三个
+翻译工具，请升级并重启 MCP 进程。暂时无法升级时，可从目标应用的 Vite root 与
+`aiI18n({ directory })` 推导最终绝对目录。不支持 roots 的客户端可让 Agent 传当前工作目录。
 
 所有列表工具同时返回完整 JSON 文本与 MCP `structuredContent`。即使客户端不展示结构化
 字段，Agent 也能读取明细；结果较大时继续按 `next_cursor` 分页。
 
 **安全运作边界：**
 
-1. **只能修改 `extracted` 目录**：MCP 只读写源文件，不会覆盖不同的非空翻译，也不会直接修改 `cache` 或 `locales` 文件。
-2. **自动校准与同步**：写入后，如果 Vite Dev 正在运行，它会自动同步到内存与派生文件；否则，在下一次 `vite dev` 或 `vite build` 时完成同步。
+1. **分开 AI 与人工结果**：`mode: "fill"` 只写 `translations.json`；
+   `mode: "review"` 只写 `overrides.json`。MCP 不修改 extracted 或 locales。
+2. **锁内重读与字段更新**：每批写入都取得跨进程锁并重读最新文件。普通补译只填充
+   `null`；人工确认修订时可使用 `mode: "review"`。review 默认影响同一原文的全部调用，
+   `review_scope: "message"` 只影响带显式 ID 的目标消息。
+3. **自动校准与同步**：Vite Dev 运行时会自动重建 locales；否则在下一次
+   `vite dev` 或 `vite build` 时完成。
+4. **写入失败先重读**：message 不属于文件时，先运行 Vite Dev/Build，再重新 list 并原样复制
+   `message_id`；不要用 `source` 字段代替。
 
 ## 文档索引 (llms.txt)
 
@@ -117,6 +126,7 @@ Agent 收到这个地址后，能自动抓取结构化、干净的教程原文�
 1. 先调用 ai_i18n_discover；仅在返回多个候选时再读取 Vite 配置确认目标目录；
 2. 使用返回的 i18n_directory 列出所有仍有缺失翻译的文件；
 3. 按原文语义和项目现有术语补齐目标语言；
-4. 只通过 ai_i18n_write_translations 写入 null 值，不覆盖已有翻译；
+4. 普通补译只写入 null 值；只有我明确要求审校修订时才使用 mode: review，并确认是影响
+   同一原文的全部调用，还是用 review_scope: message 只修改一个显式 ID；
 5. 再次查询并报告剩余缺失项。`}
 />

@@ -12,6 +12,7 @@ interface BuildWatchDependencies {
 export function createBuildWatchState(dependencies: BuildWatchDependencies) {
   const deletedSources = new Set<string>();
   const managedChanges = new Set<string>();
+  let fullyReconciled = false;
 
   return {
     async watchChange(
@@ -32,11 +33,17 @@ export function createBuildWatchState(dependencies: BuildWatchDependencies) {
 
     async buildStart(watchMode: boolean): Promise<void> {
       await dependencies.ready();
+      fullyReconciled = false;
       const project = dependencies.state();
       const store = dependencies.store();
       if (!watchMode) {
         project.reset();
-        project.hydrateCache(await store.load());
+        const [cache, overrides] = await Promise.all([
+          store.load(),
+          store.loadOverrides(),
+        ]);
+        project.hydrateCache(cache);
+        project.hydrateOverrides(overrides);
         return;
       }
 
@@ -49,10 +56,12 @@ export function createBuildWatchState(dependencies: BuildWatchDependencies) {
       const affected = deleted.flatMap((file) => project.remove(file));
       const loadOptions: FileStoreLoadOptions = store.loadOptions(changed);
       if (changed.length) {
-        affected.push(...project.hydrateCache(await store.load(loadOptions)));
+        affected.push(...project.hydrateCache(await store.load()));
+        affected.push(...project.hydrateOverrides(await store.loadOverrides()));
       }
       const cache = await store.sync(project.snapshot(), loadOptions);
       affected.push(...project.hydrateCache(cache));
+      affected.push(...project.hydrateOverrides(await store.loadOverrides()));
       dependencies.requestMissingTranslations(affected);
     },
 
@@ -62,12 +71,14 @@ export function createBuildWatchState(dependencies: BuildWatchDependencies) {
     ): Promise<void> {
       const project = dependencies.state();
       const removed = project.retain(moduleIds);
-      if (!removed.length && !complete) return;
+      if (!removed.length && (!complete || fullyReconciled)) return;
       // Watch 状态可以跨轮次复用，但活动模块必须以当前 Vite 图为准。
       const cache = await dependencies
         .store()
         .sync(project.snapshot(), complete ? { complete: true } : {});
       project.hydrateCache(cache);
+      project.hydrateOverrides(await dependencies.store().loadOverrides());
+      if (complete) fullyReconciled = true;
     },
   };
 }

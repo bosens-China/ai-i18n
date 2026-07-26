@@ -1,6 +1,8 @@
 # Phase 3 PRD：持久化协议与 React 响应式修复
 
 > 状态：Implemented，已完成外部验收
+>
+> 当前持久化协议已由 [Phase 7](../phase-7/PRD.md) 升级；本文件保留 Phase 3 历史决策。
 
 ## 1. 背景
 

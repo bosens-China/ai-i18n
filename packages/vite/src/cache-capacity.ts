@@ -1,5 +1,5 @@
 import { Buffer } from 'node:buffer';
-import type { CacheFileV2 } from '@ai-i18n/core';
+import type { TranslationMemoryFile } from '@ai-i18n/core';
 import type { AiI18nCacheOptions } from './options.js';
 import { stableJson } from './json-files.js';
 
@@ -10,7 +10,7 @@ interface CacheUsage {
 }
 
 export function enforceCacheCapacity(
-  cache: CacheFileV2,
+  cache: TranslationMemoryFile,
   activeMessageIds: Iterable<string>,
   options: AiI18nCacheOptions | undefined,
   onWarning?: (message: string) => void,
@@ -39,10 +39,10 @@ export function enforceCacheCapacity(
 }
 
 function withoutMessages(
-  cache: CacheFileV2,
+  cache: TranslationMemoryFile,
   candidates: readonly string[],
   count: number,
-): CacheFileV2 {
+): TranslationMemoryFile {
   const removed = new Set(candidates.slice(0, count));
   return {
     ...cache,
@@ -55,7 +55,7 @@ function withoutMessages(
 }
 
 function cacheUsage(
-  cache: CacheFileV2,
+  cache: TranslationMemoryFile,
   options: AiI18nCacheOptions,
 ): CacheUsage {
   const messages = Object.keys(cache.messages).length;

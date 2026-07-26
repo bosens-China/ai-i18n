@@ -66,12 +66,16 @@ export function createHtmlTransformHandler(
       result.messages,
     );
     if (!update) return withTags(result.code, hintTags);
-    let cache = await dependencies.store().sync(project.snapshot());
-    project.hydrateCache(cache);
+    if (config?.command !== 'build') {
+      const cache = await dependencies.store().sync(project.snapshot());
+      project.hydrateCache(cache);
+      project.hydrateOverrides(await dependencies.store().loadOverrides());
+    }
     dependencies.requestMissingTranslations([update.moduleId]);
-    if (config?.command === 'build') await dependencies.flush();
-    cache = await dependencies.store().sync(project.snapshot());
-    project.hydrateCache(cache);
+    if (config?.command === 'build') {
+      await dependencies.flush();
+      project.hydrateOverrides(await dependencies.store().loadOverrides());
+    }
 
     const registrationLocale = dependencies.options.loading
       ? dependencies.options.sourceLang

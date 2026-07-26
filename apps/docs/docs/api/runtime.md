@@ -47,27 +47,38 @@ t(messages.states[index]);
 插件生成的 `ai-i18n.d.ts` 会声明宏的全局 TypeScript 类型。局部声明同名
 `defineI18nMessages` 时，局部 binding 优先，不会被当作宏处理。
 
-## `t(source, comment?)` 与 `` t`...` ``
+## `t(source, commentOrOptions?)` 与 `` t`...` ``
 
 ```ts
-function t(source: string, comment?: string): string;
+interface TranslationOptions {
+  id?: string;
+  comment?: string;
+}
+
+function t(
+  source: string,
+  commentOrOptions?: string | TranslationOptions,
+): string;
 function t(strings: TemplateStringsArray, ...values: unknown[]): string;
 ```
 
-| 参数      | 类型     | 必填 | 默认值      | 作用                             |
-| --------- | -------- | ---- | ----------- | -------------------------------- |
-| `source`  | `string` | 是   | 无          | 源文案，也是翻译缺失时的回退值。 |
-| `comment` | `string` | 否   | `undefined` | 提供给翻译模型的语境提示。       |
+| 参数               | 类型                           | 必填 | 默认值      | 作用                                       |
+| ------------------ | ------------------------------ | ---- | ----------- | ------------------------------------------ |
+| `source`           | `string`                       | 是   | 无          | 源文案，也是翻译缺失时的回退值。           |
+| `commentOrOptions` | `string \| TranslationOptions` | 否   | `undefined` | 字符串表示注释；对象可指定稳定 ID 与注释。 |
 
-日常文案只需 `t(source)`。`comment` 仅在 AI 翻译需要额外语境时再补上；不要给普通 UI
-文案凭空添加注释。两个参数都必须能在构建期静态求值。message ID 只由 `source` 决定，
-因此修改注释不会使翻译失效；同一 source 的不同调用共享翻译。
+日常文案只需 `t(source)`。第二个字符串参数继续表示翻译注释；需要显式 ID 时再传对象。
+参数必须能在构建期静态求值。
 
 ```ts
 t('保存');
 t('保存', '按钮');
-t('保存', '设置弹窗按钮');
+t('提交', { id: 'git.commit', comment: '创建 Git 提交' });
 ```
+
+未指定 `id` 时，message ID 就是 `source`，同一 source 的调用共享译文。显式 ID 用来拆分
+同一句原文的不同语义，例如普通表单中的“提交”和 Git 场景中的“提交”。ID 会去除首尾空白，
+且不能为空；同一 ID 不得指向不同原文。`comment` 只提供给翻译模型，不参与默认 ID。
 
 动态值使用 tagged template。表达式不会交给翻译模型，内部会变成 `{{0}}`、`{{1}}` 等占位符；
 译文可以调整占位符顺序，运行时再填入值：
@@ -91,8 +102,10 @@ function setLang(value: string): Promise<void>;
 localStorage。
 
 :::warning 不要长期保存译后字符串
-`setError(t('请求失败'))` 一类已经写入 state 的字符串不会因后续切换语言自动变化。长期状态
-应保存 source/message 标识，在渲染层调用 `t`；即时 toast 已经显示后保持原语言通常是合理的。
+`setError(t('请求失败'))` 一类已经写入 state、storage、请求体或文件元数据的字符串不会因
+后续切换语言自动变化。持久数据和业务判断应保存稳定的语义 code、序号或 message 标识，
+在展示层调用 `t`。不要用译文做文件匹配、正则解析或稳定 ID；即时 toast 已经显示后保持
+原语言通常是合理的。
 :::
 
 ## `getLang()`

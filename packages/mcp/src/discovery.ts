@@ -1,6 +1,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { parseCacheFile } from '@ai-i18n/core';
+import { parseTranslationMemoryFile } from '@ai-i18n/core';
+import { readTranslationOverrides } from '@ai-i18n/core/translation-memory';
 
 const SKIPPED_DIRECTORIES = new Set([
   '.git',
@@ -63,12 +64,21 @@ async function isProtocolDirectory(
   directory: string,
   entries: ReadonlySet<string>,
 ): Promise<boolean> {
-  if (!entries.has('cache.json') || !entries.has('extracted')) return false;
+  if (
+    !entries.has('translations.json') ||
+    !entries.has('overrides.json') ||
+    !entries.has('extracted')
+  ) {
+    return false;
+  }
   try {
     const extracted = await fs.stat(path.join(directory, 'extracted'));
-    parseCacheFile(
-      JSON.parse(await fs.readFile(path.join(directory, 'cache.json'), 'utf8')),
+    parseTranslationMemoryFile(
+      JSON.parse(
+        await fs.readFile(path.join(directory, 'translations.json'), 'utf8'),
+      ),
     );
+    await readTranslationOverrides(path.join(directory, 'overrides.json'));
     return extracted.isDirectory();
   } catch {
     return false;

@@ -78,9 +78,9 @@ test('fills null values atomically and refuses conflicting overwrites', async ()
     }),
   ).rejects.toThrow('refusing to overwrite');
   const unchanged = JSON.parse(await fs.readFile(extractedPath, 'utf8')) as {
-    messages: Array<{ translations: Record<string, string | null> }>;
+    messages: Array<Record<string, unknown>>;
   };
-  expect(unchanged.messages[0]?.translations['en-US']).toBeNull();
+  expect(unchanged.messages[0]).not.toHaveProperty('translations');
 
   await expect(
     service.writeTranslations({
@@ -97,14 +97,19 @@ test('fills null values atomically and refuses conflicting overwrites', async ()
     unchanged_count: 0,
   });
 
-  const extracted = JSON.parse(await fs.readFile(extractedPath, 'utf8')) as {
-    messages: Array<{
-      id: string;
-      translations: Record<string, string | null>;
-    }>;
+  const memory = JSON.parse(
+    await fs.readFile(path.join(directory, 'translations.json'), 'utf8'),
+  ) as {
+    revision: number;
+    messages: Record<string, { translations: Record<string, string | null> }>;
   };
-  expect(extracted.messages[0]?.translations['en-US']).toBe('Save');
-  expect(extracted.messages[1]?.translations['ja-JP']).toBe('');
+  expect(memory.revision).toBe(1);
+  expect(memory.messages['保存']?.translations['en-US']).toBe('Save');
+  expect(memory.messages['退出']?.translations['ja-JP']).toBe('');
+  const extracted = JSON.parse(await fs.readFile(extractedPath, 'utf8')) as {
+    messages: Array<Record<string, unknown>>;
+  };
+  expect(extracted.messages[0]).not.toHaveProperty('translations');
 
   await expect(
     service.writeTranslations({
@@ -115,20 +120,174 @@ test('fills null values atomically and refuses conflicting overwrites', async ()
   ).rejects.toThrow('refusing to overwrite');
 });
 
+test('writes human review to overrides without replacing AI memory', async () => {
+  const root = await fixture();
+  const directory = path.join(root, 'apps/web/i18n');
+  const service = new AiI18nProjectService();
+
+  await service.writeTranslations({
+    i18n_directory: directory,
+    file: 'src/home.ts',
+    translations: [{ message_id: '保存', locale: 'en-US', value: 'Save' }],
+  });
+  await expect(
+    service.writeTranslations({
+      i18n_directory: directory,
+      file: 'src/home.ts',
+      translations: [{ message_id: '保存', locale: 'en-US', value: 'Keep' }],
+    }),
+  ).rejects.toThrow('refusing to overwrite');
+  await expect(
+    service.writeTranslations({
+      i18n_directory: directory,
+      file: 'src/home.ts',
+      mode: 'review',
+      translations: [{ message_id: '保存', locale: 'en-US', value: 'Keep' }],
+    }),
+  ).resolves.toMatchObject({ applied_count: 1 });
+
+  const memory = JSON.parse(
+    await fs.readFile(path.join(directory, 'translations.json'), 'utf8'),
+  );
+  expect(memory.messages['保存'].translations['en-US']).toBe('Save');
+  const overrides = JSON.parse(
+    await fs.readFile(path.join(directory, 'overrides.json'), 'utf8'),
+  );
+  expect(overrides.messages['保存'].default['en-US']).toBe('Keep');
+});
+
+test('resolves default and explicit-id reviews before AI memory', async () => {
+  const root = await fixture();
+  const directory = path.join(root, 'apps/web/i18n');
+  const extractedPath = path.join(directory, 'extracted/src_home.ts.json');
+  const extracted = JSON.parse(await fs.readFile(extractedPath, 'utf8')) as {
+    messages: Array<Record<string, unknown>>;
+  };
+  extracted.messages.push({
+    id: 'toolbar.save',
+    source: '保存',
+    locations: [{ line: 3, column: 0 }],
+  });
+  await fs.writeFile(extractedPath, JSON.stringify(extracted));
+  const memoryPath = path.join(directory, 'translations.json');
+  const memory = JSON.parse(await fs.readFile(memoryPath, 'utf8'));
+  memory.messages['toolbar.save'] = {
+    sourceLang: 'zh-CN',
+    translations: { 'en-US': null, 'ja-JP': null },
+  };
+  await fs.writeFile(memoryPath, JSON.stringify(memory));
+  const service = new AiI18nProjectService();
+
+  await service.writeTranslations({
+    i18n_directory: directory,
+    file: 'src/home.ts',
+    translations: [
+      { message_id: 'toolbar.save', locale: 'en-US', value: 'Save action' },
+    ],
+  });
+  await service.writeTranslations({
+    i18n_directory: directory,
+    file: 'src/home.ts',
+    mode: 'review',
+    translations: [{ message_id: '保存', locale: 'en-US', value: 'Keep' }],
+  });
+  await service.writeTranslations({
+    i18n_directory: directory,
+    file: 'src/home.ts',
+    mode: 'review',
+    review_scope: 'message',
+    translations: [{ message_id: 'toolbar.save', locale: 'en-US', value: '' }],
+  });
+
+  const listed = await service.listTranslations({
+    i18n_directory: directory,
+    file: 'src/home.ts',
+    missing_only: false,
+    limit: 100,
+  });
+  expect(
+    listed.items.find((message) => message.message_id === '保存')?.translations[
+      'en-US'
+    ],
+  ).toBe('Keep');
+  const scoped = listed.items.find(
+    (message) => message.message_id === 'toolbar.save',
+  );
+  expect(scoped).toMatchObject({
+    source: '保存',
+    translations: { 'en-US': '' },
+  });
+  expect(scoped?.missing_locales).not.toContain('en-US');
+
+  await expect(
+    service.writeTranslations({
+      i18n_directory: directory,
+      file: 'src/home.ts',
+      translations: [
+        { message_id: 'toolbar.save', locale: 'en-US', value: 'Save' },
+      ],
+    }),
+  ).rejects.toThrow('refusing to overwrite');
+  await expect(
+    service.writeTranslations({
+      i18n_directory: directory,
+      file: 'src/home.ts',
+      mode: 'review',
+      review_scope: 'message',
+      translations: [{ message_id: '保存', locale: 'en-US', value: 'Save' }],
+    }),
+  ).rejects.toThrow('requires an explicit message id');
+
+  const overrides = JSON.parse(
+    await fs.readFile(path.join(directory, 'overrides.json'), 'utf8'),
+  );
+  expect(overrides.messages['保存']).toMatchObject({
+    default: { 'en-US': 'Keep' },
+    byId: { 'toolbar.save': { 'en-US': '' } },
+  });
+  expect(
+    JSON.parse(await fs.readFile(memoryPath, 'utf8')).messages['toolbar.save']
+      .translations['en-US'],
+  ).toBe('Save action');
+});
+
+test('rejects one message id assigned to different source text', async () => {
+  const root = await fixture();
+  const directory = path.join(root, 'apps/web/i18n');
+  const extractedPath = path.join(directory, 'extracted/src_home.ts.json');
+  const extracted = JSON.parse(await fs.readFile(extractedPath, 'utf8')) as {
+    messages: Array<Record<string, unknown>>;
+  };
+  extracted.messages.push({
+    id: '保存',
+    source: '提交',
+    locations: [{ line: 3, column: 0 }],
+  });
+  await fs.writeFile(extractedPath, JSON.stringify(extracted));
+
+  await expect(
+    new AiI18nProjectService().listTranslations({
+      i18n_directory: directory,
+      missing_only: false,
+      limit: 100,
+    }),
+  ).rejects.toThrow('message ID "保存" refers to both "保存" and "提交"');
+});
+
 test('preserves template tokens before writing a translation batch', async () => {
   const root = await fixture();
   const directory = path.join(root, 'apps/web/i18n');
   const extractedPath = path.join(directory, 'extracted/src_home.ts.json');
-  const cachePath = path.join(directory, 'cache.json');
+  const memoryPath = path.join(directory, 'translations.json');
   const messageId = '语法 {{=0}}，当前 {{0}}';
-  const cache = JSON.parse(await fs.readFile(cachePath, 'utf8')) as {
+  const memory = JSON.parse(await fs.readFile(memoryPath, 'utf8')) as {
     messages: Record<string, unknown>;
   };
-  cache.messages[messageId] = {
+  memory.messages[messageId] = {
     sourceLang: 'zh-CN',
     translations: { 'en-US': null, 'ja-JP': null },
   };
-  await fs.writeFile(cachePath, JSON.stringify(cache));
+  await fs.writeFile(memoryPath, JSON.stringify(memory));
   const extracted = JSON.parse(await fs.readFile(extractedPath, 'utf8')) as {
     messages: Array<Record<string, unknown>>;
   };
@@ -136,7 +295,6 @@ test('preserves template tokens before writing a translation batch', async () =>
     id: messageId,
     source: messageId,
     locations: [{ line: 3, column: 0 }],
-    translations: { 'en-US': null, 'ja-JP': null },
   });
   await fs.writeFile(extractedPath, JSON.stringify(extracted));
   const service = new AiI18nProjectService();
@@ -156,7 +314,7 @@ test('preserves template tokens before writing a translation batch', async () =>
     }),
   ).rejects.toThrow('changed template tokens');
   expect(
-    JSON.parse(await fs.readFile(extractedPath, 'utf8')).messages[0]
+    JSON.parse(await fs.readFile(memoryPath, 'utf8')).messages['保存']
       .translations['en-US'],
   ).toBeNull();
 
@@ -173,6 +331,62 @@ test('preserves template tokens before writing a translation batch', async () =>
       ],
     }),
   ).resolves.toMatchObject({ applied_count: 1 });
+});
+
+test('serializes concurrent translation-memory updates from separate services', async () => {
+  const root = await fixture();
+  const directory = path.join(root, 'apps/web/i18n');
+  const first = new AiI18nProjectService();
+  const second = new AiI18nProjectService();
+
+  await Promise.all([
+    first.writeTranslations({
+      i18n_directory: directory,
+      file: 'src/home.ts',
+      translations: [{ message_id: '保存', locale: 'en-US', value: 'Save' }],
+    }),
+    second.writeTranslations({
+      i18n_directory: directory,
+      file: 'src/home.ts',
+      translations: [{ message_id: '退出', locale: 'ja-JP', value: '' }],
+    }),
+  ]);
+
+  const memory = JSON.parse(
+    await fs.readFile(path.join(directory, 'translations.json'), 'utf8'),
+  ) as {
+    messages: Record<string, { translations: Record<string, string | null> }>;
+  };
+  expect(memory.messages['保存']?.translations['en-US']).toBe('Save');
+  expect(memory.messages['退出']?.translations['ja-JP']).toBe('');
+});
+
+test('serializes concurrent human reviews from separate services', async () => {
+  const root = await fixture();
+  const directory = path.join(root, 'apps/web/i18n');
+  const first = new AiI18nProjectService();
+  const second = new AiI18nProjectService();
+
+  await Promise.all([
+    first.writeTranslations({
+      i18n_directory: directory,
+      file: 'src/home.ts',
+      mode: 'review',
+      translations: [{ message_id: '保存', locale: 'en-US', value: 'Keep' }],
+    }),
+    second.writeTranslations({
+      i18n_directory: directory,
+      file: 'src/home.ts',
+      mode: 'review',
+      translations: [{ message_id: '退出', locale: 'ja-JP', value: '' }],
+    }),
+  ]);
+
+  const overrides = JSON.parse(
+    await fs.readFile(path.join(directory, 'overrides.json'), 'utf8'),
+  );
+  expect(overrides.messages['保存']?.default['en-US']).toBe('Keep');
+  expect(overrides.messages['退出']?.default['ja-JP']).toBe('');
 });
 
 test('requires an absolute directory and rejects unknown source files', async () => {
@@ -199,12 +413,25 @@ test('requires an absolute directory and rejects unknown source files', async ()
   ).rejects.toThrow('extracted source not found');
 });
 
+test('requires both translation input files', async () => {
+  const root = await fixture();
+  const directory = path.join(root, 'apps/web/i18n');
+  await fs.rm(path.join(directory, 'overrides.json'));
+
+  await expect(
+    new AiI18nProjectService().listFiles({
+      i18n_directory: directory,
+      limit: 50,
+    }),
+  ).rejects.toThrow('required ai-i18n file is missing: overrides.json');
+});
+
 test('registers callable MCP tools with defaults and structured output', async () => {
   const root = await fixture();
   await fs.mkdir(path.join(root, 'invalid/i18n/extracted'), {
     recursive: true,
   });
-  await fs.writeFile(path.join(root, 'invalid/i18n/cache.json'), '{}');
+  await fs.writeFile(path.join(root, 'invalid/i18n/translations.json'), '{}');
   const server = createAiI18nMcpServer();
   const client = new Client({ name: 'ai-i18n-mcp-test', version: '0.0.0' });
   const [clientTransport, serverTransport] =
@@ -222,6 +449,18 @@ test('registers callable MCP tools with defaults and structured output', async (
       'ai_i18n_list_translations',
       'ai_i18n_write_translations',
     ]);
+    expect(
+      tools.tools.find((tool) => tool.name === 'ai_i18n_write_translations')
+        ?.inputSchema,
+    ).toMatchObject({
+      properties: {
+        mode: { default: 'fill', enum: ['fill', 'review'] },
+        review_scope: {
+          default: 'default',
+          enum: ['default', 'message'],
+        },
+      },
+    });
     const discovered = await client.callTool({
       name: 'ai_i18n_discover',
       arguments: { cwd: root },
@@ -260,9 +499,10 @@ async function fixture(): Promise<string> {
   const directory = path.join(root, 'apps/web/i18n');
   await fs.mkdir(path.join(directory, 'extracted'), { recursive: true });
   await fs.writeFile(
-    path.join(directory, 'cache.json'),
+    path.join(directory, 'translations.json'),
     JSON.stringify({
-      version: 2,
+      version: 1,
+      revision: 0,
       messages: {
         保存: {
           sourceLang: 'zh-CN',
@@ -276,6 +516,10 @@ async function fixture(): Promise<string> {
     }),
   );
   await fs.writeFile(
+    path.join(directory, 'overrides.json'),
+    JSON.stringify({ version: 1, messages: {} }),
+  );
+  await fs.writeFile(
     path.join(directory, 'extracted/src_home.ts.json'),
     JSON.stringify({
       version: 1,
@@ -285,13 +529,11 @@ async function fixture(): Promise<string> {
           id: '保存',
           source: '保存',
           locations: [{ line: 1, column: 0 }],
-          translations: { 'en-US': null, 'ja-JP': null },
         },
         {
           id: '退出',
           source: '退出',
           locations: [{ line: 2, column: 0 }],
-          translations: { 'en-US': null, 'ja-JP': null },
         },
       ],
     }),

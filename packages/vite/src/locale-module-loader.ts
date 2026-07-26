@@ -50,11 +50,9 @@ export async function renderLocaleChunk(
   if (!locale) return null;
 
   // Framework 模块可能晚于 locale module load；renderChunk 才拥有完整构建图。
+  await options.flush();
   await options.reconcile(context.getModuleIds(), true);
   addLocaleWatchFiles(context, options.project, options.store);
-  await options.flush();
-  const cache = await options.store.sync(options.project.snapshot());
-  options.project.hydrateCache(cache);
   return fillLocaleModule(code, locale, options.project.localeMessages(locale));
 }
 

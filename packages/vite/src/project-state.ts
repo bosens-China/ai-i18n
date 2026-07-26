@@ -1,13 +1,12 @@
 import path from 'node:path';
 import {
-  TranslationConflictError,
-  type CacheFileV2,
-  type LangOption,
-  type MissingTranslationFallback,
   type ModuleMessages,
+  type TranslationMemoryFile,
+  type TranslationOverridesFile,
   type TranslationRequest,
   type TranslationResult,
   type TranslationValue,
+  resolveTranslationOverride,
 } from '@ai-i18n/core';
 import { normalizePath } from 'vite';
 import { Analyzer, analyzeModule, extractMessages } from './yuku-analyzer.js';
@@ -23,28 +22,17 @@ import {
   mapResultLocations,
   type ProjectSnapshot,
 } from './project-snapshot.js';
+import type {
+  NormalizedAiI18nOptions,
+  ProjectUpdate,
+} from './project-state-types.js';
+import { snapshotEffectiveModules } from './translation-overrides.js';
 
 export type { ProjectSnapshot } from './project-snapshot.js';
-
-export interface NormalizedAiI18nOptions {
-  sourceLang: string;
-  defaultLang: string;
-  locales: readonly LangOption[];
-  persist?: { key: string };
-  detect?: 'navigator';
-  fallback?: MissingTranslationFallback;
-  loading?: {
-    strategy: 'locale';
-    preload: readonly string[];
-    prefetch: readonly string[];
-  };
-}
-
-export interface ProjectUpdate {
-  moduleId: string;
-  result: ExtractResult;
-  affectedModuleIds: string[];
-}
+export type {
+  NormalizedAiI18nOptions,
+  ProjectUpdate,
+} from './project-state-types.js';
 
 export class ProjectState {
   readonly analyzer: Analyzer;
@@ -55,6 +43,10 @@ export class ProjectState {
     string,
     Map<string, TranslationValue>
   >();
+  private overrides: TranslationOverridesFile = {
+    version: 1,
+    messages: {},
+  };
   private readonly fingerprints = new Map<string, string>();
   private readonly locationMappers = new Map<
     string,
@@ -235,42 +227,34 @@ export class ProjectState {
     this.seen.clear();
     this.resolutions.clear();
     this.translations.clear();
+    this.overrides = { version: 1, messages: {} };
     this.fingerprints.clear();
     this.locationMappers.clear();
     this.translationHooks.clear();
     this.autoImportRuntime.clear();
   }
 
-  hydrateCache(cache: CacheFileV2): string[] {
-    const changedIds = new Set<string>();
+  hydrateCache(cache: TranslationMemoryFile): string[] {
+    const previous = this.effectiveModules();
     const nextTranslations = new Map<string, Map<string, TranslationValue>>();
     for (const [messageId, message] of Object.entries(cache.messages)) {
       for (const [locale, value] of Object.entries(message.translations)) {
         const translations = nextTranslations.get(locale) ?? new Map();
         translations.set(messageId, value);
         nextTranslations.set(locale, translations);
-        if (this.translations.get(locale)?.get(messageId) !== value) {
-          changedIds.add(messageId);
-        }
-      }
-    }
-    // cache 是磁盘真相；被 orphan 清理删除的翻译也必须从进程状态移除。
-    for (const [locale, translations] of this.translations) {
-      for (const messageId of translations.keys()) {
-        if (!nextTranslations.get(locale)?.has(messageId)) {
-          changedIds.add(messageId);
-        }
       }
     }
     this.translations.clear();
     for (const [locale, translations] of nextTranslations) {
       this.translations.set(locale, translations);
     }
-    return [...this.modules]
-      .filter(([, module]) =>
-        module.messages.some((message) => changedIds.has(message.id)),
-      )
-      .map(([moduleId]) => moduleId);
+    return this.changedEffectiveModules(previous);
+  }
+
+  hydrateOverrides(overrides: TranslationOverridesFile): string[] {
+    const previous = this.effectiveModules();
+    this.overrides = structuredClone(overrides);
+    return this.changedEffectiveModules(previous);
   }
 
   missingTranslations(moduleId: string): TranslationRequest[] {
@@ -281,8 +265,7 @@ export class ProjectState {
         .filter(
           (locale) =>
             locale.value !== this.options.sourceLang &&
-            (this.translations.get(locale.value)?.get(message.id) ?? null) ===
-              null,
+            this.translation(message, locale.value) === null,
         )
         .map((locale) => ({
           messageId: message.id,
@@ -294,25 +277,16 @@ export class ProjectState {
   }
 
   applyTranslations(results: readonly TranslationResult[]): string[] {
-    const changedIds = new Set<string>();
+    const previous = this.effectiveModules();
     for (const result of results) {
       const translations = this.translations.get(result.locale) ?? new Map();
       const current = translations.get(result.messageId);
-      if (current != null && result.value != null && current !== result.value) {
-        throw new TranslationConflictError(result.messageId, result.locale);
-      }
-      if (result.value === null || current === result.value) continue;
+      // Provider 永远只补空；在途旧结果不能覆盖人工审校或其他已提交值。
+      if (result.value === null || current != null) continue;
       translations.set(result.messageId, result.value);
       this.translations.set(result.locale, translations);
-      changedIds.add(result.messageId);
     }
-
-    if (!changedIds.size) return [];
-    return [...this.modules]
-      .filter(([, module]) =>
-        module.messages.some((message) => changedIds.has(message.id)),
-      )
-      .map(([moduleId]) => moduleId);
+    return this.changedEffectiveModules(previous);
   }
 
   snapshot(): ProjectSnapshot {
@@ -339,7 +313,7 @@ export class ProjectState {
             message.id,
             locale.value === this.options.sourceLang
               ? message.source
-              : (this.translations.get(locale.value)?.get(message.id) ?? null),
+              : this.translation(message, locale.value),
           ]),
         ),
       ]),
@@ -357,9 +331,36 @@ export class ProjectState {
       [...this.modules.values()].flatMap((result) =>
         result.messages.map((message) => [
           message.id,
-          this.translations.get(locale)?.get(message.id) ?? null,
+          this.translation(message, locale),
         ]),
       ),
+    );
+  }
+
+  private translation(
+    message: Pick<ExtractedMessage, 'id' | 'source'>,
+    locale: string,
+  ): TranslationValue {
+    return (
+      resolveTranslationOverride(this.overrides, message, locale) ??
+      this.translations.get(locale)?.get(message.id) ??
+      null
+    );
+  }
+
+  private effectiveModules(): Map<string, string> {
+    return snapshotEffectiveModules(
+      this.modules,
+      this.options.locales,
+      this.options.sourceLang,
+      (message, locale) => this.translation(message, locale),
+    );
+  }
+
+  private changedEffectiveModules(previous: ReadonlyMap<string, string>) {
+    const current = this.effectiveModules();
+    return [...new Set([...previous.keys(), ...current.keys()])].filter(
+      (moduleId) => previous.get(moduleId) !== current.get(moduleId),
     );
   }
 

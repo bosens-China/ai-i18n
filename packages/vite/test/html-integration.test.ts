@@ -92,19 +92,14 @@ describe('HTML extractor integration', () => {
     expect(clientCode).toContain('请输入');
     expect(clientCode).toContain('Type here');
     expect(translator).toHaveBeenCalled();
-    expect(
-      await readJson(path.join(root, 'i18n/extracted/index.html.json')),
-    ).toMatchObject({
+    const extracted = await readJson(
+      path.join(root, 'i18n/extracted/index.html.json'),
+    );
+    expect(extracted).toMatchObject({
       source: 'index.html',
-      messages: [
-        { id: '请输入', translations: { 'en-US': 'Type here' } },
-        {
-          id: '示例 {{=0}}',
-          translations: { 'en-US': 'Example {{=0}}' },
-        },
-        { id: '首页', translations: { 'en-US': 'Home' } },
-      ],
+      messages: [{ id: '请输入' }, { id: '示例 {{=0}}' }, { id: '首页' }],
     });
+    expect(JSON.stringify(extracted)).not.toContain('translations');
     expect(
       await readJson(path.join(root, 'i18n/locales/en-US.json')),
     ).toMatchObject({

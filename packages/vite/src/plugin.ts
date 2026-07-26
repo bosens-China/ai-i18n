@@ -164,9 +164,11 @@ export function aiI18n(options: AiI18nOptions): Plugin {
       }
       ready = Promise.all([
         store.load(),
+        store.loadOverrides(),
         writeFrameworkTypes(resolved.root, framework, autoImport, options.dts),
-      ]).then(([cache]) => {
+      ]).then(([cache, overrides]) => {
         currentState().hydrateCache(cache);
+        currentState().hydrateOverrides(overrides);
       });
       if (options.translator) {
         coordinator = new ProviderCoordinator(options.translator, {
@@ -174,8 +176,11 @@ export function aiI18n(options: AiI18nOptions): Plugin {
           async onResults(results) {
             const project = currentState();
             const affected = project.applyTranslations(results);
-            const cache = await currentStore().sync(project.snapshot());
-            project.hydrateCache(cache);
+            if (config?.command !== 'build') {
+              const cache = await currentStore().sync(project.snapshot());
+              project.hydrateCache(cache);
+              project.hydrateOverrides(await currentStore().loadOverrides());
+            }
             if (normalized.loading) {
               if (affected.length) {
                 sendLocaleUpdates(results.map((result) => result.locale));
@@ -341,8 +346,11 @@ export function aiI18n(options: AiI18nOptions): Plugin {
             loc: { line: warning.line, column: warning.column },
           });
         }
-        const cache = await currentStore().sync(project.snapshot());
-        project.hydrateCache(cache);
+        if (config?.command !== 'build') {
+          const cache = await currentStore().sync(project.snapshot());
+          project.hydrateCache(cache);
+          project.hydrateOverrides(await currentStore().loadOverrides());
+        }
         requestMissingTranslations(update.affectedModuleIds);
         // 只注入没有本地 symbol 的调用，避免覆盖用户自己的同名函数。
         const unboundCalls = autoImport

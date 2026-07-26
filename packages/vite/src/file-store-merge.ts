@@ -1,27 +1,19 @@
 import {
-  parseMessageId,
   TranslationConflictError,
   type CacheMessage,
-  type ExtractedFileV1,
+  type ExtractedFile,
+  type ExtractedMessage,
   type LocaleFileV1,
+  type TranslationOverridesFile,
 } from '@ai-i18n/core';
+import { effectiveTranslation } from './translation-overrides.js';
 
-export function hydrateExtracted(
-  extracted: ExtractedFileV1,
-  cacheMessages: Record<string, CacheMessage>,
-  targetLocales: readonly string[],
-): ExtractedFileV1 {
+export function hydrateExtracted(extracted: ExtractedFile): ExtractedFile {
   return {
     ...extracted,
     messages: extracted.messages
       .map((message) => ({
         ...message,
-        translations: Object.fromEntries(
-          targetLocales.map((locale) => [
-            locale,
-            cacheMessages[message.id]!.translations[locale] ?? null,
-          ]),
-        ),
         locations: [...message.locations].sort(
           (left, right) => left.line - right.line || left.column - right.column,
         ),
@@ -32,33 +24,24 @@ export function hydrateExtracted(
 
 export function hydrateLocale(
   locale: LocaleFileV1,
+  messages: readonly ExtractedMessage[],
   cacheMessages: Record<string, CacheMessage>,
+  overrides: TranslationOverridesFile,
 ): LocaleFileV1 {
   return {
     ...locale,
     messages: Object.fromEntries(
-      Object.keys(locale.messages).map((id) => [
-        id,
-        cacheMessages[id]?.translations[locale.locale.value] ?? null,
+      messages.map((message) => [
+        message.id,
+        effectiveTranslation(
+          message,
+          locale.locale.value,
+          cacheMessages,
+          overrides,
+        ),
       ]),
     ),
   };
-}
-
-export function messagesFromExtracted(
-  extracted: ExtractedFileV1,
-  sourceLang: string,
-): Record<string, CacheMessage> {
-  return Object.fromEntries(
-    extracted.messages.map((message) => [
-      message.id,
-      {
-        sourceLang,
-        ...(message.comment ? { comment: message.comment } : {}),
-        translations: message.translations,
-      },
-    ]),
-  );
 }
 
 export function mergeProjectMessages(
@@ -68,30 +51,21 @@ export function mergeProjectMessages(
   // 磁盘上的 Agent 编辑优先；ProjectState 只补充新消息和缺失翻译。
   const reused = structuredClone(incoming);
   for (const [messageId, next] of Object.entries(reused)) {
-    if (current[messageId]) continue;
-    const source = parseMessageId(messageId).source;
-    const sameSource = Object.entries(current).filter(
-      ([historicId, historic]) =>
-        historic.sourceLang === next.sourceLang &&
-        parseMessageId(historicId).source === source,
-    );
-    if (sameSource.length) {
-      for (const [, historic] of sameSource) {
-        inheritTranslations(messageId, next, historic);
-      }
+    if (current[messageId]) {
+      keepCommittedTranslations(next, current[messageId]);
       continue;
     }
     const candidates = Object.entries(current).filter(
       ([, historic]) =>
         historic.sourceLang !== next.sourceLang &&
-        historic.translations[next.sourceLang] === source,
+        historic.translations[next.sourceLang] === messageId,
     );
     if (candidates.length !== 1) continue;
     const [historicId, historic] = candidates[0]!;
     const translations = { ...historic.translations };
     delete translations[next.sourceLang];
     if (historic.sourceLang) {
-      translations[historic.sourceLang] = parseMessageId(historicId).source;
+      translations[historic.sourceLang] = historicId;
     }
     for (const [locale, value] of Object.entries(next.translations)) {
       if (value !== null || !(locale in translations)) {
@@ -138,23 +112,20 @@ export function overlayMessages(
   return merged;
 }
 
-function inheritTranslations(
-  messageId: string,
+function keepCommittedTranslations(
   target: CacheMessage,
-  historic: CacheMessage,
+  current: CacheMessage,
 ): void {
-  for (const [locale, value] of Object.entries(historic.translations)) {
-    const current = target.translations[locale];
-    if (current != null && value != null && current !== value) {
-      throw new TranslationConflictError(messageId, locale);
+  for (const [locale, value] of Object.entries(current.translations)) {
+    if (value !== null || !(locale in target.translations)) {
+      target.translations[locale] = value;
     }
-    if (current == null && value !== null) target.translations[locale] = value;
   }
 }
 
 export function withConflictFiles(
   error: unknown,
-  extractedFiles: readonly ExtractedFileV1[],
+  extractedFiles: readonly ExtractedFile[],
 ): unknown {
   if (!(error instanceof TranslationConflictError)) return error;
   const files = extractedFiles
@@ -162,6 +133,6 @@ export function withConflictFiles(
       file.messages.some((message) => message.id === error.messageId),
     )
     .map((file) => file.source);
-  const locations = ['i18n/cache.json', ...new Set(files)].join(', ');
+  const locations = ['i18n/translations.json', ...new Set(files)].join(', ');
   return new Error(`${error.message}; files: ${locations}`);
 }

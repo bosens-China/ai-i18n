@@ -5,7 +5,7 @@
 - [x] 修复 Windows registration 路径，并限制静态依赖加载范围。
 - [x] 区分 Dev 增量同步与完整 Build 的 locales 重建语义。
 - [x] 支持 tagged-template 插值与占位符翻译校验。
-- [x] 让 comment 成为不影响 message ID 的翻译提示，并迁移旧翻译。
+- [x] 让 comment 成为不影响 message ID 的翻译提示。
 - [x] 新增 `@ai-i18n/vite/vitest` 测试插件。
 - [x] 增加 Runtime 持久化、浏览器语言探测和缺译策略。
 - [x] 导出稳定的 React / Vue `UseI18n` 类型。

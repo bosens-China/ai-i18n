@@ -45,9 +45,15 @@ export function createHotUpdateHandler(dependencies: HotUpdateDependencies) {
       const content = await options.read();
       if (fileStore.isOwnWrite(options.file, content)) return [];
       const loadOptions = fileStore.loadOptions([options.file]);
-      const affected = project.hydrateCache(await fileStore.load(loadOptions));
+      const affected = project.hydrateCache(await fileStore.load());
+      affected.push(
+        ...project.hydrateOverrides(await fileStore.loadOverrides()),
+      );
       const reconciled = await fileStore.sync(project.snapshot(), loadOptions);
       const updated = [...affected, ...project.hydrateCache(reconciled)];
+      updated.push(
+        ...project.hydrateOverrides(await fileStore.loadOverrides()),
+      );
       if (localeSnapshot) {
         dependencies.sendLocaleUpdates(changedLocales(project, localeSnapshot));
       } else {
@@ -82,6 +88,7 @@ export function createHotUpdateHandler(dependencies: HotUpdateDependencies) {
           )?.affectedModuleIds ?? []);
     const cache = await fileStore.sync(project.snapshot());
     project.hydrateCache(cache);
+    project.hydrateOverrides(await fileStore.loadOverrides());
     dependencies.requestMissingTranslations(affected);
     if (localeSnapshot) {
       dependencies.sendLocaleUpdates(changedLocales(project, localeSnapshot));

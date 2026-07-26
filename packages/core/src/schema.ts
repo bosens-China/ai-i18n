@@ -11,20 +11,30 @@ export interface CacheMessage {
   translations: Record<string, TranslationValue>;
 }
 
-export interface CacheFileV2 {
-  version: 2;
+export interface TranslationMemoryFile {
+  version: 1;
+  revision: number;
   messages: Record<string, CacheMessage>;
+}
+
+export interface TranslationOverrideMessage {
+  default?: Record<string, string>;
+  byId?: Record<string, Record<string, string>>;
+}
+
+export interface TranslationOverridesFile {
+  version: 1;
+  messages: Record<string, TranslationOverrideMessage>;
 }
 
 export interface ExtractedMessage {
   id: string;
   source: string;
   comment?: string;
-  translations: Record<string, TranslationValue>;
   locations: Array<{ line: number; column: number }>;
 }
 
-export interface ExtractedFileV1 {
+export interface ExtractedFile {
   version: 1;
   source: string;
   messages: ExtractedMessage[];
@@ -55,24 +65,46 @@ export class TranslationConflictError extends Error {
   }
 }
 
-export function parseCacheFile(
+export function parseTranslationMemoryFile(
   value: unknown,
-  legacySourceLang = '',
-): CacheFileV2 {
-  const root = record(value, 'cache');
-  if (root.version === 1) {
-    return migrateCacheV1(root, legacySourceLang);
-  }
-  exactVersion(root, 'cache', 2);
-  const messages = record(root.messages, 'cache.messages');
+): TranslationMemoryFile {
+  const root = record(value, 'translation memory');
+  exactVersion(root, 'translation memory', 1);
+  const messages = record(root.messages, 'translation memory.messages');
 
   for (const [id, message] of Object.entries(messages)) {
-    validateCacheMessage(message, `cache.messages.${id}`);
+    validateCacheMessage(message, `translation memory.messages.${id}`);
   }
-  return value as CacheFileV2;
+  integer(root.revision, 'translation memory.revision', 0);
+  return value as TranslationMemoryFile;
 }
 
-export function parseExtractedFile(value: unknown): ExtractedFileV1 {
+export function parseTranslationOverridesFile(
+  value: unknown,
+): TranslationOverridesFile {
+  const root = record(value, 'translation overrides');
+  exactKeys(root, ['version', 'messages'], 'translation overrides');
+  exactVersion(root, 'translation overrides', 1);
+  const messages = record(root.messages, 'translation overrides.messages');
+
+  for (const [source, value] of Object.entries(messages)) {
+    const path = `translation overrides.messages.${source}`;
+    const message = record(value, path);
+    exactKeys(message, ['default', 'byId'], path);
+    if (message.default !== undefined) {
+      stringTranslations(message.default, `${path}.default`);
+    }
+    if (message.byId === undefined) continue;
+    const byId = record(message.byId, `${path}.byId`);
+    for (const [id, translations] of Object.entries(byId)) {
+      if (!id.trim()) fail(`${path}.byId`, 'non-empty message IDs');
+      stringTranslations(translations, `${path}.byId.${id}`);
+    }
+  }
+  return value as TranslationOverridesFile;
+}
+
+export function parseExtractedFile(value: unknown): ExtractedFile {
   const root = record(value, 'extracted');
   exactVersion(root, 'extracted', 1);
   string(root.source, 'extracted.source');
@@ -82,9 +114,15 @@ export function parseExtractedFile(value: unknown): ExtractedFileV1 {
     const entry = record(message, path);
     string(entry.id, `${path}.id`);
     string(entry.source, `${path}.source`);
-    migrateLegacyContext(entry, path);
+    if ('translations' in entry) {
+      throw new AiI18nSchemaError(
+        `${path}.translations is not part of the extracted schema`,
+      );
+    }
+    if ('context' in entry) {
+      throw new AiI18nSchemaError(`${path}.context was replaced by comment`);
+    }
     if (entry.comment !== undefined) string(entry.comment, `${path}.comment`);
-    translations(entry.translations, `${path}.translations`);
     if (!Array.isArray(entry.locations)) fail(`${path}.locations`, 'an array');
     entry.locations.forEach((location, locationIndex) => {
       const locationPath = `${path}.locations.${locationIndex}`;
@@ -93,7 +131,7 @@ export function parseExtractedFile(value: unknown): ExtractedFileV1 {
       integer(item.column, `${locationPath}.column`, 0);
     });
   });
-  return value as ExtractedFileV1;
+  return value as ExtractedFile;
 }
 
 export function parseLocaleFile(value: unknown): LocaleFileV1 {
@@ -140,24 +178,11 @@ export function mergeCacheMessages(
 function validateCacheMessage(value: unknown, path: string): void {
   const message = record(value, path);
   string(message.sourceLang, `${path}.sourceLang`);
-  migrateLegacyContext(message, path);
+  if ('context' in message) {
+    throw new AiI18nSchemaError(`${path}.context was replaced by comment`);
+  }
   if (message.comment !== undefined) string(message.comment, `${path}.comment`);
   translations(message.translations, `${path}.translations`);
-}
-
-function migrateLegacyContext(
-  message: Record<string, unknown>,
-  path: string,
-): void {
-  if (message.context === undefined) return;
-  string(message.context, `${path}.context`);
-  if (message.comment !== undefined && message.comment !== message.context) {
-    throw new AiI18nSchemaError(
-      `${path}.comment conflicts with legacy ${path}.context`,
-    );
-  }
-  message.comment = message.context;
-  delete message.context;
 }
 
 function translations(value: unknown, path: string): void {
@@ -166,6 +191,27 @@ function translations(value: unknown, path: string): void {
     if (typeof translation !== 'string' && translation !== null) {
       fail(`${path}.${locale}`, 'a string or null');
     }
+  }
+}
+
+function stringTranslations(value: unknown, path: string): void {
+  const entries = record(value, path);
+  for (const [locale, translation] of Object.entries(entries)) {
+    if (typeof translation !== 'string') {
+      fail(`${path}.${locale}`, 'a string');
+    }
+  }
+}
+
+function exactKeys(
+  value: Record<string, unknown>,
+  expected: readonly string[],
+  path: string,
+): void {
+  const allowed = new Set(expected);
+  const unknown = Object.keys(value).find((key) => !allowed.has(key));
+  if (unknown) {
+    throw new AiI18nSchemaError(`${path}.${unknown} is not part of the schema`);
   }
 }
 
@@ -219,42 +265,4 @@ function cloneMessages(
       cloneMessage(message),
     ]),
   );
-}
-
-function migrateCacheV1(
-  root: Record<string, unknown>,
-  sourceLang: string,
-): CacheFileV2 {
-  const files = record(root.files, 'cache.files');
-  for (const [source, value] of Object.entries(files)) {
-    const file = record(value, `cache.files.${source}`);
-    string(file.fingerprint, `cache.files.${source}.fingerprint`);
-    if (
-      !Array.isArray(file.messageIds) ||
-      file.messageIds.some((id) => typeof id !== 'string')
-    ) {
-      fail(`cache.files.${source}.messageIds`, 'an array of strings');
-    }
-  }
-  const legacyMessages = record(root.messages, 'cache.messages');
-  const messages: Record<string, CacheMessage> = {};
-  for (const [id, value] of Object.entries(legacyMessages)) {
-    const path = `cache.messages.${id}`;
-    const message = record(value, path);
-    string(message.source, `${path}.source`);
-    migrateLegacyContext(message, path);
-    if (message.comment !== undefined)
-      string(message.comment, `${path}.comment`);
-    translations(message.translations, `${path}.translations`);
-    messages[id] = {
-      sourceLang,
-      ...(message.comment === undefined
-        ? {}
-        : { comment: message.comment as string }),
-      translations: {
-        ...(message.translations as Record<string, TranslationValue>),
-      },
-    };
-  }
-  return { version: 2, messages };
 }

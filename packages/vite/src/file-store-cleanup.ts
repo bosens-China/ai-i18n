@@ -1,10 +1,10 @@
 import path from 'node:path';
-import type { CacheFileV2, ExtractedFileV1 } from '@ai-i18n/core';
+import type { ExtractedFile, TranslationMemoryFile } from '@ai-i18n/core';
 import { fileExists } from './json-files.js';
 
 export async function findMissingSources(
   root: string,
-  extractedFiles: readonly ExtractedFileV1[],
+  extractedFiles: readonly ExtractedFile[],
   enabled: boolean,
 ): Promise<string[]> {
   if (!enabled) return [];
@@ -18,7 +18,7 @@ export async function findMissingSources(
 }
 
 export function removeOrphanMessages(
-  cache: CacheFileV2,
+  cache: TranslationMemoryFile,
   activeMessageIds: Iterable<string>,
   enabled: boolean,
 ): void {

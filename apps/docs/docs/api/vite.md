@@ -156,7 +156,8 @@ Dev 中的模型调用不会阻塞首次模块响应。Build 会在结束前等�
 复用 analyzer、resolution 和 reverse dependents：
 
 - source 变化只重新 parse 当前文件，并刷新必要的依赖方；
-- extracted 或目标 locale 文件变化只合并翻译和 registration，不重新 parse source；
+- `translations.json` 或 `overrides.json` 变化只更新翻译和 registration，不重新 parse source；
+- extracted 或目标 locale 文件的外部修改会按源码结构与 Translation Memory 恢复；
 - source 删除、重命名或 import 被移除后，当前活动模块图会重新校准；
 - 已有 Translation Memory 不会重复请求 Provider；
 - 协议内容没有变化时，不改写对应 JSON 文件。
@@ -179,10 +180,10 @@ aiI18n({
 });
 ```
 
-| 字段          | 类型     | 必填 | 默认值 | 作用                                                    |
-| ------------- | -------- | ---- | ------ | ------------------------------------------------------- |
-| `maxMessages` | `number` | 否   | 不限制 | `cache.messages` 允许保留的最大条数。                   |
-| `maxBytes`    | `number` | 否   | 不限制 | 稳定序列化后整个 `cache.json` 允许占用的 UTF-8 字节数。 |
+| 字段          | 类型     | 必填 | 默认值 | 作用                                                           |
+| ------------- | -------- | ---- | ------ | -------------------------------------------------------------- |
+| `maxMessages` | `number` | 否   | 不限制 | `cache.messages` 允许保留的最大条数。                          |
+| `maxBytes`    | `number` | 否   | 不限制 | 稳定序列化后整个 `translations.json` 允许占用的 UTF-8 字节数。 |
 
 两个字段必须是正整数。省略两项时不启用容量淘汰；同时配置时，输出需要同时满足两个限制。
 插件先合并磁盘编辑并执行 missing source 清理，再按 message ID 稳定淘汰当前源码不再引用的
@@ -208,7 +209,7 @@ Translation Memory。
 | `missingSourceFiles` | `boolean` | 否   | `true`  | 源文件已不存在时，删除对应 `extracted` 文件。 |
 | `orphanMessages`     | `boolean` | 否   | `false` | 清理当前源码不再引用的消息。                  |
 
-建议保留默认值。`cache.json` 还承担 Translation Memory 的职责，激进清理会降低文件移动、
+建议保留默认值。`translations.json` 承担 Translation Memory 的职责，激进清理会降低文件移动、
 恢复或分支合并后的翻译复用率。`orphanMessages: true` 会先删除全部非活跃消息，优先级高于
 Cache 容量限制。
 

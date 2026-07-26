@@ -8,10 +8,7 @@
           "line": 31
         }
       ],
-      "source": "当前语言",
-      "translations": {
-        "en-US": "Current language"
-      }
+      "source": "当前语言"
     },
     {
       "id": "交互式语言切换演示",
@@ -21,10 +18,7 @@
           "line": 29
         }
       ],
-      "source": "交互式语言切换演示",
-      "translations": {
-        "en-US": "Interactive language switching demo"
-      }
+      "source": "交互式语言切换演示"
     },
     {
       "id": "切换后，这段文案会立即更新。",
@@ -34,10 +28,7 @@
           "line": 42
         }
       ],
-      "source": "切换后，这段文案会立即更新。",
-      "translations": {
-        "en-US": "This copy updates as soon as you switch languages."
-      }
+      "source": "切换后，这段文案会立即更新。"
     },
     {
       "id": "文案变化",
@@ -47,10 +38,7 @@
           "line": 40
         }
       ],
-      "source": "文案变化",
-      "translations": {
-        "en-US": "Translated copy"
-      }
+      "source": "文案变化"
     },
     {
       "id": "语言",
@@ -60,10 +48,7 @@
           "line": 14
         }
       ],
-      "source": "语言",
-      "translations": {
-        "en-US": null
-      }
+      "source": "语言"
     },
     {
       "id": "React 示例",
@@ -73,10 +58,7 @@
           "line": 10
         }
       ],
-      "source": "React 示例",
-      "translations": {
-        "en-US": "React demo"
-      }
+      "source": "React 示例"
     },
     {
       "id": "useI18n 实时订阅 Runtime 并重渲染。",
@@ -86,10 +68,7 @@
           "line": 43
         }
       ],
-      "source": "useI18n 实时订阅 Runtime 并重渲染。",
-      "translations": {
-        "en-US": "useI18n subscribes to the Runtime and re-renders in real time."
-      }
+      "source": "useI18n 实时订阅 Runtime 并重渲染。"
     }
   ],
   "source": "src/App.tsx",

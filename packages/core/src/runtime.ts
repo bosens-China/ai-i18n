@@ -1,4 +1,4 @@
-import { createMessageId } from './message-id.js';
+import { createMessageId, type TranslationOptions } from './message-id.js';
 import type { LangOption, TranslationValue } from './schema.js';
 import { TranslationConflictError } from './schema.js';
 import {
@@ -14,7 +14,7 @@ export type LocaleLoader = () => Promise<LocaleMessages>;
 export type MissingTranslationFallback = 'source' | 'key' | 'empty' | 'marked';
 
 export interface Translate {
-  (source: string, comment?: string): string;
+  (source: string, commentOrOptions?: string | TranslationOptions): string;
   (strings: TemplateStringsArray, ...values: unknown[]): string;
 }
 
@@ -191,7 +191,13 @@ export function createI18nRuntime(options: I18nRuntimeOptions): I18nRuntime {
     if (typeof source === 'string') {
       const message = escapeTemplateLiteral(source);
       return formatTemplateMessage(
-        translate(createMessageId(message, values[0] as string), message),
+        translate(
+          createMessageId(
+            message,
+            values[0] as string | TranslationOptions | undefined,
+          ),
+          message,
+        ),
         [],
       );
     }

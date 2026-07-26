@@ -1,8 +1,8 @@
 import { createHash } from 'node:crypto';
 import type {
-  CacheFileV2,
   CacheMessage,
-  ExtractedFileV1,
+  ExtractedFile,
+  TranslationMemoryFile,
   TranslationValue,
 } from '@ai-i18n/core';
 import type { ExtractResult } from './yuku-analyzer.js';
@@ -10,8 +10,8 @@ import type { SourceLocation } from './extractor.js';
 import type { NormalizedAiI18nOptions } from './project-state.js';
 
 export interface ProjectSnapshot {
-  cache: CacheFileV2;
-  extracted: Record<string, ExtractedFileV1>;
+  cache: TranslationMemoryFile;
+  extracted: Record<string, ExtractedFile>;
   seen: string[];
 }
 
@@ -22,7 +22,8 @@ export function createProjectSnapshot(
   options: NormalizedAiI18nOptions,
 ): ProjectSnapshot {
   const messages: Record<string, CacheMessage> = {};
-  const extracted: Record<string, ExtractedFileV1> = {};
+  const messageSources = new Map<string, string>();
+  const extracted: Record<string, ExtractedFile> = {};
   const targetLocales = options.locales.filter(
     (locale) => locale.value !== options.sourceLang,
   );
@@ -30,6 +31,13 @@ export function createProjectSnapshot(
     if (!result.messages.length) continue;
 
     const extractedMessages = result.messages.map((message) => {
+      const previousSource = messageSources.get(message.id);
+      if (previousSource !== undefined && previousSource !== message.source) {
+        throw new Error(
+          `[ai-i18n] message ID "${message.id}" is used by both "${previousSource}" and "${message.source}"`,
+        );
+      }
+      messageSources.set(message.id, message.source);
       const targetTranslations = Object.fromEntries(
         targetLocales.map((locale) => [
           locale.value,
@@ -46,7 +54,6 @@ export function createProjectSnapshot(
         source: message.source,
         ...(message.comment ? { comment: message.comment } : {}),
         locations: message.locations.map((location) => ({ ...location })),
-        translations: targetTranslations,
       };
     });
     extracted[moduleId] = {
@@ -57,7 +64,7 @@ export function createProjectSnapshot(
   }
 
   return {
-    cache: { version: 2, messages },
+    cache: { version: 1, revision: 0, messages },
     extracted,
     seen: [...seen].sort(),
   };
