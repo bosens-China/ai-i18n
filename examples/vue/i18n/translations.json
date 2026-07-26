@@ -1,6 +1,7 @@
 {
   "messages": {
     "当前语言": {
+      "source": "当前语言",
       "sourceLang": "zh-CN",
       "translations": {
         "en-US": "Current language",
@@ -8,6 +9,7 @@
       }
     },
     "交互式语言切换演示": {
+      "source": "交互式语言切换演示",
       "sourceLang": "zh-CN",
       "translations": {
         "en-US": "Interactive language switch demo",
@@ -15,6 +17,7 @@
       }
     },
     "模板会自动响应 Runtime 状态。": {
+      "source": "模板会自动响应 Runtime 状态。",
       "sourceLang": "zh-CN",
       "translations": {
         "en-US": "The template reacts to Runtime state automatically.",
@@ -22,6 +25,7 @@
       }
     },
     "切换语言": {
+      "source": "切换语言",
       "sourceLang": "zh-CN",
       "translations": {
         "en-US": "Switch language",
@@ -29,6 +33,7 @@
       }
     },
     "文案变化": {
+      "source": "文案变化",
       "sourceLang": "zh-CN",
       "translations": {
         "en-US": "Copy changes",
@@ -36,6 +41,7 @@
       }
     },
     "响应式文案会随语言立即更新": {
+      "source": "响应式文案会随语言立即更新",
       "sourceLang": "zh-CN",
       "translations": {
         "en-US": "Reactive copy updates immediately with the language",
@@ -43,6 +49,7 @@
       }
     },
     "语言": {
+      "source": "语言",
       "sourceLang": "zh-CN",
       "translations": {
         "en-US": "Language",
@@ -50,6 +57,7 @@
       }
     },
     "ai-i18n Vue 示例": {
+      "source": "ai-i18n Vue 示例",
       "sourceLang": "zh-CN",
       "translations": {
         "en-US": "ai-i18n Vue demo",
@@ -57,6 +65,7 @@
       }
     },
     "Composition API 与 Vite extractor 共享 Runtime": {
+      "source": "Composition API 与 Vite extractor 共享 Runtime",
       "sourceLang": "zh-CN",
       "translations": {
         "en-US": "Composition API and the Vite extractor share one Runtime",
@@ -64,6 +73,7 @@
       }
     },
     "Vue 示例": {
+      "source": "Vue 示例",
       "sourceLang": "zh-CN",
       "translations": {
         "en-US": "Vue demo",

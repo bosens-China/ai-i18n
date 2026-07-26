@@ -1,14 +1,24 @@
 {
   "messages": [
     {
-      "id": "当前语言",
+      "id": "React 示例",
       "locations": [
         {
-          "column": 40,
-          "line": 31
+          "column": 15,
+          "line": 10
         }
       ],
-      "source": "当前语言"
+      "source": "React 示例"
+    },
+    {
+      "id": "useI18n 实时订阅 Runtime 并重渲染。",
+      "locations": [
+        {
+          "column": 19,
+          "line": 43
+        }
+      ],
+      "source": "useI18n 实时订阅 Runtime 并重渲染。"
     },
     {
       "id": "交互式语言切换演示",
@@ -31,6 +41,16 @@
       "source": "切换后，这段文案会立即更新。"
     },
     {
+      "id": "当前语言",
+      "locations": [
+        {
+          "column": 40,
+          "line": 31
+        }
+      ],
+      "source": "当前语言"
+    },
+    {
       "id": "文案变化",
       "locations": [
         {
@@ -49,26 +69,6 @@
         }
       ],
       "source": "语言"
-    },
-    {
-      "id": "React 示例",
-      "locations": [
-        {
-          "column": 15,
-          "line": 10
-        }
-      ],
-      "source": "React 示例"
-    },
-    {
-      "id": "useI18n 实时订阅 Runtime 并重渲染。",
-      "locations": [
-        {
-          "column": 19,
-          "line": 43
-        }
-      ],
-      "source": "useI18n 实时订阅 Runtime 并重渲染。"
     }
   ],
   "source": "src/App.tsx",
