@@ -1,5 +1,6 @@
 import { createRequire } from 'node:module';
 import type { ESLint } from 'eslint';
+import { staticCandidateLimit } from './rules/static-candidate-limit.js';
 import { tStaticArgs } from './rules/t-static-args.js';
 
 const { version } = createRequire(import.meta.url)('../package.json') as {
@@ -13,6 +14,7 @@ const plugin: ESLint.Plugin = {
     namespace: 'ai-i18n',
   },
   rules: {
+    'static-candidate-limit': staticCandidateLimit,
     't-static-args': tStaticArgs,
   },
   configs: {},
@@ -26,7 +28,10 @@ plugin.configs!.recommended = [
     languageOptions: {
       globals: { defineI18nMessages: 'readonly' },
     },
-    rules: { 'ai-i18n/t-static-args': 'error' },
+    rules: {
+      'ai-i18n/static-candidate-limit': 'warn',
+      'ai-i18n/t-static-args': 'error',
+    },
   },
 ];
 
@@ -41,6 +46,7 @@ plugin.configs!.vue = [
       },
     },
     rules: {
+      'ai-i18n/static-candidate-limit': ['warn', { autoImport: true }],
       'ai-i18n/t-static-args': ['error', { autoImport: true }],
     },
   },
@@ -57,6 +63,7 @@ plugin.configs!.react = [
       },
     },
     rules: {
+      'ai-i18n/static-candidate-limit': ['warn', { autoImport: true }],
       'ai-i18n/t-static-args': ['error', { autoImport: true }],
     },
   },
@@ -77,10 +84,11 @@ plugin.configs!.vanilla = [
       },
     },
     rules: {
+      'ai-i18n/static-candidate-limit': ['warn', { autoImport: true }],
       'ai-i18n/t-static-args': ['error', { autoImport: true }],
     },
   },
 ];
 
-export { tStaticArgs };
+export { staticCandidateLimit, tStaticArgs };
 export default plugin;

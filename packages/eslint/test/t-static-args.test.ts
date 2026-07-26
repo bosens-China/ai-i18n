@@ -5,7 +5,7 @@ import { ESLint, RuleTester, type Linter } from 'eslint';
 import tseslint from 'typescript-eslint';
 import vueParser from 'vue-eslint-parser';
 import { describe, expect, it } from 'vitest';
-import plugin, { tStaticArgs } from '../src/index';
+import plugin, { staticCandidateLimit, tStaticArgs } from '../src/index';
 
 const fixtureRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'ai-i18n-eslint-'));
 const sourceRoot = path.join(fixtureRoot, 'src');
@@ -48,10 +48,17 @@ const vueTester = new RuleTester({
 describe('ai-i18n/t-static-args', () => {
   it('exposes an opt-in flat recommended config', () => {
     expect(plugin.rules).toHaveProperty('t-static-args', tStaticArgs);
+    expect(plugin.rules).toHaveProperty(
+      'static-candidate-limit',
+      staticCandidateLimit,
+    );
     expect(plugin.configs?.recommended).toEqual([
       expect.objectContaining({
         ignores: ['**/*.vue'],
-        rules: { 'ai-i18n/t-static-args': 'error' },
+        rules: {
+          'ai-i18n/static-candidate-limit': 'warn',
+          'ai-i18n/t-static-args': 'error',
+        },
       }),
     ]);
     expect(plugin.configs?.vue).toEqual([
@@ -64,6 +71,7 @@ describe('ai-i18n/t-static-args', () => {
           },
         },
         rules: {
+          'ai-i18n/static-candidate-limit': ['warn', { autoImport: true }],
           'ai-i18n/t-static-args': ['error', { autoImport: true }],
         },
       }),
@@ -77,6 +85,7 @@ describe('ai-i18n/t-static-args', () => {
           },
         },
         rules: {
+          'ai-i18n/static-candidate-limit': ['warn', { autoImport: true }],
           'ai-i18n/t-static-args': ['error', { autoImport: true }],
         },
       }),
@@ -87,6 +96,7 @@ describe('ai-i18n/t-static-args', () => {
           globals: expect.objectContaining({ t: 'readonly' }),
         },
         rules: {
+          'ai-i18n/static-candidate-limit': ['warn', { autoImport: true }],
           'ai-i18n/t-static-args': ['error', { autoImport: true }],
         },
       }),
@@ -324,6 +334,24 @@ describe('ai-i18n/t-static-args', () => {
         code: 'const macro = defineI18nMessages',
         filename: path.join(sourceRoot, 'macro-reference.ts'),
         errors: [{ messageId: 'invalidUsage' }],
+      },
+    ],
+  });
+
+  tester.run('static-candidate-limit', staticCandidateLimit, {
+    valid: [
+      {
+        code: "import { t } from 'virtual:ai-i18n'; const messages = defineI18nMessages(['a', 'b']); t(messages[index])",
+        filename: path.join(sourceRoot, 'candidate-limit-valid.ts'),
+        options: [{ maxStaticCandidates: 2 }],
+      },
+    ],
+    invalid: [
+      {
+        code: "import { t } from 'virtual:ai-i18n'; const messages = defineI18nMessages(['a', 'b', 'c']); t(messages[index])",
+        filename: path.join(sourceRoot, 'candidate-limit-invalid.ts'),
+        options: [{ maxStaticCandidates: 2 }],
+        errors: [{ messageId: 'candidateLimit' }],
       },
     ],
   });

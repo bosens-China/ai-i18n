@@ -102,6 +102,7 @@ export function extractMessages(
   runtimeModuleId = AI_I18N_VIRTUAL_MODULE_ID,
   translationHooks: readonly TranslationHookBinding[] = [],
   autoImportRuntime = false,
+  maxStaticCandidates = Number.POSITIVE_INFINITY,
 ): ExtractResult {
   const messages = new Map<string, ExtractedMessage>();
   const warnings: ExtractWarning[] = module.diagnostics.map((diagnostic) => ({
@@ -133,27 +134,19 @@ export function extractMessages(
   ) => {
     const location = sourceLocation(module.source, offset);
     const comment = translationComment(options);
-    let id: string;
-    try {
-      id = createMessageId(source, options);
-    } catch {
+    if (options?.id !== undefined && !options.id.trim()) {
       warnings.push({
         code: 'invalid-message-id',
         file: module.path,
         ...location,
-        message:
-          typeof options?.id !== 'string'
-            ? diagnosticMessage(
-                '翻译 ID 必须是字符串。',
-                'Translation ID must be a string.',
-              )
-            : diagnosticMessage(
-                '翻译 ID 不能为空。',
-                'Translation ID must not be empty.',
-              ),
+        message: diagnosticMessage(
+          '翻译 ID 不能为空。',
+          'Translation ID must not be empty.',
+        ),
       });
       return;
     }
+    const id = createMessageId(source, options);
     const previous = messages.get(id);
     if (previous) {
       if (previous.source !== source || previous.comment !== comment) {
@@ -192,11 +185,17 @@ export function extractMessages(
         return;
       }
 
+      let candidateLimitExceeded = false;
+      const markCandidateLimitExceeded = () => {
+        candidateLimitExceeded = true;
+      };
       const sources = evaluateStrings(
         node.arguments[0],
         module,
         new Set(),
         dependencies,
+        maxStaticCandidates,
+        markCandidateLimitExceeded,
       );
       const options =
         node.arguments.length < 2 ||
@@ -207,7 +206,21 @@ export function extractMessages(
               module,
               new Set(),
               dependencies,
+              maxStaticCandidates,
+              markCandidateLimitExceeded,
             );
+      if (candidateLimitExceeded) {
+        warnings.push({
+          code: 'static-candidate-limit',
+          file: module.path,
+          ...sourceLocation(module.source, node.start),
+          message: diagnosticMessage(
+            `t() 的静态候选超过 ${maxStaticCandidates} 个，请缩小候选集合或调整 ESLint 规则配置。`,
+            `t() expands to more than ${maxStaticCandidates} static candidates. Reduce the candidate set or adjust the ESLint rule configuration.`,
+          ),
+        });
+        return;
+      }
       if (sources === undefined || options === undefined) {
         pending = true;
         warnings.push(

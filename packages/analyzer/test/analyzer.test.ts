@@ -18,6 +18,35 @@ const hooks = [
 ] as const;
 
 describe('@ai-i18n/analyzer', () => {
+  it('leaves extraction unlimited and reports an explicit 1000 candidate threshold', () => {
+    const extract = (
+      count: number,
+      maxCandidates = Number.POSITIVE_INFINITY,
+    ) => {
+      const values = Array.from({ length: count }, (_, index) => `'m${index}'`);
+      const module = analyzeModule(
+        `import { t } from 'virtual:ai-i18n'
+const messages = defineI18nMessages([${values.join(',')}])
+t(messages[index])`,
+        'main.ts',
+      );
+      return extractMessages(module, undefined, [], false, maxCandidates);
+    };
+
+    expect(extract(1_000, 1_000)).toMatchObject({
+      messages: { length: 1_000 },
+      warnings: [],
+    });
+    expect(extract(1_001)).toMatchObject({
+      messages: { length: 1_001 },
+      warnings: [],
+    });
+    expect(extract(1_001, 1_000)).toMatchObject({
+      messages: [],
+      warnings: [{ code: 'static-candidate-limit' }],
+    });
+  });
+
   it('shares Hook member and undefined-comment semantics', () => {
     const module = analyzeModule(
       `import { useI18n } from 'virtual:ai-i18n'

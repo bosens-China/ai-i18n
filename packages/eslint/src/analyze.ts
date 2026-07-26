@@ -28,6 +28,7 @@ export function analyzeStaticArgs(
   tsconfigPath?: string,
   lang?: AnalysisLanguage,
   autoImport = false,
+  maxStaticCandidates = Number.POSITIVE_INFINITY,
 ): StaticArgsWarning[] {
   const resolve = createImportResolver(tsconfigPath);
   const analyzer = new Analyzer({ resolve });
@@ -45,6 +46,7 @@ export function analyzeStaticArgs(
     AI_I18N_VIRTUAL_MODULE_ID,
     translationHooks(autoImport),
     autoImport,
+    maxStaticCandidates,
   ).warnings;
   const recommended = validateRecommendedUsage(
     entry,
@@ -55,6 +57,9 @@ export function analyzeStaticArgs(
   const warnings = recommended.length
     ? [
         ...extraction.filter((warning) => warning.code === 'parse-error'),
+        ...extraction.filter(
+          (warning) => warning.code === 'static-candidate-limit',
+        ),
         ...recommended,
       ]
     : extraction;

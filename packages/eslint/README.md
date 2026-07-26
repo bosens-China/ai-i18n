@@ -9,7 +9,8 @@ alpha 阶段请安装 `@ai-i18n/eslint-plugin@alpha`；peer 支持 ESLint 9 和 
 ## 按模式配置
 
 显式 import 的 Vanilla 项目可以使用 `recommended`。启用 ai-i18n 按需导入时，选择与
-Vite `framework` 一致的 preset；它会声明对应只读全局并启用同一条静态参数规则：
+Vite `framework` 一致的 preset；它会声明对应只读全局，并启用静态参数报错与候选数量
+警告：
 
 ```js
 import aiI18n from '@ai-i18n/eslint-plugin';
@@ -73,6 +74,14 @@ export default [
     },
     plugins: { 'ai-i18n': aiI18n },
     rules: {
+      'ai-i18n/static-candidate-limit': [
+        'warn',
+        {
+          autoImport: true,
+          tsconfigPath: './tsconfig.json',
+          maxStaticCandidates: 2_000,
+        },
+      ],
       'ai-i18n/t-static-args': [
         'error',
         {
@@ -83,6 +92,10 @@ export default [
   },
 ];
 ```
+
+`ai-i18n/static-candidate-limit` 默认在单个 `t()` 展开超过 1000 个静态候选时警告。
+`maxStaticCandidates` 必须是正整数，只改变 ESLint 的提示阈值；Vite 提取不设上限，也没有
+对应插件选项。
 
 插件不会自动修改宿主 ESLint 配置。
 

@@ -34,7 +34,8 @@ import { defineConfig } from 'eslint/config';
 export default defineConfig([...aiI18n.configs.recommended]);
 ```
 
-该预设启用 `ai-i18n/t-static-args`，并忽略 `.vue` 文件。它只检查实际绑定到
+该预设启用报错级别的 `ai-i18n/t-static-args` 和警告级别的
+`ai-i18n/static-candidate-limit`，并忽略 `.vue` 文件。它只检查实际绑定到
 `virtual:ai-i18n` 的 `t`。
 
 ## 按需导入
@@ -103,6 +104,14 @@ export default defineConfig([
       'ai-i18n': aiI18n,
     },
     rules: {
+      'ai-i18n/static-candidate-limit': [
+        'warn',
+        {
+          autoImport: true,
+          tsconfigPath: './tsconfig.json',
+          maxStaticCandidates: 2_000,
+        },
+      ],
       'ai-i18n/t-static-args': [
         'error',
         {
@@ -121,6 +130,21 @@ export default defineConfig([
 | -------------- | --------- | ---- | --------------- | ------------------------------------------- |
 | `autoImport`   | `boolean` | 否   | `false`         | 检查未显式导入、由 ai-i18n 注入的全局 API。 |
 | `tsconfigPath` | `string`  | 否   | 不读取 tsconfig | 解析 TypeScript `paths` alias。             |
+
+### `static-candidate-limit` 选项
+
+“候选”是分析器对单个表达式推导出的所有可能静态值。例如
+`const states = defineI18nMessages(['开', '关']); t(states[index])` 有 2 个候选。它不是
+项目总文案数，也不是 Provider 批次大小。
+
+| 选项                  | 类型      | 必填 | 默认值          | 作用                                        |
+| --------------------- | --------- | ---- | --------------- | ------------------------------------------- |
+| `autoImport`          | `boolean` | 否   | `false`         | 检查未显式导入、由 ai-i18n 注入的全局 API。 |
+| `tsconfigPath`        | `string`  | 否   | 不读取 tsconfig | 解析 TypeScript `paths` alias。             |
+| `maxStaticCandidates` | `number`  | 否   | `1000`          | 单个 `t()` 触发警告的正整数阈值。           |
+
+该规则只发出 ESLint warning，不截断 Vite 的静态提取。确实存在大型有限集合时，可以在
+ESLint 配置中调高阈值；Vite 插件本身没有对应选项。
 
 插件不会自动修改宿主 ESLint 配置，也不会生成或更新 `i18n/` 协议文件。
 
