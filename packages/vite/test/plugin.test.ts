@@ -343,7 +343,7 @@ const messages = defineI18nMessages({ save: '保存' })
     const { transform } = setupPlugin(
       [],
       undefined,
-      { ...options, loading: { strategy: 'locale' } },
+      { ...options, loading: {} },
       [
         { name: 'vite:vue' },
         { name: 'vite:vue-jsx' },
@@ -382,7 +382,7 @@ export const label = t('显式 Hook')`,
     const { transform } = setupPlugin(
       [],
       undefined,
-      { ...options, loading: { strategy: 'locale' } },
+      { ...options, loading: {} },
       [{ name: 'vite:react-babel' }, { name: 'unplugin-auto-import' }],
     );
     const react = await transform(
@@ -522,7 +522,7 @@ export const View = () => <p>{t('React JSX')}</p>`,
       {
         ...options,
         defaultLang: 'zh-CN',
-        loading: { strategy: 'locale' },
+        loading: {},
       },
     );
     await transform(
@@ -575,7 +575,7 @@ export const View = () => <p>{t('React JSX')}</p>`,
     const { plugin } = setupPlugin([], undefined, {
       ...options,
       defaultLang: 'zh-CN',
-      loading: { strategy: 'locale' },
+      loading: {},
     });
     const runtimeId = callHook<string>(plugin.resolveId, 'virtual:ai-i18n');
     const code = await callHook<Promise<string>>(plugin.load, runtimeId);

@@ -28,18 +28,11 @@ describe('@ai-i18n/core message IDs', () => {
     expect(createMessageId('A#B\\C', { comment: 'D#E' })).toBe('A#B\\C');
   });
 
-  it('uses trimmed explicit IDs and rejects empty ones', () => {
+  it('uses trimmed explicit IDs', () => {
     expect(createMessageId('提交', { id: ' checkout.submit ' })).toBe(
       'checkout.submit',
     );
     expect(createMessageId('提交', { comment: '按钮' })).toBe('提交');
-    expect(() => createMessageId('提交', { id: '   ' })).toThrow(
-      'translation id must not be empty',
-    );
-    expect(() =>
-      // @ts-expect-error 字符串 comment 已从公开 API 移除。
-      createMessageId('提交', '按钮'),
-    ).toThrow('translation options must be an object');
   });
 });
 
@@ -215,10 +208,6 @@ describe('@ai-i18n/core runtime', () => {
       runtime.t('提交', { id: ' checkout.submit ', comment: '结算按钮' }),
     ).toBe('Place order');
     expect(runtime.t('保存', { comment: '按钮' })).toBe('Save');
-    expect(() =>
-      // @ts-expect-error 字符串 comment 已从公开 API 移除。
-      runtime.t('保存', '按钮'),
-    ).toThrow('translation options must be an object');
   });
 
   it('translates tagged templates and lets targets reorder placeholders', () => {
@@ -300,7 +289,7 @@ describe('@ai-i18n/core runtime', () => {
     expect(runtime.t`表达式值为 ${'{{0}}'}`).toBe('Expression: {{0}}');
   });
 
-  it('detects and persists supported browser language preferences', async () => {
+  it('persists supported language preferences and falls back to default', async () => {
     const values = new Map<string, string>([['preferred', 'zh-CN']]);
     const storage: Storage = {
       get length() {
@@ -313,44 +302,25 @@ describe('@ai-i18n/core runtime', () => {
       setItem: (key, value) => values.set(key, value),
     };
     vi.stubGlobal('localStorage', storage);
-    vi.stubGlobal('navigator', {
-      languages: ['en-GB'],
-      language: 'en-GB',
-    });
 
     const persisted = createI18nRuntime({
       sourceLang: 'zh-CN',
-      defaultLang: 'zh-CN',
+      defaultLang: 'en-US',
       locales,
       persist: { key: 'preferred' },
-      detect: 'navigator',
     });
     expect(persisted.getLang()).toBe('zh-CN');
     await persisted.setLang('en-US');
     expect(values.get('preferred')).toBe('en-US');
 
-    values.clear();
-    const detected = createI18nRuntime({
+    values.set('preferred', 'unsupported');
+    const fallback = createI18nRuntime({
       sourceLang: 'zh-CN',
-      defaultLang: 'zh-CN',
+      defaultLang: 'en-US',
       locales,
-      detect: 'navigator',
+      persist: { key: 'preferred' },
     });
-    expect(detected.getLang()).toBe('en-US');
-  });
-
-  it('supports key, marked, and empty missing-translation fallbacks', () => {
-    const create = (fallback: 'key' | 'marked' | 'empty') =>
-      createI18nRuntime({
-        sourceLang: 'zh-CN',
-        defaultLang: 'en-US',
-        locales,
-        fallback,
-      });
-
-    expect(create('key').t('A#B')).toBe('A#B');
-    expect(create('marked').t('缺失')).toBe('⟦缺失⟧');
-    expect(create('empty').t('缺失')).toBe('');
+    expect(fallback.getLang()).toBe('en-US');
   });
 
   it('registers all locales and falls back only for null or missing values', async () => {
@@ -556,5 +526,27 @@ describe('@ai-i18n/core runtime', () => {
     await unloaded.setLang('en-US');
     expect(unloaded.t('标题')).toBe('Ignored');
     expect(listener).toHaveBeenCalled();
+  });
+
+  it('warns when the initial lazy locale cannot be loaded', async () => {
+    const error = new Error('offline');
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const runtime = createI18nRuntime({
+      sourceLang: 'zh-CN',
+      defaultLang: 'en-US',
+      locales,
+      localeLoaders: {
+        'en-US': async () => {
+          throw error;
+        },
+      },
+    });
+
+    await vi.waitFor(() => expect(warn).toHaveBeenCalledOnce());
+    expect(runtime.getLang()).toBe('zh-CN');
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining('Failed to load initial locale "en-US"'),
+      error,
+    );
   });
 });

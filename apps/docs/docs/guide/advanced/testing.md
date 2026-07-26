@@ -47,7 +47,7 @@ Vue 项目把 `react()` 换成 `vue()`，`framework` 同样按最终插件列表
 ## 与正式配置共享 options
 
 `AiI18nVitestOptions` 是 `AiI18nOptions` 的子集，只保留 `sourceLang`、`defaultLang`、
-`locales`、`framework`、`persist`、`detect`、`fallback`。把这部分抽成共享文件，`vite.config.ts`
+`locales`、`framework`、`persist`。把这部分抽成共享文件，`vite.config.ts`
 与 `vitest.config.ts` 各自引用，语言列表和运行时策略只需要改一处：
 
 ```ts
@@ -60,7 +60,6 @@ export const aiI18nOptions = {
     { value: 'en-US', label: 'English' },
   ],
   persist: { key: 'app-lang' },
-  detect: 'navigator',
 } as const;
 ```
 
@@ -92,19 +91,15 @@ export default defineConfig({
 
 | 能力                        | 测试环境行为                                                                                             |
 | --------------------------- | -------------------------------------------------------------------------------------------------------- |
-| `t(source)` / `` t`...` ``  | 可用。测试 Runtime 没有加载任何目标语言译文，返回值始终遵循 `fallback` 策略。                            |
-| `setLang(value)`            | 可用，可用于测试语言切换触发的重渲染、`persist` 写入 localStorage、`detect` 探测逻辑。                   |
+| `t(source)` / `` t`...` ``  | 可用。测试 Runtime 没有加载任何目标语言译文，因此固定返回 source 文案。                                  |
+| `setLang(value)`            | 可用，可用于测试语言切换触发的重渲染，以及 `persist` 写入 localStorage。                                 |
 | `useI18n()`                 | Vue / React 模式下可用，Hook 行为与生产环境一致（`t` 的引用会随语言/Runtime 版本变化）。                 |
 | 静态提取 / `i18n/` 协议文件 | 不会发生，不会创建、读取或修改 `translations.json`、`overrides.json`、`extracted/*.json`、`locales/**`。 |
 | Provider / AI 自动翻译      | 不会调用；`translator`、`provider` 不属于 `AiI18nVitestOptions`。                                        |
 
-由于没有加载任何目标语言译文，`fallback` 策略决定了测试里能看到的文案：
-
-- 默认 `fallback: 'source'`：`t('保存')` 始终返回 `"保存"`，即使调用过
-  `await setLang('en-US')` 之后也是如此。可以把这类测试理解为契约测试——只断言组件确实调用了
-  `t()` 并渲染出结果，不断言具体译文内容。
-- 需要验证 UI 在漏译场景下的表现（例如确认不会渲染出 `null` 或崩溃）时，传入
-  `fallback: 'marked'`，`t()` 会返回 `⟦保存⟧` 这样的标记文本，方便在测试断言或快照里识别。
+由于没有加载任何目标语言译文，`t('保存')` 始终返回 `"保存"`，即使调用过
+`await setLang('en-US')` 之后也是如此。可以把这类测试理解为契约测试——只断言组件确实调用了
+`t()` 并渲染出结果，不断言具体译文内容。
 
 具体译文是否正确（例如 `en-US` 有没有翻译成 `"Save"`）属于协议文件的职责，不应该在单测里断言。
 这类校验交给 [AI 翻译](/guide/advanced/ai-translation) 的 Provider 流程或人工检查

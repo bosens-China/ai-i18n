@@ -1,29 +1,37 @@
 ---
 name: use-ai-i18n-mcp
-description: Use the ai-i18n local MCP tools to discover translation projects, list missing messages, fill AI Translation Memory, and safely commit human review values to overrides.json. Use for ai_i18n_discover, ai_i18n_list_translation_files, ai_i18n_list_translations, and ai_i18n_write_translations, especially in monorepos where the final Vite output directory must be derived first.
+description: Use the ai-i18n local MCP tools to validate a final translation directory, list missing messages, fill AI Translation Memory, and safely commit human review values to overrides.json. Use for ai_i18n_list_translation_files, ai_i18n_list_translations, and ai_i18n_write_translations, especially in monorepos where the Agent must derive one Vite build's final output directory first.
 ---
 
 # Use ai-i18n MCP
 
-Use discovery plus the translation tools in a read → translate → write → verify loop. Do not scan or
-edit generated JSON manually when the MCP tools are available.
+Use the translation tools in a locate → read → translate → write → verify loop. Do not scan the
+workspace for protocol directories or edit generated JSON manually when the MCP tools are available.
 
 `@ai-i18n/mcp` is an independently versioned local stdio package. During prerelease register
 `npx -y @ai-i18n/mcp@alpha`; registration takes no project path.
 
 ## Establish the project path
 
-1. Call `ai_i18n_discover` without arguments. It uses MCP workspace roots and returns absolute
-   `i18n_directory` candidates.
-2. Use the only candidate. If several are returned, read the target app's `vite.config.*` and match
-   Vite `root` plus `aiI18n({ directory })`; do not execute the config.
-3. Pass the returned absolute path unchanged to every translation tool.
+1. Identify the exact Vite app requested by the user. Read that app's `package.json`, workspace
+   scripts, and `vite.config.*` as text; do not execute the config. In a monorepo, do not use the
+   repository root merely because it is the MCP workspace root. If several apps are plausible and
+   the task does not identify one, ask the user which build to use.
+2. Determine Vite `root`. Resolve an explicit `root` using the command's working directory. When
+   `root` is omitted, use the directory in which that app's Vite command runs; workspace package
+   scripts normally run in the package directory, while a root script may run from the repository
+   root.
+3. Read `aiI18n({ directory })`. Resolve it against the final Vite `root`; when omitted, use `i18n`.
+   Convert the result to an absolute path. Do not search sibling apps for a directory that happens
+   to contain similarly named JSON files.
+4. Pass that absolute path as `i18n_directory` to a list tool. The server validates that it exists,
+   is a directory, and contains valid `translations.json`, `overrides.json`, and `extracted/`.
 
 Require existing `translations.json`, `overrides.json`, and `extracted/`. Run Vite Dev/Build first
 when they do not exist. Running ESLint never creates protocol files.
 
 Framework mode, flat extracted filenames, `defineI18nMessages()`, Provider batching, and
-`loading.strategy: 'locale'` do not change MCP discovery, pagination, or write semantics.
+`loading` do not change MCP directory validation, pagination, or write semantics.
 `cache.maxMessages` and `cache.maxBytes` still bound inactive history, but now measure
 `translations.json`.
 
@@ -110,6 +118,8 @@ reconciliation, commit source changes, generated `ai-i18n.d.ts`, both translatio
 ## Handle common failures
 
 - **Directory not found**: recompute Vite root plus `directory`.
+- **Protocol directory incomplete**: run the target app's Vite Dev/Build, then retry the same final
+  directory; do not scan for another directory.
 - **Unknown locale**: use locale values from `aiI18n({ locales })`, not labels.
 - **Invalid cursor**: restart that listing; cursors are opaque.
 - **Shared source**: fill updates that message ID's AI memory. Review default affects every occurrence

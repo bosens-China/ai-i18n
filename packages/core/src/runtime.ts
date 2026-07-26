@@ -12,7 +12,6 @@ export type ModuleMessages = Record<string, Record<string, TranslationValue>>;
 
 export type LocaleMessages = Record<string, TranslationValue>;
 export type LocaleLoader = () => Promise<LocaleMessages>;
-export type MissingTranslationFallback = 'source' | 'key' | 'empty' | 'marked';
 
 export interface Translate {
   (source: string, options?: TranslationOptions): string;
@@ -25,8 +24,6 @@ export interface I18nRuntimeOptions {
   locales: readonly LangOption[];
   localeLoaders?: Readonly<Record<string, LocaleLoader>>;
   persist?: boolean | { key: string };
-  detect?: false | 'navigator';
-  fallback?: MissingTranslationFallback;
 }
 
 export interface I18nRuntime {
@@ -54,23 +51,12 @@ export function createI18nRuntime(options: I18nRuntimeOptions): I18nRuntime {
   if (!localeValues.has(options.defaultLang)) {
     throw new Error('[ai-i18n] defaultLang must exist in locales');
   }
-  if (
-    options.fallback !== undefined &&
-    !['source', 'key', 'empty', 'marked'].includes(options.fallback)
-  ) {
-    throw new Error(
-      '[ai-i18n] fallback must be "source", "key", "empty", or "marked"',
-    );
-  }
-
   const listeners = new Set<() => void>();
   const localeLoaders = options.localeLoaders;
   const lazy = localeLoaders !== undefined;
   const persistenceKey = resolvePersistenceKey(options.persist);
   const initialLang =
-    readPersistedLang(persistenceKey, localeValues) ??
-    detectNavigatorLang(options.detect, locales) ??
-    options.defaultLang;
+    readPersistedLang(persistenceKey, localeValues) ?? options.defaultLang;
   const loadedLocales = new Map<string, LocaleMessages>();
   const pendingLocaleUpdates = new Map<string, LocaleMessages>();
   const localeLoads = new Map<string, Promise<LocaleMessages>>();
@@ -154,9 +140,6 @@ export function createI18nRuntime(options: I18nRuntimeOptions): I18nRuntime {
       }
       return value;
     }
-    if (options.fallback === 'key') return messageId;
-    if (options.fallback === 'empty') return '';
-    if (options.fallback === 'marked') return `⟦${sourceFallback}⟧`;
     return sourceFallback;
   }
 
@@ -262,7 +245,12 @@ export function createI18nRuntime(options: I18nRuntimeOptions): I18nRuntime {
 
   if (lazy && initialLang !== options.sourceLang) {
     // 默认目标语言异步加载；失败时保持同步可用的 source fallback。
-    void changeLang(initialLang, false).catch(() => {});
+    void changeLang(initialLang, false).catch((error: unknown) => {
+      console.warn(
+        `[ai-i18n] 初始语言“${initialLang}”加载失败，继续使用源语言“${options.sourceLang}” / Failed to load initial locale "${initialLang}"; continuing with source locale "${options.sourceLang}".`,
+        error,
+      );
+    });
   }
   return runtime;
 }
@@ -297,32 +285,6 @@ function writePersistedLang(key: string | undefined, value: string): void {
   } catch {
     // 隐私模式、禁用存储或配额错误不应阻断语言切换。
   }
-}
-
-function detectNavigatorLang(
-  detect: I18nRuntimeOptions['detect'],
-  locales: readonly LangOption[],
-): string | undefined {
-  if (detect !== 'navigator' || typeof navigator === 'undefined') {
-    return undefined;
-  }
-  const requested = [...(navigator.languages ?? []), navigator.language].filter(
-    Boolean,
-  );
-  for (const language of requested) {
-    const exact = locales.find(
-      (locale) => locale.value.toLowerCase() === language.toLowerCase(),
-    );
-    if (exact) return exact.value;
-  }
-  for (const language of requested) {
-    const base = language.toLowerCase().split('-')[0];
-    const compatible = locales.find(
-      (locale) => locale.value.toLowerCase().split('-')[0] === base,
-    );
-    if (compatible) return compatible.value;
-  }
-  return undefined;
 }
 
 function validateLocaleMessages(

@@ -68,7 +68,7 @@ export function App() {
             { value: 'zh-CN', label: '中文' },
             { value: 'en-US', label: 'English' },
           ],
-          loading: { strategy: 'locale' },
+          loading: {},
           translator,
           provider: { batchLength: 12_000, strict: true },
         }),

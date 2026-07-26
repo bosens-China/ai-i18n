@@ -1,6 +1,6 @@
 # Phase 2 验收记录
 
-> 更新日期：2026-07-24
+> 更新日期：2026-07-26
 >
 > 当前范围：P0 + P1（Build Watch）+ P2（Cache 容量）+ P3（Locale Lazy）。
 > Phase 2 已实现，等待外部验收。
@@ -27,7 +27,7 @@
 
 ## P3 Locale Lazy
 
-- `loading.strategy = 'locale'` 为每个目标 locale 生成独立的内容 hash chunk；省略
+- 配置 `loading` 后为每个目标 locale 生成独立的内容 hash chunk；省略
   `loading` 时继续使用 Phase 1 全语言 registration。
 - 静态动态 import manifest 在 Dev 使用公开 locale URL，在 Build 指向 virtual locale
   module。Dev 预加载稳定 wrapper，避免入口模块 transform 前冻结不完整语言快照；Build
@@ -61,7 +61,7 @@
 ## 质量门禁
 
 - `pnpm check`：通过。
-- `pnpm test`：24 个测试文件、168 个测试通过。
+- `pnpm test`：29 个测试文件、250 个测试通过。
 - `pnpm build`：6 个发布包构建、publint 和类型产物检查通过。
 - `pnpm docs:build`：Vanilla、Vue、React 示例与 Astro Starlight 文档站构建通过。
 - 修改后的 `packages/vite/src` 文件均不超过 400 行。

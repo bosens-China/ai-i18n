@@ -13,7 +13,7 @@ export default defineConfig({
         { value: 'en-US', label: 'English' },
         { value: 'ja-JP', label: '日本語' },
       ],
-      loading: { strategy: 'locale' },
+      loading: {},
       html: true,
     }),
     AutoImport({ imports: ['vue'], dts: false }),

@@ -445,6 +445,19 @@ test('requires both translation input files', async () => {
   ).rejects.toThrow('required ai-i18n file is missing: overrides.json');
 });
 
+test('requires the extracted protocol directory', async () => {
+  const root = await fixture();
+  const directory = path.join(root, 'apps/web/i18n');
+  await fs.rm(path.join(directory, 'extracted'), { recursive: true });
+
+  await expect(
+    new AiI18nProjectService().listFiles({
+      i18n_directory: directory,
+      limit: 50,
+    }),
+  ).rejects.toThrow('required ai-i18n directory is missing: extracted');
+});
+
 test('ignores nested extracted directories outside the current protocol', async () => {
   const root = await fixture();
   const directory = path.join(root, 'apps/web/i18n');
@@ -464,10 +477,6 @@ test('ignores nested extracted directories outside the current protocol', async 
 
 test('registers callable MCP tools with defaults and structured output', async () => {
   const root = await fixture();
-  await fs.mkdir(path.join(root, 'invalid/i18n/extracted'), {
-    recursive: true,
-  });
-  await fs.writeFile(path.join(root, 'invalid/i18n/translations.json'), '{}');
   const server = createAiI18nMcpServer();
   const client = new Client({ name: 'ai-i18n-mcp-test', version: '0.0.0' });
   const [clientTransport, serverTransport] =
@@ -480,7 +489,6 @@ test('registers callable MCP tools with defaults and structured output', async (
   try {
     const tools = await client.listTools();
     expect(tools.tools.map((tool) => tool.name)).toEqual([
-      'ai_i18n_discover',
       'ai_i18n_list_translation_files',
       'ai_i18n_list_translations',
       'ai_i18n_write_translations',
@@ -496,14 +504,6 @@ test('registers callable MCP tools with defaults and structured output', async (
           enum: ['default', 'message'],
         },
       },
-    });
-    const discovered = await client.callTool({
-      name: 'ai_i18n_discover',
-      arguments: { cwd: root },
-    });
-    expect(discovered.structuredContent).toMatchObject({
-      count: 1,
-      items: [{ i18n_directory: path.join(root, 'apps/web/i18n') }],
     });
     const result = await client.callTool({
       name: 'ai_i18n_list_translations',

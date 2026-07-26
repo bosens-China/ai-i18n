@@ -38,7 +38,9 @@ t(messages.states[index]);
 
 它接受任意类型，并在 Vite 或 `aiI18nVitest()` 转换时消除为原参数。它不会冻结、拷贝或校验
 对象；作用只是明确告诉静态分析器：这个对象或数组是可枚举的消息集合。动态索引会提取集合中
-可证明有限的候选值，函数调用、getter、`await` 等用户代码仍不会在分析阶段执行。
+可证明有限的候选值，函数调用、getter、`await` 等用户代码仍不会在分析阶段执行。Vite
+不会限制静态候选数量；ESLint 默认在单个表达式超过 1000 个候选时给出可配置警告，详见
+[ESLint](/guide/basic/eslint)。
 
 宏必须直接写成 `defineI18nMessages(value)`，不能赋值给别名、作为值传递或脱离
 `aiI18n()` / `aiI18nVitest()` 处理的 Vite 模块运行；否则插件会报错，或在未经过 Vite
@@ -76,6 +78,8 @@ t('提交', { id: 'git.commit', comment: '创建 Git 提交' });
 未指定 `id` 时，message ID 就是 `source`，同一 source 的调用共享译文。显式 ID 用来拆分
 同一句原文的不同语义，例如普通表单中的“提交”和 Git 场景中的“提交”。ID 会去除首尾空白，
 且不能为空；同一 ID 不得指向不同原文。`comment` 只提供给翻译模型，不参与默认 ID。
+TypeScript 会检查 options 的字段名以及 `id`、`comment` 类型；Analyzer、ESLint 和 Vite
+构建检查静态可提取性、空 ID 与 ID 冲突。浏览器 Runtime 不再重复校验这些输入。
 
 动态值使用 tagged template。表达式不会交给翻译模型，内部会变成 `{{0}}`、`{{1}}` 等占位符；
 译文可以调整占位符顺序，运行时再填入值：
@@ -115,7 +119,7 @@ localStorage。
 function getLang(): string;
 ```
 
-返回当前语言的 `value`。首次加载按“有效持久化值 → 浏览器语言 → `defaultLang`”选择；
+返回当前语言的 `value`。首次加载按“有效持久化值 → `defaultLang`”选择；
 按 locale 懒加载时，目标语言资源就绪前暂时返回 `sourceLang`。
 
 ## `getLangs()`

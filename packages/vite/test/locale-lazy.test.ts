@@ -31,20 +31,19 @@ describe('Locale Lazy', () => {
     expect(() =>
       aiI18n({
         ...base,
-        loading: { strategy: 'locale', preload: ['missing'] },
+        loading: { preload: ['missing'] },
       }),
     ).toThrow('unknown locale "missing"');
     expect(() =>
       aiI18n({
         ...base,
-        loading: { strategy: 'locale', prefetch: ['zh-CN'] },
+        loading: { prefetch: ['zh-CN'] },
       }),
     ).toThrow('source locale "zh-CN"');
     expect(() =>
       aiI18n({
         ...base,
         loading: {
-          strategy: 'locale',
           preload: ['en-US'],
           prefetch: ['en-US'],
         },
@@ -54,7 +53,7 @@ describe('Locale Lazy', () => {
       aiI18n({
         ...base,
         defaultLang: 'en-US',
-        loading: { strategy: 'locale', prefetch: ['en-US'] },
+        loading: { prefetch: ['en-US'] },
       }),
     ).toThrow('both preloaded and prefetched');
   });
@@ -78,7 +77,6 @@ globalThis.changeLanguage = setLang`,
       base: '/docs/',
       plugin: {
         loading: {
-          strategy: 'locale',
           preload: ['en-US', 'en-US'],
           prefetch: ['ja-JP'],
         },
@@ -118,7 +116,7 @@ globalThis.changeLanguage = setLang`,
       plugin: {
         defaultLang: 'en-US',
         html: true,
-        loading: { strategy: 'locale' },
+        loading: {},
       },
     });
     const items = buildOutputItems(output);
@@ -147,7 +145,7 @@ globalThis.changeLanguage = setLang`,
     );
 
     const output = await buildFixture(root, {
-      plugin: { loading: { strategy: 'locale' } },
+      plugin: { loading: {} },
     });
     const items = buildOutputItems(output);
     const html = assetSource(items, 'index.html');
@@ -181,7 +179,7 @@ globalThis.changeLanguage = setLang`,
       base: './',
       plugin: {
         html: true,
-        loading: { strategy: 'locale', preload: ['en-US'] },
+        loading: { preload: ['en-US'] },
       },
       build: {
         rollupOptions: {
@@ -231,7 +229,7 @@ globalThis.changeLanguage = setLang`,
         aiI18n({
           ...pluginOptions(),
           html: true,
-          loading: { strategy: 'locale', preload: ['en-US'] },
+          loading: { preload: ['en-US'] },
           provider: { debounceMs: 0 },
         }),
       ],

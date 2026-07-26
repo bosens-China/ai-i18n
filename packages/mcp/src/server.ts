@@ -1,11 +1,8 @@
 import { createRequire } from 'node:module';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 import { z } from 'zod';
 import { AiI18nProjectService } from './project.js';
-import { discoverI18nDirectories } from './discovery.js';
 
 const { version } = createRequire(import.meta.url)('../package.json') as {
   version: string;
@@ -39,43 +36,12 @@ const TranslationItemSchema = z.object({
   occurrence_count: z.number().int(),
   locations: z.array(LocationSchema).optional(),
 });
-const DiscoveredDirectorySchema = z.object({
-  i18n_directory: z.string(),
-  workspace_root: z.string(),
-});
-
 export function createAiI18nMcpServer(): McpServer {
   const server = new McpServer({
     name: 'ai-i18n-mcp-server',
     version,
   });
   const project = new AiI18nProjectService();
-
-  server.registerTool(
-    'ai_i18n_discover',
-    {
-      title: 'Discover ai-i18n projects',
-      description:
-        'Discover valid ai-i18n protocol directories from MCP workspace roots. No project path is required when the client exposes roots; cwd is an optional fallback.',
-      inputSchema: z
-        .object({
-          cwd: z.string().min(1).max(4_096).optional(),
-        })
-        .strict(),
-      outputSchema: z.object({
-        count: z.number().int(),
-        items: z.array(DiscoveredDirectorySchema),
-      }),
-      annotations: readAnnotations,
-    },
-    async ({ cwd }) =>
-      callTool(async () => {
-        const items = await discoverI18nDirectories(
-          await discoveryRoots(server, cwd),
-        );
-        return { count: items.length, items };
-      }),
-  );
 
   server.registerTool(
     'ai_i18n_list_translation_files',
@@ -207,25 +173,6 @@ async function callTool<T extends object>(
       content: [{ type: 'text', text: errorMessage(error) }],
     };
   }
-}
-
-async function discoveryRoots(
-  server: McpServer,
-  cwd: string | undefined,
-): Promise<string[]> {
-  if (cwd) return [path.resolve(cwd)];
-  if (server.server.getClientCapabilities()?.roots) {
-    try {
-      const roots = await server.server.listRoots();
-      const files = roots.roots
-        .filter((root) => root.uri.startsWith('file:'))
-        .map((root) => fileURLToPath(root.uri));
-      if (files.length) return files;
-    } catch {
-      // 部分客户端声明 roots 但未实现 roots/list；回退到 MCP 进程目录。
-    }
-  }
-  return [process.cwd()];
 }
 
 function errorMessage(error: unknown): string {

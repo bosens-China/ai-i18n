@@ -9,27 +9,25 @@
 1. 列出仍有缺失翻译的源码文件。
 2. 分页读取文件或全项目的具体翻译内容。
 3. 批量填充缺失翻译，或提交人工审校后的修订。
-4. 从客户端 workspace roots 自动发现可用协议目录。
+4. 校验 Agent 提供的最终协议目录，不扫描 workspace 猜测项目。
 
 ## 2. 边界
 
-- MCP 不扫描业务源码，不执行或解析 `vite.config.*`。
+- MCP 不扫描 workspace 或业务源码，不执行或解析 `vite.config.*`。
 - MCP 注册与启动不接收项目路径，同一 server 可以处理不同项目。
-- `ai_i18n_discover` 优先扫描客户端 workspace roots；未提供时回退 MCP 进程目录，也可显式
-  传入 `cwd`。
-- 发现过程只识别同时含有合法 `translations.json`、`overrides.json` 与 `extracted/` 的目录。
-- `i18n_directory` 必须是经 realpath 校验的绝对目录。
+- Agent 必须先确认目标 Vite build，并根据其运行目录、Vite `root` 与
+  `aiI18n({ directory })`（默认 `i18n`）提供最终绝对 `i18n_directory`。
+- monorepo 中每个 Vite build 独立解析；目标不明确时由 Agent 向用户确认，不能扫描整个仓库
+  猜测。
+- `i18n_directory` 必须是经 realpath 校验的绝对目录，并同时包含合法
+  `translations.json`、`overrides.json` 与 `extracted/`。
 - MCP 只读取单层 `extracted/*.json` 来校验 source 与 message 的归属；嵌套目录不属于当前
   协议并会被忽略。fill 写 `translations.json`，review 写 `overrides.json`。
 - extracted 与 locales 继续由 Vite Dev/Build 维护。
 
 ## 3. 工具
 
-### 3.1 `ai_i18n_discover`
-
-返回所有已发现项目的绝对 `i18n_directory` 和 `workspace_root`。`cwd` 仅作为显式回退。
-
-### 3.2 `ai_i18n_list_translation_files`
+### 3.1 `ai_i18n_list_translation_files`
 
 - `i18n_directory`：必填。
 - `locale`：可选。
@@ -38,7 +36,7 @@
 
 只返回当前 Translation Memory 中仍有 `null` 的源码文件，并按 source 稳定排序。
 
-### 3.3 `ai_i18n_list_translations`
+### 3.2 `ai_i18n_list_translations`
 
 - `i18n_directory`：必填。
 - `file`：可选；省略时按 message ID 全项目去重。
@@ -50,7 +48,7 @@
 返回 source、comment、translations、缺失语言、代表文件和出现次数。单次结构化响应限制约
 25,000 字符，超限时缩短当前页并返回 cursor。
 
-### 3.4 `ai_i18n_write_translations`
+### 3.3 `ai_i18n_write_translations`
 
 输入一个 source 文件和最多 100 个 `message_id + locale + value`：
 

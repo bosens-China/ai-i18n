@@ -64,7 +64,7 @@ P0/P1 验收证据见 [Phase 2 验收记录](./ACCEPTANCE.md)。
 
 ### 3.1 配置与类型
 
-- [x] 增加 `loading.strategy = 'locale'`。
+- [x] 使用 `loading` 对象启用按 locale 加载，不暴露单一 strategy 选项。
 - [x] 增加 `loading.preload` locale 列表。
 - [x] 增加 `loading.prefetch` locale 列表。
 - [x] 校验 locale 必须存在于配置。

@@ -17,8 +17,8 @@
   `{{0}}`、`{{1}}` 占位，翻译可调整占位顺序但不可增删。
 - comment 仅提供翻译上下文，不参与 message ID；修改 comment 会继续使用同一条翻译。
 - `@ai-i18n/vite/vitest` 提供不读写协议文件的测试期虚拟模块。
-- Runtime 支持语言偏好持久化、浏览器语言探测和缺译策略；已写入业务 state 的译后字符串
-  不自动更新，应用应在展示层调用 `t` 或保存 message ID。
+- Runtime 支持语言偏好持久化；初始语言使用有效持久化值或 `defaultLang`，缺译固定返回
+  source。已写入业务 state 的译后字符串不自动更新，应用应在展示层调用 `t` 或保存 message ID。
 - MCP 可自动发现 workspace 内协议目录，发现和列表结果同时提供完整 JSON 文本与结构化数据。
 - alpha 阶段所有面向用户和 Agent 的安装说明显式使用 `@alpha`。
 

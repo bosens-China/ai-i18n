@@ -56,7 +56,7 @@ console.log(t('你好，世界！'));
 console.log(t`你好，${user.name}！`);
 ```
 
-`loading.strategy: 'locale'` 只影响浏览器语言包拆分，与 MCP 的目录和工具契约无关。
+`loading` 只影响浏览器语言包拆分，与 MCP 的目录和工具契约无关。
 
 ## 📄 License
 

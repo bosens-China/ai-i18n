@@ -1,5 +1,5 @@
 import fs from 'node:fs';
-import type { LangOption, MissingTranslationFallback } from '@ai-i18n/core';
+import type { LangOption } from '@ai-i18n/core';
 import { diagnosticMessage } from '@ai-i18n/analyzer';
 import { normalizePath } from 'vite';
 import type {
@@ -14,8 +14,6 @@ export function normalizeOptions(options: {
   defaultLang?: string;
   locales: readonly LangOption[];
   persist?: boolean | { key: string };
-  detect?: false | 'navigator';
-  fallback?: MissingTranslationFallback;
   loading?: AiI18nLocaleLoadingOptions;
   cache?: AiI18nCacheOptions;
 }): NormalizedAiI18nOptions {
@@ -57,28 +55,6 @@ export function normalizeOptions(options: {
   validatePositiveInteger('cache.maxMessages', options.cache?.maxMessages);
   validatePositiveInteger('cache.maxBytes', options.cache?.maxBytes);
   const persist = normalizePersist(options.persist);
-  if (
-    options.detect !== undefined &&
-    ![false, 'navigator'].includes(options.detect)
-  ) {
-    throw new Error(
-      diagnosticMessage(
-        '[ai-i18n] detect 必须是 false 或“navigator”。',
-        '[ai-i18n] detect must be false or "navigator".',
-      ),
-    );
-  }
-  if (
-    options.fallback !== undefined &&
-    !['source', 'key', 'empty', 'marked'].includes(options.fallback)
-  ) {
-    throw new Error(
-      diagnosticMessage(
-        '[ai-i18n] fallback 必须是“source”“key”“empty”或“marked”。',
-        '[ai-i18n] fallback must be "source", "key", "empty", or "marked".',
-      ),
-    );
-  }
   const loading = options.loading
     ? normalizeLoading(options.loading, values, options.sourceLang, defaultLang)
     : undefined;
@@ -87,10 +63,6 @@ export function normalizeOptions(options: {
     defaultLang,
     locales,
     ...(persist ? { persist } : {}),
-    ...(options.detect === 'navigator' ? { detect: 'navigator' as const } : {}),
-    ...(options.fallback && options.fallback !== 'source'
-      ? { fallback: options.fallback }
-      : {}),
     ...(loading ? { loading } : {}),
   };
 }
@@ -129,14 +101,6 @@ function normalizeLoading(
   sourceLang: string,
   defaultLang: string,
 ) {
-  if (loading.strategy !== 'locale') {
-    throw new Error(
-      diagnosticMessage(
-        '[ai-i18n] loading.strategy 必须是“locale”。',
-        '[ai-i18n] loading.strategy must be "locale".',
-      ),
-    );
-  }
   const preload = new Set(loading.preload ?? []);
   const prefetch = new Set(loading.prefetch ?? []);
   if (defaultLang !== sourceLang) preload.add(defaultLang);
@@ -174,7 +138,6 @@ function normalizeLoading(
     }
   }
   return {
-    strategy: 'locale' as const,
     preload: [...preload],
     prefetch: [...prefetch],
   };

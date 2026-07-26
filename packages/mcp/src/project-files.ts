@@ -80,10 +80,30 @@ export async function listJsonFiles(directory: string): Promise<string[]> {
     .sort();
 }
 
+async function requireDirectory(directory: string): Promise<void> {
+  let stat;
+  try {
+    stat = await fs.stat(directory);
+  } catch (error) {
+    if (isNotFound(error)) {
+      throw new Error(
+        `[ai-i18n/mcp] 缺少必需的 ai-i18n 目录 / required ai-i18n directory is missing: ${path.basename(directory)}`,
+      );
+    }
+    throw error;
+  }
+  if (!stat.isDirectory()) {
+    throw new Error(
+      `[ai-i18n/mcp] 必需的 ai-i18n 路径不是目录 / required ai-i18n path is not a directory: ${path.basename(directory)}`,
+    );
+  }
+}
+
 export async function loadProject(
   i18nDirectory: string,
 ): Promise<LoadedProject> {
   const directory = await resolveI18nDirectory(i18nDirectory);
+  const extractedDirectory = path.join(directory, 'extracted');
   const [memory, overrides] = await Promise.all([
     readJsonRequired(path.join(directory, 'translations.json')).then(
       parseTranslationMemoryFile,
@@ -91,8 +111,9 @@ export async function loadProject(
     readJsonRequired(path.join(directory, 'overrides.json')).then(
       parseTranslationOverridesFile,
     ),
+    requireDirectory(extractedDirectory),
   ]);
-  const extractedPaths = await listJsonFiles(path.join(directory, 'extracted'));
+  const extractedPaths = await listJsonFiles(extractedDirectory);
   const extracted = await Promise.all(
     extractedPaths.map(async (file) => ({
       value: parseExtractedFile(await readJsonRequired(file)),

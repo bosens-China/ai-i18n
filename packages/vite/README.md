@@ -46,7 +46,7 @@ t(messages.states[index]);
 原参数，不提供冻结或运行时校验。生成的 `ai-i18n.d.ts` 始终包含它的全局类型。
 
 Vitest 使用 `@ai-i18n/vite/vitest` 的 `aiI18nVitest()`，无需手写 alias，也不会读写协议文件。
-语言偏好可用 `persist`、`detect: 'navigator'` 和 `fallback` 配置。
+语言偏好可用 `persist` 配置；缺译固定返回 source 文案。
 
 ## Locale Lazy
 
@@ -59,14 +59,13 @@ aiI18n({
     { value: 'ja-JP', label: '日本語' },
   ],
   loading: {
-    strategy: 'locale',
     preload: ['en-US'],
     prefetch: ['ja-JP'],
   },
 });
 ```
 
-`strategy: 'locale'` 为每个目标 locale 生成独立 Vite chunk。`preload` 使用
+配置 `loading` 后，每个目标 locale 会生成独立 Vite chunk。`preload` 使用
 `modulepreload` 尽早准备模块，`prefetch` 以较低优先级提示浏览器缓存。其他目标语言在首次
 `setLang()` 时加载。source locale 不生成语言资产，也不能出现在两个列表中。
 

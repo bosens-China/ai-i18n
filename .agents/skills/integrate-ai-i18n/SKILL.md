@@ -44,7 +44,7 @@ at the same path with a `.md` extension — fetch that, not the `.html` page:
 | Topic | Page |
 | --- | --- |
 | Full `aiI18n()` option table, Provider tuning, capacity/loading edge cases | `https://bosens-china.github.io/ai-i18n/api/vite.md` |
-| Runtime API (`t`, `useI18n`, template placeholders, persist/detect/fallback) | `https://bosens-china.github.io/ai-i18n/api/runtime.md` |
+| Runtime API (`t`, `useI18n`, template placeholders, persist) | `https://bosens-china.github.io/ai-i18n/api/runtime.md` |
 | Protocol directory layout, Git conventions, and message-ID/comment behavior | `https://bosens-china.github.io/ai-i18n/guide/advanced/workflow.md` |
 | AI translation Provider setup and prompt tuning | `https://bosens-china.github.io/ai-i18n/guide/advanced/ai-translation.md` |
 | `aiI18nVitest()` usage | `https://bosens-china.github.io/ai-i18n/guide/advanced/testing.md` |
@@ -74,7 +74,7 @@ package version, trust the reference files and the installed code over a stale f
    `overrides.json`, flat translation-free `extracted/*.json`, and target-only `locales/*.json`
    under the resolved output directory.
 
-When the user requests smaller initial bundles, configure `loading: { strategy: 'locale' }`.
+When the user requests smaller initial bundles, configure `loading: {}`.
 Use `preload` only for target locales expected immediately, `prefetch` for likely later choices, and
 leave other targets fully lazy. Never list the source locale. A non-source `defaultLang` is
 automatically preloaded and temporarily renders source fallback until its locale module loads.
@@ -104,7 +104,9 @@ globals must be declared.
 Use exactly one of `configs.vanilla`, `configs.vue`, or `configs.react`, matching the resolved Vite
 mode. Preserve the host Vue parser and framework lint rules. The host Auto Import plugin remains
 responsible for ESLint declarations of its own APIs. For per-framework Flat Config examples, fetch
-the ESLint doc page from the table above.
+the ESLint doc page from the table above. Presets warn when one `t()` expands beyond 1000 static
+candidates. Change `ai-i18n/static-candidate-limit`'s positive-integer `maxStaticCandidates` option
+only in ESLint config; Vite extraction has no candidate cap or matching plugin option.
 
 ## Preserve extraction semantics
 
@@ -125,11 +127,13 @@ the ESLint doc page from the table above.
   is escaped internally (`{{0}}` becomes `{{=0}}`) and is restored before display. Runtime logs a
   console warning when translation placeholders differ, then continues using that translation.
 - Vue/React Hook bindings work in JS, TS, JSX, and TSX, including composables and custom Hooks.
+- Vite does not cap static candidate expansion. ESLint warns per expression above its default 1000
+  candidates; raise that rule threshold only for a known finite collection.
 - Vue SFC extraction respects compiler-sfc bindings and template-local scopes.
 - Vue JSX/TSX is supported in Vue mode when `@vitejs/plugin-vue-jsx` is present.
 - Missing targets are `null`; runtime lookup falls back to source text.
-- Optional `persist`, `detect: 'navigator'`, and `fallback` configure browser preference and missing
-  translation UX. Persisted locale wins over navigator detection, which wins over `defaultLang`.
+- Optional `persist` stores browser preference. A valid persisted locale wins over `defaultLang`.
+  Missing translations always return source text.
 - Persist semantic codes, counters, and stable filenames rather than translated strings. Translate at
   the display boundary; never parse localized output for identifiers, storage state, or numbering.
 - Commit source, generated `ai-i18n.d.ts`, `translations.json`, `overrides.json`, `extracted/*.json`,
@@ -147,6 +151,9 @@ It still erases `defineI18nMessages()` so test modules need no macro import or m
 
 Check package installation, resolved framework mode, resolved auto-import behavior, Vite config syntax,
 generated declarations, ESLint globals when applicable, one runtime call, and generated protocol
-files. When handing the project to `@ai-i18n/mcp`, call `ai_i18n_discover` first and use its absolute
-directory result; MCP registration itself takes no project path. State explicitly when SSR, dynamic messages,
-unvisited Dev routes, or Build-unreachable modules remain outside the verified scope.
+files. When handing the project to `@ai-i18n/mcp`, provide the final absolute directory resolved from
+the target build's Vite `root` plus `aiI18n.directory`; the MCP server does not scan for it. In a
+monorepo, identify one target Vite build at a time and account for the package script's working
+directory when `root` is omitted. MCP registration itself takes no project path. State explicitly
+when SSR, dynamic messages, unvisited Dev routes, or Build-unreachable modules remain outside the
+verified scope.

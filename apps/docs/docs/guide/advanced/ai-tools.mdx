@@ -83,10 +83,15 @@ claude mcp add --transport stdio --scope local ai-i18n -- npx -y @ai-i18n/mcp@al
 
 ### MCP 能力与边界
 
-接入后，Agent 会获得 `ai_i18n_discover`、列表与写入工具。注册命令不需要项目路径；
-`ai_i18n_discover` 优先读取客户端暴露的 workspace roots，并返回可直接传给其他工具的绝对
-`i18n_directory`。客户端未提供 workspace roots 时，discover 回退 MCP 进程目录；也可以
-显式传入 `cwd` 作为回退。
+接入后，Agent 会获得列表与写入工具。注册命令不需要项目路径，MCP 也不会扫描 workspace
+猜测项目。Agent 必须先确认目标 Vite 应用，读取其启动脚本和 `vite.config.*`，再把 Vite
+`root` 与 `aiI18n({ directory })`（默认 `i18n`）解析成最终绝对
+`i18n_directory`。在 monorepo 中，每个 Vite build 分开处理；目标应用不明确时应先询问，
+不能把仓库根目录或第一个同名目录直接当作结果。
+
+工具收到目录后会校验绝对路径、目录是否存在，并要求合法的 `translations.json`、
+`overrides.json` 与 `extracted/`。缺少协议文件时，请先运行目标应用的 Vite Dev/Build，
+不要改为全仓库扫描。
 
 所有列表工具同时返回完整 JSON 文本与 MCP `structuredContent`。即使客户端不展示结构化
 字段，Agent 也能读取明细；结果较大时继续按 `next_cursor` 分页。
@@ -122,8 +127,10 @@ Agent 收到这个地址后，能自动抓取结构化、干净的教程原文�
   description="复制后发送给 Agent，按 MCP 安全流程补译。"
   defaultCollapsed={false}
   prompt={`使用 use-ai-i18n-mcp：
-1. 先调用 ai_i18n_discover；仅在返回多个候选时再读取 Vite 配置确认目标目录；
-2. 使用返回的 i18n_directory 列出所有仍有缺失翻译的文件；
+1. 先确认目标 Vite 应用，读取其 package script 与 vite.config.*；根据命令工作目录、
+   Vite root 和 aiI18n.directory（默认 i18n）算出最终绝对 i18n_directory，不扫描仓库；
+2. 使用该 i18n_directory 列出所有仍有缺失翻译的文件；若目录或协议文件不存在，报告错误
+   并提示先运行该应用的 Vite Dev/Build；
 3. 按原文语义和项目现有术语补齐目标语言；
 4. 普通补译只写入 null 值；只有我明确要求审校修订时才使用 mode: review，并确认是影响
    同一原文的全部调用，还是用 review_scope: message 只修改一个显式 ID；

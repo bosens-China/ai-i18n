@@ -86,12 +86,14 @@ import { useI18n } from 'virtual:ai-i18n'
   occurs in `locales`.
 - `directory` defaults to `i18n` relative to Vite `root`.
 - `persist` is false by default; `true` uses `ai-i18n:lang`, or pass `{ key }`.
-- `detect` is false by default; `'navigator'` matches exact locale then primary language.
-- `fallback` defaults to `'source'`; supported values are `'source'`, `'key'`, `'empty'`, and
-  `'marked'`.
+- Missing translations always return source text.
 - `translator` and `provider` are optional.
 - `cache.maxMessages` and `cache.maxBytes` are optional positive integers.
 - Cleanup defaults should remain unless explicitly changed.
+
+Vite places no cap on static candidate expansion. The optional ESLint plugin warns when one `t()`
+exceeds 1000 candidates by default; configure its `ai-i18n/static-candidate-limit` rule rather than
+adding a Vite option.
 
 The complete field list, nested types (`LangOption`, `HtmlExtractorOptions`, etc.), and defaults
 table live at `api/vite.md` in [SKILL.md](../SKILL.md)'s doc table; fetch it before assuming an
@@ -136,7 +138,6 @@ aiI18n({
   sourceLang: 'zh-CN',
   locales,
   loading: {
-    strategy: 'locale',
     preload: ['en-US'],
     prefetch: ['ja-JP'],
   },

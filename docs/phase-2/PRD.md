@@ -113,7 +113,6 @@ Runtime API 和文件协议保持不变。
 ```ts
 aiI18n({
   loading: {
-    strategy: 'locale',
     preload: ['en-US'],
     prefetch: ['ja-JP'],
   },
@@ -122,6 +121,7 @@ aiI18n({
 
 配置规则：
 
+- 配置 `loading` 即启用按 locale 加载，不暴露只有单一实现的 strategy 选项。
 - `preload` 和 `prefetch` 只能引用 `locales` 中已配置的目标语言。
 - source locale 不生成语言资产，也不能出现在任一列表中。
 - 同一 locale 同时出现在两个列表中时，配置校验失败。
@@ -283,7 +283,7 @@ Rust 或其他 native extraction 方案等待 Vite 或 Rolldown 提供正式、�
 
 ### 11.2 Locale Lazy
 
-- `strategy: 'locale'` 只在需要时加载目标 locale。
+- 配置 `loading` 后只在需要时加载目标 locale。
 - 非 source 的 default/preload locale 生成正确的 `modulepreload` 提示。
 - prefetch locale 生成正确的 `prefetch` 提示。
 - 完全 lazy 的 locale 不产生资源提示。

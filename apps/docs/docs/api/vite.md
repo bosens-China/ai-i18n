@@ -34,24 +34,22 @@ Vite 与 ESLint 共用 `AI_I18N_DIAGNOSTIC_LOCALE`：
 
 ### 顶层选项
 
-| 选项          | 类型                                       | 必填 | 默认值               | 作用                                            |
-| ------------- | ------------------------------------------ | ---- | -------------------- | ----------------------------------------------- |
-| `sourceLang`  | `string`                                   | 是   | 无                   | 源语言，必须是 `locales` 中的 `value`。         |
-| `locales`     | `readonly LangOption[]`                    | 是   | 无                   | 支持的语言列表；不能为空，且 `value` 必须唯一。 |
-| `defaultLang` | `string`                                   | 否   | `sourceLang`         | 浏览器 Runtime 首次加载时使用的语言。           |
-| `persist`     | `boolean \| { key: string }`               | 否   | `false`              | 用 localStorage 保存用户语言偏好。              |
-| `detect`      | `false \| 'navigator'`                     | 否   | `false`              | 首次加载时匹配浏览器语言。                      |
-| `fallback`    | `'source' \| 'key' \| 'empty' \| 'marked'` | 否   | `'source'`           | 目标语言缺译时的显示策略。                      |
-| `loading`     | `AiI18nLocaleLoadingOptions`               | 否   | 全语言注册           | 按 locale 拆分并提示加载目标语言资产。          |
-| `framework`   | `'vanilla' \| 'vue' \| 'react'`            | 否   | 自动检测             | 覆盖框架推断结果。                              |
-| `autoImport`  | `boolean`                                  | 否   | 自动检测             | 强制开启或关闭 ai-i18n 的按需导入。             |
-| `dts`         | `string \| false`                          | 否   | `'src/ai-i18n.d.ts'` | 修改声明文件路径；`false` 表示不生成。          |
-| `directory`   | `string`                                   | 否   | `'i18n'`             | 协议目录，相对于 Vite `root`。                  |
-| `translator`  | `Translator`                               | 否   | 不调用模型           | 自动翻译函数。                                  |
-| `provider`    | `AiI18nProviderOptions`                    | 否   | 见下表               | 调整翻译批次、并发与失败策略。                  |
-| `html`        | `boolean \| HtmlExtractorOptions`          | 否   | `false`              | 开启 `index.html` 文本与属性提取。              |
-| `cache`       | `AiI18nCacheOptions`                       | 否   | 不限制               | 限制历史 Translation Memory 的规模。            |
-| `cleanup`     | `object`                                   | 否   | 见下表               | 控制失效文件和孤立消息的清理。                  |
+| 选项          | 类型                              | 必填 | 默认值               | 作用                                            |
+| ------------- | --------------------------------- | ---- | -------------------- | ----------------------------------------------- |
+| `sourceLang`  | `string`                          | 是   | 无                   | 源文案所属语言；不生成对应的目标语言文件。      |
+| `locales`     | `readonly LangOption[]`           | 是   | 无                   | 支持的语言列表；不能为空，且 `value` 必须唯一。 |
+| `defaultLang` | `string`                          | 否   | `sourceLang`         | 无有效持久化值时，Runtime 首次使用的语言。      |
+| `persist`     | `boolean \| { key: string }`      | 否   | `false`              | 用 localStorage 保存用户语言偏好。              |
+| `loading`     | `AiI18nLocaleLoadingOptions`      | 否   | 全语言注册           | 按 locale 拆分并提示加载目标语言资产。          |
+| `framework`   | `'vanilla' \| 'vue' \| 'react'`   | 否   | 自动检测             | 覆盖框架推断结果。                              |
+| `autoImport`  | `boolean`                         | 否   | 自动检测             | 强制开启或关闭 ai-i18n 的按需导入。             |
+| `dts`         | `string \| false`                 | 否   | `'src/ai-i18n.d.ts'` | 修改声明文件路径；`false` 表示不生成。          |
+| `directory`   | `string`                          | 否   | `'i18n'`             | 协议目录，相对于 Vite `root`。                  |
+| `translator`  | `Translator`                      | 否   | 不调用模型           | 自动翻译函数。                                  |
+| `provider`    | `AiI18nProviderOptions`           | 否   | 见下表               | 调整翻译批次、并发与失败策略。                  |
+| `html`        | `boolean \| HtmlExtractorOptions` | 否   | `false`              | 开启 `index.html` 文本与属性提取。              |
+| `cache`       | `AiI18nCacheOptions`              | 否   | 不限制               | 限制历史 Translation Memory 的规模。            |
+| `cleanup`     | `object`                          | 否   | 见下表               | 控制失效文件和孤立消息的清理。                  |
 
 ### `LangOption`
 
@@ -64,7 +62,7 @@ Vite 与 ESLint 共用 `AI_I18N_DIAGNOSTIC_LOCALE`：
 `defaultLang` 与 `sourceLang` 相同时直接省略即可。`locales/` 只为非 source 的目标语言
 生成文件；source fallback 直接来自源码，不会生成重复的 source locale 文件。
 
-## 语言偏好与缺译策略
+## 语言偏好与缺译行为
 
 ```ts
 aiI18n({
@@ -72,17 +70,12 @@ aiI18n({
   defaultLang: 'en-US',
   locales,
   persist: { key: 'my-app-language' },
-  detect: 'navigator',
-  fallback: 'marked',
 });
 ```
 
-初始语言优先级为：有效的持久化值 → 浏览器语言 → `defaultLang`。浏览器探测先做完整 locale
-匹配，再按主语言匹配，例如 `en-GB` 可以选择配置中的 `en-US`。存储不可用或保存值不受支持时
-安全忽略。
+初始语言优先级为：有效的持久化值 → `defaultLang`。存储不可用或保存值不受支持时安全忽略。
 
-缺译策略分别返回 source、message ID、空字符串或 `⟦source⟧` 标记文本。默认 `source`
-适合以源码语言为基准的产品；测试和验收环境可用 `marked` 快速发现漏译。
+目标语言缺译或值为 `null` 时固定返回 source 文案。
 
 ## 按语言加载
 
@@ -96,16 +89,16 @@ aiI18n({
     { value: 'ja-JP', label: '日本語' },
   ],
   loading: {
-    strategy: 'locale',
     preload: ['en-US'],
     prefetch: ['ja-JP'],
   },
 });
 ```
 
+配置 `loading` 后，每个目标 locale 会生成独立 Vite chunk。
+
 | 字段       | 类型                | 必填 | 默认值 | 作用                                     |
 | ---------- | ------------------- | ---- | ------ | ---------------------------------------- |
-| `strategy` | `'locale'`          | 是   | 无     | 为每个目标 locale 生成独立 Vite chunk。  |
 | `preload`  | `readonly string[]` | 否   | `[]`   | 通过 `modulepreload` 尽早准备语言模块。  |
 | `prefetch` | `readonly string[]` | 否   | `[]`   | 通过 `prefetch` 低优先级提示浏览器缓存。 |
 
@@ -178,7 +171,7 @@ Dev 中的模型调用不会阻塞首次模块响应。Build 会在结束前等�
 Vite 配置文件及其依赖、ai-i18n 插件实现、extractor 或 schema 变化后，需要重启
 `vite build --watch`。插件不会在 Watch 进程内模拟配置热重载。
 
-`loading.strategy: 'locale'` 只改变浏览器语言资产，不改变 MCP 注册、工具参数、协议目录或分页。
+`loading` 只改变浏览器语言资产，不改变 MCP 注册、工具参数、协议目录或分页。
 
 ## Cache 容量
 

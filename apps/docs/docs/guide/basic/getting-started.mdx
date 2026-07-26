@@ -208,14 +208,13 @@ aiI18n({
     { value: 'ja-JP', label: '日本語' },
   ],
   loading: {
-    strategy: 'locale',
     preload: ['en-US'], // 尽早准备该语言包
     prefetch: ['ja-JP'], // 低优先级缓存该语言包
   },
 });
 ```
 
-- `strategy: 'locale'` 会让每一个目标语言打包成独立的内容 chunk，不再全量混入同一个 Runtime。
+- 配置 `loading` 后，每一个目标语言会打包成独立的内容 chunk，不再全量混入同一个 Runtime。
 - 非源码的 `defaultLang` (本例为 `en-US`) 默认采用 preload 语义，首次渲染用源码作为 fallback，加载完成后切换并通知订阅者。
 
 ### 验证输出

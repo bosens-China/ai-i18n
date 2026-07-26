@@ -22,13 +22,7 @@ const SOURCE_RE = /\.(?:[cm]?[jt]sx?|vue)(?:\?.*)?$/;
 
 export type AiI18nVitestOptions = Pick<
   AiI18nOptions,
-  | 'sourceLang'
-  | 'defaultLang'
-  | 'locales'
-  | 'framework'
-  | 'persist'
-  | 'detect'
-  | 'fallback'
+  'sourceLang' | 'defaultLang' | 'locales' | 'framework' | 'persist'
 >;
 
 export function aiI18nVitest(options: AiI18nVitestOptions): Plugin {
