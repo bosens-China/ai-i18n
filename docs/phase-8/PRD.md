@@ -1,6 +1,6 @@
 # Phase 8：开发者诊断中英文切换
 
-状态：Implemented，等待最终验收。
+状态：Passed。
 
 ## 目标
 

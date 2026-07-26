@@ -6,13 +6,12 @@ Runtime。
 
 alpha 阶段请安装 `@ai-i18n/vite@alpha`，避免无标签安装命中较旧的 `latest`。
 
-JS、TS、JSX、TSX 默认进入框架中立的共享分析器；Vue/React extractor 只补充对应 Hook
-语义，Vue extractor 还负责 SFC 编译。ai-i18n 根据 import binding 自动识别翻译调用，
-不要求 JSX 文件使用框架后缀。宿主编译建议以 React 为 fallback，混合项目只给 Vue JSX
-插件配置明确的 `include` glob。
+每个 Vite build 只使用一个 Vanilla、Vue 或 React 模式。ai-i18n 根据最终 Vite 插件列表
+推断模式，也可通过 `framework` 显式指定；同一 build 同时包含 Vue 与 React 插件族时会
+报错。微前端仓库应在不同子构建中分别配置模式。
 
-识别顺序是：精确 Hook import 决定 ai-i18n 语义；Vue JSX `include` 决定宿主 Vue transform；
-未命中 Vue 范围的 JSX 交给 React。Vue-only 项目不启用 React 插件即可。
+JS、TS、JSX、TSX 使用共享分析器，并按当前模式补充对应 Hook 语义；Vue 模式还会编译
+SFC。ai-i18n 根据 import binding 自动识别翻译调用，不要求 JSX 文件使用框架后缀。
 
 ```ts
 import { aiI18n } from '@ai-i18n/vite';
@@ -102,7 +101,8 @@ Translation Memory，直到同时满足已配置的限制。`maxBytes` 按稳定
 当前入口可达模块，同时继续保留可复用的 Translation Memory。Vite 配置、插件、extractor
 或 schema 变化后需要重启 Watch 进程。
 
-仅支持 Vite ≥ 8 和浏览器 Runtime，不支持 SSR。完整配置与文件协议见仓库根目录 README。
+仅支持 Vite ≥ 8 和浏览器 Runtime，不支持 SSR。完整配置与文件协议见
+[用户文档](https://bosens-china.github.io/ai-i18n/)。
 
 开发者提示默认按 Node 时区选择语言：`Asia/Shanghai` 与 `Asia/Urumqi` 使用中文，其他
 时区使用英文。设置 `AI_I18N_DIAGNOSTIC_LOCALE=zh-CN` 或 `en-US` 可以固定语言，`auto`

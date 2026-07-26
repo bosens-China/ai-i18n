@@ -73,7 +73,7 @@ Provider 原始响应。extracted 文件位于同一层级；路径分隔符编�
 1. `overrides.json` 中匹配显式 ID 的 `byId`；
 2. 同一原文的人工 `default`；
 3. `translations.json` 中该 message ID 的 AI 译文；
-4. `null`，运行时按配置回退。
+4. `null`，Runtime 回退 source 文案。
 
 默认 message ID 就是 source，因此同一原文共享 AI 译文和人工 `default`。只有同一句话在某个
 语义下确实需要不同译文时，才使用 `t('提交', { id: 'git.commit' })`；不要用文件路径或行号

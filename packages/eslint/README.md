@@ -46,7 +46,8 @@ export default [
 ];
 ```
 
-`configs.vue` 复用宿主的 Vue parser，只启用同一条 `t-static-args` 规则。语义分析使用
+`configs.vue` 复用宿主的 Vue parser，并启用 `t-static-args` 与
+`static-candidate-limit`。语义分析使用
 Vue 项目已有的 `@vue/compiler-sfc`，与 Vite 提取器共享编译结果和 source map，覆盖
 `<script>`、`<script setup>`、模板插值和指令表达式。两个 Vue 依赖均为可选 peer，
 不会安装到 React/Vanilla 项目。
@@ -93,9 +94,9 @@ export default [
 ];
 ```
 
-`ai-i18n/static-candidate-limit` 默认在单个 `t()` 展开超过 1000 个静态候选时警告。
-`maxStaticCandidates` 必须是正整数，只改变 ESLint 的提示阈值；Vite 提取不设上限，也没有
-对应插件选项。
+`ai-i18n/static-candidate-limit` 默认在单个 `t()` 的 source 与 options 组合超过 1000 个
+时警告。`maxStaticCandidates` 必须是正整数，只改变 ESLint 的提示阈值；Vite 提取不设
+上限，也没有对应插件选项。
 
 插件不会自动修改宿主 ESLint 配置。
 

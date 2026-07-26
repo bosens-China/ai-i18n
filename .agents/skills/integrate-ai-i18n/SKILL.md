@@ -105,8 +105,9 @@ Use exactly one of `configs.vanilla`, `configs.vue`, or `configs.react`, matchin
 mode. Preserve the host Vue parser and framework lint rules. The host Auto Import plugin remains
 responsible for ESLint declarations of its own APIs. For per-framework Flat Config examples, fetch
 the ESLint doc page from the table above. Presets warn when one `t()` expands beyond 1000 static
-candidates. Change `ai-i18n/static-candidate-limit`'s positive-integer `maxStaticCandidates` option
-only in ESLint config; Vite extraction has no candidate cap or matching plugin option.
+source/options combinations. Change `ai-i18n/static-candidate-limit`'s positive-integer
+`maxStaticCandidates` option only in ESLint config; Vite extraction has no candidate cap or matching
+plugin option.
 
 ## Preserve extraction semantics
 
@@ -128,7 +129,7 @@ only in ESLint config; Vite extraction has no candidate cap or matching plugin o
   console warning when translation placeholders differ, then continues using that translation.
 - Vue/React Hook bindings work in JS, TS, JSX, and TSX, including composables and custom Hooks.
 - Vite does not cap static candidate expansion. ESLint warns per expression above its default 1000
-  candidates; raise that rule threshold only for a known finite collection.
+  source/options combinations; raise that rule threshold only for a known finite collection.
 - Vue SFC extraction respects compiler-sfc bindings and template-local scopes.
 - Vue JSX/TSX is supported in Vue mode when `@vitejs/plugin-vue-jsx` is present.
 - Missing targets are `null`; runtime lookup falls back to source text.

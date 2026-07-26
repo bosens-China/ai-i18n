@@ -1,6 +1,6 @@
 # Phase 8 验收
 
-状态：Implemented，验证通过。
+状态：Passed。
 
 ## 验收项
 

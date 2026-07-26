@@ -1,6 +1,6 @@
 # Phase 6：静态消息集合宏与推荐语法
 
-状态：Implemented，等待最终验收。
+状态：Passed。
 
 ## 目标
 
@@ -45,9 +45,9 @@ t(messages.states[index]);
 
 宏集合支持嵌套对象、数组、静态计算属性、静态 spread、固定索引和动态索引。动态索引只枚举
 AST 中可证明有限的候选，不执行函数、getter、`await`、`JSON.parse` 或其他用户代码。
-Vite 不限制静态候选数量。ESLint 的 `ai-i18n/static-candidate-limit` 默认在单个表达式超过
-1000 个候选时发出 warning，并允许用正整数 `maxStaticCandidates` 调整提示阈值；该规则
-不截断提取，也不限制项目总文案数。
+Vite 不限制静态候选数量。ESLint 的 `ai-i18n/static-candidate-limit` 默认在单个表达式的
+source 与 options 组合超过 1000 个时发出 warning，并允许用正整数
+`maxStaticCandidates` 调整提示阈值；该规则不截断提取，也不限制项目总文案数。
 
 ## 推荐的调用来源
 

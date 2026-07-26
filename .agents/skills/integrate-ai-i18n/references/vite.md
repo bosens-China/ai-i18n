@@ -92,8 +92,8 @@ import { useI18n } from 'virtual:ai-i18n'
 - Cleanup defaults should remain unless explicitly changed.
 
 Vite places no cap on static candidate expansion. The optional ESLint plugin warns when one `t()`
-exceeds 1000 candidates by default; configure its `ai-i18n/static-candidate-limit` rule rather than
-adding a Vite option.
+exceeds 1000 source/options combinations by default; configure its
+`ai-i18n/static-candidate-limit` rule rather than adding a Vite option.
 
 The complete field list, nested types (`LangOption`, `HtmlExtractorOptions`, etc.), and defaults
 table live at `api/vite.md` in [SKILL.md](../SKILL.md)'s doc table; fetch it before assuming an
@@ -129,7 +129,9 @@ aiI18n({
 Keep secrets in Vite's Node process. `batchLength` measures serialized request length, not tokens.
 `debounceMs` (default `100`, merges consecutive Dev misses) and `strict` (default `false`, throws on
 `flush` when a translation failed or is still `null`) are also available; see `api/vite.md` for the
-full Provider option table.
+full Provider option table. The OpenAI adapter sends structured `{ source, comment? }` rows to the
+model; custom system prompts should describe translation requirements without redefining that input
+or the appended output schema.
 
 ## Optional locale loading
 
