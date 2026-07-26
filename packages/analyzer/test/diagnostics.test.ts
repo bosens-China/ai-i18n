@@ -20,6 +20,9 @@ describe('diagnostic locale', () => {
     expect(() => resolveDiagnosticLocale('fr-FR', 'UTC')).toThrow(
       'Unsupported AI_I18N_DIAGNOSTIC_LOCALE',
     );
+    expect(() => resolveDiagnosticLocale('fr-FR', 'Asia/Shanghai')).toThrow(
+      '不支持 AI_I18N_DIAGNOSTIC_LOCALE',
+    );
   });
 
   it('formats both supported languages', () => {

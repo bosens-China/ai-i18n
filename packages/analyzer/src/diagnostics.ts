@@ -7,12 +7,13 @@ export function resolveDiagnosticLocale(
   value = process.env[ENV_NAME],
   timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone,
 ): DiagnosticLocale {
-  if (!value || value === 'auto') {
-    return CHINESE_TIME_ZONES.has(timeZone) ? 'zh-CN' : 'en-US';
-  }
+  const automaticLocale = CHINESE_TIME_ZONES.has(timeZone) ? 'zh-CN' : 'en-US';
+  if (!value || value === 'auto') return automaticLocale;
   if (value === 'zh-CN' || value === 'en-US') return value;
   throw new Error(
-    `[ai-i18n] Unsupported ${ENV_NAME} "${value}"; expected "auto", "zh-CN", or "en-US".`,
+    automaticLocale === 'zh-CN'
+      ? `[ai-i18n] 不支持 ${ENV_NAME}“${value}”；应为“auto”“zh-CN”或“en-US”。`
+      : `[ai-i18n] Unsupported ${ENV_NAME} "${value}"; expected "auto", "zh-CN", or "en-US".`,
   );
 }
 
