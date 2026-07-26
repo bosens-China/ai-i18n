@@ -2,13 +2,12 @@ import type { ExtractedMessage, TranslationOverridesFile } from './schema.js';
 
 export function resolveTranslationOverride(
   overrides: TranslationOverridesFile,
-  message: Pick<ExtractedMessage, 'id' | 'source'>,
+  message: Pick<ExtractedMessage, 'id' | 'source' | 'comment'>,
   locale: string,
 ): string | undefined {
   const override = overrides.messages[message.source];
   return (
-    (message.id === message.source
-      ? undefined
-      : override?.byId?.[message.id]?.[locale]) ?? override?.default?.[locale]
+    (message.comment ? override?.byId?.[message.id]?.[locale] : undefined) ??
+    override?.default?.[locale]
   );
 }

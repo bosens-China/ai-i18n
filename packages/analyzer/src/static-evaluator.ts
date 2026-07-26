@@ -105,7 +105,11 @@ function evaluateIdentifier(
   context: EvaluationContext,
 ): StaticResult {
   const symbol = module.symbolOf(node);
-  if (!symbol) return null;
+  if (!symbol) {
+    return node.name === 'undefined'
+      ? [{ kind: 'primitive', value: undefined }]
+      : null;
+  }
   const definition = symbol.definition();
   if (!definition && symbol.has(SymbolFlags.Import)) return undefined;
   const target = definition?.symbol ?? symbol;

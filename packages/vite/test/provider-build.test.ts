@@ -40,11 +40,9 @@ describe('@ai-i18n/vite provider build', () => {
       `import { t } from 'virtual:ai-i18n'; console.log(t('懒加载'));`,
     );
 
-    const translator: Translator = vi.fn<Translator>(async (requests) =>
-      requests.map((request) => ({
-        messageId: request.messageId,
-        locale: request.locale,
-        value: request.source === '首页' ? 'Home' : 'Lazy',
+    const translator: Translator = vi.fn<Translator>(async ({ messages }) =>
+      messages.map((message) => ({
+        'en-US': message.source === '首页' ? 'Home' : 'Lazy',
       })),
     );
     const sync = vi.spyOn(FileStore.prototype, 'sync');
@@ -67,8 +65,7 @@ describe('@ai-i18n/vite provider build', () => {
             { value: 'zh-CN', label: '中文' },
             { value: 'en-US', label: 'English' },
           ],
-          translator,
-          provider: { debounceMs: 60_000, strict: true },
+          provider: { translator, debounceMs: 60_000, strict: true },
         }),
       ],
       build: {

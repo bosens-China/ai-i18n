@@ -230,7 +230,6 @@ globalThis.changeLanguage = setLang`,
           ...pluginOptions(),
           html: true,
           loading: { preload: ['en-US'] },
-          provider: { debounceMs: 0 },
         }),
       ],
     });
@@ -277,22 +276,28 @@ globalThis.changeLanguage = setLang`,
 });
 
 function pluginOptions(): AiI18nOptions {
-  const translator: Translator = async (requests) =>
-    requests.map((request) => ({
-      messageId: request.messageId,
-      locale: request.locale,
-      value:
-        request.locale === 'en-US'
-          ? request.source === '首页'
-            ? 'Home'
-            : request.source === '管理'
-              ? 'Admin'
-              : 'Save'
-          : request.source === '保存'
-            ? '保存する'
-            : `JA:${request.source}`,
-    }));
-  return { sourceLang: 'zh-CN', locales, translator };
+  const translator: Translator = async ({ locales, messages }) =>
+    messages.map((message) =>
+      Object.fromEntries(
+        locales.map((locale) => [
+          locale,
+          locale === 'en-US'
+            ? message.source === '首页'
+              ? 'Home'
+              : message.source === '管理'
+                ? 'Admin'
+                : 'Save'
+            : message.source === '保存'
+              ? '保存する'
+              : `JA:${message.source}`,
+        ]),
+      ),
+    );
+  return {
+    sourceLang: 'zh-CN',
+    locales,
+    provider: { translator, debounceMs: 0 },
+  };
 }
 
 async function buildFixture(

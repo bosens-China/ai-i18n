@@ -45,7 +45,7 @@ const hookText = translate('Hook 文案')
     expect(messages.map((message) => message.id)).toEqual([
       '脚本文案',
       'Hook 文案',
-      '标题',
+      '标题#标题上下文',
       '提示',
     ]);
     expect(messages.map((message) => message.locations[0])).toEqual([

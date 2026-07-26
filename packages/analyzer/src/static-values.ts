@@ -64,40 +64,29 @@ export function evaluateTranslationOptions(
   for (const value of values) {
     if (
       value.kind !== 'object' ||
-      [...value.properties.keys()].some(
-        (key) => key !== 'id' && key !== 'comment',
-      )
+      [...value.properties.keys()].some((key) => key !== 'comment')
     ) {
       continue;
     }
-    const ids = optionalStrings(value, 'id');
     const comments = optionalStrings(value, 'comment');
-    if (ids === undefined || comments === undefined) return undefined;
-    if (!ids || !comments) continue;
-    const count = ids.length * comments.length;
-    if (count > maxCandidates || options.length + count > maxCandidates) {
+    if (comments === undefined) return undefined;
+    if (!comments) continue;
+    if (
+      comments.length > maxCandidates ||
+      options.length + comments.length > maxCandidates
+    ) {
       onLimitExceeded();
       return null;
     }
-    for (const id of ids) {
-      for (const comment of comments) {
-        options.push({
-          ...(id === undefined ? {} : { id }),
-          ...(comment === undefined ? {} : { comment }),
-        });
-      }
+    for (const comment of comments) {
+      options.push({
+        ...(comment === undefined ? {} : { comment }),
+      });
     }
   }
 
   return options.length
-    ? [
-        ...new Map(
-          options.map((option) => [
-            JSON.stringify([option.id, option.comment]),
-            option,
-          ]),
-        ).values(),
-      ]
+    ? [...new Map(options.map((option) => [option.comment, option])).values()]
     : null;
 }
 
@@ -110,7 +99,8 @@ function optionalStrings(
   if (values === undefined) return undefined;
   if (values === null) return null;
   const strings = values.flatMap((value) =>
-    value.kind === 'primitive' && typeof value.value === 'string'
+    value.kind === 'primitive' &&
+    (typeof value.value === 'string' || value.value === undefined)
       ? [value.value]
       : [],
   );

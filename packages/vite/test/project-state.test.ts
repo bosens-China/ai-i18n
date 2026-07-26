@@ -81,10 +81,12 @@ describe('ProjectState incremental analysis', () => {
       revision: 1,
       messages: {
         保留: {
+          source: '保留',
           sourceLang: 'zh-CN',
           translations: { 'en-US': 'Keep' },
         },
         移除: {
+          source: '移除',
           sourceLang: 'zh-CN',
           translations: { 'en-US': 'Remove' },
         },
@@ -102,8 +104,9 @@ describe('ProjectState incremental analysis', () => {
     const state = new ProjectState('/workspace', options);
     state.updateExtracted('', '/workspace/src/main.ts', [
       {
-        id: 'git.commit',
+        id: '提交#Git 操作',
         source: '提交',
+        comment: 'Git 操作',
         locations: [{ line: 1, column: 0 }],
       },
       {
@@ -121,15 +124,19 @@ describe('ProjectState incremental analysis', () => {
       version: 1,
       revision: 1,
       messages: {
-        'git.commit': {
+        '提交#Git 操作': {
+          source: '提交',
           sourceLang: 'zh-CN',
+          comment: 'Git 操作',
           translations: { 'en-US': 'AI commit' },
         },
         提交: {
+          source: '提交',
           sourceLang: 'zh-CN',
           translations: { 'en-US': 'AI submit' },
         },
         取消: {
+          source: '取消',
           sourceLang: 'zh-CN',
           translations: { 'en-US': 'Cancel' },
         },
@@ -140,14 +147,14 @@ describe('ProjectState incremental analysis', () => {
       messages: {
         提交: {
           default: { 'en-US': 'Submit' },
-          byId: { 'git.commit': { 'en-US': 'Commit' } },
+          byId: { '提交#Git 操作': { 'en-US': 'Commit' } },
         },
       },
     });
 
     expect(state.registration('src/main.ts', 'en-US')).toEqual({
       'en-US': {
-        'git.commit': 'Commit',
+        '提交#Git 操作': 'Commit',
         提交: 'Submit',
         取消: 'Cancel',
       },

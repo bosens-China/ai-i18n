@@ -156,6 +156,17 @@ export function aiI18n(options: AiI18nOptions): Plugin {
     enforce: 'pre',
 
     configResolved(resolved) {
+      if (
+        options.provider &&
+        typeof options.provider.translator !== 'function'
+      ) {
+        throw new TypeError(
+          diagnosticMessage(
+            '[ai-i18n] provider.translator 必须是函数。',
+            '[ai-i18n] provider.translator must be a function.',
+          ),
+        );
+      }
       config = resolved;
       framework = resolveFramework(resolved.plugins, options.framework);
       autoImport = resolveAutoImport(resolved.plugins, options.autoImport);
@@ -187,9 +198,10 @@ export function aiI18n(options: AiI18nOptions): Plugin {
         currentState().hydrateCache(cache);
         currentState().hydrateOverrides(overrides);
       });
-      if (options.translator) {
-        coordinator = new ProviderCoordinator(options.translator, {
-          ...options.provider,
+      if (options.provider) {
+        const { translator, ...providerOptions } = options.provider;
+        coordinator = new ProviderCoordinator(translator, {
+          ...providerOptions,
           async onResults(results) {
             const project = currentState();
             const affected = project.applyTranslations(results);

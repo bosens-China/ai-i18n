@@ -6,6 +6,7 @@ export interface LangOption {
 }
 
 export interface CacheMessage {
+  source: string;
   sourceLang: string;
   comment?: string;
   translations: Record<string, TranslationValue>;
@@ -144,7 +145,8 @@ export function parseLocaleFile(value: unknown): LocaleFileV1 {
 
 function validateCacheMessage(value: unknown, path: string): void {
   const message = record(value, path);
-  exactKeys(message, ['sourceLang', 'comment', 'translations'], path);
+  exactKeys(message, ['source', 'sourceLang', 'comment', 'translations'], path);
+  string(message.source, `${path}.source`);
   string(message.sourceLang, `${path}.sourceLang`);
   if (message.comment !== undefined) string(message.comment, `${path}.comment`);
   translations(message.translations, `${path}.translations`);

@@ -6,7 +6,9 @@ import type { ProviderCoordinatorOptions } from './provider-coordinator.js';
 export type AiI18nProviderOptions = Pick<
   ProviderCoordinatorOptions,
   'debounceMs' | 'batchLength' | 'maxConcurrency' | 'strict'
->;
+> & {
+  translator: Translator;
+};
 
 export interface AiI18nLocaleLoadingOptions {
   preload?: readonly string[];
@@ -36,7 +38,6 @@ export interface AiI18nOptions {
   persist?: boolean | AiI18nPersistOptions;
   loading?: AiI18nLocaleLoadingOptions;
   cache?: AiI18nCacheOptions;
-  translator?: Translator;
   provider?: AiI18nProviderOptions;
   directory?: string;
   cleanup?: {

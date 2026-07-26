@@ -40,7 +40,8 @@ export {
   hasSameTemplateTokens,
 } from './template.js';
 export type {
-  TranslationRequest,
+  TranslationBatch,
+  TranslationMessage,
   TranslationResult,
   Translator,
 } from './provider.js';

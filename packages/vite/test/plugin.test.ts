@@ -18,6 +18,7 @@ const options = {
 };
 
 afterEach(async () => {
+  vi.unstubAllEnvs();
   await Promise.all(
     tempDirs
       .splice(0)
@@ -46,6 +47,17 @@ describe('@ai-i18n/vite plugin', () => {
     );
   });
 
+  it('rejects a provider without a translator during config resolution', () => {
+    vi.stubEnv('AI_I18N_DIAGNOSTIC_LOCALE', 'en-US');
+
+    expect(() =>
+      setupPlugin([], undefined, {
+        ...options,
+        provider: {} as NonNullable<AiI18nOptions['provider']>,
+      }),
+    ).toThrow('[ai-i18n] provider.translator must be a function.');
+  });
+
   it('injects a stable register import after shebang and directives', async () => {
     const { plugin, transform } = setupPlugin();
     const code = `#!/usr/bin/env node\n'use strict';\nimport { t as tr } from 'virtual:ai-i18n';\nconsole.log(tr('保存', { comment: '按钮' }));`;
@@ -66,8 +78,8 @@ describe('@ai-i18n/vite plugin', () => {
       plugin.load,
       resolved!,
     );
-    expect(registration).toContain('"zh-CN":{"保存":"保存"}');
-    expect(registration).toContain('"en-US":{"保存":null}');
+    expect(registration).toContain('"zh-CN":{"保存#按钮":"保存"}');
+    expect(registration).toContain('"en-US":{"保存#按钮":null}');
     expect(registration).toContain('import.meta.hot.dispose');
   });
 
@@ -98,14 +110,12 @@ t(label)`,
   it('translates in the background and sends a targeted runtime update', async () => {
     let finish!: () => void;
     const translator: Translator = vi.fn<Translator>(
-      (requests) =>
+      ({ messages }) =>
         new Promise<TranslationResult[]>((resolve) => {
           finish = () =>
             resolve(
-              requests.map((request) => ({
-                messageId: request.messageId,
-                locale: request.locale,
-                value: 'Save',
+              messages.map(() => ({
+                'en-US': 'Save',
               })),
             );
         }),
@@ -113,7 +123,7 @@ t(label)`,
     const { plugin, transform, hotSend, directory } = setupPlugin(
       [],
       undefined,
-      { ...options, translator, provider: { batchLength: 1 } },
+      { ...options, provider: { translator, batchLength: 1 } },
     );
 
     const transformed = await transform(

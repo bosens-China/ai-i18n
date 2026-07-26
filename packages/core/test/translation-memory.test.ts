@@ -27,6 +27,7 @@ test('serializes concurrent field updates and advances revision per commit', asy
     Array.from({ length: 40 }, (_, index) =>
       transactTranslationMemory(file, (memory) => {
         memory.messages[`message-${index}`] = {
+          source: `message-${index}`,
           sourceLang: 'zh-CN',
           translations: { 'en-US': `translation-${index}` },
         };
@@ -44,14 +45,17 @@ test('does not rewrite an unchanged current memory', async () => {
   const file = path.join(directory, 'translations.json');
   const created = await transactTranslationMemory(file, (memory) => {
     memory.messages.示例 = {
+      source: '示例',
       sourceLang: 'zh-CN',
       translations: { 'en-US': 'Example' },
     };
     memory.messages.保存 = {
+      source: '保存',
       sourceLang: 'zh-CN',
       translations: { 'en-US': 'Save' },
     };
     memory.messages.请输入 = {
+      source: '请输入',
       sourceLang: 'zh-CN',
       translations: { 'en-US': 'Type here' },
     };

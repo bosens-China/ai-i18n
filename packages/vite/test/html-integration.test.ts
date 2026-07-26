@@ -31,14 +31,12 @@ describe('HTML extractor integration', () => {
        <body><p>t('示例 {{0}}')</p><input placeholder="t('请输入')"><script type="module" src="/src/main.ts"></script></body></html>`,
     );
     await fs.writeFile(path.join(root, 'src/main.ts'), 'console.log("ready")');
-    const translator: Translator = vi.fn<Translator>(async (requests) =>
-      requests.map((request) => ({
-        messageId: request.messageId,
-        locale: request.locale,
-        value:
-          request.source === '首页'
+    const translator: Translator = vi.fn<Translator>(async ({ messages }) =>
+      messages.map((message) => ({
+        'en-US':
+          message.source === '首页'
             ? 'Home'
-            : request.source === '示例 {{=0}}'
+            : message.source === '示例 {{=0}}'
               ? 'Example {{=0}}'
               : 'Type here',
       })),
@@ -63,8 +61,7 @@ describe('HTML extractor integration', () => {
             { value: 'en-US', label: 'English' },
           ],
           html: true,
-          translator,
-          provider: { batchLength: 12_000, strict: true },
+          provider: { translator, batchLength: 12_000, strict: true },
         }),
       ],
       build: { write: false },

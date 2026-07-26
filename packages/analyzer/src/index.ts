@@ -61,8 +61,7 @@ export interface ExtractedMessage {
   locations: SourceLocation[];
 }
 
-export type ExtractWarningCode =
-  StaticWarningCode | 'invalid-message-id' | 'conflicting-message-id';
+export type ExtractWarningCode = StaticWarningCode;
 
 export interface ExtractWarning extends SourceLocation {
   code: ExtractWarningCode;
@@ -134,33 +133,9 @@ export function extractMessages(
   ) => {
     const location = sourceLocation(module.source, offset);
     const comment = translationComment(options);
-    if (options?.id !== undefined && !options.id.trim()) {
-      warnings.push({
-        code: 'invalid-message-id',
-        file: module.path,
-        ...location,
-        message: diagnosticMessage(
-          '翻译 ID 不能为空。',
-          'Translation ID must not be empty.',
-        ),
-      });
-      return;
-    }
     const id = createMessageId(source, options);
     const previous = messages.get(id);
     if (previous) {
-      if (previous.source !== source || previous.comment !== comment) {
-        warnings.push({
-          code: 'conflicting-message-id',
-          file: module.path,
-          ...location,
-          message: diagnosticMessage(
-            `t() 的 ID“${id}”对应了冲突的源文案或注释。`,
-            `t() ID "${id}" refers to conflicting source or comment values.`,
-          ),
-        });
-        return;
-      }
       previous.locations.push(location);
       return;
     }

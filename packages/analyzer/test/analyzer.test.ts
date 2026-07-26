@@ -135,7 +135,7 @@ t(messages[index])`,
     const module = analyzeModule(
       `import { t } from 'virtual:ai-i18n'
 const messages = defineI18nMessages(['a', 'b'])
-const options = [{ id: 'one' }, { id: 'two' }]
+const options = [{ comment: 'one' }, { comment: 'two' }]
 t(messages[index], options[index])`,
       'main.ts',
     );
@@ -165,7 +165,7 @@ i18n['t']('计算成员')`,
   it('extracts static translation options', () => {
     const module = analyzeModule(
       `import { t } from 'virtual:ai-i18n'
-const options = { id: ' checkout.submit ', comment: '结算按钮' }
+const options = { comment: '结算按钮' }
 t('提交', options)
 t('保存', { comment: '工具栏按钮' })`,
       'View.tsx',
@@ -174,14 +174,49 @@ t('保存', { comment: '工具栏按钮' })`,
     expect(extractMessages(module)).toMatchObject({
       messages: [
         {
-          id: 'checkout.submit',
+          id: '提交#结算按钮',
           source: '提交',
           comment: '结算按钮',
         },
-        { id: '保存', source: '保存', comment: '工具栏按钮' },
+        {
+          id: '保存#工具栏按钮',
+          source: '保存',
+          comment: '工具栏按钮',
+        },
       ],
       warnings: [],
       pending: false,
+    });
+  });
+
+  it('preserves static undefined comment branches', () => {
+    const module = analyzeModule(
+      `import { t } from 'virtual:ai-i18n'
+t('直接未定义', { comment: undefined })
+t('保存', { comment: enabled ? '按钮' : undefined })`,
+      'View.tsx',
+    );
+
+    expect(extractMessages(module)).toMatchObject({
+      messages: [
+        { id: '直接未定义', source: '直接未定义' },
+        { id: '保存#按钮', source: '保存', comment: '按钮' },
+        { id: '保存', source: '保存' },
+      ],
+      warnings: [],
+      pending: false,
+    });
+
+    const shadowed = analyzeModule(
+      `import { t } from 'virtual:ai-i18n'
+function render(undefined) {
+  t('遮蔽', { comment: undefined })
+}`,
+      'shadowed.ts',
+    );
+    expect(extractMessages(shadowed)).toMatchObject({
+      messages: [],
+      warnings: [{ code: 'dynamic-argument' }],
     });
   });
 
@@ -199,29 +234,32 @@ t('保存', '工具栏按钮')`,
     });
   });
 
-  it('reports invalid and conflicting explicit IDs', () => {
+  it('creates distinct escaped IDs from source and comment', () => {
     const module = analyzeModule(
       `import { t } from 'virtual:ai-i18n'
-t('无效', { id: ' ' })
-t('提交', { id: 'action', comment: '结算' })
-t('保存', { id: 'action', comment: '工具栏' })`,
+t('提交', { comment: '结算' })
+t('提交', { comment: '工具栏' })
+t('A#B', { comment: 'C' })
+t('A', { comment: 'B#C' })`,
       'View.tsx',
     );
 
     expect(extractMessages(module)).toMatchObject({
-      messages: [{ id: 'action', source: '提交', comment: '结算' }],
-      warnings: [
-        { code: 'invalid-message-id', line: 2 },
-        { code: 'conflicting-message-id', line: 4 },
+      messages: [
+        { id: '提交#结算', source: '提交', comment: '结算' },
+        { id: '提交#工具栏', source: '提交', comment: '工具栏' },
+        { id: 'A\\#B#C', source: 'A#B', comment: 'C' },
+        { id: 'A#B\\#C', source: 'A', comment: 'B#C' },
       ],
+      warnings: [],
     });
   });
 
   it('keeps unresolved option fields pending', () => {
     const module = analyzeModule(
-      `import { id } from './options'
+      `import { comment } from './options'
 import { t } from 'virtual:ai-i18n'
-t('提交', { id })`,
+t('提交', { comment })`,
       'View.tsx',
     );
 

@@ -16,7 +16,7 @@ describe('HTML extractor', () => {
     expect(result.messages.map((message) => message.id)).toEqual([
       '控制台',
       '<保存 &>',
-      '请输入',
+      '请输入#表单',
     ]);
     expect(result.code).toContain('<title data-ai-i18n-text="');
     expect(result.code).toContain('&lt;保存 &amp;&gt;');

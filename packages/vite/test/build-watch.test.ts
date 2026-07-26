@@ -222,8 +222,15 @@ async function startWatch(
         defaultLang: 'en-US',
         locales,
         dts: false,
-        ...(translator ? { translator } : {}),
-        provider: { debounceMs: 60_000, strict: true },
+        ...(translator
+          ? {
+              provider: {
+                translator,
+                debounceMs: 60_000,
+                strict: true,
+              },
+            }
+          : {}),
       }),
       observer,
     ],
@@ -257,12 +264,12 @@ function createObserver(observations: Observation[]): Plugin {
 }
 
 function translating(values: Record<string, string>): Translator {
-  return vi.fn<Translator>(async (requests) =>
-    requests.map((request) => ({
-      messageId: request.messageId,
-      locale: request.locale,
-      value: values[request.source] ?? null,
-    })),
+  return vi.fn<Translator>(async ({ locales, messages }) =>
+    messages.map((message) =>
+      Object.fromEntries(
+        locales.map((locale) => [locale, values[message.source] ?? null]),
+      ),
+    ),
   );
 }
 

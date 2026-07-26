@@ -94,7 +94,7 @@ export function createAiI18nMcpServer(): McpServer {
     {
       title: 'Write ai-i18n translations',
       description:
-        'Atomically write translations for one extracted source file. mode fill writes only AI translation memory and never overwrites an effective human value. mode review writes overrides.json; review_scope defaults to default (all occurrences of the source) and message targets an explicit message id.',
+        'Atomically write translations for one extracted source file. mode fill writes only AI translation memory and never overwrites an effective human value. mode review writes overrides.json; review_scope defaults to default (all occurrences of the source) and message targets one comment-specific message.',
       inputSchema: z
         .object({
           i18n_directory: DirectorySchema,
@@ -104,7 +104,7 @@ export function createAiI18nMcpServer(): McpServer {
             .enum(['default', 'message'])
             .default('default')
             .describe(
-              'Human review scope. default affects every occurrence of the source; message requires an explicit message id.',
+              'Human review scope. default affects every occurrence of the source; message requires a message with comment.',
             ),
           translations: z
             .array(

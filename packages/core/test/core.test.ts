@@ -22,17 +22,20 @@ afterEach(() => {
 });
 
 describe('@ai-i18n/core message IDs', () => {
-  it('keeps IDs stable when comments change', () => {
-    expect(createMessageId(' 保存 ', { comment: '  按钮  ' })).toBe(' 保存 ');
-    expect(createMessageId('保存', { comment: '   ' })).toBe('保存');
-    expect(createMessageId('A#B\\C', { comment: 'D#E' })).toBe('A#B\\C');
-  });
-
-  it('uses trimmed explicit IDs', () => {
-    expect(createMessageId('提交', { id: ' checkout.submit ' })).toBe(
-      'checkout.submit',
+  it('includes normalized comments in collision-free readable IDs', () => {
+    expect(createMessageId(' 保存 ', { comment: '  按钮  ' })).toBe(
+      ' 保存 #按钮',
     );
-    expect(createMessageId('提交', { comment: '按钮' })).toBe('提交');
+    expect(createMessageId('保存', { comment: '   ' })).toBe('保存');
+    expect(createMessageId('A#B\\C', { comment: 'D#E' })).toBe(
+      'A\\#B\\\\C#D\\#E',
+    );
+    expect(createMessageId('A#B', { comment: 'C' })).not.toBe(
+      createMessageId('A', { comment: 'B#C' }),
+    );
+    expect(createMessageId('提交', { comment: '按钮' })).not.toBe(
+      createMessageId('提交', { comment: '菜单项' }),
+    );
   });
 });
 
@@ -208,20 +211,18 @@ describe('@ai-i18n/core runtime', () => {
     );
   });
 
-  it('uses explicit IDs and object comments', () => {
+  it('uses comment-specific IDs', () => {
     const runtime = createI18nRuntime({
       sourceLang: 'zh-CN',
       defaultLang: 'en-US',
       locales,
     });
     runtime.registerModule('src/app.ts', {
-      'zh-CN': { 'checkout.submit': '提交', 保存: '保存' },
-      'en-US': { 'checkout.submit': 'Place order', 保存: 'Save' },
+      'zh-CN': { '提交#结算按钮': '提交', '保存#按钮': '保存' },
+      'en-US': { '提交#结算按钮': 'Place order', '保存#按钮': 'Save' },
     });
 
-    expect(
-      runtime.t('提交', { id: ' checkout.submit ', comment: '结算按钮' }),
-    ).toBe('Place order');
+    expect(runtime.t('提交', { comment: '结算按钮' })).toBe('Place order');
     expect(runtime.t('保存', { comment: '按钮' })).toBe('Save');
   });
 

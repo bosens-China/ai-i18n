@@ -1,27 +1,54 @@
 import {
-  hasSameTemplateTokens,
-  type TranslationRequest,
-  type TranslationResult,
+  type TranslationMessage,
   type TranslationValue,
   type Translator,
 } from '@ai-i18n/core';
 import { diagnosticMessage } from '@ai-i18n/analyzer';
+import {
+  localeKey,
+  nonNegativeNumber,
+  positiveInteger,
+  promptMessage,
+  readyLocalesKey,
+  takeBatch,
+  validateRequest,
+  validateResults,
+} from './provider-coordinator-helpers.js';
+
+export interface ProviderRequest extends TranslationMessage {
+  messageId: string;
+  locales: readonly string[];
+}
+
+export interface ProviderResult {
+  messageId: string;
+  locale: string;
+  value: TranslationValue;
+}
 
 export interface ProviderCoordinatorOptions {
   debounceMs?: number;
   batchLength?: number;
   maxConcurrency?: number;
   strict?: boolean;
-  onResults?: (results: readonly TranslationResult[]) => void | Promise<void>;
+  onResults?: (results: readonly ProviderResult[]) => void | Promise<void>;
   onWarning?: (message: string) => void;
 }
 
 interface PendingRequest {
   key: string;
-  request: TranslationRequest;
-  promise: Promise<TranslationValue>;
-  resolve: (value: TranslationValue) => void;
+  request: ProviderRequest;
+  state: RequestState;
+  promise: Promise<readonly ProviderResult[]>;
+  resolve: (results: readonly ProviderResult[]) => void;
   serializedLength: number;
+}
+
+interface RequestState {
+  latest: ProviderRequest;
+  pending: Set<PendingRequest>;
+  resolvedLocales: Set<string>;
+  failed: boolean;
 }
 
 export class ProviderCoordinator {
@@ -32,6 +59,7 @@ export class ProviderCoordinator {
   private readonly onResults?: ProviderCoordinatorOptions['onResults'];
   private readonly onWarning: (message: string) => void;
   private readonly active = new Map<string, PendingRequest>();
+  private readonly states = new Map<string, RequestState>();
   private readonly queued = new Map<string, PendingRequest>();
   private readonly inFlight = new Set<Promise<void>>();
   private readonly errors: Error[] = [];
@@ -58,34 +86,53 @@ export class ProviderCoordinator {
     this.onWarning = options.onWarning ?? console.warn;
   }
 
-  request(request: TranslationRequest): Promise<TranslationValue> {
-    const key = requestKey(request.messageId, request.locale);
-    const existing = this.active.get(key);
-    if (existing && sameRequest(existing.request, request)) {
-      return existing.promise;
+  request(request: ProviderRequest): Promise<readonly ProviderResult[]> {
+    validateRequest(request);
+    const normalized = { ...request, locales: [...request.locales] };
+    const key = request.messageId;
+    const state = this.states.get(key);
+    const matching = [...(state?.pending ?? [])].find((pending) =>
+      sameRequest(pending.request, normalized),
+    );
+    if (matching) {
+      updateLatest(state!, normalized);
+      return matching.promise;
     }
+    const existing = this.active.get(key);
     if (existing && this.queued.get(key) === existing) {
-      existing.request = request;
-      existing.serializedLength = JSON.stringify(request).length;
+      existing.request = normalized;
+      updateLatest(existing.state, normalized);
+      existing.serializedLength = JSON.stringify(
+        promptMessage(normalized),
+      ).length;
       this.dispatchReadyBatches();
       if (this.hasQueued()) this.schedule();
       else this.clearTimer();
       return existing.promise;
     }
 
-    let resolve!: (value: TranslationValue) => void;
-    const promise = new Promise<TranslationValue>((done) => {
+    let resolve!: (results: readonly ProviderResult[]) => void;
+    const promise = new Promise<readonly ProviderResult[]>((done) => {
       resolve = done;
     });
-    const pending = {
+    const requestState = state ?? {
+      latest: normalized,
+      pending: new Set<PendingRequest>(),
+      resolvedLocales: new Set<string>(),
+      failed: false,
+    };
+    updateLatest(requestState, normalized);
+    const pending: PendingRequest = {
       key,
-      request,
+      request: normalized,
+      state: requestState,
       promise,
       resolve,
-      serializedLength: JSON.stringify(request).length,
+      serializedLength: JSON.stringify(promptMessage(normalized)).length,
     };
+    requestState.pending.add(pending);
+    this.states.set(key, requestState);
     this.active.set(key, pending);
-
     this.queued.set(key, pending);
 
     this.dispatchReadyBatches();
@@ -122,23 +169,25 @@ export class ProviderCoordinator {
   }
 
   private dispatchReadyBatches(): void {
+    let localesKey: string | undefined;
     while (
       this.queued.size &&
       this.inFlight.size < this.maxConcurrency &&
-      batchPayloadLength(this.queued.values()) >= this.batchLength
+      (localesKey = readyLocalesKey(this.queued.values(), this.batchLength)) !==
+        undefined
     ) {
-      this.dispatch();
+      this.dispatch(localesKey);
     }
   }
 
   private dispatchAll(): void {
     while (this.queued.size && this.inFlight.size < this.maxConcurrency) {
-      this.dispatch();
+      this.dispatch(localeKey(this.queued.values().next().value!.request));
     }
   }
 
-  private dispatch(): void {
-    const batch = takeBatch(this.queued.values(), this.batchLength);
+  private dispatch(localesKey: string): void {
+    const batch = takeBatch(this.queued.values(), localesKey, this.batchLength);
     for (const pending of batch) this.queued.delete(pending.key);
     this.startBatch(batch);
   }
@@ -149,6 +198,34 @@ export class ProviderCoordinator {
       for (const pending of batch) {
         if (this.active.get(pending.key) === pending)
           this.active.delete(pending.key);
+        pending.state.pending.delete(pending);
+        if (
+          pending.state.pending.size === 0 &&
+          this.states.get(pending.key) === pending.state
+        ) {
+          this.states.delete(pending.key);
+          const missing = pending.state.latest.locales.filter(
+            (locale) => !pending.state.resolvedLocales.has(locale),
+          ).length;
+          if (missing && !pending.state.failed) {
+            this.onWarning(
+              diagnosticMessage(
+                `仍有 ${missing} 条翻译为空。`,
+                `${missing} translation result(s) remain null.`,
+              ),
+            );
+            if (this.strict) {
+              this.errors.push(
+                new Error(
+                  diagnosticMessage(
+                    '[ai-i18n] 仍有翻译为空。',
+                    '[ai-i18n] Translation results remain null.',
+                  ),
+                ),
+              );
+            }
+          }
+        }
       }
       this.dispatchReadyBatches();
       if (this.hasQueued()) this.schedule();
@@ -158,43 +235,61 @@ export class ProviderCoordinator {
   }
 
   private async runBatch(batch: PendingRequest[]): Promise<void> {
+    const locales = batch[0]!.request.locales;
     try {
-      const results = validateResults(
-        batch.map((pending) => pending.request),
-        await this.translator(batch.map((pending) => pending.request)),
+      const messages = batch.map((pending) => promptMessage(pending.request));
+      const rows = validateResults(
+        messages,
+        locales,
+        await this.translator({ locales, messages }),
       );
-      // 同一 ID 的源码可能在 Provider 返回前发生变化，只持久化最新请求。
-      const currentResults = results.filter(
-        (_, index) => this.active.get(batch[index]!.key) === batch[index],
+      const results = batch.map((pending, index) =>
+        locales.map((locale) => ({
+          messageId: pending.request.messageId,
+          locale,
+          value: rows[index]![locale]!,
+        })),
       );
-      if (currentResults.length) await this.onResults?.(currentResults);
-      const missing = currentResults.filter(
-        (result) => result.value === null,
-      ).length;
-      if (missing) {
-        this.onWarning(
-          diagnosticMessage(
-            `仍有 ${missing} 条翻译为空。`,
-            `${missing} translation result(s) remain null.`,
-          ),
+      // 同一消息在 Provider 返回前可能产生新请求，只保留上下文未变且仍缺失的语言。
+      const currentResults = results.flatMap((row, index) => {
+        const pending = batch[index]!;
+        const latest = pending.state.latest;
+        if (
+          latest.source !== pending.request.source ||
+          latest.comment !== pending.request.comment
+        ) {
+          return [];
+        }
+        if (sameRequest(latest, pending.request)) return row;
+        return row.filter(
+          (result) =>
+            result.value !== null && latest.locales.includes(result.locale),
         );
-        if (this.strict) {
-          this.errors.push(
-            new Error(
-              diagnosticMessage(
-                '[ai-i18n] 仍有翻译为空。',
-                '[ai-i18n] Translation results remain null.',
-              ),
-            ),
-          );
+      });
+      if (currentResults.length) {
+        await this.onResults?.(currentResults);
+        for (const [index, pending] of batch.entries()) {
+          const latest = pending.state.latest;
+          if (
+            latest.source !== pending.request.source ||
+            latest.comment !== pending.request.comment
+          ) {
+            continue;
+          }
+          for (const result of results[index]!) {
+            if (
+              result.value !== null &&
+              latest.locales.includes(result.locale)
+            ) {
+              pending.state.resolvedLocales.add(result.locale);
+            }
+          }
         }
       }
-      for (let index = 0; index < batch.length; index += 1) {
-        batch[index]!.resolve(results[index]!.value);
-      }
+      batch.forEach((pending, index) => pending.resolve(results[index]!));
     } catch (cause) {
-      const hasCurrentRequest = batch.some(
-        (pending) => this.active.get(pending.key) === pending,
+      const hasCurrentRequest = batch.some((pending) =>
+        sameRequest(pending.state.latest, pending.request),
       );
       const reason = cause instanceof Error ? cause.message : String(cause);
       const error = new Error(
@@ -205,7 +300,12 @@ export class ProviderCoordinator {
         { cause },
       );
       if (hasCurrentRequest) {
-        this.errors.push(error);
+        for (const pending of batch) {
+          if (sameRequest(pending.state.latest, pending.request)) {
+            pending.state.failed = true;
+          }
+        }
+        if (this.strict) this.errors.push(error);
         this.onWarning(
           diagnosticMessage(
             `翻译批次失败；本批结果保持为空。原因：${reason}`,
@@ -213,7 +313,15 @@ export class ProviderCoordinator {
           ),
         );
       }
-      for (const pending of batch) pending.resolve(null);
+      for (const pending of batch) {
+        pending.resolve(
+          pending.request.locales.map((locale) => ({
+            messageId: pending.request.messageId,
+            locale,
+            value: null,
+          })),
+        );
+      }
     }
   }
 
@@ -227,130 +335,22 @@ export class ProviderCoordinator {
   }
 }
 
-const EMPTY_BATCH_LENGTH = JSON.stringify({ requests: [] }).length;
-
-function batchPayloadLength(requests: Iterable<PendingRequest>): number {
-  let length = EMPTY_BATCH_LENGTH;
-  let count = 0;
-  for (const request of requests) {
-    length += request.serializedLength + (count > 0 ? 1 : 0);
-    count += 1;
-  }
-  return length;
-}
-
-function takeBatch(
-  requests: Iterable<PendingRequest>,
-  limit: number,
-): PendingRequest[] {
-  const batch: PendingRequest[] = [];
-  let length = EMPTY_BATCH_LENGTH;
-  for (const request of requests) {
-    const nextLength =
-      length + request.serializedLength + (batch.length ? 1 : 0);
-    if (batch.length && nextLength > limit) break;
-    batch.push(request);
-    length = nextLength;
-    if (length >= limit) break;
-  }
-  return batch;
-}
-
-function validateResults(
-  requests: readonly TranslationRequest[],
-  results: readonly TranslationResult[],
-): TranslationResult[] {
-  // 返回结果必须与请求一一对应，禁止额外、重复或缺失项污染缓存。
-  if (!Array.isArray(results)) {
-    throw new Error(
-      diagnosticMessage(
-        'Translator 必须返回结果数组。',
-        'Translator must return an array of results.',
-      ),
-    );
-  }
-  const expected = new Map(
-    requests.map((request) => [
-      requestKey(request.messageId, request.locale),
-      request,
-    ]),
-  );
-  const received = new Map<string, TranslationResult>();
-  for (const result of results) {
-    if (
-      !result ||
-      typeof result.messageId !== 'string' ||
-      typeof result.locale !== 'string' ||
-      (typeof result.value !== 'string' && result.value !== null)
-    ) {
-      throw new Error(
-        diagnosticMessage(
-          'Translator 返回了无效的结果项。',
-          'Translator returned an invalid result item.',
-        ),
-      );
-    }
-    const key = requestKey(result.messageId, result.locale);
-    const request = expected.get(key);
-    if (
-      !request ||
-      received.has(key) ||
-      (result.value !== null &&
-        !hasSameTemplateTokens(request.source, result.value))
-    ) {
-      throw new Error(
-        diagnosticMessage(
-          'Translator 返回了额外、重复或占位符不匹配的结果。',
-          'Translator returned an extra, duplicate, or placeholder-mismatched result.',
-        ),
-      );
-    }
-    received.set(key, result);
-  }
-  if (received.size !== expected.size) {
-    throw new Error(
-      diagnosticMessage(
-        'Translator 返回的结果不完整。',
-        'Translator returned incomplete results.',
-      ),
-    );
-  }
-  return requests.map((request) =>
-    received.get(requestKey(request.messageId, request.locale))!,
+function sameRequest(left: ProviderRequest, right: ProviderRequest): boolean {
+  return (
+    left.source === right.source &&
+    left.comment === right.comment &&
+    left.locales.length === right.locales.length &&
+    left.locales.every((locale, index) => locale === right.locales[index])
   );
 }
 
-function requestKey(messageId: string, locale: string): string {
-  return JSON.stringify([messageId, locale]);
-}
-
-function sameRequest(
-  left: TranslationRequest,
-  right: TranslationRequest,
-): boolean {
-  return left.source === right.source && left.comment === right.comment;
-}
-
-function nonNegativeNumber(value: number, name: string): number {
-  if (!Number.isFinite(value) || value < 0) {
-    throw new RangeError(
-      diagnosticMessage(
-        `[ai-i18n] ${name} 必须是非负数。`,
-        `[ai-i18n] ${name} must be a non-negative number.`,
-      ),
-    );
+function updateLatest(state: RequestState, request: ProviderRequest): void {
+  if (
+    state.latest.source !== request.source ||
+    state.latest.comment !== request.comment
+  ) {
+    state.resolvedLocales.clear();
   }
-  return value;
-}
-
-function positiveInteger(value: number, name: string): number {
-  if (!Number.isInteger(value) || value <= 0) {
-    throw new RangeError(
-      diagnosticMessage(
-        `[ai-i18n] ${name} 必须是正整数。`,
-        `[ai-i18n] ${name} must be a positive integer.`,
-      ),
-    );
-  }
-  return value;
+  if (!sameRequest(state.latest, request)) state.failed = false;
+  state.latest = request;
 }

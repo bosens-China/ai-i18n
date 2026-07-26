@@ -244,7 +244,7 @@ export function collectOccurrences(files: readonly ExtractedFile[]): Map<
 
 export function effectiveTranslations(
   project: LoadedProject,
-  message: Pick<ExtractedMessage, 'id' | 'source'>,
+  message: Pick<ExtractedMessage, 'id' | 'source' | 'comment'>,
 ): Record<string, TranslationValue> {
   const cached = cacheMessage(project, message).translations;
   return Object.fromEntries(
@@ -259,12 +259,17 @@ export function effectiveTranslations(
 
 export function cacheMessage(
   project: LoadedProject,
-  message: Pick<ExtractedMessage, 'id' | 'source'>,
+  message: Pick<ExtractedMessage, 'id' | 'source' | 'comment'>,
 ): CacheMessage {
   const cached = project.messages[message.id];
   if (!cached) {
     throw new Error(
       `[ai-i18n/mcp] message "${message.id}" is missing from translations.json; run Vite Dev/Build and retry`,
+    );
+  }
+  if (cached.source !== message.source || cached.comment !== message.comment) {
+    throw new Error(
+      `[ai-i18n/mcp] message "${message.id}" metadata differs between extracted and translations.json; run Vite Dev/Build and retry`,
     );
   }
   return cached;

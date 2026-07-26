@@ -224,7 +224,7 @@ test('writes human review to overrides without replacing AI memory', async () =>
   expect(overrides.messages['保存'].default['en-US']).toBe('Keep');
 });
 
-test('resolves default and explicit-id reviews before AI memory', async () => {
+test('resolves default and comment-specific reviews before AI memory', async () => {
   const root = await fixture();
   const directory = path.join(root, 'apps/web/i18n');
   const extractedPath = path.join(directory, 'extracted/src_home.ts.json');
@@ -232,15 +232,18 @@ test('resolves default and explicit-id reviews before AI memory', async () => {
     messages: Array<Record<string, unknown>>;
   };
   extracted.messages.push({
-    id: 'toolbar.save',
+    id: '保存#工具栏按钮',
     source: '保存',
+    comment: '工具栏按钮',
     locations: [{ line: 3, column: 0 }],
   });
   await fs.writeFile(extractedPath, JSON.stringify(extracted));
   const memoryPath = path.join(directory, 'translations.json');
   const memory = JSON.parse(await fs.readFile(memoryPath, 'utf8'));
-  memory.messages['toolbar.save'] = {
+  memory.messages['保存#工具栏按钮'] = {
+    source: '保存',
     sourceLang: 'zh-CN',
+    comment: '工具栏按钮',
     translations: { 'en-US': null, 'ja-JP': null },
   };
   await fs.writeFile(memoryPath, JSON.stringify(memory));
@@ -250,7 +253,11 @@ test('resolves default and explicit-id reviews before AI memory', async () => {
     i18n_directory: directory,
     file: 'src/home.ts',
     translations: [
-      { message_id: 'toolbar.save', locale: 'en-US', value: 'Save action' },
+      {
+        message_id: '保存#工具栏按钮',
+        locale: 'en-US',
+        value: 'Save action',
+      },
     ],
   });
   await service.writeTranslations({
@@ -264,7 +271,9 @@ test('resolves default and explicit-id reviews before AI memory', async () => {
     file: 'src/home.ts',
     mode: 'review',
     review_scope: 'message',
-    translations: [{ message_id: 'toolbar.save', locale: 'en-US', value: '' }],
+    translations: [
+      { message_id: '保存#工具栏按钮', locale: 'en-US', value: '' },
+    ],
   });
 
   const listed = await service.listTranslations({
@@ -279,7 +288,7 @@ test('resolves default and explicit-id reviews before AI memory', async () => {
     ],
   ).toBe('Keep');
   const scoped = listed.items.find(
-    (message) => message.message_id === 'toolbar.save',
+    (message) => message.message_id === '保存#工具栏按钮',
   );
   expect(scoped).toMatchObject({
     source: '保存',
@@ -292,7 +301,7 @@ test('resolves default and explicit-id reviews before AI memory', async () => {
       i18n_directory: directory,
       file: 'src/home.ts',
       translations: [
-        { message_id: 'toolbar.save', locale: 'en-US', value: 'Save' },
+        { message_id: '保存#工具栏按钮', locale: 'en-US', value: 'Save' },
       ],
     }),
   ).rejects.toThrow('refusing to overwrite');
@@ -304,18 +313,19 @@ test('resolves default and explicit-id reviews before AI memory', async () => {
       review_scope: 'message',
       translations: [{ message_id: '保存', locale: 'en-US', value: 'Save' }],
     }),
-  ).rejects.toThrow('requires an explicit message id');
+  ).rejects.toThrow('requires a message with comment');
 
   const overrides = JSON.parse(
     await fs.readFile(path.join(directory, 'overrides.json'), 'utf8'),
   );
   expect(overrides.messages['保存']).toMatchObject({
     default: { 'en-US': 'Keep' },
-    byId: { 'toolbar.save': { 'en-US': '' } },
+    byId: { '保存#工具栏按钮': { 'en-US': '' } },
   });
   expect(
-    JSON.parse(await fs.readFile(memoryPath, 'utf8')).messages['toolbar.save']
-      .translations['en-US'],
+    JSON.parse(await fs.readFile(memoryPath, 'utf8')).messages[
+      '保存#工具栏按钮'
+    ].translations['en-US'],
   ).toBe('Save action');
 });
 
@@ -352,6 +362,7 @@ test('preserves template tokens before writing a translation batch', async () =>
     messages: Record<string, unknown>;
   };
   memory.messages[messageId] = {
+    source: messageId,
     sourceLang: 'zh-CN',
     translations: { 'en-US': null, 'ja-JP': null },
   };
@@ -590,10 +601,12 @@ async function fixture(): Promise<string> {
       revision: 0,
       messages: {
         保存: {
+          source: '保存',
           sourceLang: 'zh-CN',
           translations: { 'en-US': null, 'ja-JP': '保存する' },
         },
         退出: {
+          source: '退出',
           sourceLang: 'zh-CN',
           translations: { 'en-US': 'Exit', 'ja-JP': null },
         },

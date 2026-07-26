@@ -49,6 +49,7 @@ export function createProjectSnapshot(
         ]),
       );
       messages[message.id] = {
+        source: message.source,
         sourceLang: options.sourceLang,
         ...(message.comment ? { comment: message.comment } : {}),
         translations: targetTranslations,

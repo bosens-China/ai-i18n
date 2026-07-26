@@ -1,6 +1,9 @@
 export interface TranslationOptions {
-  id?: string;
   comment?: string;
+}
+
+function escapeMessageIdPart(value: string): string {
+  return value.replaceAll('\\', '\\\\').replaceAll('#', '\\#');
 }
 
 export function normalizeComment(comment?: string): string | undefined {
@@ -12,7 +15,11 @@ export function createMessageId(
   source: string,
   options?: TranslationOptions,
 ): string {
-  return options?.id === undefined ? source : options.id.trim();
+  const comment = normalizeComment(options?.comment);
+  const escapedSource = escapeMessageIdPart(source);
+  return comment === undefined
+    ? escapedSource
+    : `${escapedSource}#${escapeMessageIdPart(comment)}`;
 }
 
 export function translationComment(

@@ -65,11 +65,9 @@ const label = useLabel()
   <VueJsxPanel />
 </template>`,
     );
-    const translator: Translator = vi.fn<Translator>(async (requests) =>
-      requests.map((request) => ({
-        messageId: request.messageId,
-        locale: request.locale,
-        value: `EN:${request.source}`,
+    const translator: Translator = vi.fn<Translator>(async ({ messages }) =>
+      messages.map((message) => ({
+        'en-US': `EN:${message.source}`,
       })),
     );
 
@@ -93,8 +91,7 @@ const label = useLabel()
             { value: 'en-US', label: 'English' },
           ],
           loading: {},
-          translator,
-          provider: { batchLength: 12_000, strict: true },
+          provider: { translator, batchLength: 12_000, strict: true },
         }),
         { name: 'unplugin-auto-import' },
         vuePlugin(),

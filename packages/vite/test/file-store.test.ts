@@ -7,6 +7,7 @@ import {
   ProjectState,
   type NormalizedAiI18nOptions,
 } from '../src/project-state';
+import { mergeProjectMessages } from '../src/file-store-merge';
 
 const tempDirs: string[] = [];
 const options: NormalizedAiI18nOptions = {
@@ -49,7 +50,11 @@ describe('FileStore', () => {
       version: 1,
       revision: 1,
       messages: {
-        保存: { sourceLang: 'zh-CN', translations: { 'en-US': null } },
+        保存: {
+          source: '保存',
+          sourceLang: 'zh-CN',
+          translations: { 'en-US': null },
+        },
       },
     });
     expect(cache).not.toHaveProperty('files');
@@ -73,8 +78,9 @@ describe('FileStore', () => {
     await fs.writeFile(source, '');
     state.updateExtracted('', source, [
       {
-        id: 'git.commit',
+        id: '提交#Git 操作',
         source: '提交',
+        comment: 'Git 操作',
         locations: [{ line: 1, column: 0 }],
       },
       {
@@ -92,7 +98,7 @@ describe('FileStore', () => {
           messages: {
             提交: {
               default: { 'en-US': 'Submit' },
-              byId: { 'git.commit': { 'en-US': 'Commit' } },
+              byId: { '提交#Git 操作': { 'en-US': 'Commit' } },
             },
           },
         },
@@ -107,7 +113,7 @@ describe('FileStore', () => {
       await readJson(path.join(root, 'i18n/locales/en-US.json')),
     ).toMatchObject({
       messages: {
-        'git.commit': 'Commit',
+        '提交#Git 操作': 'Commit',
         提交: 'Submit',
       },
     });
@@ -143,7 +149,7 @@ describe('FileStore', () => {
     });
   });
 
-  it('keeps translations when comments change', async () => {
+  it('creates a new untranslated message when comments change', async () => {
     const { root, state, store } = await setup();
     const source = path.join(root, 'src/main.ts');
     const oldCode =
@@ -156,7 +162,7 @@ describe('FileStore', () => {
     const cache = (await readJson(cachePath)) as {
       messages: Record<string, unknown>;
     };
-    const message = cache.messages['保存'] as {
+    const message = cache.messages['保存#旧注释'] as {
       translations: Record<string, string | null>;
     };
     message.translations['en-US'] = 'Save';
@@ -174,7 +180,7 @@ describe('FileStore', () => {
     ).toMatchObject({
       messages: [
         {
-          id: '保存',
+          id: '保存#新注释',
           comment: '新注释',
         },
       ],
@@ -182,7 +188,10 @@ describe('FileStore', () => {
     expect(
       (await readJson(cachePath)) as Record<string, unknown>,
     ).toMatchObject({
-      messages: { 保存: { translations: { 'en-US': 'Save' } } },
+      messages: {
+        '保存#旧注释': { translations: { 'en-US': 'Save' } },
+        '保存#新注释': { translations: { 'en-US': null } },
+      },
     });
   });
 
@@ -426,6 +435,34 @@ describe('FileStore', () => {
     await expect(
       fs.access(path.join(root, 'i18n/locales/en-US.json')),
     ).rejects.toMatchObject({ code: 'ENOENT' });
+  });
+
+  it('migrates translations when the source language changes without changing the message ID', () => {
+    const merged = mergeProjectMessages(
+      {
+        OK: {
+          source: 'OK',
+          sourceLang: 'zh-CN',
+          translations: { 'en-US': 'Okay', 'ja-JP': 'オーケー' },
+        },
+      },
+      {
+        OK: {
+          source: 'OK',
+          sourceLang: 'en-US',
+          translations: {
+            'zh-CN': null,
+            'ja-JP': '古いスナップショット',
+          },
+        },
+      },
+    );
+
+    expect(merged.OK).toEqual({
+      source: 'OK',
+      sourceLang: 'en-US',
+      translations: { 'ja-JP': 'オーケー', 'zh-CN': 'OK' },
+    });
   });
 
   it('serializes concurrent snapshots in call order', async () => {

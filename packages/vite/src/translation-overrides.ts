@@ -9,7 +9,7 @@ import { resolveTranslationOverride } from '@ai-i18n/core';
 import type { ExtractResult } from './yuku-analyzer.js';
 
 export function effectiveTranslation(
-  message: Pick<ExtractedMessage, 'id' | 'source'>,
+  message: Pick<ExtractedMessage, 'id' | 'source' | 'comment'>,
   locale: string,
   cacheMessages: Readonly<Record<string, CacheMessage>>,
   overrides: TranslationOverridesFile,

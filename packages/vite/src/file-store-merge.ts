@@ -52,28 +52,26 @@ export function mergeProjectMessages(
   // 磁盘上的 Agent 编辑优先；ProjectState 只补充新消息和缺失翻译。
   const reused = structuredClone(incoming);
   for (const [messageId, next] of Object.entries(reused)) {
-    if (current[messageId]) {
-      keepCommittedTranslations(next, current[messageId]);
+    const currentMessage = current[messageId];
+    if (currentMessage && currentMessage.sourceLang === next.sourceLang) {
+      keepCommittedTranslations(next, currentMessage);
       continue;
     }
-    const candidates = Object.entries(current).filter(
-      ([, historic]) =>
-        historic.sourceLang !== next.sourceLang &&
-        historic.translations[next.sourceLang] === messageId,
-    );
+    const candidates = currentMessage
+      ? [currentMessage]
+      : Object.values(current).filter(
+          (historic) =>
+            historic.sourceLang !== next.sourceLang &&
+            historic.comment === next.comment &&
+            historic.translations[next.sourceLang] === next.source,
+        );
     if (candidates.length !== 1) continue;
-    const [historicId, historic] = candidates[0]!;
-    const translations = { ...historic.translations };
-    delete translations[next.sourceLang];
+    const historic = candidates[0]!;
+    keepCommittedTranslations(next, historic);
+    delete next.translations[next.sourceLang];
     if (historic.sourceLang) {
-      translations[historic.sourceLang] = historicId;
+      next.translations[historic.sourceLang] = historic.source;
     }
-    for (const [locale, value] of Object.entries(next.translations)) {
-      if (value !== null || !(locale in translations)) {
-        translations[locale] = value;
-      }
-    }
-    next.translations = translations;
   }
   return overlayMessages(current, reused, false, true);
 }
@@ -92,6 +90,11 @@ export function overlayMessages(
       continue;
     }
     if (overwriteMetadata) {
+      if (previous.sourceLang !== next.sourceLang) {
+        delete previous.translations[next.sourceLang];
+      }
+      previous.source = next.source;
+      previous.sourceLang = next.sourceLang;
       if (next.comment) previous.comment = next.comment;
       else delete previous.comment;
     } else if (!previous.comment && next.comment) {

@@ -1,18 +1,17 @@
 import type { TranslationValue } from './schema.js';
 
-export interface TranslationRequest {
-  messageId: string;
+export interface TranslationMessage {
   source: string;
   comment?: string;
-  locale: string;
 }
 
-export interface TranslationResult {
-  messageId: string;
-  locale: string;
-  value: TranslationValue;
+export interface TranslationBatch {
+  locales: readonly string[];
+  messages: readonly TranslationMessage[];
 }
+
+export type TranslationResult = Readonly<Record<string, TranslationValue>>;
 
 export type Translator = (
-  requests: readonly TranslationRequest[],
+  batch: TranslationBatch,
 ) => Promise<readonly TranslationResult[]>;

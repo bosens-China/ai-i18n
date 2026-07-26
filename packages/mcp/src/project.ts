@@ -188,10 +188,10 @@ export class AiI18nProjectService {
       if (
         input.mode === 'review' &&
         input.review_scope === 'message' &&
-        local.id === local.source
+        !local.comment
       ) {
         throw new Error(
-          `[ai-i18n/mcp] review_scope "message" requires an explicit message id`,
+          `[ai-i18n/mcp] review_scope "message" requires a message with comment`,
         );
       }
     }

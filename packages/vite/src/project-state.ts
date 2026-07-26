@@ -3,8 +3,6 @@ import {
   type ModuleMessages,
   type TranslationMemoryFile,
   type TranslationOverridesFile,
-  type TranslationRequest,
-  type TranslationResult,
   type TranslationValue,
   resolveTranslationOverride,
 } from '@ai-i18n/core';
@@ -28,6 +26,10 @@ import type {
   ProjectUpdate,
 } from './project-state-types.js';
 import { snapshotEffectiveModules } from './translation-overrides.js';
+import type {
+  ProviderRequest,
+  ProviderResult,
+} from './provider-coordinator.js';
 
 export type { ProjectSnapshot } from './project-snapshot.js';
 export type {
@@ -258,26 +260,31 @@ export class ProjectState {
     return this.changedEffectiveModules(previous);
   }
 
-  missingTranslations(moduleId: string): TranslationRequest[] {
+  missingTranslations(moduleId: string): ProviderRequest[] {
     const result = this.modules.get(moduleId);
     if (!result) return [];
-    return result.messages.flatMap((message) =>
-      this.options.locales
+    return result.messages.flatMap((message) => {
+      const locales = this.options.locales
         .filter(
           (locale) =>
             locale.value !== this.options.sourceLang &&
             this.translation(message, locale.value) === null,
         )
-        .map((locale) => ({
-          messageId: message.id,
-          source: message.source,
-          ...(message.comment ? { comment: message.comment } : {}),
-          locale: locale.value,
-        })),
-    );
+        .map((locale) => locale.value);
+      return locales.length
+        ? [
+            {
+              messageId: message.id,
+              source: message.source,
+              ...(message.comment ? { comment: message.comment } : {}),
+              locales,
+            },
+          ]
+        : [];
+    });
   }
 
-  applyTranslations(results: readonly TranslationResult[]): string[] {
+  applyTranslations(results: readonly ProviderResult[]): string[] {
     const previous = this.effectiveModules();
     for (const result of results) {
       const translations = this.translations.get(result.locale) ?? new Map();
@@ -344,7 +351,7 @@ export class ProjectState {
   }
 
   private translation(
-    message: Pick<ExtractedMessage, 'id' | 'source'>,
+    message: Pick<ExtractedMessage, 'id' | 'source' | 'comment'>,
     locale: string,
   ): TranslationValue {
     return (
