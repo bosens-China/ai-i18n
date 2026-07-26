@@ -18,6 +18,90 @@ const hooks = [
 ] as const;
 
 describe('@ai-i18n/analyzer', () => {
+  it.each([
+    ['fixture.js', "import { t } from 'virtual:ai-i18n'; t('js')", 1],
+    ['fixture.mjs', "import { t } from 'virtual:ai-i18n'; t(`mjs`)", 1],
+    [
+      'fixture.ts',
+      "import { t } from 'virtual:ai-i18n'; const value: string = t(ok ? 'yes' : 'no')",
+      2,
+    ],
+    [
+      'fixture.mts',
+      "import { t } from 'virtual:ai-i18n'; const value: string = t('mts')",
+      1,
+    ],
+    [
+      'fixture.jsx',
+      "import { t } from 'virtual:ai-i18n'; const view = <p>{t('jsx')}</p>",
+      1,
+    ],
+    [
+      'fixture.tsx',
+      "import { t } from 'virtual:ai-i18n'; const view: JSX.Element = <p>{t('tsx')}</p>",
+      1,
+    ],
+    [
+      'fixture.ts',
+      "import { t } from 'virtual:ai-i18n'; @sealed class View {}; t('decorator')",
+      1,
+    ],
+    [
+      'fixture.ts',
+      "import { t } from 'virtual:ai-i18n'; import('./lazy'); t('dynamic import')",
+      1,
+    ],
+  ])('parses supported syntax in %s', (id, code, messageCount) => {
+    const module = analyzeModule(code, id);
+
+    expect(module.diagnostics).toEqual([]);
+    expect(extractMessages(module).messages).toHaveLength(messageCount);
+  });
+
+  it.each(['fixture.cjs', 'fixture.cts'])(
+    'does not guess CommonJS require bindings in %s',
+    (id) => {
+      const module = analyzeModule(
+        "const { t } = require('virtual:ai-i18n'); t('不提取')",
+        id,
+      );
+
+      expect(module.diagnostics).toEqual([]);
+      expect(extractMessages(module).messages).toEqual([]);
+    },
+  );
+
+  it('resolves aliases and respects lexical bindings', () => {
+    const module = analyzeModule(
+      `import { t as translate } from 'virtual:ai-i18n'
+import { t as other } from 'another-i18n'
+translate('提取')
+other('忽略')
+function render(translate) { translate('遮蔽') }`,
+      'bindings.ts',
+    );
+
+    expect(
+      extractMessages(module).messages.map((message) => message.source),
+    ).toEqual(['提取']);
+  });
+
+  it.each([
+    ['(LABEL)', 'parenthesized expression'],
+    ['LABEL as string', 'TypeScript as expression'],
+    ['<string>LABEL', 'TypeScript type assertion'],
+    ['LABEL!', 'TypeScript non-null expression'],
+  ])('extracts through %s (%s)', (expression) => {
+    const module = analyzeModule(
+      `import { t } from 'virtual:ai-i18n'; const LABEL = '静态包装'; t(${expression})`,
+      'wrappers.ts',
+    );
+
+    expect(extractMessages(module).messages).toMatchObject([
+      { id: '静态包装', source: '静态包装' },
+    ]);
+  });
+
   it('leaves extraction unlimited and reports an explicit 1000 candidate threshold', () => {
     const extract = (
       count: number,

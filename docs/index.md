@@ -6,7 +6,7 @@
 - [phase-1/PRD.md](./phase-1/PRD.md) — Phase 1 产品规格（Implemented，等待外部验收）
 - [phase-1/TODO.md](./phase-1/TODO.md) — Phase 1 任务清单
 - [phase-1/ACCEPTANCE.md](./phase-1/ACCEPTANCE.md) — Phase 1 验收证据
-- [phase-1/YUKU-SPIKE.md](./phase-1/YUKU-SPIKE.md) — Yuku 准入 Spike
+- [phase-1/YUKU-SPIKE.md](./phase-1/YUKU-SPIKE.md) — Yuku 历史准入 Spike（现有回归已并入 Analyzer）
 - [phase-2/PRD.md](./phase-2/PRD.md) — Phase 2 增量构建、按需语言与有界缓存规格
 - [phase-2/TODO.md](./phase-2/TODO.md) — Phase 2 任务清单
 - [phase-2/SPIKES.md](./phase-2/SPIKES.md) — Phase 2 Vite Watch / Locale 资产 Spike

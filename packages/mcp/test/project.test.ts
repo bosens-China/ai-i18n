@@ -6,6 +6,7 @@ import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
 import { afterEach, expect, test } from 'vitest';
 import { AiI18nProjectService } from '../src/project';
 import { filterTranslations } from '../src/project-files';
+import { paginate } from '../src/pagination';
 import { createAiI18nMcpServer } from '../src/server';
 
 const tempDirectories: string[] = [];
@@ -14,6 +15,23 @@ test('treats a missing scoped locale as an untranslated value', () => {
   expect(filterTranslations({ 'en-US': null }, 'ja-JP')).toEqual({
     'ja-JP': null,
   });
+});
+
+test('enforces response size and rejects invalid cursors', () => {
+  const items = [{ id: 'a' }, { id: 'b' }, { id: 'c' }];
+  const first = paginate(items, (item) => item.id, 3, undefined, 1);
+
+  expect(first).toMatchObject({
+    items: [{ id: 'a' }],
+    has_more: true,
+    truncated_by_size: true,
+  });
+  expect(
+    paginate(items, (item) => item.id, 3, first.next_cursor).items,
+  ).toEqual([{ id: 'b' }, { id: 'c' }]);
+  expect(() => paginate(items, (item) => item.id, 3, 'invalid')).toThrow(
+    'invalid cursor',
+  );
 });
 
 afterEach(async () => {
@@ -122,9 +140,33 @@ test('fills null values atomically and refuses conflicting overwrites', async ()
     service.writeTranslations({
       i18n_directory: directory,
       file: 'src/home.ts',
+      translations: [
+        { message_id: '保存', locale: 'en-US', value: 'Save' },
+        { message_id: '退出', locale: 'ja-JP', value: '' },
+      ],
+    }),
+  ).resolves.toEqual({
+    file: 'src/home.ts',
+    applied_count: 0,
+    unchanged_count: 2,
+  });
+
+  await expect(
+    service.writeTranslations({
+      i18n_directory: directory,
+      file: 'src/home.ts',
       translations: [{ message_id: '保存', locale: 'ja-JP', value: 'セーブ' }],
     }),
   ).rejects.toThrow('refusing to overwrite');
+  await expect(
+    service.writeTranslations({
+      i18n_directory: directory,
+      file: 'src/home.ts',
+      translations: [
+        { message_id: '保存', locale: 'fr-FR', value: 'Sauvegarder' },
+      ],
+    }),
+  ).rejects.toThrow('unknown locale "fr-FR"');
 });
 
 test('reports a missing message id and points to the list tool', async () => {

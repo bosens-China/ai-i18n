@@ -280,11 +280,12 @@ describe('openAI', () => {
       body: { choices: [] },
     }));
 
-    await expect(
-      openAI(validOptions(errorURL))([
-        { messageId: 'save', source: '保存', locale: 'en-US' },
-      ]),
-    ).rejects.toThrow('[ai-i18n/openai] request failed with status 401');
+    const error = await openAI(validOptions(errorURL))([
+      { messageId: 'save', source: '保存', locale: 'en-US' },
+    ]).catch((cause: unknown) => cause);
+    expect(error).toEqual(
+      new Error('[ai-i18n/openai] request failed with status 401'),
+    );
     await expect(
       openAI(validOptions(invalidURL))([
         { messageId: 'save', source: '保存', locale: 'en-US' },

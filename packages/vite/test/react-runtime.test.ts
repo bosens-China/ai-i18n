@@ -1,77 +1,44 @@
 import { createI18nRuntime } from '@ai-i18n/core';
-import { createElement } from 'react';
-import { renderToStaticMarkup } from 'react-dom/server';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createReactI18n } from '../src/react';
 
-describe('React runtime adapter', () => {
-  it('renders from the current Core snapshot', async () => {
-    const runtime = createI18nRuntime({
-      sourceLang: 'zh-CN',
-      defaultLang: 'zh-CN',
-      locales: [
-        { value: 'zh-CN', label: '中文' },
-        { value: 'en-US', label: 'English' },
-      ],
-    });
-    runtime.registerModule('App.tsx', {
-      'zh-CN': { 标题: '标题' },
-      'en-US': { 标题: 'Title' },
-    });
-    const useI18n = createReactI18n(runtime);
-    const View = () => {
-      const i18n = useI18n();
-      return createElement(
-        'span',
-        null,
-        `${i18n.currentLang}:${i18n.t('标题')}`,
+const reactHooks = vi.hoisted(() => ({
+  callback: undefined as unknown,
+  dependencies: undefined as readonly unknown[] | undefined,
+  subscribe: undefined as ((listener: () => void) => () => unknown) | undefined,
+}));
+
+vi.mock('react', () => ({
+  useCallback<T>(callback: T, dependencies: readonly unknown[]): T {
+    const changed =
+      !reactHooks.dependencies ||
+      dependencies.length !== reactHooks.dependencies.length ||
+      dependencies.some(
+        (value, index) => !Object.is(value, reactHooks.dependencies?.[index]),
       );
-    };
+    if (changed) {
+      reactHooks.callback = callback;
+      reactHooks.dependencies = [...dependencies];
+    }
+    return reactHooks.callback as T;
+  },
+  useSyncExternalStore<T>(
+    subscribe: (listener: () => void) => () => unknown,
+    getSnapshot: () => T,
+  ): T {
+    reactHooks.subscribe = subscribe;
+    return getSnapshot();
+  },
+}));
 
-    expect(renderToStaticMarkup(createElement(View))).toBe(
-      '<span>zh-CN:标题</span>',
-    );
-    await runtime.setLang('en-US');
-    expect(renderToStaticMarkup(createElement(View))).toBe(
-      '<span>en-US:Title</span>',
-    );
-  });
+beforeEach(() => {
+  reactHooks.callback = undefined;
+  reactHooks.dependencies = undefined;
+  reactHooks.subscribe = undefined;
+});
 
-  it('renders the loaded locale after an async switch', async () => {
-    let finish!: (messages: { 标题: string }) => void;
-    const loader = vi.fn(
-      () =>
-        new Promise<{ 标题: string }>((resolve) => {
-          finish = resolve;
-        }),
-    );
-    const runtime = createI18nRuntime({
-      sourceLang: 'zh-CN',
-      defaultLang: 'zh-CN',
-      locales: [
-        { value: 'zh-CN', label: '中文' },
-        { value: 'en-US', label: 'English' },
-      ],
-      localeLoaders: { 'en-US': loader },
-    });
-    runtime.registerModule('App.tsx', { 'zh-CN': { 标题: '标题' } });
-    const useI18n = createReactI18n(runtime);
-    const View = () => {
-      const i18n = useI18n();
-      return createElement('span', null, i18n.t('标题'));
-    };
-
-    const switching = runtime.setLang('en-US');
-    expect(renderToStaticMarkup(createElement(View))).toBe('<span>标题</span>');
-    finish({ 标题: 'Title' });
-    await switching;
-    expect(renderToStaticMarkup(createElement(View))).toBe(
-      '<span>Title</span>',
-    );
-    expect(loader).toHaveBeenCalledOnce();
-  });
-
-  it('invalidates translation calls cached by React Compiler', async () => {
+describe('React runtime adapter', () => {
+  it('subscribes to Core updates and invalidates cached translations', async () => {
     const runtime = createI18nRuntime({
       sourceLang: 'zh-CN',
       defaultLang: 'zh-CN',
@@ -85,23 +52,22 @@ describe('React runtime adapter', () => {
       'en-US': { 标题: 'Title' },
     });
     const useI18n = createReactI18n(runtime);
-    let cachedT: ReturnType<typeof useI18n>['t'] | undefined;
-    let cachedText = '';
-    const CompilerCachedView = () => {
-      const { t } = useI18n();
-      if (cachedT !== t) {
-        cachedT = t;
-        cachedText = t('标题');
-      }
-      return createElement('span', null, cachedText);
-    };
+    const first = useI18n();
+    const listener = vi.fn();
+    const unsubscribe = reactHooks.subscribe!(listener);
 
-    expect(renderToStaticMarkup(createElement(CompilerCachedView))).toBe(
-      '<span>标题</span>',
-    );
+    expect(first.currentLang).toBe('zh-CN');
+    expect(first.t('标题')).toBe('标题');
     await runtime.setLang('en-US');
-    expect(renderToStaticMarkup(createElement(CompilerCachedView))).toBe(
-      '<span>Title</span>',
-    );
+    expect(listener).toHaveBeenCalledOnce();
+
+    const second = useI18n();
+    expect(second.currentLang).toBe('en-US');
+    expect(second.t('标题')).toBe('Title');
+    expect(second.t).not.toBe(first.t);
+
+    unsubscribe();
+    await runtime.setLang('zh-CN');
+    expect(listener).toHaveBeenCalledOnce();
   });
 });

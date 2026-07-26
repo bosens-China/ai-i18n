@@ -26,6 +26,26 @@ afterEach(async () => {
 });
 
 describe('@ai-i18n/vite plugin', () => {
+  it('validates locale and persistence options', () => {
+    const base = { sourceLang: 'zh-CN', locales: options.locales };
+
+    expect(() => aiI18n({ ...base, locales: [] })).toThrow(
+      'locales must not be empty',
+    );
+    expect(() =>
+      aiI18n({ ...base, locales: [options.locales[0]!, options.locales[0]!] }),
+    ).toThrow('locale values must be unique');
+    expect(() => aiI18n({ ...base, sourceLang: 'ja-JP' })).toThrow(
+      'sourceLang must match a value in locales',
+    );
+    expect(() => aiI18n({ ...base, defaultLang: 'ja-JP' })).toThrow(
+      'defaultLang must match a value in locales',
+    );
+    expect(() => aiI18n({ ...base, persist: { key: ' ' } })).toThrow(
+      'persist.key must not be empty',
+    );
+  });
+
   it('injects a stable register import after shebang and directives', async () => {
     const { plugin, transform } = setupPlugin();
     const code = `#!/usr/bin/env node\n'use strict';\nimport { t as tr } from 'virtual:ai-i18n';\nconsole.log(tr('保存', { comment: '按钮' }));`;

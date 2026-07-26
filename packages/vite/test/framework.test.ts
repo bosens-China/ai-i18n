@@ -72,6 +72,14 @@ describe('framework integration', () => {
     );
     expect(source).not.toContain('declare const t:');
 
+    await writeFrameworkTypes(root, 'react', true);
+    const react = await fs.readFile(
+      path.join(root, 'src/ai-i18n.d.ts'),
+      'utf8',
+    );
+    expect(react).toContain("import('@ai-i18n/vite/react').UseI18n");
+    expect(react).not.toContain("import('@ai-i18n/vite/vue').UseI18n");
+
     await writeFrameworkTypes(root, 'vanilla', false);
     const vanilla = await fs.readFile(
       path.join(root, 'src/ai-i18n.d.ts'),

@@ -41,7 +41,7 @@ describe('FileStore robustness', () => {
     ]);
   });
 
-  it('skips an extracted file that disappears after directory listing', async () => {
+  it('skips disappeared extracted files and propagates other read failures', async () => {
     const { root, state, store, source } = await setup();
     const code = "import { t } from 'virtual:ai-i18n'; t('保存')";
     await fs.writeFile(source, code);
@@ -49,14 +49,16 @@ describe('FileStore robustness', () => {
     await store.sync(state.snapshot());
     const extractedPath = path.join(root, 'i18n/extracted/src_main.ts.json');
     const originalReadFile = fs.readFile.bind(fs);
-    vi.spyOn(fs, 'readFile').mockImplementation((file, readOptions) => {
-      if (path.resolve(String(file)) === extractedPath) {
-        return Promise.reject(
-          Object.assign(new Error('gone'), { code: 'ENOENT' }),
-        );
-      }
-      return originalReadFile(file, readOptions);
-    });
+    const readFile = vi
+      .spyOn(fs, 'readFile')
+      .mockImplementation((file, readOptions) => {
+        if (path.resolve(String(file)) === extractedPath) {
+          return Promise.reject(
+            Object.assign(new Error('gone'), { code: 'ENOENT' }),
+          );
+        }
+        return originalReadFile(file, readOptions);
+      });
     const warnings: string[] = [];
     const readingStore = createStore(root, warnings);
 
@@ -64,6 +66,18 @@ describe('FileStore robustness', () => {
     expect(warnings).toEqual([
       expect.stringContaining('disappeared while reading'),
     ]);
+
+    readFile.mockImplementation((file, readOptions) => {
+      if (path.resolve(String(file)) === extractedPath) {
+        return Promise.reject(
+          Object.assign(new Error('denied'), { code: 'EACCES' }),
+        );
+      }
+      return originalReadFile(file, readOptions);
+    });
+    await expect(readingStore.sync(state.snapshot())).rejects.toMatchObject({
+      code: 'EACCES',
+    });
   });
 
   it('only accepts and scans flat extracted JSON files', async () => {

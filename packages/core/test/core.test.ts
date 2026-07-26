@@ -446,6 +446,8 @@ describe('@ai-i18n/core runtime', () => {
     runtime.registerModule('src/app.ts', {
       'zh-CN': { 保存: '保存', 缺失: '缺失' },
     });
+    const listener = vi.fn();
+    runtime.subscribe(listener);
 
     await runtime.setLang('zh-CN');
     expect(loader).not.toHaveBeenCalled();
@@ -460,6 +462,7 @@ describe('@ai-i18n/core runtime', () => {
     expect(runtime.getLang()).toBe('en-US');
     expect(runtime.t('保存')).toBe('Save');
     expect(runtime.t('缺失')).toBe('缺失');
+    expect(listener).toHaveBeenCalledOnce();
     await runtime.setLang('zh-CN');
     await runtime.setLang('en-US');
     expect(loader).toHaveBeenCalledTimes(1);

@@ -24,17 +24,21 @@ extractMessages(module, runtimeModuleId?, translationHooks?, autoImportRuntime?)
 
 ## 正确性结果
 
-`packages/vite/test/yuku-spike.test.ts` 覆盖多组场景（含 `it.each`），当前全部通过。准入阶段曾与旧 Babel extractor 对照，目标语义结果一致；验收后已移除 Babel 对照代码，测试只断言 Yuku 行为。主要覆盖：
+准入阶段曾由 `packages/vite/test/yuku-spike.test.ts` 与旧 Babel extractor 对照，目标语义结果一致。Yuku 成为唯一分析实现后，仍有产品价值的解析与绑定回归已并入
+`packages/analyzer/test/analyzer.test.ts`，跨文件行为由 ESLint 与真实 Vite Build 测试保护，历史
+Spike 测试文件已移除。当前主要覆盖：
 
-- 字符串、comment、局部 const、条件分支、静态 template literal。
+- 字符串、静态 options、局部 const、条件分支与 template literal。
 - JS、TS、JSX、TSX。
 - decorators 和 dynamic import。
 - import alias，拒绝其他来源的同名 `t`。
 - re-export 后继续解析到约定虚拟模块。
 - 跨文件静态 const definition。
 - 动态参数只产生 warning，不猜测结果。
-- Analyzer 同路径 add/replace 和 remove。
 - 词法遮蔽、`undefined` comment、未解析 import 的 pending warning。
+
+Analyzer 增量状态不再直接测试 Yuku 依赖自身的 add/remove，而由 `ProjectState` 与真实 Vite
+Build Watch 回归保护实际产品调用路径。
 
 旧实现支持的全局 `t`、`useI18nText` tagged template 和任意普通字符串不属于新协议，因此不纳入结果一致性要求。
 
@@ -57,11 +61,12 @@ extractMessages(module, runtimeModuleId?, translationHooks?, autoImportRuntime?)
 
 ## 平台状态
 
-六平台矩阵已在 CI 通过（详见 [ACCEPTANCE.md](./ACCEPTANCE.md)）：
+六平台矩阵曾在准入 CI 通过（详见 [ACCEPTANCE.md](./ACCEPTANCE.md)）：
 
 - Linux、Windows、macOS 的 x64 / arm64，共 6 个 job。
-- 工作流：`.github/workflows/yuku-platform.yml`（`main` push、pull request、`workflow_dispatch`）。
 - 每个 job 执行真实安装、native binding 加载与 Yuku 准入测试。
+
+准入完成后专项 workflow 已移除；当前 Analyzer 回归随常规 CI 执行。
 
 ## 决策
 
