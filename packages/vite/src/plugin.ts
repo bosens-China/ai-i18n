@@ -4,13 +4,10 @@ import {
   type ResolvedConfig,
 } from 'vite';
 import { diagnosticMessage } from '@ai-i18n/analyzer';
-import { resolveAnalysisDependencies } from './analysis-dependencies.js';
 import { createBuildWatchState } from './build-watch.js';
 import { createDevUpdateSender } from './dev-updates.js';
 import { FileStore } from './file-store.js';
 import {
-  extractFrameworkSource,
-  frameworkAutoImports,
   frameworkTranslationHooks,
   resolveAutoImport,
   resolveFramework,
@@ -31,24 +28,10 @@ import { ProjectState } from './project-state.js';
 import { ProviderCoordinator } from './provider-coordinator.js';
 import { loadRegistration } from './registration-loader.js';
 import type { AiI18nOptions } from './options.js';
-import {
-  normalizeOptions,
-  normalizeRoot,
-  shouldIgnoreSource,
-  sourceUpdateOptions,
-} from './plugin-utils.js';
+import { normalizeOptions, normalizeRoot } from './plugin-utils.js';
+import { createSourceTransformHandler } from './source-transform.js';
 import { runtimeCode, runtimeStubCode } from './virtual-modules.js';
-import {
-  assertDirectDefineI18nMessagesCalls,
-  sourceRegistration,
-  transformDefineI18nMessages,
-} from './source-registration.js';
-import {
-  AI_I18N_VIRTUAL_MODULE_ID,
-  analyzeModule,
-  findDefineI18nMessagesCalls,
-  findUnboundCalls,
-} from './yuku-analyzer.js';
+import { AI_I18N_VIRTUAL_MODULE_ID } from './yuku-analyzer.js';
 
 const RESOLVED_RUNTIME_ID = `\0${AI_I18N_VIRTUAL_MODULE_ID}`;
 const REGISTER_PREFIX = `${AI_I18N_VIRTUAL_MODULE_ID}/register?module=`;
@@ -135,6 +118,26 @@ export function aiI18n(options: AiI18nOptions): Plugin {
     sendTranslationUpdates,
     sendLocaleUpdates,
     requestMissingTranslations,
+  });
+
+  const transformSource = createSourceTransformHandler({
+    registerPrefix: REGISTER_PREFIX,
+    config: () => config,
+    ready: () => ready,
+    state: currentState,
+    store: currentStore,
+    framework: () => framework,
+    autoImport: () => autoImport,
+    translationHooks: () => translationHooks,
+    requestMissingTranslations,
+    setDevHot(hot) {
+      devHot = hot;
+    },
+    warnSsrOnce(warn) {
+      if (warnedSsr) return;
+      warnedSsr = true;
+      warn();
+    },
   });
 
   const transformIndexHtml = createHtmlTransformHandler({
@@ -312,118 +315,7 @@ export function aiI18n(options: AiI18nOptions): Plugin {
 
     transform: {
       filter: { id: SOURCE_RE },
-      async handler(code, id, transformOptions) {
-        if (shouldIgnoreSource(id)) return null;
-        const extraction = await extractFrameworkSource(code, id, framework);
-        if (extraction === null) return null;
-        if (transformOptions?.ssr || this.environment.name !== 'client') {
-          if (!warnedSsr) {
-            warnedSsr = true;
-            this.warn(
-              diagnosticMessage(
-                '[ai-i18n] 仅支持浏览器 Runtime；已跳过 SSR 转换。',
-                '[ai-i18n] Browser runtime only; skipped SSR transformation.',
-              ),
-            );
-          }
-          const macroModule = analyzeModule(
-            extraction?.analysisCode ?? code,
-            id.split('?')[0] ?? id,
-            undefined,
-            extraction?.analysisLang,
-          );
-          assertDirectDefineI18nMessagesCalls(macroModule);
-          const macroCalls =
-            extraction?.macroCalls ?? findDefineI18nMessagesCalls(macroModule);
-          return transformDefineI18nMessages(code, id, macroCalls);
-        }
-        if (config?.command === 'serve' && 'hot' in this.environment) {
-          devHot = this.environment.hot as NormalizedHotChannel;
-        }
-        await ready;
-
-        const project = currentState();
-        let update = project.update(
-          extraction?.analysisCode ?? code,
-          id,
-          sourceUpdateOptions(
-            extraction,
-            code,
-            translationHooks,
-            autoImport && framework === 'vanilla',
-          ),
-        );
-        if (!update) return null;
-        const { moduleId } = update;
-        const analysisChanged = await resolveAnalysisDependencies(
-          this,
-          project,
-          id,
-          moduleId,
-          update.result.pending,
-        );
-        if (analysisChanged) {
-          update = project.update(extraction?.analysisCode ?? code, id, {
-            ...sourceUpdateOptions(
-              extraction,
-              code,
-              translationHooks,
-              autoImport && framework === 'vanilla',
-            ),
-            force: true,
-          })!;
-        }
-        const currentModule = project.analyzer.module(moduleId)!;
-        assertDirectDefineI18nMessagesCalls(currentModule);
-        const { result } = update;
-        for (const warning of result.warnings) {
-          this.warn({
-            message: warning.message,
-            id,
-            loc: { line: warning.line, column: warning.column },
-          });
-        }
-        if (config?.command !== 'build') {
-          const cache = await currentStore().sync(project.snapshot());
-          project.hydrateCache(cache);
-          project.hydrateOverrides(await currentStore().loadOverrides());
-        }
-        requestMissingTranslations(update.affectedModuleIds);
-        // 只注入没有本地 symbol 的调用，避免覆盖用户自己的同名函数。
-        const unboundCalls = autoImport
-          ? new Set(
-              findUnboundCalls(
-                currentModule,
-                new Set(frameworkAutoImports(framework)),
-              ),
-            )
-          : new Set<string>();
-        const autoImports = frameworkAutoImports(framework).filter((name) =>
-          unboundCalls.has(name),
-        );
-        const needsRegistration = Boolean(
-          result.messages.length || result.pending,
-        );
-        const macroCalls =
-          extraction?.macroCalls ?? findDefineI18nMessagesCalls(currentModule);
-        if (!needsRegistration && !autoImports.length && !macroCalls.length) {
-          return null;
-        }
-
-        return sourceRegistration({
-          code,
-          id,
-          moduleId,
-          registerPrefix: REGISTER_PREFIX,
-          module: currentModule,
-          ...(extraction?.registration
-            ? { registration: extraction.registration }
-            : {}),
-          autoImports,
-          needsRegistration,
-          macroCalls,
-        });
-      },
+      handler: transformSource,
     },
 
     async renderChunk(code, chunk) {
