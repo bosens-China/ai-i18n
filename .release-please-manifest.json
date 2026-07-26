@@ -1,8 +1,8 @@
 {
-  "packages/analyzer": "1.0.0-alpha.3",
-  "packages/core": "1.0.0-alpha.3",
-  "packages/eslint": "1.0.0-alpha.3",
-  "packages/mcp": "1.0.0-alpha.4",
-  "packages/openai": "1.0.0-alpha.3",
-  "packages/vite": "1.0.0-alpha.4"
+  "packages/analyzer": "1.0.0-alpha.4",
+  "packages/core": "1.0.0-alpha.4",
+  "packages/eslint": "1.0.0-alpha.4",
+  "packages/mcp": "1.0.0-alpha.5",
+  "packages/openai": "1.0.0-alpha.4",
+  "packages/vite": "1.0.0-alpha.5"
 }
