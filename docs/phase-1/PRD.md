@@ -23,7 +23,7 @@ Vanilla/Vue/React 单一模式的 pnpm monorepo。
 5. 除 `vite dev`、`vite build` 及 Vite 原生命令形态外，不提供额外 CLI。
 6. 默认模式为 Vanilla；最终 Vite 插件列表可推断 Vue/React，显式 `framework` 可覆盖推断。
 7. 只提取显式 `t()`，不自动扫描普通字符串、JSX 文本或 Vue 模板文本。
-8. 相同源文案只翻译一次；`t()` 的第二个注释参数参与 message ID，不同注释视为不同文案。
+8. 相同源文案只翻译一次；`options.comment` 参与 message ID，不同注释视为不同文案。
 9. Provider 显式配置后，在 Dev 和 Build 中都会自动运行。
 10. Dev Provider 调用必须防抖、批处理、去重且不阻塞首次模块响应。
 11. 缺失翻译使用 `null`，运行时确定性回退到源语言。
@@ -79,7 +79,7 @@ Phase 1 不包括：
 import { t } from 'virtual:ai-i18n';
 
 t('保存');
-t('保存', '文件保存按钮');
+t('保存', { comment: '文件保存按钮' });
 ```
 
 提取器必须确认 `t` 来自约定模块，并支持 import alias：
@@ -105,8 +105,8 @@ Message ID 保持可读，规则为：
 
 ```text
 t('保存')                       -> 保存
-t('保存', '文件保存按钮')       -> 保存#文件保存按钮
-t('保存', '草稿保存按钮')       -> 保存#草稿保存按钮
+t('保存', { comment: '文件保存按钮' }) -> 保存#文件保存按钮
+t('保存', { comment: '草稿保存按钮' }) -> 保存#草稿保存按钮
 ```
 
 约束：
@@ -114,8 +114,8 @@ t('保存', '草稿保存按钮')       -> 保存#草稿保存按钮
 - ID 不包含文件路径，移动文件不得触发重新翻译。
 - 相同 source/comment 在全项目共享一份翻译记忆。
 - `undefined`、空注释与无注释等价。
-- comment 去除首尾空白后参与 ID，source 保持静态求值后的实际内容。（历史 Phase 1
-  契约；Phase 4 起 comment 仅作翻译提示，不再改变 ID。）
+- comment 去除首尾空白后参与 ID，source 保持静态求值后的实际内容。source 或 comment
+  任一变化都会形成新的待翻译消息。
 - key 转义协议必须版本化并有兼容测试。
 
 ### 5.3 缺失翻译
@@ -349,7 +349,7 @@ Hook 的静态绑定要求使用 `<script setup>`；不追踪 Options API `setup
 业务源码：
 
 ```ts
-t('提交订单', '订单确认按钮');
+t('提交订单', { comment: '订单确认按钮' });
 ```
 
 插件概念上转换为：
@@ -360,7 +360,8 @@ import 'virtual:ai-i18n/register?module=src/pages/order.ts';
 __aiI18nT('提交订单#订单确认按钮', '提交订单');
 ```
 
-`__aiI18nT(id, sourceFallback)` 是编译产物使用的内部 helper，不属于开发者公开 API；公开的 `t(source, comment?)` 签名保持不变。
+`__aiI18nT(id, sourceFallback)` 是编译产物使用的内部 helper，不属于开发者公开 API；公开 API
+为 `t(source, options?)`，可通过 `options.comment` 提供语境。
 
 注册虚拟模块在业务模块执行前运行：
 
@@ -393,29 +394,29 @@ registerModule('src/pages/order.ts', {
 框架无关 Provider 契约由 `@ai-i18n/core` 导出：
 
 ```ts
-interface TranslationRequest {
-  messageId: string;
+interface TranslationMessage {
   source: string;
   comment?: string;
-  locale: string;
 }
 
-interface TranslationResult {
-  messageId: string;
-  locale: string;
-  value: string | null;
+interface TranslationBatch {
+  locales: readonly string[];
+  messages: readonly TranslationMessage[];
 }
+
+type TranslationResult = Readonly<Record<string, string | null>>;
 
 type Translator = (
-  requests: readonly TranslationRequest[],
+  batch: TranslationBatch,
 ) => Promise<readonly TranslationResult[]>;
 ```
 
-同一批请求只包含一个目标语言；Provider 不接收缓存、文件路径或当前非空翻译。
+同一批消息共享完全相同的缺失 locale 集合；Translator 不接收 message ID、缓存、文件路径
+或当前非空翻译，返回数组按消息下标对应。
 
 ### 11.1 自动运行
 
-只要显式配置 `translator`：
+只要显式配置 `provider.translator`：
 
 - Dev 自动翻译渐进发现的 `null`。
 - Build 自动翻译完整可达模块中的 `null`。
@@ -423,22 +424,21 @@ type Translator = (
 
 ### 11.2 去重、批次与防抖
 
-调度 key 为：
+Vite 先按每条消息的缺失 locale 集合分组，再按 `batchLength` 切批。调度 key 为内部
+message ID，同一 source/comment 的重复请求复用在途结果。
 
-```text
-messageId + targetLocale
-```
+某个 locale 集合批次失败时，仅该批保持 `null`，其他批次的成功译文继续写入。
 
 要求：
 
 - 同一 key 在当前进程只允许一个 in-flight Promise。
 - Dev 使用可配置 debounce 收集初始页面连续模块。
-- `JSON.stringify({ requests }).length` 达到可配置 batch length 时立即发送；默认 `12_000`，
+- `JSON.stringify({ locales, messages }).length` 达到可配置 batch length 时立即发送；默认 `12_000`，
   单条超限请求独立成批。
 - 同时执行的 Provider 批次不得超过可配置并发上限，默认 `5`。
-- Provider 按目标语言批量接收唯一 messages。
+- Provider 按完全相同的目标语言集合批量接收唯一 messages。
 - 一个批次失败时保持 `null` 并输出 warning，不写入错误字符串。
-- Provider 返回必须校验 ID、locale 和值类型。
+- Provider 返回必须校验行数、精确 locale 键、值类型和模板占位符。
 
 ### 11.3 Dev 非阻塞
 
@@ -599,7 +599,7 @@ aiI18n({
 只处理整个文本节点或整个属性值为静态 `t()` 的内容：
 
 ```html
-<title>t('能源控制台', 'HTML title')</title>
+<title>t('能源控制台', { comment: 'HTML title' })</title>
 <div>t('正在加载')</div>
 <input placeholder="t('请输入名称')" />
 ```
@@ -637,7 +637,7 @@ interface LangOption {
 }
 
 interface I18nRuntime {
-  t(source: string, comment?: string): string;
+  t(source: string, options?: { comment?: string }): string;
   setLang(value: string): Promise<void>;
   getLang(): string;
   getLangs(): readonly LangOption[];
@@ -657,8 +657,8 @@ aiI18n({
     { value: 'ja-JP', label: '日本語' },
   ],
   html: true,
-  translator: openAI({/* user config */}),
   provider: {
+    translator: openAI({/* user config */}),
     debounceMs: 100,
     batchLength: 12_000,
     maxConcurrency: 5,

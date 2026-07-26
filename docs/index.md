@@ -3,7 +3,7 @@
 面向 Agent / 维护者。先读本文件，再按需打开下列文档。
 用户文档见 `apps/docs`（Rspress）。
 
-- [phase-1/PRD.md](./phase-1/PRD.md) — Phase 1 产品规格（Implemented，等待外部验收）
+- [phase-1/PRD.md](./phase-1/PRD.md) — Phase 1 产品规格（含当前 `t(source, { comment })`、Translator 与 Vite Provider 契约）
 - [phase-1/TODO.md](./phase-1/TODO.md) — Phase 1 任务清单
 - [phase-1/ACCEPTANCE.md](./phase-1/ACCEPTANCE.md) — Phase 1 验收证据
 - [phase-1/YUKU-SPIKE.md](./phase-1/YUKU-SPIKE.md) — Yuku 历史准入 Spike（现有回归已并入 Analyzer）
@@ -23,7 +23,7 @@
 - [phase-6/PRD.md](./phase-6/PRD.md) — 静态消息集合宏、宽松提取与推荐语法规格
 - [phase-6/TODO.md](./phase-6/TODO.md) — Phase 6 交付清单
 - [phase-6/ACCEPTANCE.md](./phase-6/ACCEPTANCE.md) — Phase 6 验收证据
-- [phase-7/PRD.md](./phase-7/PRD.md) — 并发安全 AI Memory、人工覆盖与单层 extracted 协议
+- [phase-7/PRD.md](./phase-7/PRD.md) — 并发安全 AI Memory、显式消息元数据、comment 级人工覆盖与单层 extracted 协议
 - [phase-7/TODO.md](./phase-7/TODO.md) — Phase 7 交付清单
 - [phase-7/ACCEPTANCE.md](./phase-7/ACCEPTANCE.md) — Phase 7 验收证据
 - [phase-8/PRD.md](./phase-8/PRD.md) — Analyzer、ESLint 与 Vite 开发者诊断中英文切换规格

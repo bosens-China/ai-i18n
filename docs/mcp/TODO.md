@@ -11,7 +11,7 @@
 - [x] 列出缺失翻译文件，默认 50 条并支持 cursor。
 - [x] 列出翻译详情，默认 100 条、支持过滤和字符上限。
 - [x] 批量填充 AI Memory 的 `null`，人工审校单独写 overrides。
-- [x] 人工审校支持 source default 与显式 message ID scope。
+- [x] 人工审校支持 source default 与 comment-specific message scope。
 - [x] Vite 与 MCP 共用跨进程锁、锁内重读、字段级更新和原子替换事务。
 - [x] 只接受当前协议，不保留未发布版本的迁移分支。
 - [x] 为分页、有效值合并、写入冲突和绝对路径校验添加 Vitest。

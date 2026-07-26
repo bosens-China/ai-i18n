@@ -28,8 +28,8 @@ aiI18n({
 动态值使用 tagged template：`` t`你好 ${name}` ``。表达式会变成可调整顺序的编号占位符，
 不会交给模型翻译。源码中原样出现的 `{{0}}` 会在内部转义为 `{{=0}}`，运行时仍按原文显示。
 Runtime 发现译文占位符不匹配时会输出 console warning，但仍继续使用该译文。
-`t(source, options?)` 的 `comment` 仅提供语境，不参与默认 message ID。同一句原文需要不同
-语义时可写 `t('提交', { id: 'git.commit', comment: '创建 Git 提交' })`。
+`t(source, options?)` 只接受可选的 `{ comment }` 补充语境。message ID 由 source 与
+规范化 comment 共同生成；任一变化都会成为新的待翻译消息。`#` 与 `\` 会自动转义。
 
 对象或数组文案使用无需导入的编译宏：
 

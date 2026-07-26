@@ -53,7 +53,6 @@ t(messages.states[index]);
 
 ```ts
 interface TranslationOptions {
-  id?: string;
   comment?: string;
 }
 
@@ -61,25 +60,28 @@ function t(source: string, options?: TranslationOptions): string;
 function t(strings: TemplateStringsArray, ...values: unknown[]): string;
 ```
 
-| 参数      | 类型                 | 必填 | 默认值      | 作用                             |
-| --------- | -------------------- | ---- | ----------- | -------------------------------- |
-| `source`  | `string`             | 是   | 无          | 源文案，也是翻译缺失时的回退值。 |
-| `options` | `TranslationOptions` | 否   | `undefined` | 指定稳定 ID 或翻译注释。         |
+| 参数      | 类型                 | 必填 | 默认值      | 作用                              |
+| --------- | -------------------- | ---- | ----------- | --------------------------------- |
+| `source`  | `string`             | 是   | 无          | 源文案，也是翻译缺失时的回退值。  |
+| `options` | `TranslationOptions` | 否   | `undefined` | 通过 `comment` 补充翻译业务语境。 |
 
-日常文案只需 `t(source)`。需要翻译语境或显式 ID 时传入 options 对象。source 与 options
-必须能在构建期静态求值。
+日常文案只需 `t(source)`。需要补充翻译语境时传入 options 对象。source 与 options
+都必须能在构建期静态求值。
 
 ```ts
 t('保存');
 t('保存', { comment: '按钮' });
-t('提交', { id: 'git.commit', comment: '创建 Git 提交' });
+t('提交', { comment: '创建 Git 提交' });
 ```
 
-未指定 `id` 时，message ID 就是 `source`，同一 source 的调用共享译文。显式 ID 用来拆分
-同一句原文的不同语义，例如普通表单中的“提交”和 Git 场景中的“提交”。ID 会去除首尾空白，
-且不能为空；同一 ID 不得指向不同原文。`comment` 只提供给翻译模型，不参与默认 ID。
-TypeScript 会检查 options 的字段名以及 `id`、`comment` 类型；Analyzer、ESLint 和 Vite
-构建检查静态可提取性、空 ID 与 ID 冲突。浏览器 Runtime 不再重复校验这些输入。
+message ID 由 `source` 与去除首尾空白后的 `comment` 共同生成。没有 comment 时通常就是
+source；有 comment 时可读形式类似 `提交#创建 Git 提交`。正文或 comment 自身包含 `#`
+或 `\` 时会自动转义，因此不会发生 `A#B + C` 与 `A + B#C` 这样的碰撞。
+
+source 或有效 comment 任一变化，都会成为一条新的待翻译消息；同一 source 也能借助不同
+comment 表达不同业务语义。协议文件仍会分别保存 `source` 和 `comment`，不会靠拆 key
+还原数据。TypeScript 会检查 options 只包含合法的 `comment?: string`；Analyzer、ESLint
+与 Vite 负责检查静态可提取性，浏览器 Runtime 不重复做对象字段校验。
 
 动态值使用 tagged template。表达式不会交给翻译模型，内部会变成 `{{0}}`、`{{1}}` 等占位符；
 译文可以调整占位符顺序，运行时再填入值：

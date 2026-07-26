@@ -126,7 +126,7 @@
 ## 6. Provider Coordinator
 
 - [x] 定义框架无关 `Translator` 接口。
-- [x] 使用 `messageId + locale` 作为请求去重 key。
+- [x] 使用 `messageId` 作为请求去重 key，并比较完整 locale 集合以替换过期请求。
 - [x] 实现进程内 in-flight Promise 去重。
 - [x] 实现可配置 `debounceMs`，默认 100ms。
 - [x] 实现可配置 `batchLength`，默认按序列化请求字符长度 `12_000` 成批。
@@ -137,7 +137,7 @@
 - [x] Dev 翻译完成后更新 cache、重复 extracted、locales。
 - [x] Dev 翻译完成后只 HMR 受影响注册模块。
 - [x] Build 在结束前等待必要批次完成。
-- [x] 校验 Provider 返回 ID、locale、string/null 类型。
+- [x] 校验 Provider 返回行数、精确 locale 键、string/null 类型和模板占位符。
 - [x] Provider 失败保持 null，默认 warning。
 - [x] 实现严格模式，将 Provider/missing warning 升级为 Build error。
 - [x] 保证日志和落盘不包含 API key、完整 Prompt、原始响应。
@@ -172,8 +172,8 @@
 
 - [x] 通过 `html: true | options` 启用。
 - [x] 使用可靠 HTML parser，不用全局正则改写 DOM。
-- [x] 只识别完整文本节点 `t('source', 'comment?')`。
-- [x] 只识别完整可翻译属性值 `t('source', 'comment?')`。
+- [x] 只识别完整文本节点 `t('source', { comment: 'context' })`。
+- [x] 只识别完整可翻译属性值 `t('source', { comment: 'context' })`。
 - [x] 明确一期允许的属性白名单。
 - [x] 不识别普通 title、文本、属性和混合字符串片段。
 - [x] 不重复处理 inline module script。

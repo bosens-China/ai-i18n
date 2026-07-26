@@ -6,7 +6,7 @@
 
 - `@ai-i18n/core`：并发 40 次字段更新全部保留，revision 按实际提交递增。
 - `@ai-i18n/core`：重复空事务不增加 revision；overrides 复用同一锁与原子写实现并严格校验。
-- `@ai-i18n/analyzer`：提取静态 `{ id?, comment? }` options；拒绝非对象参数、空 ID 与冲突 ID。
+- `@ai-i18n/analyzer`：提取静态 `{ comment? }` options，并生成可读、转义无碰撞的 message ID。
 - `@ai-i18n/mcp`：AI Memory 与 overrides 两类跨 service 并发写不同字段，结果均保留。
 - `@ai-i18n/mcp`：fill 只写 `translations.json`；review 只写 `overrides.json`，支持 default/message scope。
 - `@ai-i18n/vite`：extracted 不含译文，locales 按 `byId > default > AI` 生成。

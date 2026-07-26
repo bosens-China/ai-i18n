@@ -36,6 +36,7 @@ Provider 原始响应。extracted 文件位于同一层级；路径分隔符编�
   "revision": 12,
   "messages": {
     "8 位房间码": {
+      "source": "8 位房间码",
       "sourceLang": "zh-CN",
       "translations": {
         "en-US": "8-digit Room Code"
@@ -45,7 +46,7 @@ Provider 原始响应。extracted 文件位于同一层级；路径分隔符编�
 }
 ```
 
-`overrides.json` 按原文组织默认人工译文，也可为显式 message ID 单独指定：
+`overrides.json` 按原文组织默认人工译文，也可为带 comment 的 message ID 单独指定：
 
 ```json
 {
@@ -56,7 +57,7 @@ Provider 原始响应。extracted 文件位于同一层级；路径分隔符编�
         "en-US": "Submit"
       },
       "byId": {
-        "git.commit": {
+        "提交#创建 Git 提交": {
           "en-US": "Commit"
         }
       }
@@ -70,14 +71,16 @@ Provider 原始响应。extracted 文件位于同一层级；路径分隔符编�
 
 最终译文按 locale 逐项选择：
 
-1. `overrides.json` 中匹配显式 ID 的 `byId`；
+1. `overrides.json` 中匹配 comment-specific message ID 的 `byId`；
 2. 同一原文的人工 `default`；
 3. `translations.json` 中该 message ID 的 AI 译文；
 4. `null`，Runtime 回退 source 文案。
 
-默认 message ID 就是 source，因此同一原文共享 AI 译文和人工 `default`。只有同一句话在某个
-语义下确实需要不同译文时，才使用 `t('提交', { id: 'git.commit' })`；不要用文件路径或行号
-充当 ID。`comment` 只作为翻译语境。
+无 comment 时，message ID 通常就是 source；有 comment 时类似
+`提交#创建 Git 提交`。source 或规范化后的 comment 任一变化都会形成新消息并重新翻译。
+`#` 与 `\` 会被转义，协议条目仍显式保存 `source`、`comment`、`sourceLang` 和
+`translations`，业务数据不依赖解析 key。同一句话需要不同语义时，使用不同的静态
+`comment`。
 
 ## 目录维护：清理策略与容量限制
 
@@ -128,7 +131,7 @@ aiI18n({
 1. 运行 `vite dev` 并访问相关页面，或运行 `vite build`，生成最新协议文件。
 2. 使用 `@ai-i18n/mcp` 补译。普通补译使用默认的 `mode: "fill"`。
 3. 人工审校不满意的文案时，使用 `mode: "review"`。默认 `review_scope: "default"` 影响
-   同一原文的全部调用；`review_scope: "message"` 只影响带显式 ID 的目标消息。
+   同一原文的全部调用；`review_scope: "message"` 只影响带 comment 的目标消息。
 4. 也可以直接编辑 `overrides.json`。编辑期间应暂停 MCP 写入，避免编辑器绕过共享文件锁；
    不要把人工修订写进 `translations.json`。
 5. 再跑一次 Dev 或 Build，让插件重建 locales 并校准 extracted。
@@ -144,5 +147,5 @@ aiI18n({
 - Agent 的普通补译只写 `translations.json`，人工审校只写 `overrides.json`。
 - `extracted/*.json` 与 `locales/**` 都是插件产物，不接受译文编辑。
 - MCP 默认 `mode: "fill"`。只有用户明确要求人工审校时，Agent 才能使用 `mode: "review"`，
-  并根据影响全部调用还是某个显式 ID 选择 review scope。
+  并根据影响全部调用还是某个带 comment 的消息选择 review scope。
 - 使用约定以本文档和 [接入 Agent](/guide/advanced/ai-tools) 为准。

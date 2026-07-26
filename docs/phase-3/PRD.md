@@ -23,7 +23,7 @@
 - `extracted/` 使用单层、可读且无碰撞的文件名。例如
   `src/components/App.tsx` 对应 `src_components_App.tsx.json`。
 - `cache.json` 使用 v2 schema，只保留 `version` 与 `messages`。每条消息记录
-  `sourceLang`、可选 `comment` 和 `translations`。
+  `source`、`sourceLang`、可选 `comment` 和 `translations`。
 - 查找 Translation Memory 时先按当前 message ID 命中。未命中时，允许用当前 source
   文案反查历史 `translations[sourceLang]`。候选唯一且 comment 一致时复用历史翻译。
 - v1 cache 在 Vite 读入时迁移为 v2。旧的嵌套 extracted 文件在对应模块再次同步后迁移为

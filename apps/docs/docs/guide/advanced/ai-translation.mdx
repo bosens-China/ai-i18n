@@ -18,7 +18,7 @@ ai-i18n 提供两种 AI 翻译方式：
 指令下补译时，参阅[接入 Agent](/guide/advanced/ai-tools)。
 
 :::tip 本页介绍 OpenAI Provider
-未配置 `translator` 时，ai-i18n 仍会完成提取、Runtime 和协议文件维护，目标语言的缺失值
+未配置 `provider` 时，ai-i18n 仍会完成提取、Runtime 和协议文件维护，目标语言的缺失值
 保持为 `null`，可以留给 Agent + MCP 补齐。
 :::
 
@@ -76,21 +76,23 @@ export default defineConfig(({ mode }) => {
           { value: 'zh-CN', label: '中文' },
           { value: 'en-US', label: 'English' },
         ],
-        translator: openAI({
-          baseURL: required(env.AI_BASE_URL, 'AI_BASE_URL'),
-          model: required(env.AI_MODEL, 'AI_MODEL'),
-          apiKey: env.AI_API_KEY,
-          systemPrompt: `
+        provider: {
+          translator: openAI({
+            baseURL: required(env.AI_BASE_URL, 'AI_BASE_URL'),
+            model: required(env.AI_MODEL, 'AI_MODEL'),
+            apiKey: env.AI_API_KEY,
+            systemPrompt: `
 你负责翻译面向开发者的 Web 产品界面。
 - 使用自然、简洁的目标语言，按钮优先使用动词。
 - ai-i18n、Vite、Vue、React 等产品名保持不变。
 - 保留代码、URL、变量名和占位符的原始写法。
 - 结合 comment 判断文案语境；没有 comment 时采用最常见的 UI 含义。
 - 术语约定：构建 = build，工作区 = workspace，按需导入 = auto import。
-          `.trim(),
-          // 如果需要追踪翻译质量，可以配置 langSmith:
-          // langSmith: { apiKey: env.AI_LANGSMITH_API_KEY, project: 'ai-i18n-docs' }
-        }),
+            `.trim(),
+            // 如果需要追踪翻译质量，可以配置 langSmith:
+            // langSmith: { apiKey: env.AI_LANGSMITH_API_KEY, project: 'ai-i18n-docs' }
+          }),
+        },
       }),
     ],
   };
@@ -112,10 +114,9 @@ AI_API_KEY=replace-me
 
 ## 多语言请求里会发送什么
 
-每个缺失的“消息 + 目标 locale”在插件内部仍是一条请求，但同一批交给
-`@ai-i18n/openai` 时会先按“缺失目标 locale 集合”分组，再在每组内按消息合并成行、按
-目标语言合并成列。例如两条中文都缺少英文和日文，它们同属 `{ en-US, ja-JP }` 组，
-仍然只调用一次，模型收到的用户内容是：
+Vite 先按“缺失目标 locale 集合”分组，再把同组消息交给 Translator。例如两条中文都缺少
+英文和日文，它们同属 `{ en-US, ja-JP }` 组，`@ai-i18n/openai` 会用一次模型调用处理，
+模型收到的用户内容是：
 
 ```json
 [{ "source": "查询" }, { "source": "查询", "comment": "按钮" }]
@@ -136,12 +137,12 @@ AI_API_KEY=replace-me
 
 `translations` 的下标与输入下标固定对应，各语言键是同一行的译文。Provider 使用
 OpenAI-compatible JSON mode 保证返回合法 JSON，再按内部 Schema 严格校验结构；模型
-不需要看到 `messageId`、文件路径或源码位置。Provider 会在内部保留这些路由信息，并按
-原请求顺序写回每个 `messageId + locale`。
+不需要看到 `messageId`、文件路径或源码位置。Vite 私下保留这些路由信息，并按下标和
+locale 写回缓存。
 
-如果缓存中的旧消息已有英文、只缺日文，而新消息同时缺少英文和日文，Provider 会拆成
+如果缓存中的旧消息已有英文、只缺日文，而新消息同时缺少英文和日文，Vite 会拆成
 `{ ja-JP }` 与 `{ en-US, ja-JP }` 两组。这样旧消息不会重复生成英文；同组消息仍会合并，
-外层请求仍可能由 Vite 按 `batchLength` 拆成多个批次。
+并按 `batchLength` 拆批。某组请求失败只会让该组保持 `null`，其他组的成功译文仍会保存。
 
 ## 如何编写 `systemPrompt`
 
@@ -181,8 +182,8 @@ OpenAI-compatible JSON mode 保证返回合法 JSON，再按内部 Schema 严格
 aiI18n({
   sourceLang: 'zh-CN',
   locales,
-  translator,
   provider: {
+    translator,
     debounceMs: 100,
     batchLength: 12_000,
     maxConcurrency: 5,
@@ -195,4 +196,61 @@ aiI18n({
 
 ## 自定义 Translator
 
-如果不使用 `@ai-i18n/openai`，也可以实现 `@ai-i18n/core` 定义的 `Translator` 类型，自行对接任意后台大模型。只需确保返回值精准覆盖收到的每个 `messageId + locale`，对于无法翻译或报错的情况请显式返回 `null`，切勿原样返回源语言伪造为已翻译状态。
+如果不使用 OpenAI-compatible 接口，可以实现 `@ai-i18n/core` 的 `Translator`。输入只有
+本批共同缺失的 `locales` 与 `messages[{ source, comment? }]`；返回数组与 messages 下标
+对应，每行必须且只能包含这些 locale。
+
+下面是使用 Google 官方 `@google/genai` SDK 接入 Gemini 的最小示例：
+
+<PackageManagerTabs command="add @ai-i18n/core@alpha @google/genai" />
+
+```ts
+import type { Translator } from '@ai-i18n/core';
+import { GoogleGenAI } from '@google/genai';
+
+const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
+
+const translator: Translator = async ({ locales, messages }) => {
+  const properties = Object.fromEntries(
+    locales.map((locale) => [
+      locale,
+      { anyOf: [{ type: 'string' }, { type: 'null' }] },
+    ]),
+  );
+  const response = await ai.models.generateContent({
+    model: process.env.GEMINI_MODEL!,
+    contents: JSON.stringify(messages),
+    config: {
+      systemInstruction: [
+        `把输入 source 翻译为：${locales.join('、')}。`,
+        'comment 只用于理解语境，不得出现在译文中。',
+        '按输入下标返回结果，不要翻译 {{0}}、{{=0}} 等占位符。',
+      ].join('\n'),
+      responseMimeType: 'application/json',
+      responseJsonSchema: {
+        type: 'array',
+        minItems: messages.length,
+        maxItems: messages.length,
+        items: {
+          type: 'object',
+          properties,
+          required: locales,
+          additionalProperties: false,
+        },
+      },
+    },
+  });
+  if (!response.text) throw new Error('Gemini returned no JSON text');
+  return JSON.parse(response.text);
+};
+
+aiI18n({
+  sourceLang: 'zh-CN',
+  locales,
+  provider: { translator },
+});
+```
+
+这里不需要构造或返回 message ID；Vite 会验证行数、locale 字段、值类型和模板占位符。
+无法可靠翻译时返回 `null`，不要用原文伪装成已翻译结果。API key 仍应只存在于 Vite 的
+Node 配置环境中。

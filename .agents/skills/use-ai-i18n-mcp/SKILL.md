@@ -98,8 +98,9 @@ selected source file; re-list that file and use the returned ID without inferrin
 Use `mode: "review"` only when the user explicitly asks to revise an existing translation and
 provides or approves the replacement wording. Review writes `overrides.json`, not AI memory.
 `review_scope: "default"` is the default and affects every occurrence of the source.
-`review_scope: "message"` requires a message created with an explicit `t(source, { id })` and affects
-only that ID. Exact-ID override wins over source default, which wins over AI memory.
+`review_scope: "message"` requires a message created with a non-empty
+`t(source, { comment })` and affects only that comment-specific message ID. That override wins over
+the source default, which wins over AI memory.
 
 Never infer review intent from a general translation request. Do not use review mode to resolve a
 concurrent overwrite refusal automatically; re-list and ask the user when the intended wording is
@@ -123,6 +124,6 @@ reconciliation, commit source changes, generated `ai-i18n.d.ts`, both translatio
 - **Unknown locale**: use locale values from `aiI18n({ locales })`, not labels.
 - **Invalid cursor**: restart that listing; cursors are opaque.
 - **Shared source**: fill updates that message ID's AI memory. Review default affects every occurrence
-  of the source; review message affects only an explicit ID.
+  of the source; review message affects only one comment-specific message.
 - **MCP tools unavailable**: report that `@ai-i18n/mcp` must be registered locally; do not silently
   fall back to broad source-tree editing.

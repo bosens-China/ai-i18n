@@ -87,7 +87,7 @@ import { useI18n } from 'virtual:ai-i18n'
 - `directory` defaults to `i18n` relative to Vite `root`.
 - `persist` is false by default; `true` uses `ai-i18n:lang`, or pass `{ key }`.
 - Missing translations always return source text.
-- `translator` and `provider` are optional.
+- `provider` is optional; when present, its `translator` is required.
 - `cache.maxMessages` and `cache.maxBytes` are optional positive integers.
 - Cleanup defaults should remain unless explicitly changed.
 
@@ -121,8 +121,11 @@ const translator = openAI({
 aiI18n({
   sourceLang: 'zh-CN',
   locales,
-  translator,
-  provider: { batchLength: 12_000, maxConcurrency: 5 },
+  provider: {
+    translator,
+    batchLength: 12_000,
+    maxConcurrency: 5,
+  },
 })
 ```
 
@@ -183,11 +186,11 @@ starts a fresh state and follows reachable imports. Both modes reconcile stable 
 `overrides.json`, `extracted/*.json`, and `locales/**`.
 
 `translations.json` uses schema v1 and contains `version`, monotonic `revision`, and messages keyed
-by readable message ID. Each message stores its `sourceLang`, optional comment, and target
+by readable message ID. Each message stores its `source`, `sourceLang`, optional comment, and target
 translations. Provider/fill writes target this file; `overrides.json` stores human review values.
-Extracted v1 stores only source structure, and locales are derived. `comment` never affects
-the default source-based message ID. Use static `{ id, comment? }` only when one source needs a
-distinct semantic translation. When the source language changes, ai-i18n can uniquely reverse-match the new source
+Extracted v1 stores only source structure, and locales are derived. The normalized `comment`
+participates in the message ID, so source or comment changes require translation; `#` and `\` are
+escaped without collisions. When the source language changes, ai-i18n can uniquely reverse-match the new source
 against a historical entry whose translation for the new source language equals it. Extracted files
 are flat (for example, `src_components_App.tsx.json`), and locale files are generated only for
 non-source targets.
@@ -195,7 +198,7 @@ non-source targets.
 `vite build --watch` creates ProjectState on the first build and reuses it on later rebuilds.
 Unchanged source fingerprints reuse their AST; changed static dependencies refresh necessary reverse
 dependents. Edits to `translations.json` or `overrides.json` update translations and registration
-without parsing unchanged source. Effective precedence is exact explicit-ID override, source default
+without parsing unchanged source. Effective precedence is exact comment-specific override, source default
 override, then AI memory. Edits to extracted or target locale files are replaced from source
 structure and the two translation inputs. Deleted, renamed, or newly unreachable modules leave the
 active graph while Translation Memory remains available. Restart the Watch process after Vite config,

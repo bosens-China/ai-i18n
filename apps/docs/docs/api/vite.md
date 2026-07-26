@@ -45,8 +45,7 @@ Vite 与 ESLint 共用 `AI_I18N_DIAGNOSTIC_LOCALE`：
 | `autoImport`  | `boolean`                         | 否   | 自动检测             | 强制开启或关闭 ai-i18n 的按需导入。             |
 | `dts`         | `string \| false`                 | 否   | `'src/ai-i18n.d.ts'` | 修改声明文件路径；`false` 表示不生成。          |
 | `directory`   | `string`                          | 否   | `'i18n'`             | 协议目录，相对于 Vite `root`。                  |
-| `translator`  | `Translator`                      | 否   | 不调用模型           | 自动翻译函数。                                  |
-| `provider`    | `AiI18nProviderOptions`           | 否   | 见下表               | 调整翻译批次、并发与失败策略。                  |
+| `provider`    | `AiI18nProviderOptions`           | 否   | 不调用模型           | 配置 Translator、翻译批次、并发与失败策略。     |
 | `html`        | `boolean \| HtmlExtractorOptions` | 否   | `false`              | 开启 `index.html` 文本与属性提取。              |
 | `cache`       | `AiI18nCacheOptions`              | 否   | 不限制               | 限制历史 Translation Memory 的规模。            |
 | `cleanup`     | `object`                          | 否   | 见下表               | 控制失效文件和孤立消息的清理。                  |
@@ -145,16 +144,31 @@ ai-i18n 才启用按需导入。显式设置 `true` 或 `false` 的优先级更�
 
 ## Provider 调度
 
-`provider` 只有在传入 `translator` 后才生效。
+`provider` 是自动翻译的唯一入口；配置后 `translator` 必填。
 
-| 字段             | 类型      | 必填 | 默认值   | 作用                                                      |
-| ---------------- | --------- | ---- | -------- | --------------------------------------------------------- |
-| `debounceMs`     | `number`  | 否   | `100`    | Dev 中合并连续缺失请求的等待时间，单位为毫秒。            |
-| `batchLength`    | `number`  | 否   | `12_000` | 每批序列化请求的字符长度上限，不是 token 数。             |
-| `maxConcurrency` | `number`  | 否   | `5`      | 同时执行的翻译批次数。                                    |
-| `strict`         | `boolean` | 否   | `false`  | 为 `true` 时，翻译失败或仍有 `null` 会在 `flush` 时抛错。 |
+| 字段             | 类型         | 必填 | 默认值   | 作用                                                      |
+| ---------------- | ------------ | ---- | -------- | --------------------------------------------------------- |
+| `translator`     | `Translator` | 是   | 无       | 接收目标语言、正文和补充语境的自动翻译函数。              |
+| `debounceMs`     | `number`     | 否   | `100`    | Dev 中合并连续缺失请求的等待时间，单位为毫秒。            |
+| `batchLength`    | `number`     | 否   | `12_000` | 每批序列化请求的字符长度上限，不是 token 数。             |
+| `maxConcurrency` | `number`     | 否   | `5`      | 同时执行的翻译批次数。                                    |
+| `strict`         | `boolean`    | 否   | `false`  | 为 `true` 时，翻译失败或仍有 `null` 会在 `flush` 时抛错。 |
 
-Dev 中的模型调用不会阻塞首次模块响应。Build 会在结束前等待必要批次。
+```ts
+aiI18n({
+  sourceLang: 'zh-CN',
+  locales,
+  provider: {
+    translator,
+    batchLength: 12_000,
+    maxConcurrency: 5,
+  },
+});
+```
+
+Vite 按消息的“缺失 locale 集合”分组，例如只缺日文与同时缺英文、日文的消息会进入两个
+独立批次。一个批次失败时，其他成功批次仍会写入；`strict: false` 在 Dev 中只输出 warning，
+不会长期累计错误。Dev 模型调用不阻塞首次模块响应，Build 会在结束前等待必要批次。
 
 ## Build Watch
 

@@ -53,7 +53,7 @@
 输入一个 source 文件和最多 100 个 `message_id + locale + value`：
 
 - `mode` 默认为 `fill`；人工确认修订时显式传入 `review`。
-- `review_scope` 默认为 `default`；`message` 只接受显式 message ID。
+- `review_scope` 默认为 `default`；`message` 只接受带 comment 的 message ID。
 - message ID 必须存在于指定 source；找不到时只报告不存在，不推断文件或提取状态。locale
   必须已存在。
 - `''` 是合法翻译。
@@ -70,7 +70,7 @@ Core 的共享实现：
 
 1. 锁定系统临时目录中的稳定 sidecar 文件；原子替换数据文件不会改变锁身份。
 2. 取得锁后重新读取对应目标文件，不能使用锁外旧快照覆盖。
-3. `fill` 只填充 AI Memory 的 `null`；`review` 写人工 default 或显式 ID 覆盖。
+3. `fill` 只填充 AI Memory 的 `null`；`review` 写人工 default 或 comment-specific 覆盖。
 4. translations 内容实际变化时递增 `revision`。
 5. 使用 `atomically` 写临时文件并原子替换，最后释放锁。
 

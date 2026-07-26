@@ -9,7 +9,7 @@
 - [x] Vite 在锁内合并磁盘真相、Provider 结果和结构更新。
 - [x] MCP 只在锁内写 `translations.json`。
 - [x] 新增独立 `overrides.json`，人工审校不再污染 AI Translation Memory。
-- [x] 新增显式 message ID，并实现 `byId > default > AI` 优先级。
+- [x] 为带 comment 的消息实现 `byId > default > AI` 优先级。
 - [x] MCP review 支持 `default` 与 `message` 两种 scope。
 - [x] locales 改为单向派生产物。
 - [x] 增加并发、人工审校、幂等和派生文件回归测试。

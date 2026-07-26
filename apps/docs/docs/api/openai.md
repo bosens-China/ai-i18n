@@ -50,8 +50,8 @@ Provider 使用 OpenAI-compatible JSON mode 请求合法 JSON，并按内部 Sch
 翻译 `source`，`comment` 只提供语境；两个字段相互独立，因此正文中的 `#` 不会被误判。
 返回值使用
 `{"translations":[{"en-US":"...","ja-JP":"..."}]}` 这样的语言矩阵，数组下标与输入
-下标对应；Provider 再在内部还原为公开的 `TranslationResult[]`。缺失目标 locale 集合
-相同的消息共享一次模型调用，不同集合分别调用，避免重新生成已有缓存的语言。
+下标对应。`openAI()` 收到一个批次就调用模型一次；按缺失目标 locale 集合分组、批次切分
+以及写回内部 message ID 都由 Vite 负责，模型适配器不接触 message ID。
 
 推荐至少说明：
 
@@ -77,26 +77,33 @@ Provider 使用 OpenAI-compatible JSON mode 请求合法 JSON，并按内部 Sch
 不使用 `@ai-i18n/openai` 时，可实现 `@ai-i18n/core` 导出的函数类型：
 
 ```ts
+interface TranslationMessage {
+  source: string;
+  comment?: string;
+}
+
+interface TranslationBatch {
+  locales: readonly string[];
+  messages: readonly TranslationMessage[];
+}
+
+type TranslationResult = Readonly<Record<string, string | null>>;
+
 type Translator = (
-  requests: readonly TranslationRequest[],
+  batch: TranslationBatch,
 ) => Promise<readonly TranslationResult[]>;
 ```
 
-### `TranslationRequest`
+### `TranslationBatch`
 
-| 字段        | 类型     | 必填 | 作用               |
-| ----------- | -------- | ---- | ------------------ |
-| `messageId` | `string` | 是   | 稳定消息标识。     |
-| `source`    | `string` | 是   | 源文案。           |
-| `comment`   | `string` | 否   | 源码中的消歧注释。 |
-| `locale`    | `string` | 是   | 目标语言 `value`。 |
+| 字段       | 类型                            | 必填 | 作用                         |
+| ---------- | ------------------------------- | ---- | ---------------------------- |
+| `locales`  | `readonly string[]`             | 是   | 本批所有消息共同缺失的语言。 |
+| `messages` | `readonly TranslationMessage[]` | 是   | 按固定下标排列的正文和补充。 |
+
+每条 message 必须包含 `source`，可选 `comment` 仅用于理解业务语境。
 
 ### `TranslationResult`
 
-| 字段        | 类型             | 必填 | 作用                                  |
-| ----------- | ---------------- | ---- | ------------------------------------- |
-| `messageId` | `string`         | 是   | 对应请求的消息标识。                  |
-| `locale`    | `string`         | 是   | 对应请求的目标语言。                  |
-| `value`     | `string \| null` | 是   | 翻译结果；无法可靠翻译时返回 `null`。 |
-
-返回结果必须覆盖每个 `messageId + locale` 组合，且不能包含未请求的组合。
+Translator 返回与 `messages` 等长的数组；每一行必须且只能包含 `locales` 中的语言键，
+值为译文或 `null`。数组下标负责对应输入，不需要也不应返回 message ID。

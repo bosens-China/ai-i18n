@@ -112,11 +112,11 @@ plugin option.
 ## Preserve extraction semantics
 
 - Ordinary strings, JSX text, Vue text, and mixed HTML fragments are not guessed.
-- Prefer `t(source)` for ordinary copy. Pass `{ comment: '...' }` only when translation guidance is
-  needed; it does not participate in the default message ID. For one source that truly needs a
-  distinct semantic translation, use `t(source, { id: 'stable.semantic.id', comment? })`. IDs must
-  be stable, non-empty, and not derived from file paths or line numbers. Source and options must be
-  statically evaluable.
+- Prefer `t(source)` for ordinary copy. Pass `{ comment: '...' }` only when translation guidance or
+  semantic disambiguation is needed. The normalized comment participates in the internal message ID,
+  so changing source or comment creates a new untranslated message. `#` and `\` are escaped
+  collision-free; do not invent or pass a separate ID. Source and options must be statically
+  evaluable.
 - For object or array copy, use the import-free compiler macro
   `const messages = defineI18nMessages({...})`, then pass members such as
   `messages.save` or `messages.states[index]` to `t()`. The macro is an analysis marker that must be

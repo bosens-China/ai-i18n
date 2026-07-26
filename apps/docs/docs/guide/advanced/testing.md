@@ -83,7 +83,7 @@ export default defineConfig({
 });
 ```
 
-`html`、`loading`、`cache`、`translator`、`provider`、`directory`、`dts` 等构建期字段不属于
+`html`、`loading`、`cache`、`provider`、`directory`、`dts` 等构建期字段不属于
 `AiI18nVitestOptions`；直接把完整的 `aiI18n()` 配置对象传给 `aiI18nVitest()` 会被 TypeScript
 拒绝多余字段，按需只挑测试需要的子集传入即可。
 
@@ -95,7 +95,7 @@ export default defineConfig({
 | `setLang(value)`            | 可用，可用于测试语言切换触发的重渲染，以及 `persist` 写入 localStorage。                                 |
 | `useI18n()`                 | Vue / React 模式下可用，Hook 行为与生产环境一致（`t` 的引用会随语言/Runtime 版本变化）。                 |
 | 静态提取 / `i18n/` 协议文件 | 不会发生，不会创建、读取或修改 `translations.json`、`overrides.json`、`extracted/*.json`、`locales/**`。 |
-| Provider / AI 自动翻译      | 不会调用；`translator`、`provider` 不属于 `AiI18nVitestOptions`。                                        |
+| Provider / AI 自动翻译      | 不会调用；`provider` 不属于 `AiI18nVitestOptions`。                                                      |
 
 由于没有加载任何目标语言译文，`t('保存')` 始终返回 `"保存"`，即使调用过
 `await setLang('en-US')` 之后也是如此。可以把这类测试理解为契约测试——只断言组件确实调用了
