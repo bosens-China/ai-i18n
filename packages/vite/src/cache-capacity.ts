@@ -22,7 +22,7 @@ export function enforceCacheCapacity(
   const active = new Set(activeMessageIds);
   const candidates = Object.keys(cache.messages)
     .filter((messageId) => !active.has(messageId))
-    .sort((left, right) => left.localeCompare(right));
+    .sort();
 
   // 删除候选前缀后容量单调下降，二分可避免对大 cache 逐条重复序列化。
   let low = 0;

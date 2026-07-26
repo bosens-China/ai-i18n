@@ -97,7 +97,7 @@ describe('HTML extractor integration', () => {
     );
     expect(extracted).toMatchObject({
       source: 'index.html',
-      messages: [{ id: '请输入' }, { id: '示例 {{=0}}' }, { id: '首页' }],
+      messages: [{ id: '示例 {{=0}}' }, { id: '请输入' }, { id: '首页' }],
     });
     expect(JSON.stringify(extracted)).not.toContain('translations');
     expect(

@@ -17,14 +17,15 @@ export function paginate<T>(
   characterLimit = Number.POSITIVE_INFINITY,
 ): Page<T> {
   const after = cursor ? decodeCursor(cursor) : undefined;
-  const start = after
-    ? items.findIndex((item) => key(item).localeCompare(after) > 0)
-    : 0;
+  const start = after ? items.findIndex((item) => key(item) > after) : 0;
   const normalizedStart = start < 0 ? items.length : start;
   const requested = items.slice(normalizedStart, normalizedStart + limit);
   const pageItems = [...requested];
 
-  while (pageItems.length > 1 && JSON.stringify(pageItems).length > characterLimit) {
+  while (
+    pageItems.length > 1 &&
+    JSON.stringify(pageItems).length > characterLimit
+  ) {
     pageItems.pop();
   }
 
@@ -49,7 +50,9 @@ function encodeCursor(key: string): string {
 
 function decodeCursor(cursor: string): string {
   try {
-    const value = JSON.parse(Buffer.from(cursor, 'base64url').toString('utf8')) as {
+    const value = JSON.parse(
+      Buffer.from(cursor, 'base64url').toString('utf8'),
+    ) as {
       version?: unknown;
       key?: unknown;
     };
@@ -58,6 +61,8 @@ function decodeCursor(cursor: string): string {
     }
     return value.key;
   } catch {
-    throw new Error('[ai-i18n/mcp] invalid cursor; restart pagination without cursor');
+    throw new Error(
+      '[ai-i18n/mcp] invalid cursor; restart pagination without cursor',
+    );
   }
 }

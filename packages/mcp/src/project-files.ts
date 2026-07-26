@@ -235,7 +235,9 @@ export function collectOccurrences(files: readonly ExtractedFile[]): Map<
     }
   }
   for (const items of occurrences.values()) {
-    items.sort((left, right) => left.file.localeCompare(right.file));
+    items.sort((left, right) =>
+      left.file < right.file ? -1 : left.file > right.file ? 1 : 0,
+    );
   }
   return occurrences;
 }

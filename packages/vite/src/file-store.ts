@@ -306,6 +306,6 @@ function uniqueMessages(files: readonly ExtractedFile[]): ExtractedMessage[] {
     }
   }
   return [...messages.values()].sort((left, right) =>
-    left.id.localeCompare(right.id),
+    left.id < right.id ? -1 : left.id > right.id ? 1 : 0,
   );
 }

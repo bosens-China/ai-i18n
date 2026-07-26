@@ -18,17 +18,17 @@ test('treats a missing scoped locale as an untranslated value', () => {
 });
 
 test('enforces response size and rejects invalid cursors', () => {
-  const items = [{ id: 'a' }, { id: 'b' }, { id: 'c' }];
+  const items = [{ id: '示例' }, { id: '请输入' }, { id: '首页' }];
   const first = paginate(items, (item) => item.id, 3, undefined, 1);
 
   expect(first).toMatchObject({
-    items: [{ id: 'a' }],
+    items: [{ id: '示例' }],
     has_more: true,
     truncated_by_size: true,
   });
   expect(
     paginate(items, (item) => item.id, 3, first.next_cursor).items,
-  ).toEqual([{ id: 'b' }, { id: 'c' }]);
+  ).toEqual([{ id: '请输入' }, { id: '首页' }]);
   expect(() => paginate(items, (item) => item.id, 3, 'invalid')).toThrow(
     'invalid cursor',
   );

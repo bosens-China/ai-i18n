@@ -17,7 +17,9 @@ export function hydrateExtracted(extracted: ExtractedFile): ExtractedFile {
           (left, right) => left.line - right.line || left.column - right.column,
         ),
       }))
-      .sort((left, right) => left.id.localeCompare(right.id)),
+      .sort((left, right) =>
+        left.id < right.id ? -1 : left.id > right.id ? 1 : 0,
+      ),
   };
 }
 

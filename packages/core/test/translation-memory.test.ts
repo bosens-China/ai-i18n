@@ -43,18 +43,28 @@ test('does not rewrite an unchanged current memory', async () => {
   const directory = await temporaryDirectory();
   const file = path.join(directory, 'translations.json');
   const created = await transactTranslationMemory(file, (memory) => {
+    memory.messages.示例 = {
+      sourceLang: 'zh-CN',
+      translations: { 'en-US': 'Example' },
+    };
     memory.messages.保存 = {
       sourceLang: 'zh-CN',
       translations: { 'en-US': 'Save' },
     };
+    memory.messages.请输入 = {
+      sourceLang: 'zh-CN',
+      translations: { 'en-US': 'Type here' },
+    };
   });
   const unchanged = await transactTranslationMemory(file, () => undefined);
+  const content = await fs.readFile(file, 'utf8');
 
   expect(created).toMatchObject({
     version: 1,
     revision: 1,
     messages: { 保存: { translations: { 'en-US': 'Save' } } },
   });
+  expect(content.indexOf('"示例"')).toBeLessThan(content.indexOf('"请输入"'));
   expect(unchanged.revision).toBe(1);
 });
 

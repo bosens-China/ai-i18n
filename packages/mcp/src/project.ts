@@ -82,7 +82,9 @@ export class AiI18nProjectService {
     const items = project.extracted
       .map((file) => summarizeFile(file, project, input.locale))
       .filter((item) => item.missing_count > 0)
-      .sort((left, right) => left.file.localeCompare(right.file));
+      .sort((left, right) =>
+        left.file < right.file ? -1 : left.file > right.file ? 1 : 0,
+      );
     return paginate(items, (item) => item.file, input.limit, input.cursor);
   }
 
@@ -127,7 +129,13 @@ export class AiI18nProjectService {
         } satisfies TranslationItem;
       })
       .filter((item) => !input.missing_only || item.missing_locales.length > 0)
-      .sort((left, right) => left.message_id.localeCompare(right.message_id));
+      .sort((left, right) =>
+        left.message_id < right.message_id
+          ? -1
+          : left.message_id > right.message_id
+            ? 1
+            : 0,
+      );
     return paginate(
       items,
       (item) => item.message_id,

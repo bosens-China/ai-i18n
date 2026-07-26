@@ -52,17 +52,17 @@ describe('Cache capacity', () => {
 
   it('enforces maxMessages with stable message ID eviction', async () => {
     const { root, state } = await prepareCache(
-      ['active', 'history-c', 'history-a', 'history-b'],
+      ['active', '首页', '请输入', '示例'],
       ['active'],
     );
-    const store = capacityStore(root, { maxMessages: 2 });
+    const store = capacityStore(root, { maxMessages: 3 });
     const result = await store.sync(state.snapshot());
     const content = await fs.readFile(
       path.join(root, 'i18n/translations.json'),
       'utf8',
     );
 
-    expect(messageIds(result)).toEqual(['active', 'history-c']);
+    expect(messageIds(result)).toEqual(['active', '请输入', '首页']);
     await store.sync(state.snapshot());
     expect(
       await fs.readFile(path.join(root, 'i18n/translations.json'), 'utf8'),
