@@ -34,7 +34,21 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  native-lock-macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Verify native file locking on macOS
+        run: pnpm exec vitest run packages/core/test/translation-memory.test.ts
+
   release:
+    needs: native-lock-macos
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
