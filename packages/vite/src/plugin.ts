@@ -3,6 +3,7 @@ import {
   type Plugin,
   type ResolvedConfig,
 } from 'vite';
+import { diagnosticMessage } from '@ai-i18n/analyzer';
 import { resolveAnalysisDependencies } from './analysis-dependencies.js';
 import { createBuildWatchState } from './build-watch.js';
 import { createDevUpdateSender } from './dev-updates.js';
@@ -77,13 +78,26 @@ export function aiI18n(options: AiI18nOptions): Plugin {
   let warnedSsr = false;
 
   function currentState() {
-    if (!state) throw new Error('[ai-i18n] plugin used before configResolved');
+    if (!state) {
+      throw new Error(
+        diagnosticMessage(
+          '[ai-i18n] 插件在 configResolved 之前被调用。',
+          '[ai-i18n] Plugin used before configResolved.',
+        ),
+      );
+    }
     return state;
   }
 
   function currentStore() {
-    if (!store)
-      throw new Error('[ai-i18n] file store used before configResolved');
+    if (!store) {
+      throw new Error(
+        diagnosticMessage(
+          '[ai-i18n] 文件存储在 configResolved 之前被调用。',
+          '[ai-i18n] File store used before configResolved.',
+        ),
+      );
+    }
     return store;
   }
 
@@ -159,7 +173,10 @@ export function aiI18n(options: AiI18nOptions): Plugin {
       });
       if (resolved.command === 'build' && resolved.build.watch) {
         resolved.logger.info(
-          '[ai-i18n] Build Watch 已启用；修改 Vite 配置、插件、提取规则或协议 schema 后请重启。',
+          diagnosticMessage(
+            '[ai-i18n] Build Watch 已启用。修改 Vite 配置、插件、提取规则或协议 Schema 后，请重新启动。',
+            '[ai-i18n] Build Watch is enabled. Restart after changing Vite config, plugins, extraction rules, or the protocol schema.',
+          ),
         );
       }
       ready = Promise.all([
@@ -235,7 +252,10 @@ export function aiI18n(options: AiI18nOptions): Plugin {
           if (!warnedSsr) {
             warnedSsr = true;
             this.warn(
-              '[ai-i18n] SSR runtime is not supported; injection skipped.',
+              diagnosticMessage(
+                '[ai-i18n] 仅支持浏览器 Runtime；已跳过 SSR 注入。',
+                '[ai-i18n] Browser runtime only; skipped SSR injection.',
+              ),
             );
           }
           if (id === RESOLVED_RUNTIME_ID) return runtimeStubCode(framework);
@@ -287,7 +307,12 @@ export function aiI18n(options: AiI18nOptions): Plugin {
         if (transformOptions?.ssr || this.environment.name !== 'client') {
           if (!warnedSsr) {
             warnedSsr = true;
-            this.warn('[ai-i18n] SSR transform skipped; browser runtime only.');
+            this.warn(
+              diagnosticMessage(
+                '[ai-i18n] 仅支持浏览器 Runtime；已跳过 SSR 转换。',
+                '[ai-i18n] Browser runtime only; skipped SSR transformation.',
+              ),
+            );
           }
           const macroModule = analyzeModule(
             extraction?.analysisCode ?? code,

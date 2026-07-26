@@ -25,6 +25,7 @@ import {
   validateRecommendedUsage as validateUsage,
   type RecommendedUsageWarning,
 } from './recommended-usage.js';
+import { diagnosticMessage } from './diagnostics.js';
 import {
   createTranslationContext,
   isTranslationCallee,
@@ -35,6 +36,8 @@ import {
 } from './translation-calls.js';
 
 export type { Module } from 'yuku-analyzer';
+export { diagnosticMessage, resolveDiagnosticLocale } from './diagnostics.js';
+export type { DiagnosticLocale } from './diagnostics.js';
 export type {
   RecommendedUsageCode,
   RecommendedUsageWarning,
@@ -133,12 +136,21 @@ export function extractMessages(
     let id: string;
     try {
       id = createMessageId(source, options);
-    } catch (error) {
+    } catch {
       warnings.push({
         code: 'invalid-message-id',
         file: module.path,
         ...location,
-        message: error instanceof Error ? error.message : String(error),
+        message:
+          typeof options?.id !== 'string'
+            ? diagnosticMessage(
+                '翻译 ID 必须是字符串。',
+                'Translation ID must be a string.',
+              )
+            : diagnosticMessage(
+                '翻译 ID 不能为空。',
+                'Translation ID must not be empty.',
+              ),
       });
       return;
     }
@@ -149,7 +161,10 @@ export function extractMessages(
           code: 'conflicting-message-id',
           file: module.path,
           ...location,
-          message: `t() id "${id}" refers to conflicting source or comment values`,
+          message: diagnosticMessage(
+            `t() 的 ID“${id}”对应了冲突的源文案或注释。`,
+            `t() ID "${id}" refers to conflicting source or comment values.`,
+          ),
         });
         return;
       }

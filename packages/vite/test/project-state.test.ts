@@ -172,7 +172,7 @@ describe('ProjectState incremental analysis', () => {
     ]);
 
     expect(() => state.snapshot()).toThrow(
-      'message ID "action.submit" is used by both "提交" and "保存"',
+      'Message ID "action.submit" is used by both "提交" and "保存"',
     );
   });
 });

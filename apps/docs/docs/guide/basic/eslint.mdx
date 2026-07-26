@@ -124,6 +124,21 @@ export default defineConfig([
 
 插件不会自动修改宿主 ESLint 配置，也不会生成或更新 `i18n/` 协议文件。
 
+## 诊断语言
+
+ESLint 与 Vite 共用开发者诊断语言。未设置环境变量时，Node 进程位于
+`Asia/Shanghai` 或 `Asia/Urumqi` 时显示中文，其他时区显示英文。
+
+需要固定语言时，设置 `AI_I18N_DIAGNOSTIC_LOCALE`：
+
+```text
+AI_I18N_DIAGNOSTIC_LOCALE=zh-CN
+AI_I18N_DIAGNOSTIC_LOCALE=en-US
+```
+
+也可以设为 `auto` 恢复时区检测。该设置只影响提示和报错，不改变规则 `messageId`、
+severity、源码位置或提取结果。
+
 ## 推荐语法
 
 规则允许字符串字面量、可解析的 `const`、两个分支都静态的条件表达式、tagged template，

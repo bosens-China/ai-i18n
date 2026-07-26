@@ -5,6 +5,7 @@ import {
   type TranslationValue,
   type Translator,
 } from '@ai-i18n/core';
+import { diagnosticMessage } from '@ai-i18n/analyzer';
 
 export interface ProviderCoordinatorOptions {
   debounceMs?: number;
@@ -94,7 +95,13 @@ export class ProviderCoordinator {
     }
     if (this.strict && this.errors.length) {
       const errors = this.errors.splice(0);
-      throw new AggregateError(errors, '[ai-i18n] translation failed');
+      throw new AggregateError(
+        errors,
+        diagnosticMessage(
+          '[ai-i18n] 翻译失败。',
+          '[ai-i18n] Translation failed.',
+        ),
+      );
     }
     this.errors.length = 0;
   }
@@ -166,18 +173,42 @@ export class ProviderCoordinator {
       await this.onResults?.(results);
       const missing = results.filter((result) => result.value === null).length;
       if (missing) {
-        this.onWarning(`${missing} translation(s) remain null.`);
+        this.onWarning(
+          diagnosticMessage(
+            `仍有 ${missing} 条翻译为空。`,
+            `${missing} translation result(s) remain null.`,
+          ),
+        );
         if (this.strict) {
-          this.errors.push(new Error('[ai-i18n] translations remain null'));
+          this.errors.push(
+            new Error(
+              diagnosticMessage(
+                '[ai-i18n] 仍有翻译为空。',
+                '[ai-i18n] Translation results remain null.',
+              ),
+            ),
+          );
         }
       }
       for (let index = 0; index < batch.length; index += 1) {
         batch[index]!.resolve(results[index]!.value);
       }
-    } catch {
-      const error = new Error('[ai-i18n] translator batch failed');
+    } catch (cause) {
+      const reason = cause instanceof Error ? cause.message : String(cause);
+      const error = new Error(
+        diagnosticMessage(
+          '[ai-i18n] 翻译批次失败。',
+          '[ai-i18n] Translator batch failed.',
+        ),
+        { cause },
+      );
       this.errors.push(error);
-      this.onWarning('Translator batch failed; translations remain null.');
+      this.onWarning(
+        diagnosticMessage(
+          `翻译批次失败；本批结果保持为空。原因：${reason}`,
+          `Translator batch failed; this batch remains null. Cause: ${reason}`,
+        ),
+      );
       for (const pending of batch) pending.resolve(null);
     }
   }
@@ -226,7 +257,14 @@ function validateResults(
   results: readonly TranslationResult[],
 ): TranslationResult[] {
   // 返回结果必须与请求一一对应，禁止额外、重复或缺失项污染缓存。
-  if (!Array.isArray(results)) throw new Error('invalid translator result');
+  if (!Array.isArray(results)) {
+    throw new Error(
+      diagnosticMessage(
+        'Translator 必须返回结果数组。',
+        'Translator must return an array of results.',
+      ),
+    );
+  }
   const expected = new Map(
     requests.map((request) => [
       requestKey(request.messageId, request.locale),
@@ -241,7 +279,12 @@ function validateResults(
       typeof result.locale !== 'string' ||
       (typeof result.value !== 'string' && result.value !== null)
     ) {
-      throw new Error('invalid translator result');
+      throw new Error(
+        diagnosticMessage(
+          'Translator 返回了无效的结果项。',
+          'Translator returned an invalid result item.',
+        ),
+      );
     }
     const key = requestKey(result.messageId, result.locale);
     const request = expected.get(key);
@@ -251,12 +294,23 @@ function validateResults(
       (result.value !== null &&
         !hasSameTemplateTokens(request.source, result.value))
     ) {
-      throw new Error('invalid translator result');
+      throw new Error(
+        diagnosticMessage(
+          'Translator 返回了额外、重复或占位符不匹配的结果。',
+          'Translator returned an extra, duplicate, or placeholder-mismatched result.',
+        ),
+      );
     }
     received.set(key, result);
   }
-  if (received.size !== expected.size)
-    throw new Error('invalid translator result');
+  if (received.size !== expected.size) {
+    throw new Error(
+      diagnosticMessage(
+        'Translator 返回的结果不完整。',
+        'Translator returned incomplete results.',
+      ),
+    );
+  }
   return requests.map((request) =>
     received.get(requestKey(request.messageId, request.locale))!,
   );
@@ -268,14 +322,24 @@ function requestKey(messageId: string, locale: string): string {
 
 function nonNegativeNumber(value: number, name: string): number {
   if (!Number.isFinite(value) || value < 0) {
-    throw new RangeError(`[ai-i18n] ${name} must be a non-negative number`);
+    throw new RangeError(
+      diagnosticMessage(
+        `[ai-i18n] ${name} 必须是非负数。`,
+        `[ai-i18n] ${name} must be a non-negative number.`,
+      ),
+    );
   }
   return value;
 }
 
 function positiveInteger(value: number, name: string): number {
   if (!Number.isInteger(value) || value <= 0) {
-    throw new RangeError(`[ai-i18n] ${name} must be a positive integer`);
+    throw new RangeError(
+      diagnosticMessage(
+        `[ai-i18n] ${name} 必须是正整数。`,
+        `[ai-i18n] ${name} must be a positive integer.`,
+      ),
+    );
   }
   return value;
 }

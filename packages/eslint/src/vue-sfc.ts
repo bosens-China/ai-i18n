@@ -1,4 +1,5 @@
 import { createRequire } from 'node:module';
+import { diagnosticMessage } from '@ai-i18n/analyzer';
 import {
   analyzeVueSource,
   type VueAnalysisSource,
@@ -17,7 +18,12 @@ export function createVueAnalysisSource(
   parserServices: VueParserServices,
 ): VueAnalysisSource {
   if (!parserServices.getDocumentFragment?.()) {
-    throw new Error('检查 .vue 文件需要使用 vue-eslint-parser');
+    throw new Error(
+      diagnosticMessage(
+        '检查 .vue 文件需要配置 vue-eslint-parser。',
+        'Configure vue-eslint-parser to lint .vue files.',
+      ),
+    );
   }
 
   try {
@@ -26,7 +32,12 @@ export function createVueAnalysisSource(
     return analyzeVueSource(source, filename, compiler);
   } catch (error) {
     if (isMissingVueCompiler(error)) {
-      throw new Error('检查 .vue 文件需要安装 @vue/compiler-sfc');
+      throw new Error(
+        diagnosticMessage(
+          '检查 .vue 文件需要安装 @vue/compiler-sfc。',
+          'Install @vue/compiler-sfc to lint .vue files.',
+        ),
+      );
     }
     throw error;
   }

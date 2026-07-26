@@ -5,6 +5,7 @@ import {
   type NodeType,
 } from 'yuku-analyzer';
 import type { TranslationOptions } from '@ai-i18n/core';
+import { diagnosticMessage } from './diagnostics.js';
 
 type Node = NodeOfType<NodeType>;
 type Primitive = string | number | boolean | bigint | null | undefined;
@@ -524,7 +525,10 @@ export function argumentWarning(
     code,
     file: module.path,
     ...sourceLocation(module.source, offset),
-    message: 't() arguments must be statically evaluable strings or options',
+    message: diagnosticMessage(
+      't() 的参数必须是可静态提取的字符串或选项。',
+      't() arguments must be statically extractable strings or options.',
+    ),
   };
 }
 

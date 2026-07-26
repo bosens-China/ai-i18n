@@ -115,7 +115,9 @@ describe('ProviderCoordinator', () => {
     ).resolves.toBeNull();
     await coordinator.flush();
     expect(warning).toHaveBeenCalledWith(
-      'Translator batch failed; translations remain null.',
+      expect.stringContaining(
+        'Translator batch failed; this batch remains null.',
+      ),
     );
   });
 
@@ -138,7 +140,9 @@ describe('ProviderCoordinator', () => {
     ).resolves.toBeNull();
     await coordinator.flush();
     expect(warning).toHaveBeenCalledWith(
-      'Translator batch failed; translations remain null.',
+      expect.stringContaining(
+        'Translator batch failed; this batch remains null.',
+      ),
     );
   });
 
@@ -154,7 +158,7 @@ describe('ProviderCoordinator', () => {
       coordinator.request(translationRequest('保存', 'en-US')),
     ).resolves.toBeNull();
     await expect(coordinator.flush()).rejects.toThrow(
-      '[ai-i18n] translation failed',
+      '[ai-i18n] Translation failed.',
     );
   });
 
@@ -173,7 +177,7 @@ describe('ProviderCoordinator', () => {
       coordinator.request(translationRequest('保存', 'en-US')),
     ).resolves.toBeNull();
     await expect(coordinator.flush()).rejects.toThrow(
-      '[ai-i18n] translation failed',
+      '[ai-i18n] Translation failed.',
     );
   });
 

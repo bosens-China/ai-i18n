@@ -8,6 +8,7 @@ import {
   type TranslationMemoryFile,
   type TranslationOverridesFile,
 } from '@ai-i18n/core';
+import { diagnosticMessage } from '@ai-i18n/analyzer';
 import {
   readTranslationOverrides,
   transactTranslationMemory,
@@ -309,7 +310,10 @@ function uniqueMessages(files: readonly ExtractedFile[]): ExtractedMessage[] {
       const previous = messages.get(message.id);
       if (previous && previous.source !== message.source) {
         throw new Error(
-          `[ai-i18n] message ID "${message.id}" is used by both "${previous.source}" and "${message.source}"`,
+          diagnosticMessage(
+            `[ai-i18n] 消息 ID“${message.id}”同时用于“${previous.source}”和“${message.source}”。`,
+            `[ai-i18n] Message ID "${message.id}" is used by both "${previous.source}" and "${message.source}".`,
+          ),
         );
       }
       messages.set(message.id, message);

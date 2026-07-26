@@ -1,5 +1,6 @@
 import MagicString from 'magic-string';
 import {
+  diagnosticMessage,
   findInvalidDefineI18nMessagesReferences,
   type DefineI18nMessagesCall,
   type Module,
@@ -23,7 +24,10 @@ interface SourceRegistrationOptions {
 export function assertDirectDefineI18nMessagesCalls(module: Module): void {
   if (findInvalidDefineI18nMessagesReferences(module).length) {
     throw new Error(
-      '[ai-i18n] defineI18nMessages must be called directly and cannot be used as a runtime value',
+      diagnosticMessage(
+        '[ai-i18n] defineI18nMessages() 只能直接调用，不能作为运行时值使用。',
+        '[ai-i18n] defineI18nMessages() must be called directly and cannot be used as a runtime value.',
+      ),
     );
   }
 }
@@ -73,11 +77,19 @@ function eraseDefineI18nMessages(
   for (const call of [...calls].sort((a, b) => a.start - b.start)) {
     if (!call.argument) {
       throw new Error(
-        '[ai-i18n] defineI18nMessages() requires exactly one argument',
+        diagnosticMessage(
+          '[ai-i18n] defineI18nMessages() 只能接收一个参数。',
+          '[ai-i18n] defineI18nMessages() requires exactly one argument.',
+        ),
       );
     }
     if (call.start < previousEnd) {
-      throw new Error('[ai-i18n] nested defineI18nMessages() is not supported');
+      throw new Error(
+        diagnosticMessage(
+          '[ai-i18n] 不支持嵌套调用 defineI18nMessages()。',
+          '[ai-i18n] Nested defineI18nMessages() calls are not supported.',
+        ),
+      );
     }
     previousEnd = call.end;
     transformed.overwrite(

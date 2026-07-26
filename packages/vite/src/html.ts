@@ -1,5 +1,6 @@
 import MagicString from 'magic-string';
 import { parse, type DefaultTreeAdapterTypes } from 'parse5';
+import { diagnosticMessage } from '@ai-i18n/analyzer';
 import { formatTemplateMessage, type ModuleMessages } from '@ai-i18n/core';
 import {
   AI_I18N_VIRTUAL_MODULE_ID,
@@ -46,7 +47,12 @@ export function html(options: HtmlExtractorOptions = {}): HtmlExtractor {
   const attributes = options.attributes ?? DEFAULT_ATTRIBUTES;
   for (const attribute of attributes) {
     if (!/^[a-z][a-z0-9-]*$/.test(attribute)) {
-      throw new Error(`[ai-i18n] invalid HTML attribute "${attribute}"`);
+      throw new Error(
+        diagnosticMessage(
+          `[ai-i18n] HTML 属性“${attribute}”无效。`,
+          `[ai-i18n] Invalid HTML attribute "${attribute}".`,
+        ),
+      );
     }
   }
   return { kind: 'html', attributes: [...new Set(attributes)] };
@@ -84,7 +90,10 @@ export function transformHtml(
       if (!message) {
         warnings.push({
           ...position,
-          message: 'HTML t() arguments must be statically evaluable strings',
+          message: diagnosticMessage(
+            'HTML 中 t() 的参数必须是可静态提取的字符串。',
+            'HTML t() arguments must be statically extractable strings.',
+          ),
         });
         return;
       }
@@ -152,7 +161,10 @@ export function transformHtml(
       if (!message) {
         warnings.push({
           ...position,
-          message: 'HTML t() arguments must be statically evaluable strings',
+          message: diagnosticMessage(
+            'HTML 中 t() 的参数必须是可静态提取的字符串。',
+            'HTML t() arguments must be statically extractable strings.',
+          ),
         });
         continue;
       }

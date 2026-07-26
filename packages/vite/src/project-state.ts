@@ -8,6 +8,7 @@ import {
   type TranslationValue,
   resolveTranslationOverride,
 } from '@ai-i18n/core';
+import { diagnosticMessage } from '@ai-i18n/analyzer';
 import { normalizePath } from 'vite';
 import { Analyzer, analyzeModule, extractMessages } from './yuku-analyzer.js';
 import type { ExtractResult, ExtractedMessage } from './yuku-analyzer.js';
@@ -325,7 +326,12 @@ export class ProjectState {
       locale === this.options.sourceLang ||
       !this.options.locales.some((option) => option.value === locale)
     ) {
-      throw new RangeError(`[ai-i18n] unsupported target locale "${locale}"`);
+      throw new RangeError(
+        diagnosticMessage(
+          `[ai-i18n] 不支持目标 locale“${locale}”。`,
+          `[ai-i18n] Unsupported target locale "${locale}".`,
+        ),
+      );
     }
     return Object.fromEntries(
       [...this.modules.values()].flatMap((result) =>

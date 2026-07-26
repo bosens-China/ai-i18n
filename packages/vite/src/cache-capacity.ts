@@ -1,5 +1,6 @@
 import { Buffer } from 'node:buffer';
 import type { TranslationMemoryFile } from '@ai-i18n/core';
+import { diagnosticMessage } from '@ai-i18n/analyzer';
 import type { AiI18nCacheOptions } from './options.js';
 import { stableJson } from './json-files.js';
 
@@ -76,7 +77,7 @@ function capacityWarning(
   usage: CacheUsage,
   options: AiI18nCacheOptions,
 ): string {
-  const limits = [
+  const englishLimits = [
     options.maxMessages === undefined
       ? undefined
       : `${usage.messages}/${options.maxMessages} messages`,
@@ -86,5 +87,18 @@ function capacityWarning(
   ]
     .filter(Boolean)
     .join(', ');
-  return `cache capacity remains above configured limits after preserving active messages (${limits})`;
+  const chineseLimits = [
+    options.maxMessages === undefined
+      ? undefined
+      : `${usage.messages}/${options.maxMessages} 条消息`,
+    options.maxBytes === undefined
+      ? undefined
+      : `${usage.bytes}/${options.maxBytes} 字节`,
+  ]
+    .filter(Boolean)
+    .join('，');
+  return diagnosticMessage(
+    `保留活动消息后，缓存容量仍超过配置限制（${chineseLimits}）。`,
+    `Cache capacity remains above configured limits after preserving active messages (${englishLimits}).`,
+  );
 }

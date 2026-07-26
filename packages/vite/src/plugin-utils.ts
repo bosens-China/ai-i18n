@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import type { LangOption, MissingTranslationFallback } from '@ai-i18n/core';
+import { diagnosticMessage } from '@ai-i18n/analyzer';
 import { normalizePath } from 'vite';
 import type {
   AiI18nCacheOptions,
@@ -21,15 +22,37 @@ export function normalizeOptions(options: {
   const locales = options.locales.map((locale) => ({ ...locale }));
   const values = new Set(locales.map((locale) => locale.value));
   const defaultLang = options.defaultLang ?? options.sourceLang;
-  if (!locales.length) throw new Error('[ai-i18n] locales must not be empty');
+  if (!locales.length) {
+    throw new Error(
+      diagnosticMessage(
+        '[ai-i18n] locales 不能为空。',
+        '[ai-i18n] locales must not be empty.',
+      ),
+    );
+  }
   if (values.size !== locales.length) {
-    throw new Error('[ai-i18n] locale values must be unique');
+    throw new Error(
+      diagnosticMessage(
+        '[ai-i18n] locales 中的 value 不能重复。',
+        '[ai-i18n] locale values must be unique.',
+      ),
+    );
   }
   if (!values.has(options.sourceLang)) {
-    throw new Error('[ai-i18n] sourceLang must exist in locales');
+    throw new Error(
+      diagnosticMessage(
+        '[ai-i18n] sourceLang 必须匹配 locales 中的某个 value。',
+        '[ai-i18n] sourceLang must match a value in locales.',
+      ),
+    );
   }
   if (!values.has(defaultLang)) {
-    throw new Error('[ai-i18n] defaultLang must exist in locales');
+    throw new Error(
+      diagnosticMessage(
+        '[ai-i18n] defaultLang 必须匹配 locales 中的某个 value。',
+        '[ai-i18n] defaultLang must match a value in locales.',
+      ),
+    );
   }
   validatePositiveInteger('cache.maxMessages', options.cache?.maxMessages);
   validatePositiveInteger('cache.maxBytes', options.cache?.maxBytes);
@@ -38,14 +61,22 @@ export function normalizeOptions(options: {
     options.detect !== undefined &&
     ![false, 'navigator'].includes(options.detect)
   ) {
-    throw new Error('[ai-i18n] detect must be false or "navigator"');
+    throw new Error(
+      diagnosticMessage(
+        '[ai-i18n] detect 必须是 false 或“navigator”。',
+        '[ai-i18n] detect must be false or "navigator".',
+      ),
+    );
   }
   if (
     options.fallback !== undefined &&
     !['source', 'key', 'empty', 'marked'].includes(options.fallback)
   ) {
     throw new Error(
-      '[ai-i18n] fallback must be "source", "key", "empty", or "marked"',
+      diagnosticMessage(
+        '[ai-i18n] fallback 必须是“source”“key”“empty”或“marked”。',
+        '[ai-i18n] fallback must be "source", "key", "empty", or "marked".',
+      ),
     );
   }
   const loading = options.loading
@@ -70,13 +101,25 @@ function normalizePersist(
   if (!persist) return undefined;
   if (persist === true) return { key: 'ai-i18n:lang' };
   const key = persist.key.trim();
-  if (!key) throw new Error('[ai-i18n] persist.key must not be empty');
+  if (!key) {
+    throw new Error(
+      diagnosticMessage(
+        '[ai-i18n] persist.key 不能为空。',
+        '[ai-i18n] persist.key must not be empty.',
+      ),
+    );
+  }
   return { key };
 }
 
 function validatePositiveInteger(name: string, value: number | undefined) {
   if (value !== undefined && (!Number.isSafeInteger(value) || value <= 0)) {
-    throw new Error(`[ai-i18n] ${name} must be a positive integer`);
+    throw new Error(
+      diagnosticMessage(
+        `[ai-i18n] ${name} 必须是正整数。`,
+        `[ai-i18n] ${name} must be a positive integer.`,
+      ),
+    );
   }
 }
 
@@ -87,7 +130,12 @@ function normalizeLoading(
   defaultLang: string,
 ) {
   if (loading.strategy !== 'locale') {
-    throw new Error('[ai-i18n] loading.strategy must be "locale"');
+    throw new Error(
+      diagnosticMessage(
+        '[ai-i18n] loading.strategy 必须是“locale”。',
+        '[ai-i18n] loading.strategy must be "locale".',
+      ),
+    );
   }
   const preload = new Set(loading.preload ?? []);
   const prefetch = new Set(loading.prefetch ?? []);
@@ -99,12 +147,18 @@ function normalizeLoading(
     for (const locale of values) {
       if (!locales.has(locale)) {
         throw new Error(
-          `[ai-i18n] loading.${kind} contains unknown locale "${locale}"`,
+          diagnosticMessage(
+            `[ai-i18n] loading.${kind} 包含未知 locale“${locale}”。`,
+            `[ai-i18n] loading.${kind} contains unknown locale "${locale}".`,
+          ),
         );
       }
       if (locale === sourceLang) {
         throw new Error(
-          `[ai-i18n] source locale "${locale}" cannot be ${kind}ed`,
+          diagnosticMessage(
+            `[ai-i18n] 源 locale“${locale}”不能加入 loading.${kind}。`,
+            `[ai-i18n] source locale "${locale}" cannot be ${kind}ed.`,
+          ),
         );
       }
     }
@@ -112,7 +166,10 @@ function normalizeLoading(
   for (const locale of preload) {
     if (prefetch.has(locale)) {
       throw new Error(
-        `[ai-i18n] locale "${locale}" cannot be both preloaded and prefetched`,
+        diagnosticMessage(
+          `[ai-i18n] locale“${locale}”不能同时 preload 和 prefetch。`,
+          `[ai-i18n] locale "${locale}" cannot be both preloaded and prefetched.`,
+        ),
       );
     }
   }

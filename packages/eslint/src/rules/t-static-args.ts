@@ -1,4 +1,5 @@
 import type { Rule } from 'eslint';
+import { diagnosticMessage } from '@ai-i18n/analyzer';
 import { analyzeStaticArgs } from '../analyze.js';
 import { createVueAnalysisSource } from '../vue-sfc.js';
 
@@ -24,9 +25,8 @@ export const tStaticArgs: Rule.RuleModule = {
       },
     ],
     messages: {
-      analysisFailed: 'ai-i18n 静态分析失败：{{reason}}',
-      dynamicArg:
-        't() 参数无法静态提取，请使用字符串字面量、静态模板、条件表达式或可解析的 const 字符串。',
+      analysisFailed: '{{reason}}',
+      dynamicArg: '{{reason}}',
       invalidUsage: '{{reason}}',
     },
   },
@@ -64,7 +64,10 @@ export const tStaticArgs: Rule.RuleModule = {
             node,
             messageId: 'analysisFailed',
             data: {
-              reason: error instanceof Error ? error.message : String(error),
+              reason: diagnosticMessage(
+                `静态分析失败：${error instanceof Error ? error.message : String(error)}`,
+                `Static analysis failed: ${error instanceof Error ? error.message : String(error)}`,
+              ),
             },
           });
           return;
@@ -86,9 +89,19 @@ export const tStaticArgs: Rule.RuleModule = {
               : invalidUsage
                 ? 'invalidUsage'
                 : 'dynamicArg',
-            ...(analysisFailed || invalidUsage
-              ? { data: { reason: warning.message } }
-              : {}),
+            data: {
+              reason: analysisFailed
+                ? diagnosticMessage(
+                    `静态分析失败：${warning.message}`,
+                    `Static analysis failed: ${warning.message}`,
+                  )
+                : invalidUsage
+                  ? warning.message
+                  : diagnosticMessage(
+                      't() 的参数无法静态提取。请使用字符串字面量、静态模板、条件表达式或可解析的 const 字符串。',
+                      'The t() argument cannot be statically extracted. Use a string literal, static template, conditional expression, or resolvable const string.',
+                    ),
+            },
           });
         }
       },

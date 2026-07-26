@@ -5,6 +5,7 @@ import type {
   TranslationMemoryFile,
   TranslationValue,
 } from '@ai-i18n/core';
+import { diagnosticMessage } from '@ai-i18n/analyzer';
 import type { ExtractResult } from './yuku-analyzer.js';
 import type { SourceLocation } from './extractor.js';
 import type { NormalizedAiI18nOptions } from './project-state.js';
@@ -34,7 +35,10 @@ export function createProjectSnapshot(
       const previousSource = messageSources.get(message.id);
       if (previousSource !== undefined && previousSource !== message.source) {
         throw new Error(
-          `[ai-i18n] message ID "${message.id}" is used by both "${previousSource}" and "${message.source}"`,
+          diagnosticMessage(
+            `[ai-i18n] 消息 ID“${message.id}”同时用于“${previousSource}”和“${message.source}”。`,
+            `[ai-i18n] Message ID "${message.id}" is used by both "${previousSource}" and "${message.source}".`,
+          ),
         );
       }
       messageSources.set(message.id, message.source);

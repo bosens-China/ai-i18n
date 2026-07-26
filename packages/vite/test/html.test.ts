@@ -80,7 +80,7 @@ describe('HTML extractor', () => {
     expect(result.code).toBe(source);
     expect(result.messages).toEqual([]);
     expect(result.warnings).toMatchObject([
-      { message: 'HTML t() arguments must be statically evaluable strings' },
+      { message: 'HTML t() arguments must be statically extractable strings.' },
     ]);
   });
 

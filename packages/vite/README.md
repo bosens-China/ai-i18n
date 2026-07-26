@@ -103,3 +103,7 @@ Translation Memory，直到同时满足已配置的限制。`maxBytes` 按稳定
 或 schema 变化后需要重启 Watch 进程。
 
 仅支持 Vite ≥ 8 和浏览器 Runtime，不支持 SSR。完整配置与文件协议见仓库根目录 README。
+
+开发者提示默认按 Node 时区选择语言：`Asia/Shanghai` 与 `Asia/Urumqi` 使用中文，其他
+时区使用英文。设置 `AI_I18N_DIAGNOSTIC_LOCALE=zh-CN` 或 `en-US` 可以固定语言，`auto`
+恢复自动检测。该设置不影响浏览器 Runtime 或翻译文件。

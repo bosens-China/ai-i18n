@@ -85,3 +85,7 @@ export default [
 ```
 
 插件不会自动修改宿主 ESLint 配置。
+
+诊断默认按 Node 时区选择语言：`Asia/Shanghai` 与 `Asia/Urumqi` 使用中文，其他时区使用
+英文。设置 `AI_I18N_DIAGNOSTIC_LOCALE=zh-CN` 或 `en-US` 可以固定语言，`auto` 恢复自动
+检测。

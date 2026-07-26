@@ -12,6 +12,7 @@ import {
   type DefineI18nMessagesCall,
   type SourceLocation,
 } from './index.js';
+import { diagnosticMessage } from './diagnostics.js';
 
 export interface VueCompiler {
   parse: typeof parseVue;
@@ -43,7 +44,10 @@ export function analyzeVueSource(
   });
   if (errors.length) {
     throw new Error(
-      `[ai-i18n] failed to parse ${id}: ${errors.map(formatError).join('; ')}`,
+      diagnosticMessage(
+        `[ai-i18n] 解析 ${id} 失败：${errors.map(formatError).join('；')}`,
+        `[ai-i18n] Failed to parse ${id}: ${errors.map(formatError).join('; ')}`,
+      ),
     );
   }
 
@@ -87,7 +91,13 @@ export function analyzeVueSource(
       macroCalls,
     };
   } catch (error) {
-    throw new Error(`[ai-i18n] failed to compile ${id}: ${formatError(error)}`);
+    throw new Error(
+      diagnosticMessage(
+        `[ai-i18n] 编译 ${id} 失败：${formatError(error)}`,
+        `[ai-i18n] Failed to compile ${id}: ${formatError(error)}`,
+      ),
+      { cause: error },
+    );
   }
 }
 

@@ -9,6 +9,7 @@ import {
   isDefineI18nMessagesCall,
   sourceLocation,
 } from './static-values.js';
+import { diagnosticMessage } from './diagnostics.js';
 
 type Node = NodeOfType<NodeType>;
 
@@ -51,8 +52,10 @@ export function validateRecommendedUsage(
       code: 'invalid-macro',
       file: module.path,
       ...sourceLocation(module.source, reference.start),
-      message:
-        'defineI18nMessages 只能直接调用，不能赋值、传递或保存为其他变量。',
+      message: diagnosticMessage(
+        'defineI18nMessages() 只能直接调用，不能赋值、传递或保存为其他变量。',
+        'defineI18nMessages() must be called directly and cannot be assigned, passed, or stored.',
+      ),
     });
   }
 
@@ -63,7 +66,10 @@ export function validateRecommendedUsage(
           warn(
             node,
             'invalid-macro',
-            'defineI18nMessages() 必须直接赋值给 const 标识符，且只接收一个参数。',
+            diagnosticMessage(
+              'defineI18nMessages() 必须直接赋值给 const 标识符，且只能接收一个参数。',
+              'Assign defineI18nMessages() directly to a const identifier and pass exactly one argument.',
+            ),
           );
         }
         return;
@@ -72,7 +78,10 @@ export function validateRecommendedUsage(
         warn(
           node,
           'non-recommended-callee',
-          '请使用 t 的命名导入；不支持通过命名空间对象调用 i18n.t()。',
+          diagnosticMessage(
+            '请通过命名导入使用 t；不支持通过命名空间对象调用 i18n.t()。',
+            'Use a named import for t; namespace calls such as i18n.t() are not supported.',
+          ),
         );
         return;
       }
@@ -85,7 +94,10 @@ export function validateRecommendedUsage(
         warn(
           node,
           'non-recommended-callee',
-          '请先解构 useI18n() 返回的 t，或先保存 Hook 结果再调用 i18n.t()。',
+          diagnosticMessage(
+            '请先解构 useI18n() 返回的 t，或先保存 Hook 结果再调用 i18n.t()。',
+            'Destructure t from useI18n(), or store the Hook result before calling i18n.t().',
+          ),
         );
         return;
       }
@@ -106,7 +118,10 @@ export function validateRecommendedUsage(
         warn(
           node,
           'non-recommended-callee',
-          '不要再次赋值 t；如需别名，请在 import 或 useI18n() 解构时直接命名。',
+          diagnosticMessage(
+            '不要再次赋值 t；如需别名，请在 import 或 useI18n() 解构时直接命名。',
+            'Do not reassign t; create an alias in the import or useI18n() destructuring.',
+          ),
         );
       } else if (
         node.id.type === 'ObjectPattern' &&
@@ -122,14 +137,20 @@ export function validateRecommendedUsage(
         warn(
           node,
           'non-recommended-callee',
-          '请直接从 useI18n() 解构 t，不要对 Hook 结果进行二次解构。',
+          diagnosticMessage(
+            '请直接从 useI18n() 解构 t，不要对 Hook 结果进行二次解构。',
+            'Destructure t directly from useI18n(); do not destructure the Hook result again.',
+          ),
         );
       }
       if (isRuntimeRequire(node.init, module, options.runtimeModuleId)) {
         warn(
           node,
           'non-recommended-callee',
-          '不支持 require()；请使用 virtual:ai-i18n 的 ESM 命名导入。',
+          diagnosticMessage(
+            '不支持 require()；请使用 virtual:ai-i18n 的 ESM 命名导入。',
+            'require() is not supported; use an ESM named import from virtual:ai-i18n.',
+          ),
         );
       }
     },
@@ -197,7 +218,10 @@ function recommendedArgumentIssue(
   if (!node) {
     return {
       code: 'non-recommended-argument',
-      message: 't() 必须接收可静态提取的文案。',
+      message: diagnosticMessage(
+        't() 必须接收可静态提取的文案。',
+        't() requires a statically extractable message.',
+      ),
     };
   }
   switch (node.type) {
@@ -206,14 +230,20 @@ function recommendedArgumentIssue(
         ? null
         : {
             code: 'non-recommended-argument',
-            message: 't() 请直接传入字符串文案。',
+            message: diagnosticMessage(
+              '请将字符串文案直接传给 t()。',
+              'Pass the message string directly to t().',
+            ),
           };
     case 'TemplateLiteral':
       return node.expressions.length === 0
         ? null
         : {
             code: 'non-recommended-argument',
-            message: '运行时插值请使用 tagged template：t`...${value}`。',
+            message: diagnosticMessage(
+              '运行时插值请改用标签模板：t`...${value}`。',
+              'Use a tagged template for runtime interpolation: t`...${value}`.',
+            ),
           };
     case 'ParenthesizedExpression':
     case 'TSAsExpression':
@@ -235,23 +265,29 @@ function recommendedArgumentIssue(
       if (!macro) {
         return {
           code: 'unmarked-member',
-          message:
+          message: diagnosticMessage(
             '对象或数组文案请先用 defineI18nMessages() 标记，再传给 t()。',
+            'Mark object or array messages with defineI18nMessages() before passing them to t().',
+          ),
         };
       }
       return macroContainsDiscouragedSyntax(macro.node, macro.module)
         ? {
             code: 'non-recommended-argument',
-            message:
-              'defineI18nMessages() 内的文案不要使用字符串拼接或逻辑表达式。',
+            message: diagnosticMessage(
+              'defineI18nMessages() 内的文案不能使用字符串拼接或逻辑表达式。',
+              'Do not use string concatenation or logical expressions inside defineI18nMessages().',
+            ),
           }
         : null;
     }
     default:
       return {
         code: 'non-recommended-argument',
-        message:
+        message: diagnosticMessage(
           '请使用字符串字面量、静态 const、条件表达式或 defineI18nMessages() 成员。',
+          'Use a string literal, static const, conditional expression, or defineI18nMessages() member.',
+        ),
       };
   }
 }
@@ -265,21 +301,30 @@ function identifierIssue(
   if (!symbol) {
     return {
       code: 'non-recommended-argument',
-      message: 't() 不支持无法解析的变量，请使用 const 静态文案。',
+      message: diagnosticMessage(
+        't() 不支持无法解析的变量，请使用 const 静态文案。',
+        't() cannot resolve this variable; use a static const message.',
+      ),
     };
   }
   const target = symbol.definition()?.symbol ?? symbol;
   if (!target.has(SymbolFlags.Const)) {
     return {
       code: 'mutable-binding',
-      message: '传给 t() 的静态变量必须使用 const 声明。',
+      message: diagnosticMessage(
+        '传给 t() 的静态变量必须使用 const 声明。',
+        'Static variables passed to t() must be declared with const.',
+      ),
     };
   }
   const key = `${target.module.path}:${target.id}`;
   if (seen.has(key)) {
     return {
       code: 'non-recommended-argument',
-      message: 't() 参数包含循环引用，无法按推荐语法提取。',
+      message: diagnosticMessage(
+        't() 参数包含循环引用，无法按推荐语法提取。',
+        'The t() argument contains a circular reference and cannot be extracted.',
+      ),
     };
   }
   const declaration = target.declarations[0];
@@ -292,7 +337,10 @@ function identifierIssue(
       )
     : {
         code: 'non-recommended-argument',
-        message: 't() 请使用字符串字面量或可解析的 const 静态文案。',
+        message: diagnosticMessage(
+          '请向 t() 传入字符串字面量或可解析的 const 静态文案。',
+          'Pass a string literal or resolvable static const message to t().',
+        ),
       };
 }
 

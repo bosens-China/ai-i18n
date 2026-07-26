@@ -1,5 +1,6 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { diagnosticMessage } from '@ai-i18n/analyzer';
 
 export async function readJson(file: string): Promise<unknown | undefined> {
   const content = await readText(file);
@@ -7,13 +8,19 @@ export async function readJson(file: string): Promise<unknown | undefined> {
   try {
     return JSON.parse(content) as unknown;
   } catch {
-    throw new Error(`[ai-i18n] invalid JSON file "${file}"`);
+    throw new Error(
+      diagnosticMessage(
+        `[ai-i18n] JSON 文件“${file}”无效。`,
+        `[ai-i18n] Invalid JSON file "${file}".`,
+      ),
+    );
   }
 }
 
 export async function readJsonRequired(file: string): Promise<unknown> {
   const value = await readJson(file);
-  if (value === undefined) throw new Error(`[ai-i18n] file disappeared "${file}"`);
+  if (value === undefined)
+    throw new Error(`[ai-i18n] file disappeared "${file}"`);
   return value;
 }
 

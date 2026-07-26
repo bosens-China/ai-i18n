@@ -1,5 +1,6 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { diagnosticMessage } from '@ai-i18n/analyzer';
 import { analyzeVueSource } from '@ai-i18n/analyzer/vue';
 import type { Plugin } from 'vite';
 import type { SourceExtraction, TranslationHookBinding } from './extractor.js';
@@ -29,7 +30,10 @@ export function resolveFramework(
 
   if (hasVue && hasReact) {
     throw new Error(
-      '[ai-i18n] Vue and React Vite plugins cannot be used in the same build',
+      diagnosticMessage(
+        '[ai-i18n] 同一次构建不能同时使用 Vue 和 React 的 Vite 插件。',
+        '[ai-i18n] Vue and React Vite plugins cannot be used in the same build.',
+      ),
     );
   }
 

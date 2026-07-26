@@ -89,9 +89,7 @@ t('一'); t('二'); t('三'); t('四'); t('五');`;
     expect(
       (await readJson<{ messages: unknown[] }>(extractedPath)).messages,
     ).toHaveLength(5);
-    expect(warnings).toEqual([
-      expect.stringContaining('stale message structure'),
-    ]);
+    expect(warnings).toEqual([expect.stringContaining('is stale')]);
   });
 });
 
