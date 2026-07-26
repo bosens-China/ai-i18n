@@ -47,6 +47,21 @@ t(messages[index])`,
     });
   });
 
+  it('limits the combined source and options candidates', () => {
+    const module = analyzeModule(
+      `import { t } from 'virtual:ai-i18n'
+const messages = defineI18nMessages(['a', 'b'])
+const options = [{ id: 'one' }, { id: 'two' }]
+t(messages[index], options[index])`,
+      'main.ts',
+    );
+
+    expect(extractMessages(module, undefined, [], false, 3)).toMatchObject({
+      messages: [],
+      warnings: [{ code: 'static-candidate-limit' }],
+    });
+  });
+
   it('shares Hook member and undefined-comment semantics', () => {
     const module = analyzeModule(
       `import { useI18n } from 'virtual:ai-i18n'
@@ -231,6 +246,21 @@ t(ok && messages.cancel)`,
         }),
       }),
     ]);
+  });
+
+  it('does not coerce non-canonical array property names into indexes', () => {
+    const module = analyzeModule(
+      `import { t } from 'virtual:ai-i18n'
+const messages = defineI18nMessages(['zero', 'one'])
+t(messages['1'])
+t(messages['01'])`,
+      'main.ts',
+    );
+
+    expect(extractMessages(module)).toMatchObject({
+      messages: [{ source: 'one' }],
+      warnings: [{ code: 'dynamic-argument' }],
+    });
   });
 
   it('keeps extraction tolerant while reporting non-recommended syntax', () => {

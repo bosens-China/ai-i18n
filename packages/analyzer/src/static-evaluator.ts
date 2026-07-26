@@ -318,7 +318,11 @@ function evaluateMember(
     if (value.kind === 'array') {
       selected.push(
         ...(keys?.length
-          ? keys.map((key) => value.items[Number(key)] ?? [])
+          ? keys.map((key) =>
+              /^(0|[1-9]\d*)$/.test(key)
+                ? (value.items[Number(key)] ?? [])
+                : [],
+            )
           : value.items),
       );
     } else if (value.kind === 'object') {

@@ -1,7 +1,6 @@
 import type { Rule } from 'eslint';
 import { diagnosticMessage } from '@ai-i18n/analyzer';
-import { analyzeStaticArgs } from '../analyze.js';
-import { createVueAnalysisSource } from '../vue-sfc.js';
+import { analyzeRuleContext } from '../rule-analysis.js';
 
 interface RuleOptions {
   tsconfigPath?: string;
@@ -36,29 +35,7 @@ export const tStaticArgs: Rule.RuleModule = {
       'Program:exit'(node) {
         let warnings;
         try {
-          const source = context.filename.endsWith('.vue')
-            ? createVueAnalysisSource(
-                context.sourceCode.text,
-                context.filename,
-                context.sourceCode.parserServices,
-              )
-            : {
-                code: context.sourceCode.text,
-                lang: undefined,
-                mapLocation: (location: { line: number; column: number }) =>
-                  location,
-              };
-          warnings = analyzeStaticArgs(
-            source.code,
-            context.filename,
-            options.tsconfigPath,
-            source.lang,
-            options.autoImport,
-          );
-          warnings = warnings.map((warning) => ({
-            ...warning,
-            ...source.mapLocation(warning),
-          }));
+          warnings = analyzeRuleContext(context, options);
         } catch (error) {
           context.report({
             node,

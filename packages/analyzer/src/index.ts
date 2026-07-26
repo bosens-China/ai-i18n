@@ -209,7 +209,8 @@ export function extractMessages(
               maxStaticCandidates,
               markCandidateLimitExceeded,
             );
-      if (candidateLimitExceeded) {
+      const candidateCount = (sources?.length ?? 0) * (options?.length ?? 0);
+      if (candidateLimitExceeded || candidateCount > maxStaticCandidates) {
         warnings.push({
           code: 'static-candidate-limit',
           file: module.path,

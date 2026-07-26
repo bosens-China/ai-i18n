@@ -1,6 +1,5 @@
 import type { Rule } from 'eslint';
-import { analyzeStaticArgs } from '../analyze.js';
-import { createVueAnalysisSource } from '../vue-sfc.js';
+import { analyzeRuleContext } from '../rule-analysis.js';
 
 interface RuleOptions {
   tsconfigPath?: string;
@@ -38,34 +37,18 @@ export const staticCandidateLimit: Rule.RuleModule = {
     return {
       'Program:exit'(node) {
         try {
-          const source = context.filename.endsWith('.vue')
-            ? createVueAnalysisSource(
-                context.sourceCode.text,
-                context.filename,
-                context.sourceCode.parserServices,
-              )
-            : {
-                code: context.sourceCode.text,
-                lang: undefined,
-                mapLocation: (location: { line: number; column: number }) =>
-                  location,
-              };
-          const warnings = analyzeStaticArgs(
-            source.code,
-            context.filename,
-            options.tsconfigPath,
-            source.lang,
-            options.autoImport,
+          const warnings = analyzeRuleContext(
+            context,
+            options,
             options.maxStaticCandidates ?? 1_000,
           );
           for (const warning of warnings) {
             if (warning.code !== 'static-candidate-limit') continue;
-            const location = source.mapLocation(warning);
             context.report({
               node,
               loc: {
-                start: location,
-                end: { line: location.line, column: location.column + 1 },
+                start: warning,
+                end: { line: warning.line, column: warning.column + 1 },
               },
               messageId: 'candidateLimit',
               data: { reason: warning.message },
