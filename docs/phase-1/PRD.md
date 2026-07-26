@@ -212,7 +212,7 @@ import { openAI } from '@ai-i18n/openai';
 ```
 
 - 使用 `@langchain/openai` 的 `ChatOpenAI` 对接 OpenAI-compatible API，并固定使用
-  Chat Completions 与内部 JSON Schema。
+  Chat Completions、JSON mode 与内部 Schema 校验。
 - base URL、model 必须显式配置；API key 可省略以连接本地服务，且不得回退读取宿主
   `OPENAI_API_KEY`。
 - temperature 默认 `1`，请求超时默认 `120_000ms`，重试次数默认 `3`；支持 max tokens、

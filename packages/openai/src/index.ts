@@ -104,8 +104,7 @@ export function openAI(options: OpenAIOptions): Translator {
         translationSchema(locales, rows.length),
         {
           name: 'ai_i18n_translations',
-          method: 'jsonSchema',
-          strict: true,
+          method: 'jsonMode',
         },
       );
 

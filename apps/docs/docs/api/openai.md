@@ -33,13 +33,18 @@ const translator = openAI({
 | `systemPrompt` | `string`           | 否   | 内置翻译提示词 | 覆盖翻译目标、术语与风格约束。                    |
 | `langSmith`    | `LangSmithOptions` | 否   | 不启用         | 传入后启用 LangSmith tracing。                    |
 
+`temperature` 会原样传给兼容服务，是否实际生效由服务、模型及其运行模式决定。
+
 Provider 不主动读取宿主的 `OPENAI_API_KEY`。密钥必须显式传入，省略时会使用本地服务占位值，
 避免意外把宿主环境变量发送给其他地址。
 
 ## `systemPrompt`
 
 `systemPrompt` 只需要描述翻译要求。Provider 会在末尾追加目标语言、`source` / `comment`
-输入约定和固定的 JSON Schema 输出约束，不要在自定义提示词中重复定义返回 JSON 的字段。
+输入约定和固定的 JSON 输出约束，不要在自定义提示词中重复定义返回 JSON 的字段。
+
+Provider 使用 OpenAI-compatible JSON mode 请求合法 JSON，并按内部 Schema 严格校验返回
+结构。兼容服务需要支持 Chat Completions 和 `response_format: { type: "json_object" }`。
 
 模型收到的是按消息合并后的 `{ source, comment? }` 对象数组，不包含 `messageId`。模型只
 翻译 `source`，`comment` 只提供语境；两个字段相互独立，因此正文中的 `#` 不会被误判。

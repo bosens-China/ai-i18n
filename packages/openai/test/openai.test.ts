@@ -50,25 +50,7 @@ describe('openAI', () => {
       temperature: 0.25,
       max_tokens: 1_024,
       messages: [{ role: 'system' }, { role: 'user' }],
-      response_format: {
-        type: 'json_schema',
-        json_schema: {
-          name: 'ai_i18n_translations',
-          strict: true,
-          schema: {
-            properties: {
-              translations: {
-                minItems: 2,
-                maxItems: 2,
-                items: {
-                  required: ['en-US', 'ja-JP'],
-                  additionalProperties: false,
-                },
-              },
-            },
-          },
-        },
-      },
+      response_format: { type: 'json_object' },
     });
     const messages = captured?.body.messages as Array<{ content: string }>;
     expect(messages[0]!.content).toMatch(

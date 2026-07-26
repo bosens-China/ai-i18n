@@ -122,9 +122,10 @@ AI_API_KEY=replace-me
 }
 ```
 
-`translations` 的下标与输入下标固定对应，各语言键是同一行的译文。最外层对象用于
-LangChain/OpenAI 的严格 JSON Schema；模型不需要看到 `messageId`、文件路径或源码位置。
-Provider 会在内部保留这些路由信息，并按原请求顺序写回每个 `messageId + locale`。
+`translations` 的下标与输入下标固定对应，各语言键是同一行的译文。Provider 使用
+OpenAI-compatible JSON mode 保证返回合法 JSON，再按内部 Schema 严格校验结构；模型
+不需要看到 `messageId`、文件路径或源码位置。Provider 会在内部保留这些路由信息，并按
+原请求顺序写回每个 `messageId + locale`。
 
 如果缓存中的旧消息已有英文、只缺日文，而新消息同时缺少英文和日文，Provider 会拆成
 `{ ja-JP }` 与 `{ en-US, ja-JP }` 两组。这样旧消息不会重复生成英文；同组消息仍会合并，
@@ -132,9 +133,9 @@ Provider 会在内部保留这些路由信息，并按原请求顺序写回每�
 
 ## 如何编写 `systemPrompt`
 
-`systemPrompt` 只需要描述翻译要求。Provider 内部会利用 LangChain 在末尾追加目标语言、
-`source` / `comment` 输入约定和固定的 JSON Schema 输出约束，**不要在自定义提示词中
-重复定义返回 JSON 的格式字段**。
+`systemPrompt` 只需要描述翻译要求。Provider 内部会在末尾追加目标语言、
+`source` / `comment` 输入约定和固定的 JSON 输出约束，**不要在自定义提示词中重复定义
+返回 JSON 的格式字段**。
 
 推荐把提示词写成短规则，而不是长篇角色设定。每条规则只约束一件事。
 

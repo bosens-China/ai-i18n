@@ -28,9 +28,10 @@ const translator = openAI({
 ```
 
 `temperature`、`timeoutMs`、`maxRetries` 默认分别为 `1`、`120_000`、`3`；`maxTokens`
-不设置时交给模型决定。Provider 使用内部 JSON Schema 结构化响应，并在用户提示词尾部固定
-追加纯 JSON 约束和最小示例，然后按输入下标和目标语言严格校验结果。传入
+不设置时交给模型决定。Provider 使用 OpenAI-compatible JSON mode，并在用户提示词尾部固定
+追加纯 JSON 约束和最小示例，然后按内部 Schema、输入下标和目标语言严格校验结果。传入
 `langSmith` 即启用 tracing，不传则不会创建 LangSmith client。
+`temperature` 会原样传给兼容服务，是否实际生效由服务、模型及其运行模式决定。
 
 同一批中的消息先按“缺失目标 locale 集合”分组，再在每组内合并成行和语言列。两条消息都
 缺少英文、日文时仍只调用一次；已有英文的旧消息只会进入“缺日文”组，不会重复生成英文。

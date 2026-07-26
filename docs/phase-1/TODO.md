@@ -236,7 +236,7 @@
 - [x] 使用 LangChain `ChatOpenAI`，不让 Core/Vite 依赖 LangChain 或 OpenAI SDK。
 - [x] 支持 base URL、model、headers、可选 API key 和本地 OpenAI-compatible 服务。
 - [x] temperature 默认 1、超时默认 120 秒、重试默认 3，并支持可选 max tokens。
-- [x] 使用内部 JSON Schema 结构化输出并严格校验批次结果。
+- [x] 使用 JSON mode 结构化输出，并按内部 Schema 严格校验批次结果。
 - [x] 提供可覆盖的默认系统 Prompt，并固定追加纯 JSON 尾注和最小示例。
 - [x] 仅在显式注入配置时启用 LangSmith tracing。
 - [x] 添加 mock server 测试，不在 CI 请求真实服务。
