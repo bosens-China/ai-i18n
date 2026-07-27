@@ -11,7 +11,7 @@
     "切换后，这段文案会立即更新。": "This copy updates as soon as you switch languages.",
     "当前语言": "Current language",
     "文案变化": "Translated copy",
-    "语言": null
+    "语言": "Language"
   },
   "version": 1
 }
