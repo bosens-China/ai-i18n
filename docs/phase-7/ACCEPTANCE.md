@@ -8,7 +8,8 @@
 - `@ai-i18n/core`：重复空事务不增加 revision；overrides 复用同一锁与原子写实现并严格校验。
 - `@ai-i18n/analyzer`：提取静态 `{ comment? }` options，并生成可读、转义无碰撞的 message ID。
 - `@ai-i18n/mcp`：AI Memory 与 overrides 两类跨 service 并发写不同字段，结果均保留。
-- `@ai-i18n/mcp`：fill 只写 `translations.json`；review 只写 `overrides.json`，支持 default/message scope。
+- `@ai-i18n/mcp`：翻译设置/清空只写 `translations.json`；人工设置/删除只写
+  `overrides.json`，支持 default/message scope。
 - `@ai-i18n/vite`：extracted 不含译文，locales 按 `byId > default > AI` 生成。
 - `@ai-i18n/vite`：Provider 只补 AI 空值；人工覆盖变化可触发 HMR，构建最终统一落盘。
 - 全量 Vitest 共 28 个文件、231 项测试，全部通过。
@@ -21,5 +22,6 @@
 - DropRoom 使用本地链接的 `@ai-i18n/vite` 完成 ESLint 与 Build，Build 处理 3,239 个模块。
 - DropRoom 生成 `translations.json`、`overrides.json`、23 个 extracted 文件和最终 locale；
   Memory 保留 321 条历史消息，活动 en-US locale 为 133 条。
-- 本地 stdio MCP 成功发现 DropRoom，review default 后列表、locale 与构建 bundle 都得到人工值；
+- 本地 stdio MCP 成功发现 DropRoom，设置 default override 后列表、locale 与构建 bundle
+  都得到人工值；
   随后清除测试覆盖并重建，locale 与 bundle 均恢复原值。

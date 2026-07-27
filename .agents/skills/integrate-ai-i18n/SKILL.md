@@ -155,6 +155,9 @@ generated declarations, ESLint globals when applicable, one runtime call, and ge
 files. When handing the project to `@ai-i18n/mcp`, provide the final absolute directory resolved from
 the target build's Vite `root` plus `aiI18n.directory`; the MCP server does not scan for it. In a
 monorepo, identify one target Vite build at a time and account for the package script's working
-directory when `root` is omitted. MCP registration itself takes no project path. State explicitly
-when SSR, dynamic messages, unvisited Dev routes, or Build-unreachable modules remain outside the
-verified scope.
+directory when `root` is omitted. MCP registration itself takes no project path. The first
+`ai_i18n_list_translations` call should omit `source_files`; it discovers exact source paths and
+returns missing messages by default. Translation updates use the dedicated set/clear tools, while
+human review uses the dedicated override list/set/delete tools; there is no shared `mode` parameter.
+State explicitly when SSR, dynamic messages, unvisited Dev routes, or Build-unreachable modules
+remain outside the verified scope.

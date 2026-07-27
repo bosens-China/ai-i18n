@@ -33,6 +33,7 @@ Phase 1–6 均为历史非规范记录，仅用于追溯需求、实现与验�
 - [phase-8/PRD.md](./phase-8/PRD.md) — Analyzer、ESLint 与 Vite 开发者诊断中英文切换规格
 - [phase-8/TODO.md](./phase-8/TODO.md) — Phase 8 交付清单
 - [phase-8/ACCEPTANCE.md](./phase-8/ACCEPTANCE.md) — Phase 8 验收证据
-- [mcp/PRD.md](./mcp/PRD.md) — `@ai-i18n/mcp` 最终绝对目录校验与单层 extracted 契约
+- [mcp/PRD.md](./mcp/PRD.md) — `@ai-i18n/mcp` 六工具 CRUD、单份 JSON 文本输出、最终绝对
+  目录校验与单层 extracted 契约
 - [mcp/TODO.md](./mcp/TODO.md) — MCP 交付清单
 - [release.md](./release.md) — CI / Release Please / npm Trusted Publishing 与补发说明

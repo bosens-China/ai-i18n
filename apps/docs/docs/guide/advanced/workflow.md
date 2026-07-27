@@ -20,8 +20,9 @@ i18n/
 四类文件各做一件事：
 
 - `extracted/*.json` 是单层源码提取清单，只由 Vite 插件维护消息结构。
-- `translations.json` 是 AI Translation Memory。Provider 和 MCP 的 `fill` 只补缺失值。
-- `overrides.json` 是人工审校文件。MCP 的 `review` 或人工编辑在这里保存最终决定。
+- `translations.json` 是 AI Translation Memory。Provider 只补缺失值；MCP 默认补缺失值，
+  也可在显式授权后覆盖或清空具体字段。
+- `overrides.json` 是人工审校文件。MCP 的独立人工审校工具或人工编辑在这里保存最终决定。
 - `locales/**` 是运行时产物，只由插件根据 extracted、AI Memory 和人工覆盖生成。
 
 可用 `directory` 修改路径。文件中不包含绝对路径、时间戳、API key、完整 Prompt 或
@@ -129,9 +130,11 @@ aiI18n({
 推荐流程：
 
 1. 运行 `vite dev` 并访问相关页面，或运行 `vite build`，生成最新协议文件。
-2. 使用 `@ai-i18n/mcp` 补译。普通补译使用默认的 `mode: "fill"`。
-3. 人工审校不满意的文案时，使用 `mode: "review"`。默认 `review_scope: "default"` 影响
-   同一原文的全部调用；`review_scope: "message"` 只影响带 comment 的目标消息。
+2. 使用 `ai_i18n_list_translations` 查询缺失消息，再用
+   `ai_i18n_set_translations` 补译；默认只填充 `null`。
+3. 人工审校不满意的文案时，使用 `ai_i18n_set_overrides`。`scope: "default"` 影响同一
+   原文的全部调用；`scope: "message"` 只影响带 comment 的目标消息。删除人工值前先用
+   `ai_i18n_list_overrides` 取得 opaque `override_id`。
 4. 也可以直接编辑 `overrides.json`。编辑期间应暂停 MCP 写入，避免编辑器绕过共享文件锁；
    不要把人工修订写进 `translations.json`。
 5. 再跑一次 Dev 或 Build，让插件重建 locales 并校准 extracted。
@@ -146,6 +149,8 @@ aiI18n({
 
 - Agent 的普通补译只写 `translations.json`，人工审校只写 `overrides.json`。
 - `extracted/*.json` 与 `locales/**` 都是插件产物，不接受译文编辑。
-- MCP 默认 `mode: "fill"`。只有用户明确要求人工审校时，Agent 才能使用 `mode: "review"`，
-  并根据影响全部调用还是某个带 comment 的消息选择 review scope。
+- `ai_i18n_set_translations` 默认只填充 `null`；覆盖非空值必须显式传
+  `overwrite_existing: true`。只有用户明确要求人工审校时，Agent 才能调用
+  `ai_i18n_set_overrides` 或 `ai_i18n_delete_overrides`，并根据影响全部调用还是某个带
+  comment 的消息选择 scope。
 - 使用约定以本文档和 [接入 Agent](/guide/advanced/ai-tools) 为准。

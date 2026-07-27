@@ -1,14 +1,14 @@
-# MCP PRD：本地翻译文件工具
+# MCP PRD：本地翻译与人工审校工具
 
 > 状态：Implemented
 
 ## 1. 目标
 
-提供独立、本地、stdio 传输的 `@ai-i18n/mcp`，让 Agent 无需自行遍历协议文件即可：
+提供独立、本地、stdio 传输的 `@ai-i18n/mcp`，让 Agent 通过职责单一的工具完成：
 
-1. 列出仍有缺失翻译的源码文件。
-2. 分页读取文件或全项目的具体翻译内容。
-3. 批量填充缺失翻译，或提交人工审校后的修订。
+1. 查询提取文件、翻译进度与具体消息。
+2. 填充、覆盖或清空 `translations.json` 中的 AI Translation Memory。
+3. 查询、添加、覆盖或删除 `overrides.json` 中的人工审校值。
 4. 校验 Agent 提供的最终协议目录，不扫描 workspace 猜测项目。
 
 ## 2. 边界
@@ -17,76 +17,109 @@
 - MCP 注册与启动不接收项目路径，同一 server 可以处理不同项目。
 - Agent 必须先确认目标 Vite build，并根据其运行目录、Vite `root` 与
   `aiI18n({ directory })`（默认 `i18n`）提供最终绝对 `i18n_directory`。
-- monorepo 中每个 Vite build 独立解析；目标不明确时由 Agent 向用户确认，不能扫描整个仓库
-  猜测。
+- monorepo 中每个 Vite build 独立解析；目标不明确时由 Agent 向用户确认。
 - `i18n_directory` 必须是经 realpath 校验的绝对目录，并同时包含合法
   `translations.json`、`overrides.json` 与 `extracted/`。
-- MCP 只读取单层 `extracted/*.json` 来校验 source 与 message 的归属；嵌套目录不属于当前
-  协议并会被忽略。fill 写 `translations.json`，review 写 `overrides.json`。
-- extracted 与 locales 继续由 Vite Dev/Build 维护。
+- MCP 只读取单层 `extracted/*.json` 校验 source file 与 message 的归属；嵌套目录不属于
+  当前协议。
+- 翻译工具只修改 `translations.json`，人工审校工具只修改 `overrides.json`。
+  extracted 与 locales 继续由 Vite Dev/Build 维护。
 
 ## 3. 工具
 
-### 3.1 `ai_i18n_list_translation_files`
+### 3.1 `ai_i18n_list_translations`
+
+参数：
 
 - `i18n_directory`：必填。
-- `locale`：可选。
+- `source_files`：可选 exact source path 数组；首次调用省略即可发现全部文件。
+- `view`：`missing | summary | all`，默认 `missing`。
+- `locales`：可选 locale 数组。
 - `cursor`：可选 opaque cursor。
 - `limit`：默认 50，范围 1～200。
 
-按 `byId > default > AI Memory` 解析每条消息和 locale 的有效值，只返回仍有有效值为
-`null` 的源码文件，并按 source 稳定排序。
+`missing` 直接返回可用于写入的 `source_file`、`message_id`、source、comment、原始
+translations 与 `missing_locales`；`summary` 返回每个提取文件的消息和缺失计数；`all`
+返回全部消息。缺失状态只检查 `translations.json` 的原始值，人工覆盖不会隐藏 AI Memory
+仍为 `null` 的事实。
 
-### 3.2 `ai_i18n_list_translations`
+全局统计包含文件总数、已完成/待补文件数、提取消息数、去重消息数、缺失消息数与缺失译文
+字段数。结果约束在 25,000 字符内，超限时缩短当前页并返回 `next_cursor`。
+
+### 3.2 `ai_i18n_set_translations`
+
+一次接收最多 100 个 `source_file + message_id + locale + value`，可跨文件批量更新：
+
+- 默认 `overwrite_existing: false`，只填充仍为 `null` 的字段。
+- 现有值相同计为 unchanged；遇到不同非空值时整批失败。
+- 显式设置 `overwrite_existing: true` 才允许覆盖不同非空值。
+- `''` 是合法译文；模板占位符必须与 source 一致。
+- 返回 added、overwritten、unchanged 与 affected file 计数。
+
+### 3.3 `ai_i18n_clear_translations`
+
+一次接收最多 100 个 `source_file + message_id + locale`，把对应
+`translations.json` 字段重置为 `null`。工具不删除 message、locale、extracted 或
+override，返回 cleared、unchanged 与 affected file 计数。
+
+### 3.4 `ai_i18n_list_overrides`
+
+参数：
 
 - `i18n_directory`：必填。
-- `file`：可选；省略时按 message ID 全项目去重。
-- `locale`：可选。
-- `missing_only`：默认 true。
+- `source_files`、`locales`：可选过滤；省略 `source_files` 才能看到全部 orphan。
 - `cursor`：可选。
-- `limit`：默认 100，范围 1～200。
+- `limit`：默认 50，范围 1～200。
 
-`missing_only: true` 使用与文件列表相同的有效值优先级，不能只检查 AI Memory。返回
-source、comment、有效 translations、缺失语言、代表文件和出现次数。单次结构化响应限制约
-25,000 字符，超限时缩短当前页并返回 cursor。
+每项代表一个具体 locale 人工值，包含 opaque `override_id`、scope、source、可选
+message/comment、locale、value、关联 source files 与 `orphaned`。删除时必须原样复制
+`override_id`。
 
-### 3.3 `ai_i18n_write_translations`
+### 3.5 `ai_i18n_set_overrides`
 
-输入一个 source 文件和最多 100 个 `message_id + locale + value`：
+一次接收最多 100 个 `source_file + message_id + locale + value + scope`：
 
-- `mode` 默认为 `fill`；人工确认修订时显式传入 `review`。
-- `review_scope` 默认为 `default`；`message` 只接受带 comment 的 message ID。
-- message ID 必须存在于指定 source；找不到时只报告不存在，不推断文件或提取状态。locale
-  必须已存在。
-- `''` 是合法翻译。
-- 已有相同值视为幂等成功。
-- `fill` 模式遇到不同非空值时整批失败。
-- `review` 模式写独立人工覆盖，不替换 AI Memory。
-- 翻译必须保留源码中的模板占位符。
-- `fill` 在 `translations.json` 的共享事务内复验并写入；`review` 在 `overrides.json`
-  的共享事务内复验并写入。
+- 始终执行 upsert，已有目标允许覆盖。
+- `scope: "default"` 影响同一 source 的全部调用。
+- `scope: "message"` 只接受带非空静态 comment 的 message ID。
+- source 从 extracted 消息推导，调用方不重复传入。
+- 返回 added、overwritten、unchanged 与 affected file 计数。
 
-## 4. 一致性
+### 3.6 `ai_i18n_delete_overrides`
 
-`translations.json` 保存 AI Memory，`overrides.json` 保存人工决定。MCP 写事务统一调用
-Core 的共享实现：
+一次接收最多 100 个由列表工具返回的 `override_ids`，删除具体 locale 字段，并清理空的
+default、byId 与 source 容器。已不存在的目标计为 unchanged。
 
-1. 锁定系统临时目录中的稳定 sidecar 文件；原子替换数据文件不会改变锁身份。
-2. 取得锁后重新读取对应目标文件，并基于最新内容判断目标字段是否变化，不能使用锁外旧快照
-   覆盖。
-3. `fill` 只在按 `byId > default > AI Memory` 解析后的有效值为 `null` 时写入 AI Memory；
-   `review` 写人工 default 或 comment-specific 覆盖。
-4. translations 内容实际变化时递增 `revision`。
+## 4. Agent 输出契约
+
+- 每次调用只返回一个 `TextContent`，其 `text` 是无缩进的完整 JSON。
+- 不声明 `outputSchema`，不重复返回 `structuredContent`，避免同一结果占用两份 Agent
+  上下文。
+- 工具名、标题、描述、参数、返回字段和稳定错误码统一使用英文；协议本身不做多语言文案层，
+  由 Agent 按当前用户语言解释。
+- 成功结果使用稳定字段；失败结果使用 `{ "error_code": "..." }` 和必要的机器可读明细。
+- `MESSAGE_NOT_FOUND` 只说明该 ID 不在指定 source file，并指向
+  `ai_i18n_list_translations`；Agent 必须重新列表并原样复制 ID，不推断原因。
+
+## 5. 一致性
+
+所有写工具统一调用 Core 的共享事务实现：
+
+1. 锁定系统临时目录中的稳定 sidecar 文件。
+2. 取得锁后重新读取并校验最新目标 JSON。
+3. 基于锁内最新值校验完整批次；重复目标或任一非法目标使整批失败。
+4. 只更新目标字段；translations 内容实际变化时递增 `revision`。
 5. 使用 `atomically` 写临时文件并原子替换，最后释放锁。
 
 Vite 使用同一事务入口，因此 Vite Provider 与 MCP 并发提交不同字段时不会整文件互相覆盖。
-同一 AI 字段默认采用先提交的非空值。有效值按 `byId > default > AI Memory` 读取。
+运行时最终值仍按 `byId > default > translations.json > null/source fallback` 解析，但翻译
+列表刻意展示原始 Translation Memory 状态。
 
-## 5. 非目标
+## 6. 非目标
 
-- 读取动态 Vite 配置。
-- 调用翻译 Provider。
-- 自动覆盖或删除已有非空翻译。
-- 兼容未发布的旧持久化协议。
+- 读取或执行动态 Vite 配置。
+- 调用翻译 Provider 或模型。
+- 自动选择要覆盖的非空翻译。
+- 兼容旧 MCP 工具名、`mode` 或 `review_scope` 参数。
 - 直接编辑 extracted 或 locales。
 - Streamable HTTP、远程服务、鉴权和多租户。

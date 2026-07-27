@@ -4,6 +4,6 @@ import rootConfig from '../../eslint.config.js';
 export default defineConfig([
   rootConfig,
   {
-    ignores: ['dist/**', 'doc_build/**', '.rspress/**'],
+    ignores: ['dist/**', 'doc_build/**', '.rspress/**', '.astro/**'],
   },
 ]);

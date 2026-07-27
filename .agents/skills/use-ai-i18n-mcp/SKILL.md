@@ -1,12 +1,12 @@
 ---
 name: use-ai-i18n-mcp
-description: Use the ai-i18n local MCP tools to validate a final translation directory, list missing messages, fill AI Translation Memory, and safely commit human review values to overrides.json. Use for ai_i18n_list_translation_files, ai_i18n_list_translations, and ai_i18n_write_translations, especially in monorepos where the Agent must derive one Vite build's final output directory first.
+description: Use the six ai-i18n local MCP tools to inspect translations, set or clear translations.json values, and list, upsert, or delete human overrides.json values. Use for ai_i18n_list_translations, ai_i18n_set_translations, ai_i18n_clear_translations, ai_i18n_list_overrides, ai_i18n_set_overrides, and ai_i18n_delete_overrides, especially in monorepos where one Vite build's final i18n directory must be derived first.
 ---
 
 # Use ai-i18n MCP
 
-Use the translation tools in a locate → read → translate → write → verify loop. Do not scan the
-workspace for protocol directories or edit generated JSON manually when the MCP tools are available.
+Use the tools in a locate → list → update → verify loop. Do not scan the workspace for protocol
+directories or edit generated JSON manually while the MCP tools are available.
 
 `@ai-i18n/mcp` is an independently versioned local stdio package. During prerelease register
 `npx -y @ai-i18n/mcp@alpha`; registration takes no project path.
@@ -16,114 +16,123 @@ workspace for protocol directories or edit generated JSON manually when the MCP 
 1. Identify the exact Vite app requested by the user. Read that app's `package.json`, workspace
    scripts, and `vite.config.*` as text; do not execute the config. In a monorepo, do not use the
    repository root merely because it is the MCP workspace root. If several apps are plausible and
-   the task does not identify one, ask the user which build to use.
+   the task does not identify one, ask which build to use.
 2. Determine Vite `root`. Resolve an explicit `root` using the command's working directory. When
-   `root` is omitted, use the directory in which that app's Vite command runs; workspace package
-   scripts normally run in the package directory, while a root script may run from the repository
-   root.
-3. Read `aiI18n({ directory })`. Resolve it against the final Vite `root`; when omitted, use `i18n`.
-   Convert the result to an absolute path. Do not search sibling apps for a directory that happens
-   to contain similarly named JSON files.
-4. Pass that absolute path as `i18n_directory` to a list tool. The server validates that it exists,
-   is a directory, and contains valid `translations.json`, `overrides.json`, and `extracted/`.
+   omitted, use the directory in which that app's Vite command runs.
+3. Read `aiI18n({ directory })`. Resolve it against the final Vite root; when omitted, use `i18n`.
+   Convert the result to an absolute path. Do not search sibling apps for a similarly named folder.
+4. Pass that absolute path as `i18n_directory`. The server requires valid `translations.json`,
+   `overrides.json`, and `extracted/`.
 
-Require existing `translations.json`, `overrides.json`, and `extracted/`. Run Vite Dev/Build first
-when they do not exist. Running ESLint never creates protocol files.
+Run the target app's Vite Dev/Build first when protocol files do not exist. Running ESLint does not
+create them.
 
-Framework mode, flat extracted filenames, `defineI18nMessages()`, Provider batching, and
-`loading` do not change MCP directory validation, pagination, or write semantics.
-`cache.maxMessages` and `cache.maxBytes` still bound inactive history, but now measure
-`translations.json`.
+## Understand tool results
 
-## Run the workflow
+Each call returns exactly one compact JSON `TextContent`. Parse that JSON. There is no duplicate
+`structuredContent`. Tool metadata, fields, and error codes are English; explain them in the user's
+language.
 
-### 1. List files needing translation
+List results are cursor-paginated and may be shortened at the response character limit. Copy each
+`next_cursor` unchanged and continue until `has_more` is false unless the user requested a sample.
 
-Call `ai_i18n_list_translation_files` with:
+## Translate
 
-- the resolved `i18n_directory`;
-- `locale` only when the user requested one;
-- default `limit: 50` or at most `200`;
-- each returned `next_cursor` unchanged.
+### 1. Discover and read
 
-Continue until no cursor remains unless the user requested a sample. The tool returns only files
-whose effective translations still contain `null`.
+Start with `ai_i18n_list_translations` using only the resolved `i18n_directory`. Its default
+`view: "missing"` both discovers source files and returns the missing messages, avoiding a separate
+path-discovery call.
 
-### 2. Read translation details
+Optional parameters:
 
-For each selected `file`, call `ai_i18n_list_translations` with the exact returned file,
-`missing_only: true`, and the same directory. Follow every cursor; response character limits may
-make a page shorter than `limit`.
+- `source_files`: one or more exact paths copied from previous results;
+- `locales`: one or more target locale values;
+- `view: "summary"`: per-file progress counts;
+- `view: "all"`: all raw Translation Memory messages;
+- `cursor` and `limit` for pagination.
 
-Use:
+Use `source` as the text to translate, `comment` as author context, existing `translations` for
+terminology, and `missing_locales` as the default write targets. Copy `source_file` and opaque
+`message_id` exactly. Never substitute `source` for `message_id`.
 
-- `source` as the source text;
-- optional `comment` as author-provided context;
-- `locations` when scoped to a file;
-- `missing_locales` as the only writable locales;
-- existing `translations` for terminology;
-- opaque `message_id` copied exactly.
+The list intentionally reports raw `translations.json` state. A human override does not hide a
+still-null AI Translation Memory field.
 
-Prefer file-scoped reads because writes require one source file. The file selects and validates
-message ownership; it is not the physical write target.
+### 2. Set translations
 
-### 3. Translate and write
+Call `ai_i18n_set_translations` with at most 100 unique updates. Each update contains
+`source_file`, `message_id`, `locale`, and `value`; one batch may span source files.
+
+Keep `overwrite_existing` omitted or false for ordinary translation work:
+
+- null fields are filled;
+- identical values are unchanged;
+- a different non-null value rejects the whole batch.
+
+Set `overwrite_existing: true` only when the task explicitly calls for replacing existing AI
+Translation Memory values and the intended wording is clear. The whole batch remains atomic.
 
 Preserve product names, whitespace intent, and every template token. `{{0}}`, `{{1}}` are runtime
-values; `{{=0}}`, `{{==0}}` are escaped literal tokens. Never exchange or alter them.
+values; `{{=0}}`, `{{==0}}` are escaped literal tokens. Empty string is a valid translation.
 
-Group writes by exact file. Send at most 100 unique `(message_id, locale)` entries per call.
-Use the default `mode: "fill"` for translation work.
+### 3. Clear translations
 
-The write operation:
+Use `ai_i18n_clear_translations` only when the user asks to remove or reset specific AI Translation
+Memory values. Pass up to 100 exact `source_file + message_id + locale` targets. The tool sets those
+fields to `null`; it does not delete messages, locales, extracted files, or human overrides.
 
-- obtains the shared cross-process Translation Memory lock;
-- re-reads the latest `translations.json` inside the lock;
-- validates the full batch;
-- fills only values that are still `null`;
-- treats the same value as idempotent;
-- rejects a different existing non-null value;
-- increments `revision` only when content changes;
-- atomically replaces `translations.json`.
+## Manage human review
 
-MCP never writes extracted or locales. Do not bypass its guards by editing those derived files or by
-replacing `message_id` with `source`.
+Human decisions belong only in `overrides.json`.
 
-On an overwrite refusal or unknown locale, re-list the file and rebuild the batch from current
-results. A missing-message error means only that the requested `message_id` does not exist in the
-selected source file; re-list that file and use the returned ID without inferring another cause.
+### 1. List overrides
 
-### 4. Apply human review
+Call `ai_i18n_list_overrides`. Omit `source_files` when auditing all overrides so orphaned values are
+included. Optional `source_files`, `locales`, `cursor`, and `limit` narrow the result.
 
-Use `mode: "review"` only when the user explicitly asks to revise an existing translation and
-provides or approves the replacement wording. Review writes `overrides.json`, not AI memory.
-`review_scope: "default"` is the default and affects every occurrence of the source.
-`review_scope: "message"` requires a message created with a non-empty
-`t(source, { comment })` and affects only that comment-specific message ID. That override wins over
-the source default, which wins over AI memory.
+Each item is one locale-specific human value. It includes its scope, source, optional
+message/comment, related source files, orphan status, and an opaque `override_id`.
 
-Never infer review intent from a general translation request. Do not use review mode to resolve a
-concurrent overwrite refusal automatically; re-list and ask the user when the intended wording is
-unclear.
+### 2. Set overrides
 
-### 5. Verify completion
+Call `ai_i18n_set_overrides` only when the user explicitly requests or approves human review
+wording. Each update contains `source_file`, `message_id`, `locale`, `value`, and `scope`.
 
-Re-run `ai_i18n_list_translations` with `missing_only: true` for every written scope and follow all
-pages. Report applied, unchanged, remaining, and failed counts.
+- `scope: "default"` affects every occurrence of the same source.
+- `scope: "message"` affects only one message ID and requires a non-empty static comment.
+- Set is an upsert: it adds a missing value and overwrites an existing target.
 
-Running Vite Dev/Build Watch observes `translations.json` and `overrides.json` and rebuilds locales
-without reparsing unchanged source. Otherwise ask the user to run the next Dev/Build command. After
-reconciliation, commit source changes, generated `ai-i18n.d.ts`, both translation files,
-`extracted/*.json`, and `locales/**` together.
+Do not use overrides to bypass a translation conflict or infer human intent from a normal
+translation request.
+
+### 3. Delete overrides
+
+First list overrides, then copy exact `override_id` values into `ai_i18n_delete_overrides`. Never
+construct or edit opaque IDs. Deletion removes only those locale-specific fields and cleans empty
+containers. This is also how orphaned human values are removed.
+
+## Verify
+
+After translation updates, re-run `ai_i18n_list_translations` with `view: "missing"` and the
+same source/locale scope. After human review changes, re-run `ai_i18n_list_overrides`. Follow every
+page and report added, overwritten, cleared/deleted, unchanged, remaining, and failed counts.
+
+All writes acquire a cross-process lock, re-read the latest target file inside the lock, validate
+the full batch, update fields, and atomically replace the file. MCP never writes extracted or
+locales. Running Vite Dev observes changes and rebuilds locales; otherwise the next Vite Dev/Build
+reconciles them.
 
 ## Handle common failures
 
-- **Directory not found**: recompute Vite root plus `directory`.
-- **Protocol directory incomplete**: run the target app's Vite Dev/Build, then retry the same final
-  directory; do not scan for another directory.
-- **Unknown locale**: use locale values from `aiI18n({ locales })`, not labels.
-- **Invalid cursor**: restart that listing; cursors are opaque.
-- **Shared source**: fill updates that message ID's AI memory. Review default affects every occurrence
-  of the source; review message affects only one comment-specific message.
-- **MCP tools unavailable**: report that `@ai-i18n/mcp` must be registered locally; do not silently
-  fall back to broad source-tree editing.
+- `I18N_DIRECTORY_NOT_FOUND`: recompute Vite root plus `aiI18n.directory`.
+- `REQUIRED_PROTOCOL_FILE_MISSING` or `REQUIRED_PROTOCOL_DIRECTORY_MISSING`: run the target app's
+  Vite Dev/Build, then retry the same directory; do not scan for another.
+- `MESSAGE_NOT_FOUND`: re-list the exact source file and copy the returned `message_id`.
+- `TRANSLATION_CONFLICT`: re-list current values. Retry with `overwrite_existing: true` only when
+  replacement was explicitly intended.
+- `UNKNOWN_LOCALE`: use values from `aiI18n({ locales })`, not labels.
+- `INVALID_CURSOR`: restart that listing without a cursor.
+- `INVALID_OVERRIDE_ID`: re-list overrides and copy the returned ID exactly.
+- MCP tools unavailable: report that `@ai-i18n/mcp` must be registered locally; do not silently
+  replace the workflow with broad source-tree editing.

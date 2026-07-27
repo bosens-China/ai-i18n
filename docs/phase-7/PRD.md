@@ -40,10 +40,14 @@ Vite 与 MCP 必须统一调用 `@ai-i18n/core/translation-memory`：
 
 ## 4. 人工审校与 comment-specific ID
 
-- `ai_i18n_write_translations` 默认为 `mode: "fill"`，拒绝覆盖不同的非空值。
-- 人工确认新文案后，使用 `mode: "review"` 写 `overrides.json`，不改 AI Memory。
-- `review_scope: "default"` 影响同一 source 的全部调用。
-- `review_scope: "message"` 只接受带非空静态 comment 的消息。
+- `ai_i18n_set_translations` 默认只填充 `null`，拒绝覆盖不同的非空值；只有显式设置
+  `overwrite_existing: true` 时允许覆盖。
+- `ai_i18n_clear_translations` 只把指定 AI Memory 字段重置为 `null`。
+- 人工确认新文案后，使用独立的 `ai_i18n_set_overrides` 写 `overrides.json`，不改 AI
+  Memory；已有目标允许覆盖。
+- `scope: "default"` 影响同一 source 的全部调用；`scope: "message"` 只接受带非空静态
+  comment 的消息。
+- `ai_i18n_delete_overrides` 按列表返回的 opaque ID 删除具体人工字段。
 - 最终优先级为 `byId > default > translations.json > null/source fallback`。
 - 缺少覆盖字段表示继续回退；空字符串是有效人工译文。
 
@@ -54,7 +58,8 @@ Vite 与 MCP 必须统一调用 `@ai-i18n/core/translation-memory`：
 
 - 多个并发事务修改不同消息时不丢字段，最终 JSON 始终合法。
 - MCP 与 Vite 都不直接整文件覆盖锁外快照。
-- MCP 的 fill 只修改 translations，review 只修改 overrides，不修改 extracted 或 locales。
+- MCP 的翻译设置/清空只修改 translations，人工设置/删除只修改 overrides，不修改
+  extracted 或 locales。
 - 外部修改 locales 不会反向污染 Translation Memory。
 - 人工默认覆盖与 comment-specific 覆盖可以共存，Provider 和普通补译不能回退审校结果。
 - 只接受当前 schema，不包含旧协议迁移代码。

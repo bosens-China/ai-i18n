@@ -187,7 +187,8 @@ starts a fresh state and follows reachable imports. Both modes reconcile stable 
 
 `translations.json` uses schema v1 and contains `version`, monotonic `revision`, and messages keyed
 by readable message ID. Each message stores its `source`, `sourceLang`, optional comment, and target
-translations. Provider/fill writes target this file; `overrides.json` stores human review values.
+translations. Provider and MCP translation tools target this file; `overrides.json` stores human
+review values through separate MCP override tools.
 Extracted v1 stores only source structure, and locales are derived. The normalized `comment`
 participates in the message ID, so source or comment changes require translation; `#` and `\` are
 escaped without collisions. When the source language changes, ai-i18n can uniquely reverse-match the new source
