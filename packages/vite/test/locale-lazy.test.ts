@@ -2,7 +2,7 @@ import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import type { Translator } from '@ai-i18n/core';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 import { build, createServer, type UserConfig } from 'vite';
 import { aiI18n, type AiI18nOptions } from '../src';
 import { buildOutputItems } from './build-output';
@@ -245,18 +245,33 @@ globalThis.changeLanguage = setLang`,
       expect(englishWrapper?.code).not.toContain('"首页":"Home"');
 
       await server.transformRequest('/src/main.ts');
-      await vi.waitFor(async () => {
-        const locale = await readJson<{
-          messages: Record<string, string | null>;
-        }>(path.join(root, 'i18n/locales/en-US.json'));
-        expect(locale.messages.保存).toBe('Save');
-      });
-      await vi.waitFor(async () => {
-        const locale = await readJson<{
-          messages: Record<string, string | null>;
-        }>(path.join(root, 'i18n/locales/en-US.json'));
-        expect(locale.messages.首页).toBe('Home');
-      });
+      // 磁盘写入早于内存刷新；必须等语言文件和虚拟模块同时进入完整状态。
+      await expect
+        .poll(
+          async () => {
+            const englishData = await server.transformRequest(
+              'virtual:ai-i18n/locale/en-US',
+            );
+            const locale = await readJson<{
+              messages: Record<string, string | null>;
+            }>(path.join(root, 'i18n/locales/en-US.json'));
+            return {
+              home: locale.messages.首页,
+              save: locale.messages.保存,
+              moduleHasHome:
+                englishData?.code.includes('"首页":"Home"') ?? false,
+              moduleHasSave:
+                englishData?.code.includes('"保存":"Save"') ?? false,
+            };
+          },
+          { timeout: 5_000, interval: 20 },
+        )
+        .toEqual({
+          home: 'Home',
+          save: 'Save',
+          moduleHasHome: true,
+          moduleHasSave: true,
+        });
       const englishData = await server.transformRequest(
         'virtual:ai-i18n/locale/en-US',
       );

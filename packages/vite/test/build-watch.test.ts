@@ -8,6 +8,7 @@ import { aiI18n, Analyzer } from '../src';
 
 const tempDirs: string[] = [];
 const runtimeEntry = path.resolve('packages/vite/src/runtime.ts');
+const watchIdleMs = 100;
 const locales = [
   { value: 'zh-CN', label: '中文' },
   { value: 'en-US', label: 'English' },
@@ -37,14 +38,14 @@ console.log(t(LABEL));`;
     const watcher = await startWatch(root, translator, observations);
 
     try {
-      await waitForBuild(watcher, observations, 0);
+      await waitForBuild(watcher, 0);
       expect(lastRegistration(observations, 'src/main.ts')).toContain(
         '"en-US":{"首页":"Home"}',
       );
       expect(translator).toHaveBeenCalledTimes(1);
       addFile.mockClear();
 
-      await rebuild(watcher, observations, () =>
+      await rebuild(watcher, () =>
         fs.writeFile(main, mainCode.replace('console.log', 'console.info')),
       );
       expect(addFile.mock.calls.map(([moduleId]) => moduleId)).toEqual([
@@ -54,9 +55,7 @@ console.log(t(LABEL));`;
       addFile.mockClear();
 
       const nextTexts = "export const LABEL = '设置';";
-      await rebuild(watcher, observations, () =>
-        fs.writeFile(texts, nextTexts),
-      );
+      await rebuild(watcher, () => fs.writeFile(texts, nextTexts));
       expect(addFile.mock.calls.map(([moduleId]) => moduleId)).toEqual([
         'src/texts.ts',
       ]);
@@ -68,9 +67,7 @@ console.log(t(LABEL));`;
 
       const before = await protocolModifiedTimes(root);
       const registration = lastRegistration(observations, 'src/main.ts');
-      await rebuild(watcher, observations, () =>
-        fs.writeFile(texts, nextTexts),
-      );
+      await rebuild(watcher, () => fs.writeFile(texts, nextTexts));
       expect(await protocolModifiedTimes(root)).toEqual(before);
       expect(lastRegistration(observations, 'src/main.ts')).toBe(registration);
       expect(addFile).not.toHaveBeenCalled();
@@ -89,13 +86,13 @@ console.log(t(LABEL));`;
     const watcher = await startWatch(root, undefined, observations);
 
     try {
-      await waitForBuild(watcher, observations, 0);
+      await waitForBuild(watcher, 0);
       addFile.mockClear();
       const extractedPath = path.join(root, 'i18n/extracted/src_main.ts.json');
       const memoryPath = path.join(root, 'i18n/translations.json');
       const memory = await readJson<CacheFile>(memoryPath);
       memory.messages['首页']!.translations['en-US'] = 'Home';
-      await rebuild(watcher, observations, () => writeJson(memoryPath, memory));
+      await rebuild(watcher, () => writeJson(memoryPath, memory));
 
       expect(addFile).not.toHaveBeenCalled();
       expect(lastRegistration(observations, 'src/main.ts')).toContain(
@@ -105,7 +102,7 @@ console.log(t(LABEL));`;
       const localePath = path.join(root, 'i18n/locales/en-US.json');
       const locale = await readJson<LocaleFile>(localePath);
       locale.messages['首页'] = 'Start';
-      await rebuild(watcher, observations, () => writeJson(localePath, locale));
+      await rebuild(watcher, () => writeJson(localePath, locale));
 
       expect(addFile).not.toHaveBeenCalled();
       expect(lastRegistration(observations, 'src/main.ts')).toContain(
@@ -138,13 +135,11 @@ console.log(t(LABEL));`;
     const watcher = await startWatch(root, translator, observations);
 
     try {
-      await waitForBuild(watcher, observations, 0);
+      await waitForBuild(watcher, 0);
       expect(translator).toHaveBeenCalledTimes(1);
 
       await fs.copyFile(oldSource, newSource);
-      await rebuild(watcher, observations, () =>
-        fs.writeFile(main, "import './new';"),
-      );
+      await rebuild(watcher, () => fs.writeFile(main, "import './new';"));
       expect(translator).toHaveBeenCalledTimes(1);
       expect(
         await readJson<ExtractedFile>(
@@ -154,14 +149,12 @@ console.log(t(LABEL));`;
         messages: [{ id: '可移动文案' }],
       });
 
-      await rebuild(watcher, observations, () => fs.rm(oldSource));
+      await rebuild(watcher, () => fs.rm(oldSource));
       await expect(
         fs.access(path.join(root, 'i18n/extracted/src_old.ts.json')),
       ).rejects.toMatchObject({ code: 'ENOENT' });
 
-      await rebuild(watcher, observations, () =>
-        fs.writeFile(main, "console.log('done');"),
-      );
+      await rebuild(watcher, () => fs.writeFile(main, "console.log('done');"));
       const cache = await readJson<CacheFile>(
         path.join(root, 'i18n/translations.json'),
       );
@@ -185,6 +178,10 @@ interface WatcherEvent {
 }
 
 interface Watcher {
+  building: boolean;
+  completedBuilds: number;
+  lastEventAt: number;
+  lastError?: Error;
   on(event: 'event', listener: (event: WatcherEvent) => void): void;
   close(): Promise<void>;
 }
@@ -240,7 +237,26 @@ async function startWatch(
       lib: { entry: path.join(root, 'src/main.ts'), formats: ['es'] },
     },
   });
-  return result as unknown as Watcher;
+  const watcher = result as unknown as Watcher;
+  watcher.building = true;
+  watcher.completedBuilds = 0;
+  watcher.lastEventAt = Date.now();
+  // 文件写入可能先产生瞬时 ERROR；后续 END 才表示一次有效构建完成。
+  watcher.on('event', (event) => {
+    watcher.lastEventAt = Date.now();
+    if (event.code === 'START') {
+      watcher.building = true;
+    }
+    if (event.code === 'ERROR') {
+      watcher.lastError =
+        event.error ?? new Error('Vite watch build failed without an error.');
+    }
+    if (event.code === 'END') {
+      watcher.building = false;
+      watcher.completedBuilds += 1;
+    }
+  });
+  return watcher;
 }
 
 function createObserver(observations: Observation[]): Plugin {
@@ -285,28 +301,45 @@ async function fixtureRoot(): Promise<string> {
 
 async function rebuild(
   watcher: Watcher,
-  observations: Observation[],
   change: () => Promise<unknown>,
 ): Promise<void> {
-  const complete = waitForBuild(watcher, observations, observations.length);
+  // 前一轮构建写出的协议文件也会触发 watch，先等其收敛再执行本次修改。
+  await waitForIdle(watcher);
+  const previousCount = watcher.completedBuilds;
+  watcher.lastError = undefined;
   await change();
-  await complete;
+  await waitForBuild(watcher, previousCount);
+  await waitForIdle(watcher);
 }
 
-function waitForBuild(
+async function waitForBuild(
   watcher: Watcher,
-  observations: Observation[],
   previousCount: number,
 ): Promise<void> {
-  if (observations.length > previousCount) return Promise.resolve();
-  return new Promise((resolve, reject) => {
-    watcher.on('event', (event) => {
-      if (event.code === 'ERROR') reject(event.error);
-      if (event.code === 'END' && observations.length > previousCount) {
-        resolve();
+  await vi.waitFor(
+    () => {
+      if (watcher.completedBuilds > previousCount) return;
+      if (watcher.lastError) throw watcher.lastError;
+      throw new Error('Timed out waiting for the Vite watch build.');
+    },
+    { timeout: 5_000, interval: 20 },
+  );
+}
+
+async function waitForIdle(watcher: Watcher): Promise<void> {
+  // 插件写出的协议文件也会触发 watch；等待事件流静默，避免下一次修改与旧 rebuild 重叠。
+  await vi.waitFor(
+    () => {
+      if (
+        !watcher.building &&
+        Date.now() - watcher.lastEventAt >= watchIdleMs
+      ) {
+        return;
       }
-    });
-  });
+      throw new Error('Timed out waiting for the Vite watcher to become idle.');
+    },
+    { timeout: 5_000, interval: 20 },
+  );
 }
 
 function lastObservation(observations: Observation[]): Observation {
