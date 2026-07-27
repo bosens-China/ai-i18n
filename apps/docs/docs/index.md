@@ -20,17 +20,20 @@ hero:
 
 features:
   - title: 快速上手
-    details: 安装插件，选择显式导入或按需导入，并验证第一批翻译文件。
+    details: 安装插件，并完成 Vanilla、Vue 3 或 React 的基础配置。
     link: /guide/basic/getting-started
-  - title: 框架上手
-    details: 查看 Vanilla、Vue 3 与 React 的 Runtime 接入方式。
-    link: /guide/basic/getting-started
+  - title: 静态分析范围
+    details: 了解 AST 支持哪些源码与调用写法，以及哪些内容不会提取。
+    link: /guide/basic/static-analysis
+  - title: 分包与按需加载
+    details: 按 locale 拆分 chunk，并为异步语言切换显示 Loading 状态。
+    link: /guide/basic/locale-loading
   - title: 配置与 API
-    details: 按层级查找 Vite 配置、Runtime、Provider、ESLint 与 MCP 契约。
+    details: 按层级查找 Vite 配置、Runtime 与 Provider 契约。
     link: /api/vite
   - title: 文件与工作流
     details: 了解 i18n 协议目录、Git 提交约定和冲突处理。
-    link: /guide/advanced/workflow
+    link: /guide/basic/directory
   - title: AI 翻译
     details: 区分必填与可选字段，并编写可维护的翻译提示词。
     link: /guide/advanced/ai-translation

@@ -1,0 +1,12 @@
+[
+  {
+    "type": "file",
+    "name": "eslint",
+    "label": "ESLint"
+  },
+  {
+    "type": "file",
+    "name": "testing",
+    "label": "测试（Vitest）"
+  }
+]

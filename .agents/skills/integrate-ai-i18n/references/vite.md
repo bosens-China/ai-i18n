@@ -50,12 +50,8 @@ Pass `html: { attributes: [...] }` to replace the default `alt`, `aria-label`, `
 
 ## Auto import and declarations
 
-When `autoImport` is omitted, ai-i18n enables it only if the final plugin list contains
-`unplugin-auto-import` or one of its namespaced addons. Set `autoImport: true` or `false` to force
-the result.
-
-The external plugin is an opt-in signal; ai-i18n finds unbound calls and injects imports from
-`virtual:ai-i18n` itself. Do not duplicate ai-i18n APIs in the external plugin config.
+`autoImport` defaults to `false`. Set `autoImport: true` explicitly to let ai-i18n find unbound calls
+and inject imports from `virtual:ai-i18n`. Other Vite plugins never change this option.
 
 With auto import enabled, the available globals are:
 
@@ -65,8 +61,8 @@ With auto import enabled, the available globals are:
 ai-i18n writes `src/ai-i18n.d.ts` by default. Set `dts: 'path/file.d.ts'` to move it or `dts: false`
 only when declarations are managed elsewhere. The file declares both `virtual:ai-i18n` and the
 global `defineI18nMessages<T>(value)` macro. With auto import enabled, it additionally declares the
-mode-specific Runtime globals. This is separate from the external Auto Import plugin's declarations
-for its own APIs. The generated file carries noformat, ts-nocheck, and eslint-disable markers.
+mode-specific Runtime globals. The generated file carries noformat, ts-nocheck, and eslint-disable
+markers.
 Prettier honors noformat for the whole file when `--check-ignore-pragma` is enabled; the generated
 declarations also use stable Prettier-compatible formatting when that option is absent.
 
@@ -210,5 +206,5 @@ erasure still runs. The per-build reuse table (what exactly is re-parsed vs. reu
 `api/vite.md`'s Build Watch section.
 
 For Vitest, use `aiI18nVitest(options)` from `@ai-i18n/vite/vitest`. Do not run the production plugin
-or maintain a `virtual:ai-i18n` alias just for unit tests; see `guide/advanced/testing.md` for the
+or maintain a `virtual:ai-i18n` alias just for unit tests; see `guide/quality/testing.md` for the
 shared-options pattern and test-environment capability scope.

@@ -23,9 +23,9 @@ Default to `t(source)`. Use `` t`已加入 ${name}` `` for dynamic values. Pass 
 `t('保存', { comment: '工具栏按钮' })`). It participates in the message ID, so changing it creates a
 new untranslated message; do not invent comments for ordinary UI copy.
 
-If `unplugin-auto-import` is already registered, these runtime APIs can be used without imports.
-ai-i18n injects them and generates `src/ai-i18n.d.ts`; do not add them to the external plugin's
-imports list. Use `configs.vanilla` from `@ai-i18n/eslint-plugin` for the matching globals.
+Set `autoImport: true` explicitly to use these Runtime APIs without imports. ai-i18n injects them and
+generates `src/ai-i18n.d.ts`. Use `configs.vanilla` from `@ai-i18n/eslint-plugin` for the matching
+globals.
 
 Runtime state changes do not mutate existing DOM. Re-render from `subscribe()` after language or HMR
 updates. Static extraction ignores unrelated strings and dynamic `t(variable)` calls. Vanilla mode

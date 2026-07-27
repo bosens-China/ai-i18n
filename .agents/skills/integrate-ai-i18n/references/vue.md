@@ -49,9 +49,9 @@ Default to `t(source)`. Use `` t`已加入 ${name}` `` for dynamic values. Pass 
 `t('保存', { comment: '工具栏按钮' })`). It participates in the message ID, so changing it creates a
 new untranslated message; do not invent comments for ordinary UI copy.
 
-If `unplugin-auto-import` is registered, omit the `useI18n` import. ai-i18n injects it and generates
-its declaration; do not add it to the external plugin's imports list. Use `configs.vue` from
-`@ai-i18n/eslint-plugin` to declare the global and validate static arguments.
+Set `autoImport: true` explicitly to omit the `useI18n` import. ai-i18n injects it and generates its
+declaration. Use `configs.vue` from `@ai-i18n/eslint-plugin` to declare the global and validate
+static arguments.
 
 For object or array copy, use `defineI18nMessages({...})` without an import and pass its members to
 `t()`. The Vue SFC transform erases the macro and understands compiler-generated `unref` wrappers.

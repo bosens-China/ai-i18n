@@ -6,12 +6,22 @@
   },
   {
     "type": "file",
+    "name": "static-analysis",
+    "label": "静态分析范围"
+  },
+  {
+    "type": "file",
     "name": "auto-import",
     "label": "自动导入"
   },
   {
     "type": "file",
-    "name": "eslint",
-    "label": "ESLint"
+    "name": "locale-loading",
+    "label": "语言分包与按需加载"
+  },
+  {
+    "type": "file",
+    "name": "directory",
+    "label": "目录说明"
   }
 ]

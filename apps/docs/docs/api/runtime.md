@@ -11,7 +11,7 @@ import { getLang, getLangs, setLang, subscribe, t } from 'virtual:ai-i18n';
 
 ## API 可用范围
 
-| API         | Vanilla | Vue | React | 按需导入    |
+| API         | Vanilla | Vue | React | 自动导入    |
 | ----------- | ------- | --- | ----- | ----------- |
 | `t`         | 是      | 是  | 是    | 仅 Vanilla  |
 | `setLang`   | 是      | 是  | 是    | 仅 Vanilla  |
@@ -40,7 +40,7 @@ t(messages.states[index]);
 对象；作用只是明确告诉静态分析器：这个对象或数组是可枚举的消息集合。动态索引会提取集合中
 可证明有限的候选值，函数调用、getter、`await` 等用户代码仍不会在分析阶段执行。Vite
 不会限制静态候选数量；ESLint 默认在单个表达式超过 1000 个候选时给出可配置警告，详见
-[ESLint](/guide/basic/eslint)。
+[ESLint](/guide/quality/eslint)。
 
 宏必须直接写成 `defineI18nMessages(value)`，不能赋值给别名、作为值传递或脱离
 `aiI18n()` / `aiI18nVitest()` 处理的 Vite 模块运行；否则插件会报错，或在未经过 Vite

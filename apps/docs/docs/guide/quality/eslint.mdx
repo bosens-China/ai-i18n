@@ -6,7 +6,8 @@ description: '@ai-i18n/eslint-plugin 的 Flat Config、预设、规则与选项'
 import { PackageManagerTabs } from '@rspress/core/theme';
 
 `@ai-i18n/eslint-plugin` 面向 ESLint Flat Config。它在 lint 阶段复用 ai-i18n 的静态分析语义，
-既报告无法提取的参数，也拒绝“虽然能算出来、但不推荐”的写法。
+既报告无法提取的参数，也拒绝“虽然能算出来、但不推荐”的写法。完整的提取能力和限制见
+[静态分析范围](/guide/basic/static-analysis)。
 
 ## 安装
 
@@ -24,21 +25,23 @@ Vue SFC 还需要宿主已有的 `eslint-plugin-vue`、`vue-eslint-parser` 与
 
 ## 显式导入
 
-未启用 ai-i18n 按需导入时，使用 `recommended`：
+未启用 ai-i18n 自动导入时，使用 `recommended`：
 
 ```js
 // eslint.config.mjs
 import aiI18n from '@ai-i18n/eslint-plugin';
 import { defineConfig } from 'eslint/config';
 
-export default defineConfig([...aiI18n.configs.recommended]);
+export default defineConfig([
+  ...aiI18n.configs.recommended, // 检查显式导入的 t()，并跳过 .vue 文件
+]);
 ```
 
 该预设启用报错级别的 `ai-i18n/t-static-args` 和警告级别的
 `ai-i18n/static-candidate-limit`，并忽略 `.vue` 文件。它只检查实际绑定到
 `virtual:ai-i18n` 的 `t`。
 
-## 按需导入
+## 自动导入
 
 按 Vite 的最终框架模式选择一个预设：
 
@@ -48,7 +51,7 @@ import aiI18n from '@ai-i18n/eslint-plugin';
 import { defineConfig } from 'eslint/config';
 
 export default defineConfig([
-  ...aiI18n.configs.vanilla, // 或 .vue / .react
+  ...aiI18n.configs.vanilla, // 声明并检查 Vanilla 自动导入；Vue/React 改用对应预设
 ]);
 ```
 
@@ -58,8 +61,7 @@ export default defineConfig([
 | `configs.vue`     | JS / TS / JSX / TSX / Vue | `useI18n`、`defineI18nMessages`                                          |
 | `configs.react`   | JS / TS / JSX / TSX       | `useI18n`、`defineI18nMessages`                                          |
 
-这些预设只负责 ai-i18n 的 API。`unplugin-auto-import` 管理的其他全局仍由它自己的
-ESLint 集成负责。
+这些预设只声明并检查 ai-i18n 自己的 API。
 
 ## Vue Flat Config
 
@@ -73,14 +75,14 @@ import { defineConfig } from 'eslint/config';
 import tseslint from 'typescript-eslint';
 
 export default defineConfig([
-  ...pluginVue.configs['flat/recommended'],
+  ...pluginVue.configs['flat/recommended'], // 保留 Vue 官方推荐规则
   {
-    files: ['**/*.vue'],
+    files: ['**/*.vue'], // 只为 Vue SFC 指定脚本 parser
     languageOptions: {
-      parserOptions: { parser: tseslint.parser },
+      parserOptions: { parser: tseslint.parser }, // 解析 <script lang="ts">
     },
   },
-  ...aiI18n.configs.vue,
+  ...aiI18n.configs.vue, // 声明 useI18n/宏全局并检查 Vue 中的静态文案
 ]);
 ```
 
@@ -97,26 +99,26 @@ export default defineConfig([
   {
     languageOptions: {
       globals: {
-        defineI18nMessages: 'readonly',
+        defineI18nMessages: 'readonly', // 声明无需 import 的编译宏
       },
     },
     plugins: {
-      'ai-i18n': aiI18n,
+      'ai-i18n': aiI18n, // 注册规则使用的插件名
     },
     rules: {
       'ai-i18n/static-candidate-limit': [
-        'warn',
+        'warn', // 候选过多只提示，不截断 Vite 提取
         {
-          autoImport: true,
-          tsconfigPath: './tsconfig.json',
-          maxStaticCandidates: 2_000,
+          autoImport: true, // 检查未显式导入的 ai-i18n 全局 API
+          tsconfigPath: './tsconfig.json', // 解析 tsconfig 中的 paths alias
+          maxStaticCandidates: 2_000, // 单个 t() 允许的静态组合提示阈值
         },
       ],
       'ai-i18n/t-static-args': [
-        'error',
+        'error', // 无法静态提取或不推荐的参数写法直接报错
         {
-          autoImport: true,
-          tsconfigPath: './tsconfig.json',
+          autoImport: true, // 检查未显式导入的 ai-i18n 全局 API
+          tsconfigPath: './tsconfig.json', // 解析 tsconfig 中的 paths alias
         },
       ],
     },
@@ -163,24 +165,3 @@ AI_I18N_DIAGNOSTIC_LOCALE=en-US
 
 也可以设为 `auto` 恢复时区检测。该设置只影响提示和报错，不改变规则 `messageId`、
 severity、源码位置或提取结果。
-
-## 推荐语法
-
-规则允许字符串字面量、可解析的 `const`、两个分支都静态的条件表达式、tagged template，
-以及 `defineI18nMessages()` 标记后的对象或数组成员。下列写法会报错：
-
-```ts
-t('保' + '存'); // 字符串拼接
-t(ok && '保存'); // 逻辑表达式
-
-let label = '保存';
-t(label); // 应改为 const
-
-const plain = { save: '保存' };
-t(plain.save); // 集合应使用 defineI18nMessages()
-
-const macro = defineI18nMessages; // 宏只能直接调用，不能赋值或传递
-```
-
-调用来源也保持单一：使用 `t` 的命名导入，或直接从 `useI18n()` 解构；不要二次赋值 `t`、
-使用命名空间导入、二次解构 Hook 结果、写 `useI18n().t()`，也不要使用 CommonJS `require()`。

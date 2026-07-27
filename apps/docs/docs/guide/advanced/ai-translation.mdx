@@ -66,28 +66,32 @@ function required(value: string | undefined, name: string): string {
 }
 
 export default defineConfig(({ mode }) => {
-  const env = loadEnv(mode, process.cwd(), 'AI_');
+  const env = loadEnv(mode, process.cwd(), 'AI_'); // 只读取 Vite Node 侧的 AI_ 变量
 
   return {
     plugins: [
       aiI18n({
-        sourceLang: 'zh-CN',
+        sourceLang: 'zh-CN', // 源码中直接书写的文案语言
+        // value 是语言标识，label 是语言选择器中的展示名称。
         locales: [
           { value: 'zh-CN', label: '中文' },
           { value: 'en-US', label: 'English' },
         ],
         provider: {
+          // 在 Dev/Build 中自动补齐缺失翻译
+          // openAI() 把 OpenAI-compatible 服务适配为 ai-i18n Translator。
           translator: openAI({
-            baseURL: required(env.AI_BASE_URL, 'AI_BASE_URL'),
-            model: required(env.AI_MODEL, 'AI_MODEL'),
-            apiKey: env.AI_API_KEY,
+            baseURL: required(env.AI_BASE_URL, 'AI_BASE_URL'), // API 根地址
+            model: required(env.AI_MODEL, 'AI_MODEL'), // 显式使用的模型名
+            apiKey: env.AI_API_KEY, // 只留在 Vite Node 进程中的认证密钥
+            // 覆盖产品语气、术语与不可翻译内容；Provider 会追加输入输出约束。
             systemPrompt: `
 你负责翻译面向开发者的 Web 产品界面。
 - 使用自然、简洁的目标语言，按钮优先使用动词。
 - ai-i18n、Vite、Vue、React 等产品名保持不变。
 - 保留代码、URL、变量名和占位符的原始写法。
 - 结合 comment 判断文案语境；没有 comment 时采用最常见的 UI 含义。
-- 术语约定：构建 = build，工作区 = workspace，按需导入 = auto import。
+- 术语约定：构建 = build，工作区 = workspace，自动导入 = auto import。
             `.trim(),
             // 如果需要追踪翻译质量，可以配置 langSmith:
             // langSmith: { apiKey: env.AI_LANGSMITH_API_KEY, project: 'ai-i18n-docs' }
@@ -102,9 +106,13 @@ export default defineConfig(({ mode }) => {
 `.env.local` 示例：
 
 ```dotenv
+# OpenAI-compatible API 根地址
 AI_BASE_URL=https://example.com/v1
+# 显式使用的模型名
 AI_MODEL=model-name
+# 可选认证密钥；无认证的本地服务可省略
 AI_API_KEY=replace-me
+# 可选：启用 LangSmith tracing
 # AI_LANGSMITH_API_KEY=xxx
 ```
 
@@ -180,14 +188,15 @@ locale 写回缓存。
 
 ```ts
 aiI18n({
-  sourceLang: 'zh-CN',
-  locales,
+  sourceLang: 'zh-CN', // 源码文案使用的语言
+  locales, // 复用项目的完整语言列表
   provider: {
-    translator,
-    debounceMs: 100,
-    batchLength: 12_000,
-    maxConcurrency: 5,
-    strict: false,
+    // 调整自动翻译的批次、并发与失败策略
+    translator, // 实际执行翻译的函数
+    debounceMs: 100, // Dev 中合并连续缺译请求的等待时间，单位为毫秒
+    batchLength: 12_000, // 单批序列化字符上限，不是 token 数
+    maxConcurrency: 5, // 同时执行的最大翻译批次数
+    strict: false, // false 时失败只警告；true 时 Build/flush 会抛错
   },
 });
 ```
@@ -208,7 +217,9 @@ aiI18n({
 import type { Translator } from '@ai-i18n/core';
 import { GoogleGenAI } from '@google/genai';
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
+const ai = new GoogleGenAI({
+  apiKey: process.env.GEMINI_API_KEY!, // 仅存在于 Vite Node 环境
+});
 
 const translator: Translator = async ({ locales, messages }) => {
   const properties = Object.fromEntries(
@@ -218,24 +229,25 @@ const translator: Translator = async ({ locales, messages }) => {
     ]),
   );
   const response = await ai.models.generateContent({
-    model: process.env.GEMINI_MODEL!,
-    contents: JSON.stringify(messages),
+    model: process.env.GEMINI_MODEL!, // Gemini 模型名
+    contents: JSON.stringify(messages), // 本批 source/comment 输入，顺序必须保留
     config: {
+      // 告诉模型翻译目标、comment 用法与占位符约束。
       systemInstruction: [
         `把输入 source 翻译为：${locales.join('、')}。`,
         'comment 只用于理解语境，不得出现在译文中。',
         '按输入下标返回结果，不要翻译 {{0}}、{{=0}} 等占位符。',
       ].join('\n'),
-      responseMimeType: 'application/json',
+      responseMimeType: 'application/json', // 强制返回可解析 JSON
       responseJsonSchema: {
-        type: 'array',
-        minItems: messages.length,
-        maxItems: messages.length,
+        type: 'array', // 返回数组与输入 messages 按下标对应
+        minItems: messages.length, // 不允许遗漏输入行
+        maxItems: messages.length, // 不允许增加额外行
         items: {
-          type: 'object',
-          properties,
-          required: locales,
-          additionalProperties: false,
+          type: 'object', // 每行是 locale → 译文/null 的对象
+          properties, // 只声明本批共同缺失的 locales
+          required: locales, // 每个目标 locale 都必须返回
+          additionalProperties: false, // 拒绝本批之外的语言字段
         },
       },
     },
@@ -245,9 +257,9 @@ const translator: Translator = async ({ locales, messages }) => {
 };
 
 aiI18n({
-  sourceLang: 'zh-CN',
-  locales,
-  provider: { translator },
+  sourceLang: 'zh-CN', // 源码文案使用的语言
+  locales, // 项目支持的完整语言列表
+  provider: { translator }, // 注册自定义 Translator
 });
 ```
 

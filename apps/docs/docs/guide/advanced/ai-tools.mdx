@@ -11,9 +11,19 @@ Agent + MCP 是 ai-i18n 提供的两种 AI 翻译方式之一，适合由 AI 编
 
 把 ai-i18n 接到 AI 编码工具时，可以通过三种途径增强 Agent 的能力：
 
-1. **Skills**：安装任务指令集，告诉 Agent 如何按安全流程调用工具补译。
-2. **MCP (Model Context Protocol)**：为各类 AI 编码工具提供安全读取和写入翻译文件的底层能力。
-3. **文档索引 (llms.txt)**：提供机器友好的官方指南，让 Agent 自己查阅高级配置。
+1. **文档索引（llms.txt）**：提供机器友好的官方指南，让 Agent 自己查阅高级配置。
+2. **Skills**：安装任务指令集，告诉 Agent 如何按安全流程调用工具补译。
+3. **MCP（Model Context Protocol）**：为各类 AI 编码工具提供安全读取和写入翻译文件的底层能力。
+
+## 文档索引（llms.txt）
+
+当你希望 Agent 深入理解插件的高级用法、配置项或错误处理时，可以在任务对话中提供本站的
+文档索引：
+
+`https://bosens-china.github.io/ai-i18n/llms.txt`
+
+文档站点基于 Rspress 构建，并开启 SSG-MD。根路径同时提供纯 Markdown 索引和全量内容
+`llms-full.txt`，Agent 可以从索引继续读取对应的教程与 API 页面。
 
 ## Skills
 
@@ -27,7 +37,8 @@ npx skills add bosens-China/ai-i18n --skill use-ai-i18n-mcp integrate-ai-i18n -y
 
 安装后，Skill 会被保存到 `.agents/skills/` 中。在之后的对话中，你可以直接告诉 Agent：“使用 `use-ai-i18n-mcp` 补译缺失的语言” 或 “使用 `integrate-ai-i18n` 指导项目接入”。
 
-`integrate-ai-i18n` 内置了一张"主题 → 官方文档页面"的索引表：常见配置直接写在 Skill 本地文件里，无需联网；遇到详尽选项表或边界情况时，Agent 会自动抓取下方「文档索引 (llms.txt)」小节所依赖的同一套 Markdown 镜像页面，你不需要手动把链接丢给它。
+`integrate-ai-i18n` 内置“主题 → 官方文档页面”索引。常见配置直接保存在 Skill 本地文件中；
+遇到完整选项表或边界情况时，Agent 会读取上方文档索引中的 Markdown 页面。
 
 ## MCP
 
@@ -41,8 +52,8 @@ Agent 补译依赖 `@ai-i18n/mcp` 暴露的底层写入能力。你需要在你�
 
 ```toml
 [mcp_servers.ai_i18n]
-command = "npx"
-args = ["-y", "@ai-i18n/mcp@alpha"]
+command = "npx" # 启动 MCP 服务器的命令
+args = ["-y", "@ai-i18n/mcp@alpha"] # 自动下载并运行当前 alpha 版本
 ```
 
 或者在 Codex 桌面端 **Settings → MCP servers → Add server → STDIO** 中填写相同的 `command` 与 `args`。
@@ -123,15 +134,6 @@ Agent 按当前对话语言解释。
 4. **消息不存在时重新读取**：MCP 只报告指定 `message_id` 在该文件中不存在，不推断原因。
    重新调用 `ai_i18n_list_translations` 并原样复制返回的 `source_file` 与
    `message_id`；不要用 `source` 字段代替。
-
-## 文档索引 (llms.txt)
-
-当你希望 Agent 能深入理解本插件的高级用法、配置项甚至特定错误处理，你可以直接在任务对话中丢入本站点的 `llms.txt` 链接：
-
-`https://bosens-china.github.io/ai-i18n/llms.txt`
-
-本官方文档站点基于 Rspress 构建并开启了 SSG-MD 特性，在根路径暴露了对大模型高度友好的纯 Markdown 索引及其全量文本库 (`llms-full.txt`)。
-Agent 收到这个地址后，能自动抓取结构化、干净的教程原文并学习。
 
 ## 最佳补译流程示例
 

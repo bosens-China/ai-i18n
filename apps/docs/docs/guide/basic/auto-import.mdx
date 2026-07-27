@@ -1,13 +1,17 @@
 ---
 title: 自动导入
-description: 开启自动导入以免除手动引入 Hook 的繁琐，并了解它与 unplugin-auto-import 的配合方式
+description: 显式开启 ai-i18n 自动导入，并配置对应的 TypeScript 与 ESLint 声明
 ---
 
-在业务代码中，通常需要频繁使用 `t` 或 `useI18n`。如果不希望每次都显式编写 `import { useI18n } from 'virtual:ai-i18n'`，你可以启用自动按需导入功能。
+自动导入默认关闭。未配置时，请从 `virtual:ai-i18n` 显式导入 Runtime API：
+
+```ts
+import { useI18n } from 'virtual:ai-i18n';
+```
 
 ## 开启自动导入
 
-你可以直接在配置中设置 `autoImport: true`：
+如果希望省略这些 import，请显式设置 `autoImport: true`：
 
 ```ts
 // vite.config.ts
@@ -17,17 +21,28 @@ import { defineConfig } from 'vite';
 export default defineConfig({
   plugins: [
     aiI18n({
-      // ... 其他基础配置
-      autoImport: true,
+      sourceLang: 'zh-CN', // 源码文案使用的语言
+      locales: [
+        // value 是语言标识，label 是界面中的展示名称。
+        { value: 'zh-CN', label: '中文' },
+        { value: 'en-US', label: 'English' },
+      ],
+      autoImport: true, // 按框架模式注入未绑定的 Runtime API
     }),
   ],
 });
 ```
 
-一旦开启：
+插件会根据最终框架模式注入对应 API：
 
-- 在 **Vanilla** 模式下，可以直接在全局使用 `t`, `setLang`, `getLang`, `getLangs`, `subscribe`。
-- 在 **Vue** 与 **React** 模式下，可以直接在组件里使用 `useI18n()`。
+| 模式    | 自动导入的 API                                     |
+| ------- | -------------------------------------------------- |
+| Vanilla | `t`、`setLang`、`getLang`、`getLangs`、`subscribe` |
+| Vue     | `useI18n`                                          |
+| React   | `useI18n`                                          |
+
+插件只注入没有本地 binding 的调用。显式 import、局部变量或同名函数始终优先，不会被覆盖。
+安装其他 Vite 插件不会自动开启该能力。
 
 ## TypeScript 支持
 
@@ -40,11 +55,9 @@ Runtime 全局 API，避免 IDE 报未定义错误。该文件由插件维护，
 
 ```ts
 aiI18n({
-  autoImport: true,
-  // 禁用自动生成
-  // dts: false,
-  // 或者自定义生成路径
-  dts: 'types/ai-i18n-auto-imports.d.ts',
+  autoImport: true, // 同时为自动导入的 Runtime API 生成全局类型
+  dts: 'types/ai-i18n-auto-imports.d.ts', // 修改声明文件的输出路径
+  // dts: false, // 完全禁用生成；此时需要自行维护等价声明
 });
 ```
 
@@ -53,33 +66,9 @@ aiI18n({
 `tsconfig.json` 的 `include` 字段包含。
 :::
 
-## 配合 unplugin-auto-import
+## ESLint 配置
 
-许多项目已经使用了 [`unplugin-auto-import`](https://github.com/unplugin/unplugin-auto-import) 来自动导入 `vue`, `react` 相关的 API。
-
-ai-i18n 可以与 `unplugin-auto-import` 同时使用。你**不需要**修改后者的 `imports` 列表。
-
-ai-i18n 会读取 Vite 最终解析的插件列表，因此不依赖两者在 `plugins` 中的先后顺序：
-
-```ts
-import { aiI18n } from '@ai-i18n/vite';
-import AutoImport from 'unplugin-auto-import/vite';
-import vue from '@vitejs/plugin-vue';
-
-export default defineConfig({
-  plugins: [
-    aiI18n({
-      // 检测到 AutoImport 时，ai-i18n 会开启自己的按需导入
-      sourceLang: 'zh-CN',
-    }),
-    AutoImport({
-      imports: ['vue'],
-    }),
-    vue(),
-  ],
-});
-```
-
-ai-i18n 会探测插件队列中的 `unplugin-auto-import`，并以此启用自己的导入注入和
-Runtime 全局声明；`ai-i18n.d.ts` 本身无论是否自动导入都会生成。两个插件的处理管线和
-声明文件相互独立。
+TypeScript 声明不会自动配置 ESLint。开启自动导入后，请按最终框架模式使用
+`@ai-i18n/eslint-plugin` 的 `configs.vanilla`、`configs.vue` 或 `configs.react`。
+这些预设会声明对应的只读全局，并检查静态提取语法。完整配置见
+[ESLint](/guide/quality/eslint)。

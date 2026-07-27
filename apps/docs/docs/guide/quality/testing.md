@@ -1,6 +1,6 @@
 ---
 title: 测试（Vitest）
-description: 使用 aiI18nVitest() 在 Vitest 中提供 virtual:ai-i18n，无需手写 alias/mock，也不读写协议文件
+description: 使用 aiI18nVitest() 在 Vitest 中提供 virtual:ai-i18n，无需手写 alias 或 mock，也不读写协议文件
 ---
 
 单元测试通常不需要静态提取、Provider 调用或 `i18n/` 协议文件读写——这些正是正式 `aiI18n()`
@@ -29,13 +29,14 @@ import { defineConfig } from 'vitest/config';
 export default defineConfig({
   plugins: [
     aiI18nVitest({
-      sourceLang: 'zh-CN',
+      sourceLang: 'zh-CN', // 测试 Runtime 固定回退的源码语言
+      // value 是语言标识，label 是组件中展示的名称。
       locales: [
         { value: 'zh-CN', label: '中文' },
         { value: 'en-US', label: 'English' },
       ],
     }),
-    react(),
+    react(), // 提供 React 转换，并让测试插件自动识别 React 模式
   ],
 });
 ```
@@ -53,13 +54,14 @@ Vue 项目把 `react()` 换成 `vue()`，`framework` 同样按最终插件列表
 ```ts
 // ai-i18n.options.ts
 export const aiI18nOptions = {
-  sourceLang: 'zh-CN',
-  defaultLang: 'zh-CN',
+  sourceLang: 'zh-CN', // 源码文案使用的语言
+  defaultLang: 'zh-CN', // 没有有效持久化值时的初始语言
+  // value 是语言标识，label 是组件中展示的名称。
   locales: [
     { value: 'zh-CN', label: '中文' },
     { value: 'en-US', label: 'English' },
   ],
-  persist: { key: 'app-lang' },
+  persist: { key: 'app-lang' }, // 使用指定 localStorage key 保存语言偏好
 } as const;
 ```
 
@@ -69,7 +71,10 @@ import { aiI18n } from '@ai-i18n/vite';
 import { aiI18nOptions } from './ai-i18n.options';
 
 export default defineConfig({
-  plugins: [aiI18n(aiI18nOptions), react()],
+  plugins: [
+    aiI18n(aiI18nOptions), // 正式 Vite 环境：执行提取并维护协议文件
+    react(), // 保留宿主 React 转换
+  ],
 });
 ```
 
@@ -79,7 +84,10 @@ import { aiI18nVitest } from '@ai-i18n/vite/vitest';
 import { aiI18nOptions } from './ai-i18n.options';
 
 export default defineConfig({
-  plugins: [aiI18nVitest(aiI18nOptions), react()],
+  plugins: [
+    aiI18nVitest(aiI18nOptions), // Vitest 环境：仅提供内存 Runtime 与宏转换
+    react(), // 保留宿主 React 转换
+  ],
 });
 ```
 

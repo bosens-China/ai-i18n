@@ -1,18 +1,8 @@
 [
   {
     "type": "file",
-    "name": "workflow",
-    "label": "目录说明"
-  },
-  {
-    "type": "file",
     "name": "ai-translation",
     "label": "AI 翻译"
-  },
-  {
-    "type": "file",
-    "name": "testing",
-    "label": "测试（Vitest）"
   },
   {
     "type": "file",

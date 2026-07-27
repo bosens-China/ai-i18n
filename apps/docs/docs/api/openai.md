@@ -12,9 +12,9 @@ OpenAI-compatible 服务，并返回 `aiI18n()` 所需的 `Translator`。
 import { openAI } from '@ai-i18n/openai';
 
 const translator = openAI({
-  baseURL: 'https://example.com/v1',
-  model: 'model-name',
-  apiKey: process.env.AI_API_KEY,
+  baseURL: 'https://example.com/v1', // OpenAI-compatible API 根地址
+  model: 'model-name', // 显式使用的模型名
+  apiKey: process.env.AI_API_KEY, // 只应存在于 Vite Node 进程
 });
 ```
 

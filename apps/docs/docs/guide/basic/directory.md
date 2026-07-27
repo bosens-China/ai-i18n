@@ -1,6 +1,6 @@
 ---
-title: 目录说明与工作流
-description: i18n 协议目录、Git 提交约定、目录维护配置与 Agent 协作流程
+title: 目录说明
+description: i18n 协议目录、文件职责、Git 提交约定与目录维护方式
 ---
 
 ## 目录协议
@@ -88,12 +88,14 @@ Provider 原始响应。extracted 文件位于同一层级；路径分隔符编�
 ```ts
 aiI18n({
   cache: {
-    maxMessages: 20_000,
-    maxBytes: 10 * 1024 * 1024,
+    // 限制非活跃历史 Translation Memory 的规模
+    maxMessages: 20_000, // Translation Memory 最多保留的消息数
+    maxBytes: 10 * 1024 * 1024, // translations.json 的 UTF-8 软上限
   },
   cleanup: {
-    missingSourceFiles: true,
-    orphanMessages: false,
+    // 控制失效提取文件与孤立消息的清理
+    missingSourceFiles: true, // 删除源文件不存在时对应的 extracted 文件
+    orphanMessages: false, // 保留当前源码未引用的历史翻译，便于跨分支复用
   },
 });
 ```

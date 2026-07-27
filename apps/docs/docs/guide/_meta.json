@@ -6,7 +6,17 @@
   },
   {
     "type": "dir",
+    "name": "quality",
+    "label": "工程质量"
+  },
+  {
+    "type": "dir",
     "name": "advanced",
     "label": "进阶与 AI"
+  },
+  {
+    "type": "file",
+    "name": "faq",
+    "label": "常见问题"
   }
 ]

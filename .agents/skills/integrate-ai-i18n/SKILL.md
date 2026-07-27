@@ -15,7 +15,7 @@ plugin setup. Determine:
 
 - whether Vite is version 8 or newer;
 - whether this build is Vanilla, Vue, or React;
-- whether `unplugin-auto-import` is already registered;
+- whether the user wants explicit imports or ai-i18n auto imports;
 - whether the runtime is browser-only or includes SSR;
 - the source locale, target locales, default locale, and desired output directory;
 - whether target locale assets should be preloaded, prefetched, or fully lazy;
@@ -45,10 +45,14 @@ at the same path with a `.md` extension — fetch that, not the `.html` page:
 | --- | --- |
 | Full `aiI18n()` option table, Provider tuning, capacity/loading edge cases | `https://bosens-china.github.io/ai-i18n/api/vite.md` |
 | Runtime API (`t`, `useI18n`, template placeholders, persist) | `https://bosens-china.github.io/ai-i18n/api/runtime.md` |
-| Protocol directory layout, Git conventions, and message-ID/comment behavior | `https://bosens-china.github.io/ai-i18n/guide/advanced/workflow.md` |
+| Static extraction scope, recommended syntax, and AST limits | `https://bosens-china.github.io/ai-i18n/guide/basic/static-analysis.md` |
+| ai-i18n auto imports and generated declarations | `https://bosens-china.github.io/ai-i18n/guide/basic/auto-import.md` |
+| Locale chunking, lazy loading, and UI Loading state | `https://bosens-china.github.io/ai-i18n/guide/basic/locale-loading.md` |
+| Protocol directory layout, Git conventions, and message-ID/comment behavior | `https://bosens-china.github.io/ai-i18n/guide/basic/directory.md` |
 | AI translation Provider setup and prompt tuning | `https://bosens-china.github.io/ai-i18n/guide/advanced/ai-translation.md` |
-| `aiI18nVitest()` usage | `https://bosens-china.github.io/ai-i18n/guide/advanced/testing.md` |
-| ESLint plugin Flat Config examples per framework | `https://bosens-china.github.io/ai-i18n/guide/basic/eslint.md` |
+| `aiI18nVitest()` usage | `https://bosens-china.github.io/ai-i18n/guide/quality/testing.md` |
+| ESLint plugin Flat Config examples per framework | `https://bosens-china.github.io/ai-i18n/guide/quality/eslint.md` |
+| Common integration questions and troubleshooting | `https://bosens-china.github.io/ai-i18n/guide/faq.md` |
 
 If a link 404s after a docs restructure, fetch `https://bosens-china.github.io/ai-i18n/llms.txt` (a
 generated site index) to relocate the page. These pages reflect the latest deploy from `main` and can
@@ -61,8 +65,8 @@ package version, trust the reference files and the installed code over a stale f
    `latest` dist-tag and do not add separate ai-i18n Vue or React packages.
 2. Register one `aiI18n()` in the existing Vite `plugins` array.
 3. Let the final Vite plugin list infer the mode, or set `framework` only when an explicit override is required.
-4. Let an existing `unplugin-auto-import` enable ai-i18n auto imports, or set `autoImport: true/false`
-   to force the behavior.
+4. Keep explicit imports by default. Set `autoImport: true` only when the user explicitly requests
+   ai-i18n auto imports; other Vite plugins never enable it.
 5. Ensure `sourceLang` and a non-source `defaultLang` occur in the unique, non-empty `locales`
    array. Omit `defaultLang` when it equals `sourceLang`.
 6. Add one static translation call. Explicit imports always come from `virtual:ai-i18n`; auto-import
@@ -89,9 +93,8 @@ history in stable message-ID order. Active messages remain protected; if they ex
 limit, Vite warns and keeps them. `cleanup.orphanMessages: true` is stronger and removes all inactive
 messages before capacity enforcement.
 
-The external Auto Import plugin is only the default opt-in signal for ai-i18n. ai-i18n performs its
-own import injection, so do not add `useI18n` or the Vanilla runtime APIs to the external plugin's
-`imports` configuration.
+ai-i18n auto imports are self-contained and disabled by default. When explicitly enabled, ai-i18n
+injects only its fixed mode-specific Runtime APIs.
 
 Do not add a translator, model, API key, HTML extraction, cache limit, cleanup override, Vue plugin,
 or React provider unless the project requires it. When automatic translation is requested, keep
@@ -102,9 +105,8 @@ secrets in the Node-side translator closure and follow [Vite configuration](refe
 Add `@ai-i18n/eslint-plugin@alpha` during prerelease only when checks are requested or auto-imported
 globals must be declared.
 Use exactly one of `configs.vanilla`, `configs.vue`, or `configs.react`, matching the resolved Vite
-mode. Preserve the host Vue parser and framework lint rules. The host Auto Import plugin remains
-responsible for ESLint declarations of its own APIs. For per-framework Flat Config examples, fetch
-the ESLint doc page from the table above. Presets warn when one `t()` expands beyond 1000 static
+mode. Preserve the host Vue parser and framework lint rules. For per-framework Flat Config examples,
+fetch the ESLint doc page from the table above. Presets warn when one `t()` expands beyond 1000 static
 source/options combinations. Change `ai-i18n/static-candidate-limit`'s positive-integer
 `maxStaticCandidates` option only in ESLint config; Vite extraction has no candidate cap or matching
 plugin option.

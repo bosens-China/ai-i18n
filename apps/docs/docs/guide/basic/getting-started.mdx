@@ -1,44 +1,37 @@
 ---
 title: 快速上手
-description: 在 Vite 项目中安装 ai-i18n，完成框架配置并了解自动导入
+description: 在 Vite 项目中安装 ai-i18n，并完成 Vanilla、Vue 或 React 的基础配置
 ---
 
-import { Tab, Tabs, PackageManagerTabs } from '@rspress/core/theme';
+import { PackageManagerTabs, Tab, Tabs } from '@rspress/core/theme';
 
-ai-i18n 在 Vite Dev 与 Build 期间提取显式 `t()`，维护可提交到 Git 的翻译文件，并向浏览器提供切换语言所需的 Runtime。
+ai-i18n 通过 Vite 插件提取源码中的 `t()`，并向浏览器提供语言切换 Runtime。
 
-## 开始前
+## 安装
 
-:::warning 使用前请确认
+:::warning 环境要求
 
-- 仅支持 **Vite ≥ 8** 与浏览器端 Runtime（不支持 SSR，若遇 SSR 环境会自动跳过并警告）。
-- 插件会根据最终解析的 Vite 插件推断框架模式，每个 Vite build 只能选择一种模式：`vanilla`、`vue` 或 `react`。
-- 插件只识别显式 `t()`、`` t`...` ``，以及由 `defineI18nMessages()` 标记后传给 `t()` 的消息集合；不会去猜测普通字符串、JSX 文本或 Vue 模板文本。
-- 所有写入和合并由 `vite dev` 或 `vite build` 驱动，不需要单独执行提取命令行。
+- 使用 Vite ≥ 8。
+- Runtime 仅支持浏览器端，暂不支持 SSR。
+- 每个 Vite build 只能使用一种框架模式：Vanilla、Vue 或 React。
 
 :::
-
-### 安装
 
 <PackageManagerTabs command="add @ai-i18n/vite@alpha" />
 
 :::warning Alpha 安装
-当前预发布版本发布在 npm 的 `alpha` dist-tag。正式版发布前请保留 `@alpha`，否则可能安装到较旧的 `latest`。
-main 分支文档可能先于 npm 的 `alpha` 包更新；若 API 有差异，请以已安装版本的类型定义和
-包内 README 为准，或等待下一次 alpha 发布。
+当前预发布版本位于 npm 的 `alpha` dist-tag。正式版发布前请保留 `@alpha`，否则可能安装到
+较旧的 `latest`。
 :::
 
-:::tip
-Vue 或 React 项目继续使用原有的 Vite 框架插件，不需要为不同框架额外安装特殊的 ai-i18n 适配包。
-:::
+Vue 或 React 项目继续使用原有的 Vite 框架插件，无需安装额外的 ai-i18n 适配包。
 
-### 注册 Vite 插件与框架配置
-
-插件会在 `configResolved` 阶段检测最终插件列表。检测到 `vite:vue` / `vite:vue-jsx` 时使用 Vue 模式，检测到 `vite:react*` 时使用 React 模式，否则回退到 Vanilla 模式。
+## 配置与使用
 
 <Tabs>
   <Tab label="Vanilla">
-    纯 JS/TS 模式，没有特殊依赖。
+    在 `vite.config.ts` 中注册 `aiI18n()`。没有检测到 Vue 或 React Vite 插件时，ai-i18n
+    自动使用 Vanilla 模式。
 
     ```ts
     // vite.config.ts
@@ -48,8 +41,8 @@ Vue 或 React 项目继续使用原有的 Vite 框架插件，不需要为不同
     export default defineConfig({
       plugins: [
         aiI18n({
-          sourceLang: 'zh-CN', // 源码使用的语言
-          defaultLang: 'en-US', // 浏览器端首次加载时使用的语言，如果省略则等于 sourceLang
+          sourceLang: 'zh-CN', // 源码中直接书写的文案语言
+          // value 用于 setLang() 与输出文件名，label 用于语言选择器展示。
           locales: [
             { value: 'zh-CN', label: '中文' },
             { value: 'en-US', label: 'English' },
@@ -59,20 +52,26 @@ Vue 或 React 项目继续使用原有的 Vite 框架插件，不需要为不同
     });
     ```
 
-    业务代码中，你可以通过显式导入调用：
+    从虚拟模块导入 Runtime API。Vanilla 模式需要在语言变化后主动更新 DOM：
 
     ```ts
-    import { t, setLang, getLangs } from 'virtual:ai-i18n';
+    import { getLangs, setLang, subscribe, t } from 'virtual:ai-i18n';
 
-    console.log(t('保存'));
-    console.log(getLangs());
-    await setLang('en-US');
+    function render() {
+      document.querySelector('#app')!.textContent = t('保存'); // 缺译时返回原文
+    }
+
+    render();
+    subscribe(render); // 语言或翻译变化后重新渲染 DOM
+
+    console.log(getLangs()); // 读取 vite.config.ts 中的 locales
+    await setLang('en-US'); // 切换语言；按需加载时会等待语言包
     ```
 
   </Tab>
 
   <Tab label="Vue 3">
-    与 `@vitejs/plugin-vue` 搭配使用。你可以额外开启 `html: true` 来提取 `index.html` 中的文本。
+    保留项目现有的 `@vitejs/plugin-vue`。ai-i18n 会从最终的 Vite 插件列表识别 Vue 模式：
 
     ```ts
     // vite.config.ts
@@ -83,30 +82,46 @@ Vue 或 React 项目继续使用原有的 Vite 框架插件，不需要为不同
     export default defineConfig({
       plugins: [
         aiI18n({
-          sourceLang: 'zh-CN',
+          sourceLang: 'zh-CN', // 源码中直接书写的文案语言
+          // value 用于 setLang() 与输出文件名，label 用于语言选择器展示。
           locales: [
             { value: 'zh-CN', label: '中文' },
             { value: 'en-US', label: 'English' },
           ],
-          html: true, // 开启 index.html 的文本与属性提取
         }),
-        vue(),
+        vue(), // 保留 Vue SFC 编译，并让 ai-i18n 自动识别 Vue 模式
       ],
     });
     ```
 
-    Vue 模式支持 `.vue` 以及 `@vitejs/plugin-vue-jsx` 编译的 JSX/TSX。组件中使用响应式的 Hook：
+    在组件中使用 `useI18n()`。语言变化后，使用这些响应式值的模板会自动更新：
 
-    ```ts
+    ```vue
+    <script setup lang="ts">
     import { useI18n } from 'virtual:ai-i18n';
 
-    const { t, setLang, currentLang, langs } = useI18n();
+    const {
+      currentLang, // 当前语言；在模板中会自动解包 readonly ref
+      langs, // vite.config.ts 中配置的语言列表
+      setLang, // 异步切换语言
+      t, // 翻译源码文案，缺译时返回原文
+    } = useI18n();
+    </script>
+
+    <template>
+      <p>{{ t('保存') }}</p>
+      <select :value="currentLang" @change="setLang(($event.target as HTMLSelectElement).value)">
+        <option v-for="lang in langs" :key="lang.value" :value="lang.value">
+          {{ lang.label }}
+        </option>
+      </select>
+    </template>
     ```
 
   </Tab>
 
   <Tab label="React">
-    与 `@vitejs/plugin-react` 搭配使用。
+    保留项目现有的 React Vite 插件。ai-i18n 会从最终的插件列表识别 React 模式：
 
     ```ts
     // vite.config.ts
@@ -117,154 +132,60 @@ Vue 或 React 项目继续使用原有的 Vite 框架插件，不需要为不同
     export default defineConfig({
       plugins: [
         aiI18n({
-          sourceLang: 'zh-CN',
+          sourceLang: 'zh-CN', // 源码中直接书写的文案语言
+          // value 用于 setLang() 与输出文件名，label 用于语言选择器展示。
           locales: [
             { value: 'zh-CN', label: '中文' },
             { value: 'en-US', label: 'English' },
-          ]
+          ],
         }),
-        react(),
+        react(), // 保留 JSX 转换，并让 ai-i18n 自动识别 React 模式
       ],
     });
     ```
 
-    组件中通过 Hook 订阅变更，切换语言后组件树会重渲染：
+    在组件中使用 `useI18n()`。语言变化后，组件会重新渲染：
 
     ```tsx
     import { useI18n } from 'virtual:ai-i18n';
 
     export function App() {
-      const { t, setLang, currentLang, langs } = useI18n();
-      return <button onClick={() => void setLang('en-US')}>{t('切换语言')}</button>;
+      const {
+        currentLang, // 当前语言值
+        langs, // vite.config.ts 中配置的语言列表
+        setLang, // 异步切换语言
+        t, // 翻译源码文案，缺译时返回原文
+      } = useI18n();
+
+      return (
+        <>
+          <p>{t('保存')}</p>
+          <select
+            value={currentLang}
+            onChange={(event) => void setLang(event.target.value)}
+          >
+            {langs.map((lang) => (
+              <option key={lang.value} value={lang.value}>
+                {lang.label}
+              </option>
+            ))}
+          </select>
+        </>
+      );
     }
     ```
 
   </Tab>
 </Tabs>
 
-### 动态插值与翻译注释
-
-动态值使用 tagged template。构建期只提取静态文本，并把表达式转换为可重排的编号占位符：
-
-```ts
-const message = t`你好 ${user.name}，你有 ${unreadCount} 条消息`;
-```
-
-Runtime 替换动态值前会检查占位符。译文缺少、多出或改动占位符时，控制台会输出 warning，
-但仍继续使用该译文。
-
-需要给翻译模型补充语境时可写 `t('保存', { comment: '设置弹窗按钮' })`。正文或 comment
-任一变化都会生成新的 message ID，并作为一条新消息等待翻译。
-
-同一句原文有不同语义时，直接使用不同 comment：
-
-```ts
-t('提交');
-t('提交', { comment: '创建 Git 提交' });
-```
-
-人工审校既可以为“提交”设置影响全部调用的默认译文，也可以只覆盖带 comment 的目标消息。
-
-### 组织对象或数组文案
-
-需要按属性或索引取文案时，使用无需导入的编译宏：
-
-```ts
-const messages = defineI18nMessages({
-  actions: { save: '保存', cancel: '取消' },
-  states: ['等待中', '处理中', '已完成'],
-});
-
-t(messages.actions.save);
-t(messages.states[index]);
-```
-
-宏在 Vite 与 Vitest 转换时会被消除，运行时仍是原对象。它不会冻结对象，也不会执行任意代码；
-动态索引只提取 AST 中可枚举的有限候选。宏必须直接调用，不能赋值、传递或作为运行时值使用。
-`ai-i18n.d.ts` 会在所有框架模式下提供宏的全局类型，这一点不受 `autoImport` 开关影响。
-声明文件在首次启动 Vite 后生成，建议纳入版本控制并确保位于 `tsconfig` 的 `include`
-范围内，避免先执行独立 `tsc` 时找不到宏。
-
-### 设置按需导入（可选）
-
-如果不希望每次都显式 `import { useI18n } from 'virtual:ai-i18n'`，你可以启用按需导入。
-
-- **如果你没有使用其他自动导入库**，可以直接设置 `autoImport: true`。
-- **如果你在使用 `unplugin-auto-import`**，ai-i18n 会**自动探测**并开启按需导入。你不需要把 `useI18n` 再重复写进 `unplugin-auto-import` 的 `imports` 列表中。
-
-插件默认在 `src/ai-i18n.d.ts` 生成宏的全局 TypeScript 声明；开启按需导入后，同一文件还会
-声明对应的 Runtime API。可以通过 `dts: false` 禁用或通过字符串修改生成路径；禁用后需自行
-提供宏与按需导入 API 的全局声明。
-
-### 了解进阶配置：分包与按需加载
-
-在应对多语言的大型项目时，你可能希望单独拆分并预加载语言包。你可以在配置中增加 `loading` 配置：
-
-```ts
-aiI18n({
-  sourceLang: 'zh-CN',
-  defaultLang: 'en-US',
-  locales: [
-    { value: 'zh-CN', label: '中文' },
-    { value: 'en-US', label: 'English' },
-    { value: 'ja-JP', label: '日本語' },
-  ],
-  loading: {
-    preload: ['en-US'], // 尽早准备该语言包
-    prefetch: ['ja-JP'], // 低优先级缓存该语言包
-  },
-});
-```
-
-- 配置 `loading` 后，每一个目标语言会打包成独立的内容 chunk，不再全量混入同一个 Runtime。
-- 非源码的 `defaultLang` (本例为 `en-US`) 默认采用 preload 语义，首次渲染用源码作为 fallback，加载完成后切换并通知订阅者。
-
-### 验证输出
-
-运行开发服务器并访问包含 `t()` 的页面，或执行一次生产构建：
-
-```sh
-pnpm dev
-# 或
-pnpm build
-```
-
-默认在项目根目录（或者你通过 `directory` 指定的目录）会生成：
-
-```text
-i18n/
-├── translations.json
-├── overrides.json
-├── extracted/
-│   └── src_app.ts.json
-└── locales/
-    └── en-US.json
-```
-
-:::tip
-Dev 模式具有“渐进式”特点，只提取浏览器实际请求到的模块。如果想要全量验证所有页面的提取，请执行一次 `pnpm build`。
-:::
-
-### Vitest
-
-单元测试通常不需要提取或改写协议文件。使用测试入口解析 `virtual:ai-i18n`，无需维护 alias 和 mock：
-
-```ts
-// vitest.config.ts
-import { aiI18nVitest } from '@ai-i18n/vite/vitest';
-import react from '@vitejs/plugin-react';
-import { defineConfig } from 'vitest/config';
-import { aiI18nOptions } from './ai-i18n.options';
-
-export default defineConfig({
-  plugins: [aiI18nVitest(aiI18nOptions), react()],
-});
-```
-
-测试 Runtime 保留框架 Hook、语言状态和 source fallback，只执行消息集合宏的消除，不会提取翻译、
-调用 Provider 或写入 `i18n/`。Vite Dev/Build 继续使用正式的 `aiI18n()`。共享 options 与缺译策略在测试里的表现，见
-[测试（Vitest）](/guide/advanced/testing)。
+运行 `vite dev` 并访问包含 `t()` 的页面后，插件会开始维护翻译文件。需要确认完整源码范围时，
+再执行一次 `vite build`。
 
 ## 下一步
 
-接下来，你可以阅读 [目录说明](/guide/advanced/workflow) 了解 Git 提交约定，[测试（Vitest）](/guide/advanced/testing) 了解单测场景下的 Runtime 行为，或直接了解如何通过 [AI 工具接入](/guide/advanced/ai-tools) 自动填充翻译。
+- [静态分析范围](/guide/basic/static-analysis)：了解哪些写法会被提取，以及 AST 分析的边界。
+- [自动导入](/guide/basic/auto-import)：显式开启后省略 `virtual:ai-i18n` import。
+- [语言分包与按需加载](/guide/basic/locale-loading)：按 locale 拆分 chunk，并处理切换中的
+  Loading 状态。
+- [目录说明](/guide/basic/directory)：了解生成文件的职责和 Git 提交方式。
+- [常见问题](/guide/faq)：按实际现象排查兼容性、提取、自动导入与语言切换问题。

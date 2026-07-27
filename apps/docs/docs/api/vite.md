@@ -9,7 +9,8 @@ description: aiI18n() 的全部配置项、嵌套字段、默认值与约束
 import { aiI18n } from '@ai-i18n/vite';
 
 aiI18n({
-  sourceLang: 'zh-CN',
+  sourceLang: 'zh-CN', // 源码中直接书写的文案语言
+  // value 用于 setLang() 与输出文件名，label 用于界面展示。
   locales: [
     { value: 'zh-CN', label: '中文' },
     { value: 'en-US', label: 'English' },
@@ -42,7 +43,7 @@ Vite 与 ESLint 共用 `AI_I18N_DIAGNOSTIC_LOCALE`：
 | `persist`     | `boolean \| { key: string }`      | 否   | `false`              | 用 localStorage 保存用户语言偏好。              |
 | `loading`     | `AiI18nLocaleLoadingOptions`      | 否   | 全语言注册           | 按 locale 拆分并提示加载目标语言资产。          |
 | `framework`   | `'vanilla' \| 'vue' \| 'react'`   | 否   | 自动检测             | 覆盖框架推断结果。                              |
-| `autoImport`  | `boolean`                         | 否   | 自动检测             | 强制开启或关闭 ai-i18n 的按需导入。             |
+| `autoImport`  | `boolean`                         | 否   | `false`              | 启用 ai-i18n 的自动导入。                       |
 | `dts`         | `string \| false`                 | 否   | `'src/ai-i18n.d.ts'` | 修改声明文件路径；`false` 表示不生成。          |
 | `directory`   | `string`                          | 否   | `'i18n'`             | 协议目录，相对于 Vite `root`。                  |
 | `provider`    | `AiI18nProviderOptions`           | 否   | 不调用模型           | 配置 Translator、翻译批次、并发与失败策略。     |
@@ -65,10 +66,10 @@ Vite 与 ESLint 共用 `AI_I18N_DIAGNOSTIC_LOCALE`：
 
 ```ts
 aiI18n({
-  sourceLang: 'zh-CN',
-  defaultLang: 'en-US',
-  locales,
-  persist: { key: 'my-app-language' },
+  sourceLang: 'zh-CN', // 源码文案使用的语言
+  defaultLang: 'en-US', // 没有有效持久化值时的初始语言
+  locales, // 项目支持的完整语言列表
+  persist: { key: 'my-app-language' }, // 用指定 localStorage key 保存语言偏好
 });
 ```
 
@@ -78,18 +79,23 @@ aiI18n({
 
 ## 按语言加载
 
+本节是字段参考。首次配置与切换中的 Loading 示例见
+[语言分包与按需加载](/guide/basic/locale-loading)。
+
 ```ts
 aiI18n({
-  sourceLang: 'zh-CN',
-  defaultLang: 'en-US',
+  sourceLang: 'zh-CN', // source locale 同步可用
+  defaultLang: 'en-US', // 非 source 默认语言会自动 preload
+  // value 是语言标识，label 是界面中的展示名称。
   locales: [
     { value: 'zh-CN', label: '中文' },
     { value: 'en-US', label: 'English' },
     { value: 'ja-JP', label: '日本語' },
   ],
   loading: {
-    preload: ['en-US'],
-    prefetch: ['ja-JP'],
+    // 启用按 locale 分包并声明资源加载提示
+    preload: ['en-US'], // 通过 modulepreload 尽早准备
+    prefetch: ['ja-JP'], // 通过 prefetch 低优先级缓存
   },
 });
 ```
@@ -129,14 +135,11 @@ prefetch 完成作为切换语言的前置条件。省略 `loading` 时继续使
 
 ### `autoImport`
 
-省略 `autoImport` 时，仅当最终插件列表中存在 `unplugin-auto-import` 或它的命名扩展时，
-ai-i18n 才启用按需导入。显式设置 `true` 或 `false` 的优先级更高。
+`autoImport` 默认为 `false`，只有显式设置为 `true` 时才会启用。插件根据最终框架模式
+识别未绑定调用，并从 `virtual:ai-i18n` 注入对应 import。安装其他 Vite 插件不会改变
+该选项。
 
-外部 Auto Import 插件只是自动启用信号。真正的
-`virtual:ai-i18n` import 由 ai-i18n 注入，不要把同一组 API 重复写进外部插件的
-`imports`。
-
-| 模式      | 可按需导入的全局 API                               |
+| 模式      | 自动导入的全局 API                                 |
 | --------- | -------------------------------------------------- |
 | `vanilla` | `t`、`setLang`、`getLang`、`getLangs`、`subscribe` |
 | `vue`     | `useI18n`                                          |
@@ -156,12 +159,13 @@ ai-i18n 才启用按需导入。显式设置 `true` 或 `false` 的优先级更�
 
 ```ts
 aiI18n({
-  sourceLang: 'zh-CN',
-  locales,
+  sourceLang: 'zh-CN', // 源码文案使用的语言
+  locales, // 项目支持的完整语言列表
   provider: {
-    translator,
-    batchLength: 12_000,
-    maxConcurrency: 5,
+    // 在 Dev/Build 中自动补齐缺失翻译
+    translator, // 实际执行翻译的函数
+    batchLength: 12_000, // 单批序列化字符上限，不是 token 数
+    maxConcurrency: 5, // 同时执行的最大翻译批次数
   },
 });
 ```
@@ -191,11 +195,12 @@ Vite 配置文件及其依赖、ai-i18n 插件实现、extractor 或 schema 变�
 
 ```ts
 aiI18n({
-  sourceLang: 'zh-CN',
-  locales,
+  sourceLang: 'zh-CN', // 源码文案使用的语言
+  locales, // 项目支持的完整语言列表
   cache: {
-    maxMessages: 20_000,
-    maxBytes: 10 * 1024 * 1024,
+    // 限制非活跃历史 Translation Memory 的规模
+    maxMessages: 20_000, // Translation Memory 最多保留的消息数
+    maxBytes: 10 * 1024 * 1024, // translations.json 的 UTF-8 软上限
   },
 });
 ```
