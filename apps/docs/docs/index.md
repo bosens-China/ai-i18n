@@ -30,7 +30,7 @@ features:
     link: /guide/basic/locale-loading
   - title: 配置与 API
     details: 按层级查找 Vite 配置、Runtime 与 Provider 契约。
-    link: /api/vite
+    link: /api/
   - title: 文件与工作流
     details: 了解 i18n 协议目录、Git 提交约定和冲突处理。
     link: /guide/basic/directory

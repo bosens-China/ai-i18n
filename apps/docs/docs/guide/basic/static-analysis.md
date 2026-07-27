@@ -134,4 +134,4 @@ Vite Analyzer 会尽量保留可恢复的静态文案；ESLint 则负责约束�
   Build 不可达文件不会进入当前提取结果。
 - SSR 阶段会跳过提取、注册与 Runtime 注入；当前 Runtime 只支持浏览器端。
 
-函数签名、占位符转义和 message ID 规则见 [Runtime API](/api/runtime)。
+函数签名、占位符转义和 message ID 规则见 [`t()`](/api/runtime/functions/t)。

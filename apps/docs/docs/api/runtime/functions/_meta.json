@@ -1,0 +1,27 @@
+[
+  {
+    "type": "file",
+    "name": "t",
+    "label": "t()"
+  },
+  {
+    "type": "file",
+    "name": "set-lang",
+    "label": "setLang()"
+  },
+  {
+    "type": "file",
+    "name": "get-lang",
+    "label": "getLang()"
+  },
+  {
+    "type": "file",
+    "name": "get-langs",
+    "label": "getLangs()"
+  },
+  {
+    "type": "file",
+    "name": "subscribe",
+    "label": "subscribe()"
+  }
+]

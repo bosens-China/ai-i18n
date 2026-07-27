@@ -43,8 +43,12 @@ at the same path with a `.md` extension — fetch that, not the `.html` page:
 
 | Topic | Page |
 | --- | --- |
-| Full `aiI18n()` option table, Provider tuning, capacity/loading edge cases | `https://bosens-china.github.io/ai-i18n/api/vite.md` |
-| Runtime API (`t`, `useI18n`, template placeholders, persist) | `https://bosens-china.github.io/ai-i18n/api/runtime.md` |
+| Full `aiI18n()` option table | `https://bosens-china.github.io/ai-i18n/api/vite/interfaces/ai-i18n-options.md` |
+| Provider tuning | `https://bosens-china.github.io/ai-i18n/api/vite/type-aliases/ai-i18n-provider-options.md` |
+| Locale loading edge cases | `https://bosens-china.github.io/ai-i18n/api/vite/interfaces/ai-i18n-locale-loading-options.md` |
+| Runtime API availability | `https://bosens-china.github.io/ai-i18n/api/runtime/overview.md` |
+| `t()` and template placeholders | `https://bosens-china.github.io/ai-i18n/api/runtime/functions/t.md` |
+| `useI18n()` | `https://bosens-china.github.io/ai-i18n/api/runtime/framework-api/use-i18n.md` |
 | Static extraction scope, recommended syntax, and AST limits | `https://bosens-china.github.io/ai-i18n/guide/basic/static-analysis.md` |
 | ai-i18n auto imports and generated declarations | `https://bosens-china.github.io/ai-i18n/guide/basic/auto-import.md` |
 | Locale chunking, lazy loading, and UI Loading state | `https://bosens-china.github.io/ai-i18n/guide/basic/locale-loading.md` |

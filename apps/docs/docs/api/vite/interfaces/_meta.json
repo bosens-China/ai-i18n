@@ -1,0 +1,47 @@
+[
+  {
+    "type": "file",
+    "name": "ai-i18n-options",
+    "label": "AiI18nOptions"
+  },
+  {
+    "type": "file",
+    "name": "ai-i18n-persist-options",
+    "label": "AiI18nPersistOptions"
+  },
+  {
+    "type": "file",
+    "name": "ai-i18n-locale-loading-options",
+    "label": "AiI18nLocaleLoadingOptions"
+  },
+  {
+    "type": "file",
+    "name": "ai-i18n-cache-options",
+    "label": "AiI18nCacheOptions"
+  },
+  {
+    "type": "file",
+    "name": "html-extractor-options",
+    "label": "HtmlExtractorOptions"
+  },
+  {
+    "type": "file",
+    "name": "lang-option",
+    "label": "LangOption"
+  },
+  {
+    "type": "file",
+    "name": "translation-options",
+    "label": "TranslationOptions"
+  },
+  {
+    "type": "file",
+    "name": "translation-message",
+    "label": "TranslationMessage"
+  },
+  {
+    "type": "file",
+    "name": "translation-batch",
+    "label": "TranslationBatch"
+  }
+]

@@ -100,4 +100,5 @@ async function switchToFrench() {
   `setLang()` 调用为准。
 - 缺失或值为 `null` 的译文始终回退到 source 文案。
 
-完整字段类型与边界见 [Vite 插件配置](/api/vite#按语言加载)。
+完整字段类型与边界见
+[`AiI18nLocaleLoadingOptions`](/api/vite/interfaces/ai-i18n-locale-loading-options)。

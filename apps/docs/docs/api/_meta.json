@@ -1,16 +1,26 @@
 [
   {
     "type": "file",
+    "name": "index",
+    "label": "API 总览"
+  },
+  {
+    "type": "dir",
     "name": "vite",
-    "label": "Vite 插件配置"
+    "label": "@ai-i18n/vite"
   },
   {
-    "type": "file",
+    "type": "dir",
+    "name": "vitest",
+    "label": "@ai-i18n/vite/vitest"
+  },
+  {
+    "type": "dir",
     "name": "runtime",
-    "label": "Runtime API"
+    "label": "virtual:ai-i18n"
   },
   {
-    "type": "file",
+    "type": "dir",
     "name": "openai",
     "label": "@ai-i18n/openai"
   }

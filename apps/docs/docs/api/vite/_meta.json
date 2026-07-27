@@ -1,0 +1,17 @@
+[
+  {
+    "type": "dir",
+    "name": "functions",
+    "label": "函数"
+  },
+  {
+    "type": "dir",
+    "name": "interfaces",
+    "label": "接口"
+  },
+  {
+    "type": "dir",
+    "name": "type-aliases",
+    "label": "类型别名"
+  }
+]

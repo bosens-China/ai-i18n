@@ -92,8 +92,8 @@ exceeds 1000 source/options combinations by default; configure its
 `ai-i18n/static-candidate-limit` rule rather than adding a Vite option.
 
 The complete field list, nested types (`LangOption`, `HtmlExtractorOptions`, etc.), and defaults
-table live at `api/vite.md` in [SKILL.md](../SKILL.md)'s doc table; fetch it before assuming an
-undocumented field's shape.
+table live at `api/vite/interfaces/ai-i18n-options.md` in [SKILL.md](../SKILL.md)'s doc table; fetch
+it before assuming an undocumented field's shape.
 
 `defineI18nMessages<T>(value)` is independent of `autoImport`: it is an import-free compiler macro
 declared in every generated `ai-i18n.d.ts`. Vite erases it to `(value)` in browser and SSR
@@ -127,10 +127,12 @@ aiI18n({
 
 Keep secrets in Vite's Node process. `batchLength` measures serialized request length, not tokens.
 `debounceMs` (default `100`, merges consecutive Dev misses) and `strict` (default `false`, throws on
-`flush` when a translation failed or is still `null`) are also available; see `api/vite.md` for the
-full Provider option table. The OpenAI adapter sends structured `{ source, comment? }` rows to the
+`flush` when a translation failed or is still `null`) are also available; see
+`api/vite/type-aliases/ai-i18n-provider-options.md` for the full Provider option table. The OpenAI
+adapter sends structured `{ source, comment? }` rows to the
 model; custom system prompts should describe translation requirements without redefining that input
-or the appended output schema.
+or the appended output schema. For a custom adapter, import the public `Translator` type from
+`@ai-i18n/vite`; do not add an internal package as a direct application dependency.
 
 ## Optional locale loading
 
@@ -152,7 +154,7 @@ lower-priority browser hint, and unlisted targets load on their first `setLang()
 
 A non-source `defaultLang` is automatically preloaded and uses the source fallback until it loads; a
 failed `setLang()` keeps the current language. Concurrent-load Promise sharing and other edge cases:
-see `api/vite.md`'s loading section.
+see `api/vite/interfaces/ai-i18n-locale-loading-options.md`.
 
 ## Optional cache capacity
 
@@ -173,7 +175,8 @@ warns and keeps it instead of dropping it. `maxBytes` measures the UTF-8 bytes o
 `translations.json` serialization, not just the pruned messages — size it against the whole file.
 `cleanup.orphanMessages: true` deletes all inactive messages first, ahead of these limits;
 `cleanup.missingSourceFiles` separately decides whether missing source records still protect their
-messages. The exact pruning order (a rare debugging detail): see `api/vite.md`'s cache section.
+messages. The exact pruning order (a rare debugging detail): see
+`api/vite/interfaces/ai-i18n-cache-options.md`.
 
 ## Generation behavior
 
@@ -203,7 +206,7 @@ plugin, extractor, or schema changes.
 
 SSR extraction, registration, and runtime injection are skipped with a warning, but compiler-macro
 erasure still runs. The per-build reuse table (what exactly is re-parsed vs. reused) lives in
-`api/vite.md`'s Build Watch section.
+the user guide's `guide/basic/directory.md#dev-与-build` section.
 
 For Vitest, use `aiI18nVitest(options)` from `@ai-i18n/vite/vitest`. Do not run the production plugin
 or maintain a `virtual:ai-i18n` alias just for unit tests; see `guide/quality/testing.md` for the

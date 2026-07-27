@@ -1,0 +1,22 @@
+[
+  {
+    "type": "file",
+    "name": "overview",
+    "label": "Runtime 概览"
+  },
+  {
+    "type": "dir",
+    "name": "functions",
+    "label": "函数"
+  },
+  {
+    "type": "dir",
+    "name": "framework-api",
+    "label": "框架 API"
+  },
+  {
+    "type": "dir",
+    "name": "macros",
+    "label": "编译宏"
+  }
+]

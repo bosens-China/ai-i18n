@@ -205,16 +205,16 @@ aiI18n({
 
 ## 自定义 Translator
 
-如果不使用 OpenAI-compatible 接口，可以实现 `@ai-i18n/core` 的 `Translator`。输入只有
+如果不使用 OpenAI-compatible 接口，可以实现 `@ai-i18n/vite` 导出的 `Translator`。输入只有
 本批共同缺失的 `locales` 与 `messages[{ source, comment? }]`；返回数组与 messages 下标
 对应，每行必须且只能包含这些 locale。
 
 下面是使用 Google 官方 `@google/genai` SDK 接入 Gemini 的最小示例：
 
-<PackageManagerTabs command="add @ai-i18n/core@alpha @google/genai" />
+<PackageManagerTabs command="add @google/genai" />
 
 ```ts
-import type { Translator } from '@ai-i18n/core';
+import type { Translator } from '@ai-i18n/vite';
 import { GoogleGenAI } from '@google/genai';
 
 const ai = new GoogleGenAI({

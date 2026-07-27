@@ -1,0 +1,22 @@
+[
+  {
+    "type": "file",
+    "name": "ai-i18n-provider-options",
+    "label": "AiI18nProviderOptions"
+  },
+  {
+    "type": "file",
+    "name": "ai-i18n-framework",
+    "label": "AiI18nFramework"
+  },
+  {
+    "type": "file",
+    "name": "translator",
+    "label": "Translator"
+  },
+  {
+    "type": "file",
+    "name": "translation-result",
+    "label": "TranslationResult"
+  }
+]
