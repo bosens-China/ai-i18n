@@ -19,4 +19,12 @@ export type {
 } from './options.js';
 export type { AiI18nFramework } from './framework.js';
 export type { HtmlExtractorOptions } from './html.js';
-export type { I18nRuntime } from '@ai-i18n/core';
+export type {
+  I18nRuntime,
+  LangOption,
+  TranslationBatch,
+  TranslationMessage,
+  TranslationOptions,
+  TranslationResult,
+  Translator,
+} from '@ai-i18n/core';
