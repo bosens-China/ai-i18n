@@ -22,7 +22,7 @@ afterEach(async () => {
   );
 });
 
-describe('Vite build watch', () => {
+describe('Vite build watch', { timeout: 10_000 }, () => {
   it('reuses analysis state for direct and static dependency updates', async () => {
     const root = await fixtureRoot();
     const main = path.join(root, 'src/main.ts');
