@@ -1,5 +1,16 @@
 # @ai-i18n/mcp
 
+## [1.0.0-alpha.6](https://github.com/bosens-China/ai-i18n/compare/mcp-v1.0.0-alpha.5...mcp-v1.0.0-alpha.6) (2026-07-27)
+
+
+### ⚠ BREAKING CHANGES
+
+* **mcp:** MCP tools now use six focused CRUD operations; ai_i18n_list_translation_files is replaced by ai_i18n_list_translations and mode/review_scope are removed.
+
+### Features
+
+* **mcp:** 重构翻译与人工审校工具 ([dd19f37](https://github.com/bosens-China/ai-i18n/commit/dd19f3730f7ff63af68be79355d04a50f4f6c112))
+
 ## [1.0.0-alpha.5](https://github.com/bosens-China/ai-i18n/compare/mcp-v1.0.0-alpha.4...mcp-v1.0.0-alpha.5) (2026-07-26)
 
 

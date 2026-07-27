@@ -1,5 +1,17 @@
 # @ai-i18n/vite
 
+## [1.0.0-alpha.6](https://github.com/bosens-China/ai-i18n/compare/vite-v1.0.0-alpha.5...vite-v1.0.0-alpha.6) (2026-07-27)
+
+
+### Features
+
+* **vite:** 导出公开 Translator 契约类型 ([64e6c1a](https://github.com/bosens-China/ai-i18n/commit/64e6c1aee317b8254e6cc8626b4e6b029479c0dc))
+
+
+### Bug Fixes
+
+* **vite:** 改为显式开启自动导入 ([afd6044](https://github.com/bosens-China/ai-i18n/commit/afd60447690afece9ca1f9cc43e19c09832f2e4b))
+
 ## [1.0.0-alpha.5](https://github.com/bosens-China/ai-i18n/compare/vite-v1.0.0-alpha.4...vite-v1.0.0-alpha.5) (2026-07-26)
 
 

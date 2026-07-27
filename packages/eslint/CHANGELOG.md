@@ -1,5 +1,12 @@
 # @ai-i18n/eslint-plugin
 
+## [1.0.0-alpha.5](https://github.com/bosens-China/ai-i18n/compare/eslint-plugin-v1.0.0-alpha.4...eslint-plugin-v1.0.0-alpha.5) (2026-07-27)
+
+
+### Bug Fixes
+
+* **vite:** 改为显式开启自动导入 ([afd6044](https://github.com/bosens-China/ai-i18n/commit/afd60447690afece9ca1f9cc43e19c09832f2e4b))
+
 ## [1.0.0-alpha.4](https://github.com/bosens-China/ai-i18n/compare/eslint-plugin-v1.0.0-alpha.3...eslint-plugin-v1.0.0-alpha.4) (2026-07-26)
 
 
