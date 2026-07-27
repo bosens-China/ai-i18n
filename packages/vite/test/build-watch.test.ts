@@ -90,19 +90,17 @@ console.log(t(LABEL));`;
       addFile.mockClear();
       const extractedPath = path.join(root, 'i18n/extracted/src_main.ts.json');
       const memoryPath = path.join(root, 'i18n/translations.json');
-      const memory = await readJson<CacheFile>(memoryPath);
-      memory.messages['首页']!.translations['en-US'] = 'Home';
-      await rebuild(watcher, () => writeJson(memoryPath, memory));
-
-      expect(addFile).not.toHaveBeenCalled();
-      expect(lastRegistration(observations, 'src/main.ts')).toContain(
-        '"en-US":{"首页":"Home"}',
-      );
-
       const localePath = path.join(root, 'i18n/locales/en-US.json');
       const locale = await readJson<LocaleFile>(localePath);
       locale.messages['首页'] = 'Start';
       await rebuild(watcher, () => writeJson(localePath, locale));
+      expect(await readJson<LocaleFile>(localePath)).toMatchObject({
+        messages: { 首页: null },
+      });
+
+      const memory = await readJson<CacheFile>(memoryPath);
+      memory.messages['首页']!.translations['en-US'] = 'Home';
+      await rebuild(watcher, () => writeJson(memoryPath, memory));
 
       expect(addFile).not.toHaveBeenCalled();
       expect(lastRegistration(observations, 'src/main.ts')).toContain(
