@@ -1,5 +1,31 @@
 # @ai-i18n/openai
 
+## [1.0.0-alpha.4](https://github.com/bosens-China/ai-i18n/compare/openai-v1.0.0-alpha.3...openai-v1.0.0-alpha.4) (2026-07-26)
+
+
+### ⚠ BREAKING CHANGES
+
+* 统一消息标识与 Translator 契约
+
+### Features
+
+* **openai:** 按语言集合合并翻译请求 ([8521bcb](https://github.com/bosens-China/ai-i18n/commit/8521bcbd87b604f076278a6ffa50e8bfb91fbaee))
+* 统一消息标识与 Translator 契约 ([8468555](https://github.com/bosens-China/ai-i18n/commit/8468555daa4f0ed2acd08a7ec0df65d20bb8266d))
+
+
+### Bug Fixes
+
+* **openai:** 兼容仅支持 JSON mode 的服务 ([d4537d7](https://github.com/bosens-China/ai-i18n/commit/d4537d72a8005e4a18b05af2b04285820b281000))
+* **openai:** 分离翻译正文与注释 ([453ecc6](https://github.com/bosens-China/ai-i18n/commit/453ecc66842e176bdf2408a20dc27b57da078426))
+* 避免模板占位符字面量冲突 ([bea949f](https://github.com/bosens-China/ai-i18n/commit/bea949fca30cef02c5058641c708c33e23216411))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @ai-i18n/core bumped to 1.0.0-alpha.4
+
 ## [1.0.0-alpha.3](https://github.com/bosens-China/ai-i18n/compare/openai-v1.0.0-alpha.2...openai-v1.0.0-alpha.3) (2026-07-25)
 
 

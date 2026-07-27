@@ -1,5 +1,38 @@
 # @ai-i18n/vite
 
+## [1.0.0-alpha.5](https://github.com/bosens-China/ai-i18n/compare/vite-v1.0.0-alpha.4...vite-v1.0.0-alpha.5) (2026-07-26)
+
+
+### ⚠ BREAKING CHANGES
+
+* 统一消息标识与 Translator 契约
+* 精简 Runtime、Vite 与 MCP 接口
+
+### Features
+
+* **openai:** 按语言集合合并翻译请求 ([8521bcb](https://github.com/bosens-China/ai-i18n/commit/8521bcbd87b604f076278a6ffa50e8bfb91fbaee))
+* 支持并发安全的翻译内存与人工审校 ([8dfcc94](https://github.com/bosens-China/ai-i18n/commit/8dfcc94b4f2986b8b9c71c7596726e5f3d2a1430))
+* 支持开发者诊断中英文切换 ([3c6fb8f](https://github.com/bosens-China/ai-i18n/commit/3c6fb8f2c2181417774a787abeb035a89110c456))
+* 支持静态消息集合宏与推荐语法检查 ([5ddfc49](https://github.com/bosens-China/ai-i18n/commit/5ddfc49968dffc5c93b0c78035f1b33b9841b242))
+* 收紧翻译协议与消息参数契约 ([b5e51b8](https://github.com/bosens-China/ai-i18n/commit/b5e51b87b98623035acf852cb28a2ce6852e2644))
+* 精简 Runtime、Vite 与 MCP 接口 ([d724b0a](https://github.com/bosens-China/ai-i18n/commit/d724b0a4066dfb82eb81398f2623f423039f26db))
+* 统一消息标识与 Translator 契约 ([8468555](https://github.com/bosens-China/ai-i18n/commit/8468555daa4f0ed2acd08a7ec0df65d20bb8266d))
+
+
+### Bug Fixes
+
+* **vite:** 避免写入过期的 Provider 结果 ([c2316f8](https://github.com/bosens-China/ai-i18n/commit/c2316f89b01de12b40ed7291d4fdb8eb92aeb39f))
+* 统一跨平台稳定排序 ([af47704](https://github.com/bosens-China/ai-i18n/commit/af4770412012f8e15d652047c5b1938656d59013))
+* 避免模板占位符字面量冲突 ([bea949f](https://github.com/bosens-China/ai-i18n/commit/bea949fca30cef02c5058641c708c33e23216411))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @ai-i18n/analyzer bumped to 1.0.0-alpha.4
+    * @ai-i18n/core bumped to 1.0.0-alpha.4
+
 ## [1.0.0-alpha.4](https://github.com/bosens-China/ai-i18n/compare/vite-v1.0.0-alpha.3...vite-v1.0.0-alpha.4) (2026-07-25)
 
 
