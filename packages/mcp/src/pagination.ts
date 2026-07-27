@@ -1,3 +1,5 @@
+import { fail } from './errors.js';
+
 const CURSOR_VERSION = 1;
 
 export interface Page<T> {
@@ -61,8 +63,6 @@ function decodeCursor(cursor: string): string {
     }
     return value.key;
   } catch {
-    throw new Error(
-      '[ai-i18n/mcp] invalid cursor; restart pagination without cursor',
-    );
+    fail('INVALID_CURSOR', { retry_without_cursor: true });
   }
 }

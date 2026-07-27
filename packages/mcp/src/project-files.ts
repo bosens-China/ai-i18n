@@ -4,14 +4,12 @@ import {
   parseExtractedFile,
   parseTranslationMemoryFile,
   parseTranslationOverridesFile,
-  resolveTranslationOverride,
   type CacheMessage,
   type ExtractedFile,
   type ExtractedMessage,
   type TranslationOverridesFile,
-  type TranslationValue,
 } from '@ai-i18n/core';
-import type { TranslationFileItem } from './project.js';
+import { fail } from './errors.js';
 
 export interface LoadedProject {
   directory: string;
@@ -23,22 +21,20 @@ export interface LoadedProject {
 
 export async function resolveI18nDirectory(input: string): Promise<string> {
   if (!path.isAbsolute(input)) {
-    throw new Error('[ai-i18n/mcp] i18n_directory must be an absolute path');
+    fail('I18N_DIRECTORY_NOT_ABSOLUTE', { i18n_directory: input });
   }
   let directory: string;
   try {
     directory = await fs.realpath(input);
   } catch (error) {
     if (isNotFound(error)) {
-      throw new Error(
-        '[ai-i18n/mcp] i18n directory not found; read the Vite config and pass its final absolute path',
-      );
+      fail('I18N_DIRECTORY_NOT_FOUND', { i18n_directory: input });
     }
     throw error;
   }
   const stat = await fs.stat(directory);
   if (!stat.isDirectory()) {
-    throw new Error('[ai-i18n/mcp] i18n_directory is not a directory');
+    fail('I18N_DIRECTORY_NOT_DIRECTORY', { i18n_directory: input });
   }
   return directory;
 }
@@ -49,16 +45,17 @@ export async function readJsonRequired(file: string): Promise<unknown> {
     content = await fs.readFile(file, 'utf8');
   } catch (error) {
     if (isNotFound(error)) {
-      throw new Error(
-        `[ai-i18n/mcp] required ai-i18n file is missing: ${path.basename(file)}`,
-      );
+      fail('REQUIRED_PROTOCOL_FILE_MISSING', {
+        file: path.basename(file),
+        next_action: 'RUN_VITE_DEV_OR_BUILD',
+      });
     }
     throw error;
   }
   try {
     return JSON.parse(content) as unknown;
   } catch {
-    throw new Error(`[ai-i18n/mcp] invalid JSON file: ${path.basename(file)}`);
+    fail('INVALID_PROTOCOL_JSON', { file: path.basename(file) });
   }
 }
 
@@ -82,16 +79,17 @@ async function requireDirectory(directory: string): Promise<void> {
     stat = await fs.stat(directory);
   } catch (error) {
     if (isNotFound(error)) {
-      throw new Error(
-        `[ai-i18n/mcp] 缺少必需的 ai-i18n 目录 / required ai-i18n directory is missing: ${path.basename(directory)}`,
-      );
+      fail('REQUIRED_PROTOCOL_DIRECTORY_MISSING', {
+        directory: path.basename(directory),
+        next_action: 'RUN_VITE_DEV_OR_BUILD',
+      });
     }
     throw error;
   }
   if (!stat.isDirectory()) {
-    throw new Error(
-      `[ai-i18n/mcp] 必需的 ai-i18n 路径不是目录 / required ai-i18n path is not a directory: ${path.basename(directory)}`,
-    );
+    fail('PROTOCOL_PATH_NOT_DIRECTORY', {
+      directory: path.basename(directory),
+    });
   }
 }
 
@@ -101,35 +99,35 @@ export async function loadProject(
   const directory = await resolveI18nDirectory(i18nDirectory);
   const extractedDirectory = path.join(directory, 'extracted');
   const [memory, overrides] = await Promise.all([
-    readJsonRequired(path.join(directory, 'translations.json')).then(
+    readProtocolFile(
+      path.join(directory, 'translations.json'),
       parseTranslationMemoryFile,
     ),
-    readJsonRequired(path.join(directory, 'overrides.json')).then(
+    readProtocolFile(
+      path.join(directory, 'overrides.json'),
       parseTranslationOverridesFile,
     ),
     requireDirectory(extractedDirectory),
   ]);
   const extractedPaths = await listJsonFiles(extractedDirectory);
   const extracted = await Promise.all(
-    extractedPaths.map(async (file) =>
-      parseExtractedFile(await readJsonRequired(file)),
-    ),
+    extractedPaths.map((file) => readProtocolFile(file, parseExtractedFile)),
   );
   const sources = new Set<string>();
   const messageSources = new Map<string, string>();
   for (const item of extracted) {
     if (sources.has(item.source)) {
-      throw new Error(
-        `[ai-i18n/mcp] duplicate extracted source "${item.source}"`,
-      );
+      fail('DUPLICATE_EXTRACTED_SOURCE', { source_file: item.source });
     }
     sources.add(item.source);
     for (const message of item.messages) {
       const previous = messageSources.get(message.id);
       if (previous !== undefined && previous !== message.source) {
-        throw new Error(
-          `[ai-i18n/mcp] message ID "${message.id}" refers to both "${previous}" and "${message.source}"`,
-        );
+        fail('MESSAGE_ID_SOURCE_CONFLICT', {
+          message_id: message.id,
+          first_source: previous,
+          second_source: message.source,
+        });
       }
       messageSources.set(message.id, message.source);
     }
@@ -148,46 +146,28 @@ export async function loadProject(
   };
 }
 
-export function summarizeFile(
-  file: ExtractedFile,
-  project: LoadedProject,
-  locale?: string,
-): TranslationFileItem {
-  const missingByLocale: Record<string, number> = {};
-  for (const extractedMessage of file.messages) {
-    const translations = filterTranslations(
-      effectiveTranslations(project, extractedMessage),
-      locale,
-    );
-    for (const [targetLocale, value] of Object.entries(translations)) {
-      if (value === null)
-        missingByLocale[targetLocale] =
-          (missingByLocale[targetLocale] ?? 0) + 1;
-    }
-  }
-  return {
-    file: file.source,
-    message_count: file.messages.length,
-    missing_count: Object.values(missingByLocale).reduce(
-      (sum, count) => sum + count,
-      0,
-    ),
-    missing_by_locale: missingByLocale,
-  };
-}
-
 export function filterTranslations(
   translations: Record<string, string | null>,
-  locale?: string,
+  locales?: readonly string[],
 ): Record<string, string | null> {
-  return locale
-    ? { [locale]: translations[locale] ?? null }
+  return locales
+    ? Object.fromEntries(
+        locales.map((locale) => [locale, translations[locale] ?? null]),
+      )
     : { ...translations };
 }
 
-export function validateLocale(project: LoadedProject, locale?: string): void {
-  if (locale && project.locales.size > 0 && !project.locales.has(locale)) {
-    throw new Error(`[ai-i18n/mcp] unknown target locale "${locale}"`);
+export function validateLocales(
+  project: LoadedProject,
+  locales?: readonly string[],
+): void {
+  for (const locale of locales ?? []) {
+    if (project.locales.size > 0 && !project.locales.has(locale)) {
+      fail('UNKNOWN_LOCALE', {
+        locale,
+        available_locales: [...project.locales].sort(),
+      });
+    }
   }
 }
 
@@ -196,8 +176,9 @@ export function findExtracted(
   source: string,
 ): ExtractedFile {
   const extracted = project.extracted.find((item) => item.source === source);
-  if (!extracted)
-    throw new Error(`[ai-i18n/mcp] extracted source not found: "${source}"`);
+  if (!extracted) {
+    fail('SOURCE_FILE_NOT_FOUND', { source_file: source });
+  }
   return extracted;
 }
 
@@ -242,37 +223,39 @@ export function collectOccurrences(files: readonly ExtractedFile[]): Map<
   return occurrences;
 }
 
-export function effectiveTranslations(
-  project: LoadedProject,
-  message: Pick<ExtractedMessage, 'id' | 'source' | 'comment'>,
-): Record<string, TranslationValue> {
-  const cached = cacheMessage(project, message).translations;
-  return Object.fromEntries(
-    Object.keys(cached).map((locale) => [
-      locale,
-      resolveTranslationOverride(project.overrides, message, locale) ??
-        cached[locale] ??
-        null,
-    ]),
-  );
-}
-
 export function cacheMessage(
   project: LoadedProject,
   message: Pick<ExtractedMessage, 'id' | 'source' | 'comment'>,
 ): CacheMessage {
   const cached = project.messages[message.id];
   if (!cached) {
-    throw new Error(
-      `[ai-i18n/mcp] message "${message.id}" is missing from translations.json; run Vite Dev/Build and retry`,
-    );
+    fail('MESSAGE_MISSING_FROM_TRANSLATIONS', {
+      message_id: message.id,
+      next_action: 'RUN_VITE_DEV_OR_BUILD',
+    });
   }
   if (cached.source !== message.source || cached.comment !== message.comment) {
-    throw new Error(
-      `[ai-i18n/mcp] message "${message.id}" metadata differs between extracted and translations.json; run Vite Dev/Build and retry`,
-    );
+    fail('MESSAGE_METADATA_MISMATCH', {
+      message_id: message.id,
+      next_action: 'RUN_VITE_DEV_OR_BUILD',
+    });
   }
   return cached;
+}
+
+async function readProtocolFile<T>(
+  file: string,
+  parse: (value: unknown) => T,
+): Promise<T> {
+  const value = await readJsonRequired(file);
+  try {
+    return parse(value);
+  } catch {
+    fail('INVALID_PROTOCOL_FILE', {
+      file: path.basename(file),
+      next_action: 'RUN_VITE_DEV_OR_BUILD',
+    });
+  }
 }
 
 function isNotFound(error: unknown): boolean {

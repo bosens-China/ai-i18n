@@ -2,6 +2,7 @@ import { createRequire } from 'node:module';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 import { z } from 'zod';
+import { errorPayload } from './errors.js';
 import { AiI18nProjectService } from './project.js';
 
 const { version } = createRequire(import.meta.url)('../package.json') as {
@@ -13,29 +14,33 @@ const DirectorySchema = z
   .min(1)
   .max(1_024)
   .describe(
-    'Absolute path to the final ai-i18n output directory. Read the Vite config and resolve aiI18n.directory against the Vite root before calling the tool.',
+    'Absolute final ai-i18n directory resolved from the target Vite root and aiI18n.directory.',
   );
+const SourceFileSchema = z.string().min(1).max(4_096);
+const LocaleSchema = z.string().min(1).max(128);
+const MessageIdSchema = z.string().min(1).max(16_384);
 const CursorSchema = z.string().min(1).max(4_096).optional();
-const LocationSchema = z.object({
-  line: z.number().int(),
-  column: z.number().int(),
+const SourceFilesSchema = z.array(SourceFileSchema).min(1).max(100).optional();
+const LocalesSchema = z.array(LocaleSchema).min(1).max(100).optional();
+const LimitSchema = z.number().int().min(1).max(200).default(50);
+const TranslationTargetSchema = z
+  .object({
+    source_file: SourceFileSchema,
+    message_id: MessageIdSchema,
+    locale: LocaleSchema,
+  })
+  .strict();
+const TranslationUpdateSchema = TranslationTargetSchema.extend({
+  value: z.string().max(100_000),
 });
-const FileItemSchema = z.object({
-  file: z.string(),
-  message_count: z.number().int(),
-  missing_count: z.number().int(),
-  missing_by_locale: z.record(z.string(), z.number().int()),
+const OverrideUpdateSchema = TranslationUpdateSchema.extend({
+  scope: z
+    .enum(['default', 'message'])
+    .describe(
+      'default affects every occurrence of the source; message targets this comment-specific message.',
+    ),
 });
-const TranslationItemSchema = z.object({
-  message_id: z.string(),
-  source: z.string(),
-  comment: z.string().optional(),
-  translations: z.record(z.string(), z.string().nullable()),
-  missing_locales: z.array(z.string()),
-  file: z.string(),
-  occurrence_count: z.number().int(),
-  locations: z.array(LocationSchema).optional(),
-});
+
 export function createAiI18nMcpServer(): McpServer {
   const server = new McpServer({
     name: 'ai-i18n-mcp-server',
@@ -44,97 +49,115 @@ export function createAiI18nMcpServer(): McpServer {
   const project = new AiI18nProjectService();
 
   server.registerTool(
-    'ai_i18n_list_translation_files',
-    {
-      title: 'List ai-i18n files needing translation',
-      description:
-        'List source files with effective null translations. Before calling, read the Vite config and pass the absolute path to the final ai-i18n output directory.',
-      inputSchema: z
-        .object({
-          i18n_directory: DirectorySchema,
-          locale: z.string().min(1).max(128).optional(),
-          cursor: CursorSchema,
-          limit: z.number().int().min(1).max(200).default(50),
-        })
-        .strict(),
-      outputSchema: pageSchema(FileItemSchema),
-      annotations: readAnnotations,
-    },
-    async (input) => {
-      return callTool(() => project.listFiles(input));
-    },
-  );
-
-  server.registerTool(
     'ai_i18n_list_translations',
     {
-      title: 'List ai-i18n translation content',
+      title: 'List translations',
       description:
-        'List effective translation messages from cache plus extracted files. Use file to scope to one source file; missing_only defaults to true. Results use cursor pagination and default to 100 messages.',
+        'Inspect extracted source files and raw translations.json values. Omit source_files on the first call. view defaults to missing and returns writable message_id values; summary returns per-file counts; all returns every message. Follow next_cursor until has_more is false.',
       inputSchema: z
         .object({
           i18n_directory: DirectorySchema,
-          file: z.string().min(1).max(4_096).optional(),
-          locale: z.string().min(1).max(128).optional(),
-          missing_only: z.boolean().default(true),
+          source_files: SourceFilesSchema.describe(
+            'Optional exact source paths copied from a previous result.',
+          ),
+          view: z.enum(['summary', 'missing', 'all']).default('missing'),
+          locales: LocalesSchema,
           cursor: CursorSchema,
-          limit: z.number().int().min(1).max(200).default(100),
+          limit: LimitSchema,
         })
         .strict(),
-      outputSchema: pageSchema(TranslationItemSchema),
       annotations: readAnnotations,
     },
-    async (input) => {
-      return callTool(() => project.listTranslations(input));
-    },
+    async (input) => callTool(() => project.listTranslations(input)),
   );
 
   server.registerTool(
-    'ai_i18n_write_translations',
+    'ai_i18n_set_translations',
     {
-      title: 'Write ai-i18n translations',
+      title: 'Set translation values',
       description:
-        'Atomically write translations for one extracted source file. mode fill writes only AI translation memory and never overwrites an effective human value. mode review writes overrides.json; review_scope defaults to default (all occurrences of the source) and message targets one comment-specific message.',
+        'Atomically update raw translations.json values across source files. Existing non-null values are protected unless overwrite_existing is true. Copy source_file and message_id exactly from the list tool.',
       inputSchema: z
         .object({
           i18n_directory: DirectorySchema,
-          file: z.string().min(1).max(4_096),
-          mode: z.enum(['fill', 'review']).default('fill'),
-          review_scope: z
-            .enum(['default', 'message'])
-            .default('default')
-            .describe(
-              'Human review scope. default affects every occurrence of the source; message requires a message with comment.',
-            ),
-          translations: z
-            .array(
-              z
-                .object({
-                  message_id: z.string().min(1).max(16_384),
-                  locale: z.string().min(1).max(128),
-                  value: z.string().max(100_000),
-                })
-                .strict(),
-            )
-            .min(1)
-            .max(100),
+          overwrite_existing: z.boolean().default(false),
+          updates: z.array(TranslationUpdateSchema).min(1).max(100),
         })
         .strict(),
-      outputSchema: z.object({
-        file: z.string(),
-        applied_count: z.number().int(),
-        unchanged_count: z.number().int(),
-      }),
-      annotations: {
-        readOnlyHint: false,
-        destructiveHint: true,
-        idempotentHint: true,
-        openWorldHint: false,
-      },
+      annotations: writeAnnotations,
     },
-    async (input) => {
-      return callTool(() => project.writeTranslations(input));
+    async (input) => callTool(() => project.setTranslations(input)),
+  );
+
+  server.registerTool(
+    'ai_i18n_clear_translations',
+    {
+      title: 'Clear translation values',
+      description:
+        'Atomically reset selected translations.json values to null. It does not remove messages, locales, extracted files, or overrides.',
+      inputSchema: z
+        .object({
+          i18n_directory: DirectorySchema,
+          targets: z.array(TranslationTargetSchema).min(1).max(100),
+        })
+        .strict(),
+      annotations: writeAnnotations,
     },
+    async (input) => callTool(() => project.clearTranslations(input)),
+  );
+
+  server.registerTool(
+    'ai_i18n_list_overrides',
+    {
+      title: 'List human review overrides',
+      description:
+        'List locale-specific values from overrides.json, including orphaned entries. Copy override_id exactly into the delete tool. Omit source_files to include orphaned entries and follow next_cursor until has_more is false.',
+      inputSchema: z
+        .object({
+          i18n_directory: DirectorySchema,
+          source_files: SourceFilesSchema,
+          locales: LocalesSchema,
+          cursor: CursorSchema,
+          limit: LimitSchema,
+        })
+        .strict(),
+      annotations: readAnnotations,
+    },
+    async (input) => callTool(() => project.listOverrides(input)),
+  );
+
+  server.registerTool(
+    'ai_i18n_set_overrides',
+    {
+      title: 'Set human review overrides',
+      description:
+        'Atomically add or overwrite overrides.json values. default scope affects every occurrence of the same source; message scope requires a comment-specific message. Copy source_file and message_id exactly from the translation list.',
+      inputSchema: z
+        .object({
+          i18n_directory: DirectorySchema,
+          updates: z.array(OverrideUpdateSchema).min(1).max(100),
+        })
+        .strict(),
+      annotations: writeAnnotations,
+    },
+    async (input) => callTool(() => project.setOverrides(input)),
+  );
+
+  server.registerTool(
+    'ai_i18n_delete_overrides',
+    {
+      title: 'Delete human review overrides',
+      description:
+        'Atomically delete locale-specific overrides.json values by exact opaque override_id values returned by ai_i18n_list_overrides.',
+      inputSchema: z
+        .object({
+          i18n_directory: DirectorySchema,
+          override_ids: z.array(z.string().min(1).max(16_384)).min(1).max(100),
+        })
+        .strict(),
+      annotations: writeAnnotations,
+    },
+    async (input) => callTool(() => project.deleteOverrides(input)),
   );
 
   return server;
@@ -147,36 +170,25 @@ const readAnnotations = {
   openWorldHint: false,
 } as const;
 
-function pageSchema<T extends z.ZodType>(item: T) {
-  return z.object({
-    total_count: z.number().int(),
-    count: z.number().int(),
-    items: z.array(item),
-    has_more: z.boolean(),
-    next_cursor: z.string().optional(),
-    truncated_by_size: z.boolean(),
-  });
-}
+const writeAnnotations = {
+  readOnlyHint: false,
+  destructiveHint: true,
+  idempotentHint: true,
+  openWorldHint: false,
+} as const;
 
-async function callTool<T extends object>(
+async function callTool<T>(
   operation: () => Promise<T>,
 ): Promise<CallToolResult> {
   try {
     const result = await operation();
     return {
-      content: [{ type: 'text', text: JSON.stringify(result, null, 2) }],
-      structuredContent: Object.fromEntries(Object.entries(result)),
+      content: [{ type: 'text', text: JSON.stringify(result) }],
     };
   } catch (error) {
     return {
       isError: true,
-      content: [{ type: 'text', text: errorMessage(error) }],
+      content: [{ type: 'text', text: JSON.stringify(errorPayload(error)) }],
     };
   }
-}
-
-function errorMessage(error: unknown): string {
-  return error instanceof Error
-    ? error.message
-    : '[ai-i18n/mcp] unexpected error while processing tool call';
 }

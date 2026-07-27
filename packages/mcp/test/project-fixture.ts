@@ -61,3 +61,77 @@ export async function fixture(): Promise<string> {
   );
   return root;
 }
+
+export interface MemoryDocument {
+  messages: Record<string, { translations: Record<string, string | null> }>;
+}
+
+export async function readFixtureMemory(
+  directory: string,
+): Promise<MemoryDocument> {
+  return JSON.parse(
+    await fs.readFile(path.join(directory, 'translations.json'), 'utf8'),
+  ) as MemoryDocument;
+}
+
+export async function readFixtureOverrides(
+  directory: string,
+): Promise<unknown> {
+  return JSON.parse(
+    await fs.readFile(path.join(directory, 'overrides.json'), 'utf8'),
+  ) as unknown;
+}
+
+export async function addFixtureMessage(
+  directory: string,
+  message: { id: string; source: string; comment?: string },
+): Promise<void> {
+  const extractedPath = path.join(directory, 'extracted/src_home.ts.json');
+  const extracted = JSON.parse(await fs.readFile(extractedPath, 'utf8')) as {
+    messages: Array<Record<string, unknown>>;
+  };
+  extracted.messages.push({
+    ...message,
+    locations: [{ line: extracted.messages.length + 1, column: 0 }],
+  });
+  await fs.writeFile(extractedPath, JSON.stringify(extracted));
+
+  const memoryPath = path.join(directory, 'translations.json');
+  const memory = JSON.parse(await fs.readFile(memoryPath, 'utf8')) as {
+    messages: Record<string, unknown>;
+  };
+  memory.messages[message.id] = {
+    source: message.source,
+    sourceLang: 'zh-CN',
+    ...(message.comment ? { comment: message.comment } : {}),
+    translations: { 'en-US': null, 'ja-JP': null },
+  };
+  await fs.writeFile(memoryPath, JSON.stringify(memory));
+}
+
+export async function addFixtureSourceFile(
+  directory: string,
+  sourceFile: string,
+  message: { id: string; source: string; comment?: string },
+): Promise<void> {
+  await fs.writeFile(
+    path.join(directory, 'extracted/extra.json'),
+    JSON.stringify({
+      version: 1,
+      source: sourceFile,
+      messages: [{ ...message, locations: [{ line: 1, column: 0 }] }],
+    }),
+  );
+
+  const memoryPath = path.join(directory, 'translations.json');
+  const memory = JSON.parse(await fs.readFile(memoryPath, 'utf8')) as {
+    messages: Record<string, unknown>;
+  };
+  memory.messages[message.id] = {
+    source: message.source,
+    sourceLang: 'zh-CN',
+    ...(message.comment ? { comment: message.comment } : {}),
+    translations: { 'en-US': null, 'ja-JP': null },
+  };
+  await fs.writeFile(memoryPath, JSON.stringify(memory));
+}

@@ -1,369 +1,392 @@
-import fs from 'node:fs/promises';
 import path from 'node:path';
 import { afterEach, expect, test } from 'vitest';
 import { AiI18nProjectService } from '../src/project';
-import { cleanupFixtures, fixture } from './project-fixture';
+import {
+  addFixtureMessage,
+  addFixtureSourceFile,
+  cleanupFixtures,
+  fixture,
+  readFixtureMemory,
+  readFixtureOverrides,
+} from './project-fixture';
 
 afterEach(cleanupFixtures);
 
-test('fills null values atomically and refuses conflicting overwrites', async () => {
+test('fills null translations atomically and requires explicit overwrite', async () => {
   const root = await fixture();
   const directory = path.join(root, 'apps/web/i18n');
   const service = new AiI18nProjectService();
-  const extractedPath = path.join(
-    root,
-    'apps/web/i18n/extracted/src_home.ts.json',
-  );
 
   await expect(
-    service.writeTranslations({
+    service.setTranslations({
       i18n_directory: directory,
-      file: 'src/home.ts',
-      translations: [
-        { message_id: '保存', locale: 'en-US', value: 'Save' },
-        { message_id: '退出', locale: 'en-US', value: 'Leave' },
+      updates: [
+        {
+          source_file: 'src/home.ts',
+          message_id: '保存',
+          locale: 'en-US',
+          value: 'Save',
+        },
+        {
+          source_file: 'src/home.ts',
+          message_id: '退出',
+          locale: 'en-US',
+          value: 'Leave',
+        },
       ],
     }),
-  ).rejects.toThrow('refusing to overwrite');
-  const unchanged = JSON.parse(await fs.readFile(extractedPath, 'utf8')) as {
-    messages: Array<Record<string, unknown>>;
-  };
-  expect(unchanged.messages[0]).not.toHaveProperty('translations');
+  ).rejects.toMatchObject({
+    code: 'TRANSLATION_CONFLICT',
+    details: { conflict_count: 1, retry: { overwrite_existing: true } },
+  });
+  expect(
+    (await readFixtureMemory(directory)).messages['保存']?.translations[
+      'en-US'
+    ],
+  ).toBeNull();
 
+  await addFixtureSourceFile(directory, 'src/settings.ts', {
+    id: '设置',
+    source: '设置',
+  });
   await expect(
-    service.writeTranslations({
+    service.setTranslations({
       i18n_directory: directory,
-      file: 'src/home.ts',
-      translations: [
-        { message_id: '保存', locale: 'en-US', value: 'Save' },
-        { message_id: '退出', locale: 'ja-JP', value: '' },
+      updates: [
+        {
+          source_file: 'src/home.ts',
+          message_id: '保存',
+          locale: 'en-US',
+          value: 'Save',
+        },
+        {
+          source_file: 'src/home.ts',
+          message_id: '退出',
+          locale: 'ja-JP',
+          value: '',
+        },
+        {
+          source_file: 'src/settings.ts',
+          message_id: '设置',
+          locale: 'en-US',
+          value: 'Settings',
+        },
       ],
     }),
   ).resolves.toEqual({
-    file: 'src/home.ts',
-    applied_count: 2,
+    added_count: 3,
+    overwritten_count: 0,
     unchanged_count: 0,
+    affected_file_count: 2,
   });
 
-  const memory = JSON.parse(
-    await fs.readFile(path.join(directory, 'translations.json'), 'utf8'),
-  ) as {
-    revision: number;
-    messages: Record<string, { translations: Record<string, string | null> }>;
-  };
-  expect(memory.revision).toBe(1);
-  expect(memory.messages['保存']?.translations['en-US']).toBe('Save');
-  expect(memory.messages['退出']?.translations['ja-JP']).toBe('');
-  const extracted = JSON.parse(await fs.readFile(extractedPath, 'utf8')) as {
-    messages: Array<Record<string, unknown>>;
-  };
-  expect(extracted.messages[0]).not.toHaveProperty('translations');
+  await expect(
+    service.setTranslations({
+      i18n_directory: directory,
+      overwrite_existing: true,
+      updates: [
+        {
+          source_file: 'src/home.ts',
+          message_id: '保存',
+          locale: 'en-US',
+          value: 'Store',
+        },
+      ],
+    }),
+  ).resolves.toMatchObject({
+    added_count: 0,
+    overwritten_count: 1,
+  });
+  expect(
+    (await readFixtureMemory(directory)).messages['保存']?.translations[
+      'en-US'
+    ],
+  ).toBe('Store');
+});
+
+test('clears translation values back to null without deleting fields', async () => {
+  const root = await fixture();
+  const directory = path.join(root, 'apps/web/i18n');
+  const service = new AiI18nProjectService();
 
   await expect(
-    service.writeTranslations({
+    service.clearTranslations({
       i18n_directory: directory,
-      file: 'src/home.ts',
-      translations: [
-        { message_id: '保存', locale: 'en-US', value: 'Save' },
-        { message_id: '退出', locale: 'ja-JP', value: '' },
+      targets: [
+        {
+          source_file: 'src/home.ts',
+          message_id: '退出',
+          locale: 'en-US',
+        },
+        {
+          source_file: 'src/home.ts',
+          message_id: '保存',
+          locale: 'en-US',
+        },
       ],
     }),
   ).resolves.toEqual({
-    file: 'src/home.ts',
-    applied_count: 0,
-    unchanged_count: 2,
+    cleared_count: 1,
+    unchanged_count: 1,
+    affected_file_count: 1,
+  });
+  const memory = await readFixtureMemory(directory);
+  expect(memory.messages['退出']?.translations).toHaveProperty('en-US', null);
+  expect(memory.messages['保存']?.translations).toHaveProperty('en-US', null);
+});
+
+test('sets and overwrites human reviews without changing translation memory', async () => {
+  const root = await fixture();
+  const directory = path.join(root, 'apps/web/i18n');
+  await addFixtureMessage(directory, {
+    id: '保存#toolbar',
+    source: '保存',
+    comment: 'toolbar',
+  });
+  const service = new AiI18nProjectService();
+
+  await expect(
+    service.setOverrides({
+      i18n_directory: directory,
+      updates: [
+        {
+          source_file: 'src/home.ts',
+          message_id: '保存',
+          locale: 'en-US',
+          value: 'Keep',
+          scope: 'default',
+        },
+        {
+          source_file: 'src/home.ts',
+          message_id: '保存#toolbar',
+          locale: 'ja-JP',
+          value: '保管',
+          scope: 'message',
+        },
+      ],
+    }),
+  ).resolves.toEqual({
+    added_count: 2,
+    overwritten_count: 0,
+    unchanged_count: 0,
+    affected_file_count: 1,
   });
 
   await expect(
-    service.writeTranslations({
+    service.setOverrides({
       i18n_directory: directory,
-      file: 'src/home.ts',
-      translations: [{ message_id: '保存', locale: 'ja-JP', value: 'セーブ' }],
-    }),
-  ).rejects.toThrow('refusing to overwrite');
-  await expect(
-    service.writeTranslations({
-      i18n_directory: directory,
-      file: 'src/home.ts',
-      translations: [
-        { message_id: '保存', locale: 'fr-FR', value: 'Sauvegarder' },
+      updates: [
+        {
+          source_file: 'src/home.ts',
+          message_id: '保存',
+          locale: 'en-US',
+          value: 'Retain',
+          scope: 'default',
+        },
       ],
     }),
-  ).rejects.toThrow('unknown locale "fr-FR"');
+  ).resolves.toMatchObject({
+    added_count: 0,
+    overwritten_count: 1,
+  });
+
+  expect(
+    (await readFixtureMemory(directory)).messages['保存']?.translations[
+      'en-US'
+    ],
+  ).toBeNull();
+  expect(await readFixtureOverrides(directory)).toMatchObject({
+    messages: {
+      保存: {
+        default: { 'en-US': 'Retain' },
+        byId: { '保存#toolbar': { 'ja-JP': '保管' } },
+      },
+    },
+  });
 });
 
-test('reports a missing message id and points to the list tool', async () => {
-  const root = await fixture();
-  const directory = path.join(root, 'apps/web/i18n');
-
-  await expect(
-    new AiI18nProjectService().writeTranslations({
-      i18n_directory: directory,
-      file: 'src/home.ts',
-      translations: [
-        { message_id: '不存在', locale: 'en-US', value: 'Missing' },
-      ],
-    }),
-  ).rejects.toThrowError(
-    new Error(
-      '[ai-i18n/mcp] message "不存在" does not exist in "src/home.ts"; call ai_i18n_list_translations for this file and use the returned message_id',
-    ),
-  );
-});
-
-test('writes human review to overrides without replacing AI memory', async () => {
+test('deletes exact listed override values and cleans empty containers', async () => {
   const root = await fixture();
   const directory = path.join(root, 'apps/web/i18n');
   const service = new AiI18nProjectService();
-
-  await service.writeTranslations({
+  await service.setOverrides({
     i18n_directory: directory,
-    file: 'src/home.ts',
-    translations: [{ message_id: '保存', locale: 'en-US', value: 'Save' }],
-  });
-  await expect(
-    service.writeTranslations({
-      i18n_directory: directory,
-      file: 'src/home.ts',
-      translations: [{ message_id: '保存', locale: 'en-US', value: 'Keep' }],
-    }),
-  ).rejects.toThrow('refusing to overwrite');
-  await expect(
-    service.writeTranslations({
-      i18n_directory: directory,
-      file: 'src/home.ts',
-      mode: 'review',
-      translations: [{ message_id: '保存', locale: 'en-US', value: 'Keep' }],
-    }),
-  ).resolves.toMatchObject({ applied_count: 1 });
-
-  const memory = JSON.parse(
-    await fs.readFile(path.join(directory, 'translations.json'), 'utf8'),
-  );
-  expect(memory.messages['保存'].translations['en-US']).toBe('Save');
-  const overrides = JSON.parse(
-    await fs.readFile(path.join(directory, 'overrides.json'), 'utf8'),
-  );
-  expect(overrides.messages['保存'].default['en-US']).toBe('Keep');
-});
-
-test('resolves default and comment-specific reviews before AI memory', async () => {
-  const root = await fixture();
-  const directory = path.join(root, 'apps/web/i18n');
-  const extractedPath = path.join(directory, 'extracted/src_home.ts.json');
-  const extracted = JSON.parse(await fs.readFile(extractedPath, 'utf8')) as {
-    messages: Array<Record<string, unknown>>;
-  };
-  extracted.messages.push({
-    id: '保存#工具栏按钮',
-    source: '保存',
-    comment: '工具栏按钮',
-    locations: [{ line: 3, column: 0 }],
-  });
-  await fs.writeFile(extractedPath, JSON.stringify(extracted));
-  const memoryPath = path.join(directory, 'translations.json');
-  const memory = JSON.parse(await fs.readFile(memoryPath, 'utf8'));
-  memory.messages['保存#工具栏按钮'] = {
-    source: '保存',
-    sourceLang: 'zh-CN',
-    comment: '工具栏按钮',
-    translations: { 'en-US': null, 'ja-JP': null },
-  };
-  await fs.writeFile(memoryPath, JSON.stringify(memory));
-  const service = new AiI18nProjectService();
-
-  await service.writeTranslations({
-    i18n_directory: directory,
-    file: 'src/home.ts',
-    translations: [
+    updates: [
       {
-        message_id: '保存#工具栏按钮',
+        source_file: 'src/home.ts',
+        message_id: '保存',
         locale: 'en-US',
-        value: 'Save action',
+        value: 'Keep',
+        scope: 'default',
       },
     ],
   });
-  await service.writeTranslations({
+  const listed = await service.listOverrides({
     i18n_directory: directory,
-    file: 'src/home.ts',
-    mode: 'review',
-    translations: [{ message_id: '保存', locale: 'en-US', value: 'Keep' }],
+    limit: 50,
   });
-  await service.writeTranslations({
-    i18n_directory: directory,
-    file: 'src/home.ts',
-    mode: 'review',
-    review_scope: 'message',
-    translations: [
-      { message_id: '保存#工具栏按钮', locale: 'en-US', value: '' },
-    ],
-  });
-
-  const listed = await service.listTranslations({
-    i18n_directory: directory,
-    file: 'src/home.ts',
-    missing_only: false,
-    limit: 100,
-  });
-  expect(
-    listed.items.find((message) => message.message_id === '保存')?.translations[
-      'en-US'
-    ],
-  ).toBe('Keep');
-  const scoped = listed.items.find(
-    (message) => message.message_id === '保存#工具栏按钮',
-  );
-  expect(scoped).toMatchObject({
-    source: '保存',
-    translations: { 'en-US': '' },
-  });
-  expect(scoped?.missing_locales).not.toContain('en-US');
+  const overrideId = listed.items[0]!.override_id;
 
   await expect(
-    service.writeTranslations({
+    service.deleteOverrides({
       i18n_directory: directory,
-      file: 'src/home.ts',
-      translations: [
-        { message_id: '保存#工具栏按钮', locale: 'en-US', value: 'Save' },
-      ],
+      override_ids: [overrideId],
     }),
-  ).rejects.toThrow('refusing to overwrite');
-  await expect(
-    service.writeTranslations({
-      i18n_directory: directory,
-      file: 'src/home.ts',
-      mode: 'review',
-      review_scope: 'message',
-      translations: [{ message_id: '保存', locale: 'en-US', value: 'Save' }],
-    }),
-  ).rejects.toThrow('requires a message with comment');
-
-  const overrides = JSON.parse(
-    await fs.readFile(path.join(directory, 'overrides.json'), 'utf8'),
-  );
-  expect(overrides.messages['保存']).toMatchObject({
-    default: { 'en-US': 'Keep' },
-    byId: { '保存#工具栏按钮': { 'en-US': '' } },
+  ).resolves.toEqual({ deleted_count: 1, unchanged_count: 0 });
+  expect(await readFixtureOverrides(directory)).toEqual({
+    version: 1,
+    messages: {},
   });
-  expect(
-    JSON.parse(await fs.readFile(memoryPath, 'utf8')).messages[
-      '保存#工具栏按钮'
-    ].translations['en-US'],
-  ).toBe('Save action');
+  await expect(
+    service.deleteOverrides({
+      i18n_directory: directory,
+      override_ids: [overrideId],
+    }),
+  ).resolves.toEqual({ deleted_count: 0, unchanged_count: 1 });
 });
 
-test('preserves template tokens before writing a translation batch', async () => {
+test('validates message ids, message scope, templates, and duplicates', async () => {
   const root = await fixture();
   const directory = path.join(root, 'apps/web/i18n');
-  const extractedPath = path.join(directory, 'extracted/src_home.ts.json');
-  const memoryPath = path.join(directory, 'translations.json');
-  const messageId = '语法 {{=0}}，当前 {{0}}';
-  const memory = JSON.parse(await fs.readFile(memoryPath, 'utf8')) as {
-    messages: Record<string, unknown>;
-  };
-  memory.messages[messageId] = {
-    source: messageId,
-    sourceLang: 'zh-CN',
-    translations: { 'en-US': null, 'ja-JP': null },
-  };
-  await fs.writeFile(memoryPath, JSON.stringify(memory));
-  const extracted = JSON.parse(await fs.readFile(extractedPath, 'utf8')) as {
-    messages: Array<Record<string, unknown>>;
-  };
-  extracted.messages.push({
-    id: messageId,
-    source: messageId,
-    locations: [{ line: 3, column: 0 }],
-  });
-  await fs.writeFile(extractedPath, JSON.stringify(extracted));
   const service = new AiI18nProjectService();
 
   await expect(
-    service.writeTranslations({
+    service.setTranslations({
       i18n_directory: directory,
-      file: 'src/home.ts',
-      translations: [
-        { message_id: '保存', locale: 'en-US', value: 'Save' },
+      updates: [
         {
-          message_id: messageId,
+          source_file: 'src/home.ts',
+          message_id: '不存在',
           locale: 'en-US',
-          value: 'Syntax {{0}}; current {{0}}',
+          value: 'Missing',
         },
       ],
     }),
-  ).rejects.toThrow('changed template tokens');
-  expect(
-    JSON.parse(await fs.readFile(memoryPath, 'utf8')).messages['保存']
-      .translations['en-US'],
-  ).toBeNull();
-
+  ).rejects.toMatchObject({
+    code: 'MESSAGE_NOT_FOUND',
+    details: { next_tool: 'ai_i18n_list_translations' },
+  });
   await expect(
-    service.writeTranslations({
+    service.setOverrides({
       i18n_directory: directory,
-      file: 'src/home.ts',
-      translations: [
+      updates: [
         {
-          message_id: messageId,
+          source_file: 'src/home.ts',
+          message_id: '保存',
           locale: 'en-US',
-          value: 'Current {{0}}; syntax {{=0}}',
+          value: 'Save',
+          scope: 'message',
         },
       ],
     }),
-  ).resolves.toMatchObject({ applied_count: 1 });
+  ).rejects.toMatchObject({ code: 'MESSAGE_SCOPE_REQUIRES_COMMENT' });
+  await expect(
+    service.clearTranslations({
+      i18n_directory: directory,
+      targets: [
+        {
+          source_file: 'src/home.ts',
+          message_id: '保存',
+          locale: 'en-US',
+        },
+        {
+          source_file: 'src/home.ts',
+          message_id: '保存',
+          locale: 'en-US',
+        },
+      ],
+    }),
+  ).rejects.toMatchObject({ code: 'DUPLICATE_TARGET' });
+
+  await addFixtureMessage(directory, {
+    id: '当前 {{0}}',
+    source: '当前 {{0}}',
+  });
+  await expect(
+    service.setTranslations({
+      i18n_directory: directory,
+      updates: [
+        {
+          source_file: 'src/home.ts',
+          message_id: '当前 {{0}}',
+          locale: 'en-US',
+          value: 'Current value',
+        },
+      ],
+    }),
+  ).rejects.toMatchObject({ code: 'TEMPLATE_TOKEN_MISMATCH' });
+  expect(
+    (await readFixtureMemory(directory)).messages['当前 {{0}}']?.translations[
+      'en-US'
+    ],
+  ).toBeNull();
 });
 
-test('serializes concurrent translation-memory updates from separate services', async () => {
+test('serializes concurrent translation and override updates', async () => {
   const root = await fixture();
   const directory = path.join(root, 'apps/web/i18n');
   const first = new AiI18nProjectService();
   const second = new AiI18nProjectService();
 
   await Promise.all([
-    first.writeTranslations({
+    first.setTranslations({
       i18n_directory: directory,
-      file: 'src/home.ts',
-      translations: [{ message_id: '保存', locale: 'en-US', value: 'Save' }],
+      updates: [
+        {
+          source_file: 'src/home.ts',
+          message_id: '保存',
+          locale: 'en-US',
+          value: 'Save',
+        },
+      ],
     }),
-    second.writeTranslations({
+    second.setTranslations({
       i18n_directory: directory,
-      file: 'src/home.ts',
-      translations: [{ message_id: '退出', locale: 'ja-JP', value: '' }],
+      updates: [
+        {
+          source_file: 'src/home.ts',
+          message_id: '退出',
+          locale: 'ja-JP',
+          value: '終了',
+        },
+      ],
+    }),
+    first.setOverrides({
+      i18n_directory: directory,
+      updates: [
+        {
+          source_file: 'src/home.ts',
+          message_id: '保存',
+          locale: 'en-US',
+          value: 'Keep',
+          scope: 'default',
+        },
+      ],
+    }),
+    second.setOverrides({
+      i18n_directory: directory,
+      updates: [
+        {
+          source_file: 'src/home.ts',
+          message_id: '退出',
+          locale: 'ja-JP',
+          value: 'Leave',
+          scope: 'default',
+        },
+      ],
     }),
   ]);
 
-  const memory = JSON.parse(
-    await fs.readFile(path.join(directory, 'translations.json'), 'utf8'),
-  ) as {
-    messages: Record<string, { translations: Record<string, string | null> }>;
-  };
-  expect(memory.messages['保存']?.translations['en-US']).toBe('Save');
-  expect(memory.messages['退出']?.translations['ja-JP']).toBe('');
-});
-
-test('serializes concurrent human reviews from separate services', async () => {
-  const root = await fixture();
-  const directory = path.join(root, 'apps/web/i18n');
-  const first = new AiI18nProjectService();
-  const second = new AiI18nProjectService();
-
-  await Promise.all([
-    first.writeTranslations({
-      i18n_directory: directory,
-      file: 'src/home.ts',
-      mode: 'review',
-      translations: [{ message_id: '保存', locale: 'en-US', value: 'Keep' }],
-    }),
-    second.writeTranslations({
-      i18n_directory: directory,
-      file: 'src/home.ts',
-      mode: 'review',
-      translations: [{ message_id: '退出', locale: 'ja-JP', value: '' }],
-    }),
-  ]);
-
-  const overrides = JSON.parse(
-    await fs.readFile(path.join(directory, 'overrides.json'), 'utf8'),
-  );
-  expect(overrides.messages['保存']?.default['en-US']).toBe('Keep');
-  expect(overrides.messages['退出']?.default['ja-JP']).toBe('');
+  expect(await readFixtureMemory(directory)).toMatchObject({
+    messages: {
+      保存: { translations: { 'en-US': 'Save' } },
+      退出: { translations: { 'ja-JP': '終了' } },
+    },
+  });
+  expect(await readFixtureOverrides(directory)).toMatchObject({
+    messages: {
+      保存: { default: { 'en-US': 'Keep' } },
+      退出: { default: { 'ja-JP': 'Leave' } },
+    },
+  });
 });

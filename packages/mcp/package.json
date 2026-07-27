@@ -1,7 +1,7 @@
 {
   "name": "@ai-i18n/mcp",
   "version": "1.0.0-alpha.5",
-  "description": "Local MCP tools for reading and filling ai-i18n translation files.",
+  "description": "Local MCP tools for managing ai-i18n translations and human review.",
   "keywords": [
     "i18n",
     "mcp",
