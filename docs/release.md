@@ -18,16 +18,20 @@
    Agent skills 和示例站点提交本身不会触发该 workflow。后续相关路径 push 触发工作流时，
    Release Please 只处理组件范围内符合发布规则的提交；不要假设先前的纯文档提交会自动进入
    某个包的 Release PR。
-2. **先**在 macOS runner 执行 Core Translation Memory 的原生文件锁并发测试，再在 Linux
-   执行 `pnpm check` / `pnpm test`；全部通过后才跑 Release Please。Linux 测试不能替代
-   macOS 原生扩展加载与锁语义验证。禁止先打 tag 再测，以免测挂后留下未发布的 GitHub
-   Release。
-3. 仅当本次确实创建 Release（或手动补发）时，才 `pnpm pack` 展开 `workspace:` 依赖，再由 npm CLI 使用 OIDC Trusted Publishing 上传。不使用 `NODE_AUTH_TOKEN`。
+2. **先**在只读的 macOS runner 执行 Core Translation Memory 的原生文件锁并发测试，再在
+   只读的 Linux runner 执行 `pnpm check` / `pnpm test`；全部通过后才由独立 job 运行
+   Release Please。Linux 测试不能替代 macOS 原生扩展加载与锁语义验证。禁止先打 tag 再
+   测，以免测挂后留下未发布的 GitHub Release。
+3. 仅当本次确实创建 Release（或手动补发）时，只读的打包 job 才会重新构建并通过
+   `pnpm pack` 展开 `workspace:` 依赖。最终发布 job 只下载 tarball，并由 npm CLI 使用
+   OIDC Trusted Publishing 上传；它不 checkout 仓库、不安装项目依赖，也不使用
+   `NODE_AUTH_TOKEN`。
 4. 合并 Release PR 会改 `packages/**`，因此也可能触发 Pages；这是路径过滤的预期副作用。
 
 ## 手动补发
 
-若 GitHub Release / tag 已创建但 npm 未上传（历史事故或发布步骤中断），在 Actions 里对 `Release` 使用 `workflow_dispatch`，填写 `publish_paths`，例如：
+若 GitHub Release / tag 已创建但 npm 未上传（历史事故或发布步骤中断），在 Actions 里对
+`Release` 使用 `workflow_dispatch`，选择 `main` 并填写 `publish_paths`，例如：
 
 ```json
 [
@@ -40,7 +44,9 @@
 ]
 ```
 
-会跳过 Release Please，在验证通过后按当前 `package.json` 版本直接 publish。
+会跳过 Release Please，在验证通过后按当前 `package.json` 版本直接 publish。工作流会拒绝
+非 `main` 分支、空数组、重复路径以及未在 `release-please-config.json` 中登记的包路径；
+不需要新增 Secret 或 GitHub Environment。
 
 ## 约定
 

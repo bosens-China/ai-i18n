@@ -24,10 +24,7 @@ on:
         default: ''
 
 permissions:
-  contents: write
-  issues: write
-  pull-requests: write
-  id-token: write
+  contents: read
 
 concurrency:
   group: release-${{ github.ref }}
@@ -36,20 +33,59 @@ concurrency:
 jobs:
   native-lock-macos:
     runs-on: macos-latest
+    timeout-minutes: 10
     steps:
+      - name: Validate manual release branch
+        if: github.event_name == 'workflow_dispatch'
+        shell: bash
+        run: |
+          if [[ "$GITHUB_REF" != 'refs/heads/main' ]]; then
+            echo "::error::手动发布仅允许 main 分支 / Manual publishing is only allowed from main."
+            exit 1
+          fi
       - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v6
       - uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: pnpm
+      - name: Validate manual publish paths
+        if: github.event_name == 'workflow_dispatch' && inputs.publish_paths != ''
+        env:
+          PUBLISH_PATHS: ${{ inputs.publish_paths }}
+        run: |
+          node --input-type=module <<'NODE'
+          import { readFileSync } from 'node:fs';
+
+          const config = JSON.parse(readFileSync('release-please-config.json', 'utf8'));
+          const allowed = new Set(Object.keys(config.packages));
+
+          let paths;
+          try {
+            paths = JSON.parse(process.env.PUBLISH_PATHS);
+          } catch {
+            throw new Error('publish_paths 必须是 JSON 数组 / publish_paths must be a JSON array');
+          }
+
+          if (
+            !Array.isArray(paths) ||
+            paths.length === 0 ||
+            paths.some((path) => typeof path !== 'string' || !allowed.has(path)) ||
+            new Set(paths).size !== paths.length
+          ) {
+            throw new Error(
+              `publish_paths 只能包含不重复的发布包路径 / publish_paths must contain unique release package paths: ${[...allowed].join(', ')}`,
+            );
+          }
+          NODE
       - run: pnpm install --frozen-lockfile
       - name: Verify native file locking on macOS
         run: pnpm exec vitest run packages/core/test/translation-memory.test.ts
 
-  release:
+  verify:
     needs: native-lock-macos
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v6
@@ -57,30 +93,84 @@ jobs:
         with:
           node-version: 24
           cache: pnpm
-      # Trusted Publishing（OIDC）需要 npm 11+；不配置 registry-url，避免写入 NODE_AUTH_TOKEN。
-      - run: npm install --global npm@11.17.0
       - run: pnpm install --frozen-lockfile
       # 必须在创建 GitHub Release/tag 之前验证，避免测挂后留下孤儿 release。
       - run: pnpm check
       - run: pnpm test
-      - uses: googleapis/release-please-action@v4
+
+  release:
+    needs: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+    outputs:
+      releases_created: ${{ steps.release.outputs.releases_created }}
+      paths_released: ${{ steps.release.outputs.paths_released }}
+    steps:
+      - uses: googleapis/release-please-action@v5
         id: release
         if: github.event_name == 'push' || inputs.publish_paths == ''
         with:
           token: ${{ secrets.RELEASE_PLEASE_TOKEN || secrets.GITHUB_TOKEN }}
-      - name: Publish packages
-        if: >-
-          (github.event_name == 'workflow_dispatch' && inputs.publish_paths != '') ||
-          steps.release.outputs.releases_created == 'true'
+
+  pack:
+    needs: release
+    if: >-
+      (github.event_name == 'workflow_dispatch' && inputs.publish_paths != '') ||
+      needs.release.outputs.releases_created == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      - name: Pack packages
         shell: bash
         env:
-          RELEASED_PATHS: ${{ inputs.publish_paths != '' && inputs.publish_paths || steps.release.outputs.paths_released }}
+          RELEASED_PATHS: ${{ inputs.publish_paths != '' && inputs.publish_paths || needs.release.outputs.paths_released }}
         run: |
           mkdir -p "$RUNNER_TEMP/npm-pack"
           node -e 'for (const path of JSON.parse(process.env.RELEASED_PATHS)) console.log(path)' |
             while IFS= read -r package_path; do
-              pack_json=$(pnpm --dir "$package_path" pack --json --pack-destination "$RUNNER_TEMP/npm-pack")
-              tarball=$(printf '%s' "$pack_json" | node -e "let input=''; process.stdin.on('data', chunk => input += chunk).on('end', () => process.stdout.write(JSON.parse(input).filename))")
-              dist_tag=$(node -p "const version = require('./$package_path/package.json').version; version.includes('-') ? version.split('-')[1].split('.')[0] : 'latest'")
-              npm publish "$tarball" --access public --tag "$dist_tag"
+              pnpm --dir "$package_path" pack --pack-destination "$RUNNER_TEMP/npm-pack"
             done
+      - uses: actions/upload-artifact@v7
+        with:
+          name: npm-packages
+          path: ${{ runner.temp }}/npm-pack/*.tgz
+          if-no-files-found: error
+          retention-days: 1
+
+  publish:
+    needs: pack
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      # Trusted Publishing（OIDC）需要 npm 11+；不配置 registry-url，避免写入 NODE_AUTH_TOKEN。
+      - run: npm install --global npm@11.17.0
+      - uses: actions/download-artifact@v8
+        with:
+          name: npm-packages
+          path: ${{ runner.temp }}/npm-pack
+      - name: Publish packages
+        shell: bash
+        run: |
+          for tarball in "$RUNNER_TEMP"/npm-pack/*.tgz; do
+            version=$(tar -xOf "$tarball" package/package.json |
+              node -e "let input=''; process.stdin.on('data', chunk => input += chunk).on('end', () => process.stdout.write(JSON.parse(input).version))")
+            dist_tag=$([[ "$version" == *-* ]] && printf '%s' "${version#*-}" | cut -d. -f1 || printf 'latest')
+            npm publish "$tarball" --access public --tag "$dist_tag"
+          done
