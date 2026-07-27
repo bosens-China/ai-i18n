@@ -137,10 +137,12 @@ t(messages.states[index])`,
   });
 
   it('erases defineI18nMessages inside Vue script setup', async () => {
-    const { transform } = setupPlugin([], undefined, options, [
-      { name: 'vite:vue' },
-      { name: 'unplugin-auto-import' },
-    ]);
+    const { transform } = setupPlugin(
+      [],
+      undefined,
+      { ...options, autoImport: true },
+      [{ name: 'vite:vue' }],
+    );
     const result = await transform(
       `<script setup lang="ts">
 const { t } = useI18n()
@@ -156,9 +158,10 @@ const messages = defineI18nMessages({ save: '保存' })
   });
 
   it('auto-imports the Vanilla runtime without changing local bindings', async () => {
-    const { transform } = setupPlugin([], undefined, options, [
-      { name: 'unplugin-auto-import' },
-    ]);
+    const { transform } = setupPlugin([], undefined, {
+      ...options,
+      autoImport: true,
+    });
     const result = await transform(
       "t('自动导入'); setLang('en-US')",
       '/workspace/src/main.ts',
@@ -170,30 +173,30 @@ const messages = defineI18nMessages({ save: '保存' })
     expect(result?.code).toContain('register?module=src%2Fmain.ts');
   });
 
-  it('keeps auto import disabled when the host plugin is absent', async () => {
-    const { transform } = setupPlugin();
+  it('keeps auto import disabled when it is not explicitly configured', async () => {
+    const { transform } = setupPlugin([], undefined, options, [
+      { name: 'host-plugin' },
+    ]);
     await expect(
       transform("t('需要显式导入')", '/workspace/src/main.ts'),
     ).resolves.toBeNull();
   });
 
-  it('allows auto import detection to be forced in either direction', async () => {
-    const forcedOn = setupPlugin([], undefined, {
+  it('enables auto import only when explicitly configured', async () => {
+    const enabled = setupPlugin([], undefined, {
       ...options,
       autoImport: true,
     });
     expect(
-      await forcedOn.transform("t('强制开启')", '/workspace/src/forced-on.ts'),
+      await enabled.transform("t('显式开启')", '/workspace/src/enabled.ts'),
     ).not.toBeNull();
 
-    const forcedOff = setupPlugin(
-      [],
-      undefined,
-      { ...options, autoImport: false },
-      [{ name: 'unplugin-auto-import' }],
-    );
+    const disabled = setupPlugin([], undefined, {
+      ...options,
+      autoImport: false,
+    });
     await expect(
-      forcedOff.transform("t('强制关闭')", '/workspace/src/forced-off.ts'),
+      disabled.transform("t('显式关闭')", '/workspace/src/disabled.ts'),
     ).resolves.toBeNull();
   });
 
@@ -211,12 +214,8 @@ const messages = defineI18nMessages({ save: '保存' })
     const { transform } = setupPlugin(
       [],
       undefined,
-      { ...options, loading: {} },
-      [
-        { name: 'vite:vue' },
-        { name: 'vite:vue-jsx' },
-        { name: 'unplugin-auto-import' },
-      ],
+      { ...options, autoImport: true, loading: {} },
+      [{ name: 'vite:vue' }, { name: 'vite:vue-jsx' }],
     );
     const vue = await transform(
       `const { t } = useI18n()
@@ -250,8 +249,8 @@ export const label = t('显式 Hook')`,
     const { transform } = setupPlugin(
       [],
       undefined,
-      { ...options, loading: {} },
-      [{ name: 'vite:react-babel' }, { name: 'unplugin-auto-import' }],
+      { ...options, autoImport: true, loading: {} },
+      [{ name: 'vite:react-babel' }],
     );
     const react = await transform(
       `const { t } = useI18n()
@@ -265,9 +264,10 @@ export const View = () => <p>{t('React JSX')}</p>`,
 
   it('reports dynamic arguments with source locations', async () => {
     const warnings: unknown[] = [];
-    const { transform } = setupPlugin(warnings, undefined, options, [
-      { name: 'unplugin-auto-import' },
-    ]);
+    const { transform } = setupPlugin(warnings, undefined, {
+      ...options,
+      autoImport: true,
+    });
     const result = await transform(
       't(props.label)',
       '/workspace/src/dynamic.ts',

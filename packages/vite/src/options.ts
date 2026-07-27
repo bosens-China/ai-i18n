@@ -26,6 +26,7 @@ export interface AiI18nPersistOptions {
 
 export interface AiI18nOptions {
   framework?: AiI18nFramework;
+  /** 启用当前框架模式的自动导入；默认关闭。 */
   autoImport?: boolean;
   dts?: string | false;
   /** 源文案语言；用于识别 source locale，且不会生成对应的 locale 文件。 */

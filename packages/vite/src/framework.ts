@@ -10,7 +10,6 @@ export type AiI18nFramework = 'vanilla' | 'vue' | 'react';
 
 const PLAIN_SOURCE_RE = /\.[cm]?[jt]s$/;
 const JSX_SOURCE_RE = /\.[jt]sx$/;
-const AUTO_IMPORT_PLUGIN_RE = /^unplugin-auto-import(?::|$)/;
 const AUTO_IMPORTS: Record<AiI18nFramework, readonly string[]> = {
   vanilla: ['t', 'setLang', 'getLang', 'getLangs', 'subscribe'],
   vue: ['useI18n'],
@@ -43,15 +42,6 @@ export function resolveFramework(
       ? 'react'
       : 'vanilla';
   return configured ?? detected;
-}
-
-export function resolveAutoImport(
-  plugins: readonly Plugin[],
-  configured?: boolean,
-): boolean {
-  if (configured !== undefined) return configured;
-  // 外部插件只作为明确的 DX 开关，实际 import 仍由 ai-i18n 注入。
-  return plugins.some((plugin) => AUTO_IMPORT_PLUGIN_RE.test(plugin.name));
 }
 
 export function frameworkAutoImports(

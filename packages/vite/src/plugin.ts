@@ -9,7 +9,6 @@ import { createDevUpdateSender } from './dev-updates.js';
 import { FileStore } from './file-store.js';
 import {
   frameworkTranslationHooks,
-  resolveAutoImport,
   resolveFramework,
   writeFrameworkTypes,
   type AiI18nFramework,
@@ -49,7 +48,7 @@ export function aiI18n(options: AiI18nOptions): Plugin {
   const htmlExtractor: HtmlExtractor | undefined = options.html
     ? createHtmlExtractor(options.html === true ? {} : options.html)
     : undefined;
-  let autoImport = options.autoImport ?? false;
+  const autoImport = options.autoImport ?? false;
   let framework: AiI18nFramework = options.framework ?? 'vanilla';
   let translationHooks = frameworkTranslationHooks(framework, autoImport);
   let config: ResolvedConfig | undefined;
@@ -172,7 +171,6 @@ export function aiI18n(options: AiI18nOptions): Plugin {
       }
       config = resolved;
       framework = resolveFramework(resolved.plugins, options.framework);
-      autoImport = resolveAutoImport(resolved.plugins, options.autoImport);
       translationHooks = frameworkTranslationHooks(framework, autoImport);
       state = new ProjectState(normalizeRoot(resolved.root), normalized);
       store = new FileStore({

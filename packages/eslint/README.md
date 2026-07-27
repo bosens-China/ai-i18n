@@ -8,7 +8,7 @@ alpha 阶段请安装 `@ai-i18n/eslint-plugin@alpha`；peer 支持 ESLint 9 和 
 
 ## 按模式配置
 
-显式 import 的 Vanilla 项目可以使用 `recommended`。启用 ai-i18n 按需导入时，选择与
+显式 import 的 Vanilla 项目可以使用 `recommended`。启用 ai-i18n 自动导入时，选择与
 Vite `framework` 一致的 preset；它会声明对应只读全局，并启用静态参数报错与候选数量
 警告：
 
@@ -21,8 +21,7 @@ export default [
 ```
 
 这些 preset 只负责 ai-i18n 的 `t`/`useI18n`，并在所有模式下声明只读的
-`defineI18nMessages` 编译宏。宿主 Auto Import 插件管理的其他 API 仍由它自己的 ESLint
-集成负责。
+`defineI18nMessages` 编译宏。
 
 ## Vue SFC
 

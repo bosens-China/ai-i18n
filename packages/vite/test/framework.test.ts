@@ -2,11 +2,7 @@ import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
-import {
-  resolveAutoImport,
-  resolveFramework,
-  writeFrameworkTypes,
-} from '../src/framework';
+import { resolveFramework, writeFrameworkTypes } from '../src/framework';
 
 const tempDirs: string[] = [];
 
@@ -36,18 +32,6 @@ describe('framework integration', () => {
   it('lets an explicit framework override detection', () => {
     expect(resolveFramework([{ name: 'vite:vue' }], 'vanilla')).toBe('vanilla');
     expect(resolveFramework([{ name: 'vite:react-babel' }], 'vue')).toBe('vue');
-  });
-
-  it('detects the host Auto Import plugin and supports forced overrides', () => {
-    expect(resolveAutoImport([{ name: 'unplugin-auto-import' }])).toBe(true);
-    expect(resolveAutoImport([{ name: 'unplugin-auto-import:dts' }])).toBe(
-      true,
-    );
-    expect(resolveAutoImport([])).toBe(false);
-    expect(resolveAutoImport([{ name: 'unplugin-auto-import' }], false)).toBe(
-      false,
-    );
-    expect(resolveAutoImport([], true)).toBe(true);
   });
 
   it('writes mode-specific virtual and global declarations', async () => {

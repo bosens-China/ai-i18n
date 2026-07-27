@@ -1,7 +1,6 @@
 import { defineConfig } from 'vite';
 import { aiI18n } from '@ai-i18n/vite';
 import react from '@vitejs/plugin-react';
-import AutoImport from 'unplugin-auto-import/vite';
 
 export default defineConfig({
   resolve: { dedupe: ['react', 'react-dom'] },
@@ -12,9 +11,9 @@ export default defineConfig({
         { value: 'zh-CN', label: '中文' },
         { value: 'en-US', label: 'English' },
       ],
+      autoImport: true,
       html: true,
     }),
-    AutoImport({ imports: ['react'], dts: false }),
     react(),
   ],
 });

@@ -66,10 +66,10 @@ export function App() {
             { value: 'zh-CN', label: '中文' },
             { value: 'en-US', label: 'English' },
           ],
+          autoImport: true,
           loading: {},
           provider: { translator, batchLength: 12_000, strict: true },
         }),
-        { name: 'unplugin-auto-import' },
         reactPlugin(),
       ],
       build: {
