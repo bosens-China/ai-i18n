@@ -8,6 +8,23 @@ description: ai-i18n 的安装兼容性、静态提取、自动导入、语言�
 不能。ai-i18n 当前要求 Vite ≥ 8。使用更低版本时，请先升级 Vite，并确认当前 Node.js
 版本满足 Vite 8 的运行要求。
 
+## 为什么会安装 fs-native-extensions？
+
+`@ai-i18n/vite` 通过 `@ai-i18n/core` 依赖 `fs-native-extensions`。Vite 与
+`@ai-i18n/mcp` 可能同时修改 `translations.json` 或 `overrides.json`，因此需要跨进程文件锁，
+把“读取 → 修改 → 原子写入”整体串行化。否则，两个进程同时读写时，后完成的进程可能覆盖
+另一个进程的修改。
+
+原子写入只能避免文件写到一半时损坏，无法避免并发读改写造成的数据丢失。Node.js 的
+`node:fs` 目前也没有跨平台的 `flock` 等价 API，因此 ai-i18n 使用
+`fs-native-extensions` 提供操作系统级文件锁。该依赖只在 Vite 和 MCP 的 Node.js 进程中
+运行，不会进入浏览器产物。
+
+当前发布包没有提供 Linux musl 预编译产物。使用 `node:24-alpine` 等 Alpine 构建镜像时，
+可能出现包含 `ADDON_NOT_FOUND` 或 `linux-x64-musl` 的错误。请把 Node.js 构建阶段改为
+glibc 镜像，例如 `node:24-bookworm-slim`。最终用于托管静态文件的 Nginx 阶段仍可继续
+使用 Alpine。
+
 ## 是否支持 SSR？
 
 当前 Runtime 仅支持浏览器端。SSR 阶段会跳过翻译提取、模块注册和 Runtime 注入，并输出

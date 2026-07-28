@@ -136,3 +136,6 @@ reconciles them.
 - `INVALID_OVERRIDE_ID`: re-list overrides and copy the returned ID exactly.
 - MCP tools unavailable: report that `@ai-i18n/mcp` must be registered locally; do not silently
   replace the workflow with broad source-tree editing.
+
+For installation failures involving `fs-native-extensions`, Alpine/musl, or `ADDON_NOT_FOUND`, refer
+to `https://bosens-china.github.io/ai-i18n/guide/faq.md`.

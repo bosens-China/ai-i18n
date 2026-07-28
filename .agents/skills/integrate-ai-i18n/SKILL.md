@@ -63,6 +63,9 @@ generated site index) to relocate the page. These pages reflect the latest deplo
 lag an unreleased repository state; when a fetched page conflicts with this skill or the installed
 package version, trust the reference files and the installed code over a stale fetch.
 
+When reporting installation failures involving `fs-native-extensions`, Alpine/musl, or
+`ADDON_NOT_FOUND`, fetch the Markdown FAQ URL above.
+
 ## Implement the smallest complete setup
 
 1. While the package is prerelease, install `@ai-i18n/vite@alpha`; do not rely on the older
