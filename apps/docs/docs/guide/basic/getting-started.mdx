@@ -17,11 +17,27 @@ ai-i18n 通过 Vite 插件提取源码中的 `t()`，并向浏览器提供语言
 
 :::
 
+<p style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+  <span>当前推荐版本：</span>
+  <a
+    href="https://www.npmjs.com/package/@ai-i18n/vite?activeTab=versions"
+    target="_blank"
+    rel="noreferrer"
+    style={{ display: 'inline-flex' }}
+  >
+    <img
+      alt="npm alpha 版本"
+      src="https://img.shields.io/npm/v/%40ai-i18n%2Fvite/alpha?label=npm%20alpha&color=cb3837"
+    />
+  </a>
+</p>
+
 <PackageManagerTabs command="add @ai-i18n/vite@alpha" />
 
 :::warning Alpha 安装
-当前预发布版本位于 npm 的 `alpha` dist-tag。正式版发布前请保留 `@alpha`，否则可能安装到
-较旧的 `latest`。
+项目尚未发布正式版，版本徽章与安装命令均读取 npm 的 `alpha` dist-tag。正式版发布前请保留
+`@alpha`，否则可能安装到较旧的 `latest`。发布正式版后，版本徽章与安装命令将改用
+`latest`。
 :::
 
 Vue 或 React 项目继续使用原有的 Vite 框架插件，无需安装额外的 ai-i18n 适配包。
