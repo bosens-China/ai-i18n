@@ -36,11 +36,11 @@ export function createReactI18n(runtime: I18nRuntime): UseI18n {
     );
     // React Compiler 会按函数引用缓存调用结果，语言更新时必须让 t 的引用同步变化。
     const translate = runtime.t as (
-      source: string | TemplateStringsArray,
+      source: unknown,
       ...values: unknown[]
-    ) => string;
+    ) => unknown;
     const t = useCallback(
-      ((source: string | TemplateStringsArray, ...values: unknown[]) =>
+      ((source: unknown, ...values: unknown[]) =>
         translate(source, ...values)) as I18nRuntime['t'],
       [revision, translate],
     );

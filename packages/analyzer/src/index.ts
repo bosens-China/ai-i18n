@@ -15,7 +15,7 @@ import {
 } from 'yuku-analyzer';
 import {
   argumentWarning,
-  evaluateStrings,
+  evaluateTranslationInput,
   evaluateTranslationOptions,
   isDefineI18nMessagesCall,
   sourceLocation,
@@ -175,7 +175,7 @@ export function extractMessages(
       const markCandidateLimitExceeded = () => {
         candidateLimitExceeded = true;
       };
-      const sources = evaluateStrings(
+      const input = evaluateTranslationInput(
         node.arguments[0],
         module,
         new Set(),
@@ -184,17 +184,23 @@ export function extractMessages(
         markCandidateLimitExceeded,
       );
       const options =
-        node.arguments.length < 2 ||
-        isUnboundUndefined(node.arguments[1], module)
-          ? [{}]
-          : evaluateTranslationOptions(
-              node.arguments[1],
-              module,
-              new Set(),
-              dependencies,
-              maxStaticCandidates,
-              markCandidateLimitExceeded,
-            );
+        input?.kind === 'tree'
+          ? node.arguments.length === 1
+            ? [{}]
+            : null
+          : node.arguments.length < 2 ||
+              isUnboundUndefined(node.arguments[1], module)
+            ? [{}]
+            : evaluateTranslationOptions(
+                node.arguments[1],
+                module,
+                new Set(),
+                dependencies,
+                maxStaticCandidates,
+                markCandidateLimitExceeded,
+              );
+      const sources =
+        input === undefined ? undefined : input === null ? null : input.sources;
       const candidateCount = (sources?.length ?? 0) * (options?.length ?? 0);
       if (candidateLimitExceeded || candidateCount > maxStaticCandidates) {
         warnings.push({

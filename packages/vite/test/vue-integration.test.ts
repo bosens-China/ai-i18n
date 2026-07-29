@@ -69,12 +69,17 @@ defineProps<AppProps>()
 defineEmits<AppEmits>()
 const { t } = useI18n()
 const actionLabel = tRef('Vue Ref')
+const labels = tRef({
+  save: '保存',
+  states: ['等待中', '已完成'],
+})
 const label = useLabel()
 </script>
 <template>
   <h1>{{ t('Vue SFC') }}</h1>
   <p>{{ label }}</p>
   <button>{{ actionLabel }}</button>
+  <button>{{ labels.save }}</button>
   <VueJsxPanel />
 </template>`,
     );
@@ -129,6 +134,7 @@ const label = useLabel()
     expect(code).toContain('EN:Vue TS');
     expect(code).toContain('EN:Vue TSX');
     expect(code).toContain('EN:Vue Ref');
+    expect(code).toContain('EN:保存');
     expect(localeChunk?.isEntry).toBe(false);
     expect(localeChunk?.fileName).toMatch(/^assets\/en-US-/);
     expect(translator).toHaveBeenCalled();
@@ -139,6 +145,9 @@ const label = useLabel()
       expect.arrayContaining([
         expect.objectContaining({ id: 'Vue SFC' }),
         expect.objectContaining({ id: 'Vue Ref' }),
+        expect.objectContaining({ id: '保存' }),
+        expect.objectContaining({ id: '等待中' }),
+        expect.objectContaining({ id: '已完成' }),
       ]),
     );
     expect(

@@ -93,4 +93,34 @@ describe('Vue runtime adapter', () => {
     await runtime.setLang('en-US');
     expect(label.value).toBe('Save');
   });
+
+  it('creates one computed ref for a static message tree', async () => {
+    const runtime = createI18nRuntime({
+      sourceLang: 'zh-CN',
+      defaultLang: 'zh-CN',
+      locales: [
+        { value: 'zh-CN', label: '中文' },
+        { value: 'en-US', label: 'English' },
+      ],
+    });
+    runtime.registerModule('App.vue', {
+      'zh-CN': { 保存: '保存', 取消: '取消', 等待中: '等待中' },
+      'en-US': { 保存: 'Save', 取消: 'Cancel', 等待中: 'Pending' },
+    });
+    const { tRef } = createVueI18nAdapter(runtime);
+    const labels = tRef({
+      buttons: { save: '保存', cancel: '取消' },
+      states: ['等待中'],
+      count: 1,
+    });
+
+    expect(isReadonly(labels)).toBe(true);
+    expect(labels.value.buttons.save).toBe('保存');
+    await runtime.setLang('en-US');
+    expect(labels.value).toEqual({
+      buttons: { save: 'Save', cancel: 'Cancel' },
+      states: ['Pending'],
+      count: 1,
+    });
+  });
 });

@@ -102,6 +102,8 @@ const label = tRef('保存');
 ```
 
 `tRef` 是独立的 Vue-only API，不在 `useI18n()` 返回值中。
+对象或数组展示值也可以直接写 `const labels = tRef(messages)`，得到随语言变化更新的
+同形只读计算属性。
 
 ## Vue 示例
 
@@ -140,6 +142,10 @@ import { useI18n } from 'virtual:ai-i18n';
 
 export function LanguagePicker() {
   const { isLangLoading, langLoadState, setLang, t } = useI18n();
+  const labels = t({
+    loading: '正在加载语言包…',
+    switchLanguage: '切换语言',
+  });
 
   async function switchLanguage() {
     try {
@@ -152,7 +158,7 @@ export function LanguagePicker() {
   return (
     <>
       <button disabled={isLangLoading} onClick={() => void switchLanguage()}>
-        {isLangLoading ? t('正在加载语言包…') : t('切换语言')}
+        {isLangLoading ? labels.loading : labels.switchLanguage}
       </button>
       {langLoadState.status === 'error' ? (
         <p>{t('语言包加载失败，请重试')}</p>

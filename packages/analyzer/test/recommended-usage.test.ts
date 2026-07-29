@@ -9,6 +9,27 @@ import {
 } from '../src/index';
 
 describe('recommended translation usage', () => {
+  it('accepts whole static message trees without requiring the macro', () => {
+    const module = analyzeModule(
+      `import { t, tRef } from 'virtual:ai-i18n'
+const messages = { save: '保存', states: ['等待中', '已完成'] }
+t(messages)
+tRef({ cancel: '取消', metadata: { count: 2, enabled: true } })`,
+      'main.ts',
+    );
+
+    expect(extractMessages(module)).toMatchObject({
+      messages: [
+        { source: '保存' },
+        { source: '等待中' },
+        { source: '已完成' },
+        { source: '取消' },
+      ],
+      warnings: [],
+    });
+    expect(validateRecommendedUsage(module)).toEqual([]);
+  });
+
   it('keeps extraction tolerant while reporting non-recommended syntax', () => {
     const module = analyzeModule(
       `import { t } from 'virtual:ai-i18n'

@@ -19,6 +19,9 @@ import { Tab, Tabs } from '@rspress/core/theme';
 注入与生产框架模式相同的 Runtime API。因此使用消息集合宏或生产自动导入的业务模块无需
 额外 mock。ESLint 也应使用对应的 `*-auto-import` preset；测试配置与生产配置必须保持
 相同的 `autoImport` 值。测试插件不在测试期间生成提取文件。
+
+测试 Runtime 也支持 `t(messages)` 和 Vue `tRef(messages)` 的整棵纯文案树翻译。该写法不
+需要宏或 `as const`；每个字符串叶子按测试 Runtime 的 source fallback 或已注册译文处理。
 不经过 Vite 转换的 Jest、直接 Node 执行等环境不会识别该宏，需要改用
 `aiI18nVitest()`，或避免执行包含宏的源码。
 

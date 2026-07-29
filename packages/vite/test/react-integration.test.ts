@@ -33,11 +33,20 @@ describe('React Vite integration', () => {
 }`,
     );
     await fs.writeFile(
+      path.join(root, 'src/messages.ts'),
+      `export const messages = {
+  save: '保存',
+  states: ['等待中', '已完成'],
+}`,
+    );
+    await fs.writeFile(
       entry,
       `import { useLabel } from './useLabel'
+import { messages } from './messages'
 export function App() {
   const { t } = useI18n()
-  return <main><h1>{t('React TSX')}</h1><p>{useLabel()}</p></main>
+  const labels = t(messages)
+  return <main><h1>{t('React TSX')}</h1><p>{useLabel()}</p><button>{labels.save}</button></main>
 }`,
     );
     const translator: Translator = vi.fn<Translator>(async ({ messages }) =>
@@ -89,12 +98,20 @@ export function App() {
 
     expect(code).toContain('EN:React TSX');
     expect(code).toContain('EN:React TS');
+    expect(code).toContain('EN:保存');
     expect(localeChunk?.isEntry).toBe(false);
     expect(localeChunk?.fileName).toMatch(/^en-US-|^assets\/en-US-/);
     expect(translator).toHaveBeenCalled();
     expect(
       await readJson(path.join(root, 'i18n/extracted/src_App.tsx.json')),
-    ).toMatchObject({ messages: [{ id: 'React TSX' }] });
+    ).toMatchObject({
+      messages: expect.arrayContaining([
+        expect.objectContaining({ id: 'React TSX' }),
+        expect.objectContaining({ id: '保存' }),
+        expect.objectContaining({ id: '等待中' }),
+        expect.objectContaining({ id: '已完成' }),
+      ]),
+    });
     expect(
       await readJson(path.join(root, 'i18n/extracted/src_useLabel.ts.json')),
     ).toMatchObject({ messages: [{ id: 'React TS' }] });

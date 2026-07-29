@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
+  AI_I18N_VIRTUAL_MODULE_ID,
+  Analyzer,
   analyzeModule,
   extractMessages,
   findDefineI18nMessagesCalls,
@@ -139,6 +141,82 @@ t(messages[index], options[index])`,
     );
 
     expect(extractMessages(module, undefined, [], false, 3)).toMatchObject({
+      messages: [],
+      warnings: [{ code: 'static-candidate-limit' }],
+    });
+  });
+
+  it('extracts every string leaf from direct and const message trees', () => {
+    const module = analyzeModule(
+      `import { t, tRef } from 'virtual:ai-i18n'
+const messages = {
+  buttons: { save: '保存', cancel: '取消' },
+  states: ['等待中', '已完成'],
+  count: 2,
+  enabled: true,
+}
+t(messages)
+tRef({ empty: '暂无数据', nested: [null, '重试'] })`,
+      'collections.ts',
+    );
+
+    expect(extractMessages(module)).toMatchObject({
+      messages: [
+        { source: '保存' },
+        { source: '取消' },
+        { source: '等待中' },
+        { source: '已完成' },
+        { source: '暂无数据' },
+        { source: '重试' },
+      ],
+      warnings: [],
+      pending: false,
+    });
+  });
+
+  it('resolves imported message trees without requiring the collection macro', () => {
+    const analyzer = new Analyzer({
+      resolve(specifier) {
+        if (specifier === AI_I18N_VIRTUAL_MODULE_ID) return specifier;
+        return specifier === './messages' ? '/messages.ts' : null;
+      },
+    });
+    analyzer.addFile(
+      AI_I18N_VIRTUAL_MODULE_ID,
+      'export function t(source) { return source }',
+    );
+    analyzer.addFile(
+      '/messages.ts',
+      `export const messages = { save: '保存', states: ['等待中', '已完成'] }`,
+    );
+    const module = analyzer.addFile(
+      '/App.tsx',
+      `import { t } from 'virtual:ai-i18n'
+import { messages } from './messages'
+t(messages)`,
+    );
+    analyzer.link();
+
+    expect(extractMessages(module)).toMatchObject({
+      messages: [
+        { source: '保存' },
+        { source: '等待中' },
+        { source: '已完成' },
+      ],
+      warnings: [],
+      dependencies: ['/messages.ts'],
+      pending: false,
+    });
+  });
+
+  it('applies candidate limits to whole message trees', () => {
+    const module = analyzeModule(
+      `import { t } from 'virtual:ai-i18n'
+t({ first: 'a', second: ['b', 'c'] })`,
+      'tree-limit.ts',
+    );
+
+    expect(extractMessages(module, undefined, [], false, 2)).toMatchObject({
       messages: [],
       warnings: [{ code: 'static-candidate-limit' }],
     });

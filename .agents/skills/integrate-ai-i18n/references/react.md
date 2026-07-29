@@ -68,8 +68,13 @@ subscribe that component to later Runtime updates. The React ESLint preset warns
 `ai-i18n/no-unsubscribed-t`, and warns for module-initialization snapshots such as
 `const label = t('保存')` through `ai-i18n/no-eager-translation`.
 
-For object or array copy, use `defineI18nMessages({...})` without an import and pass its members to
-`t()`. Vite and `aiI18nVitest()` erase the marker before runtime.
+For a whole static message-only object or array, call `const labels = t(messages)` inside the
+component after obtaining `t` from `useI18n()`. The Hook subscription rerenders the component and
+the next call returns the new translated tree. Local and imported `const` trees need neither
+`as const` nor a macro. Every string leaf is translated and primitive non-string leaves are
+preserved; only plain objects and arrays are supported, with no per-leaf comment or interpolation.
+When selecting one member or finite dynamic index, use `defineI18nMessages({...})` without an import
+and pass its member to `t()`. Vite and `aiI18nVitest()` erase the marker before runtime.
 
 The Hook uses `useSyncExternalStore`, and its `t` function identity changes with the Runtime revision,
 so language, translation, and loading-state updates also invalidate React Compiler caches. It

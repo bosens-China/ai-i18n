@@ -23,6 +23,19 @@ t(messages.save);
 t(messages.states[index]);
 ```
 
+宏用于“先定义集合，再把其中某个成员交给 `t()`”的写法。如果需要一次翻译整棵纯文案对象
+或数组，可以直接写 `t(messages)`；Vue setup 中可以写 `tRef(messages)`。这两种整树调用
+不需要宏，也不要求 `as const`：
+
+```ts
+export const messages = {
+  save: '保存',
+  states: ['等待中', '处理中'],
+};
+
+const labels = t(messages);
+```
+
 宏接受任意类型，并在 Vite 或 `aiI18nVitest()` 转换时消除为原参数。它不会冻结、拷贝或校验
 对象；作用只是告诉静态分析器，这个对象或数组是可枚举的消息集合。
 

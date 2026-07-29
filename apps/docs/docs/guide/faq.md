@@ -127,9 +127,9 @@ const unsubscribe = subscribe(render);
 
 再检查是否在模块初始化或 Vue setup 期间保存过译后字符串。`const label = t('保存')`
 只是当时的快照；普通工具模块改成 `const getLabel = () => t('保存')`，Vue setup 展示值可
-直接写 `const label = tRef('保存')`。`tRef` 只在 Vue 模式导出，并返回只读
-`ComputedRef<string>`；模板直接使用 `label`，不要在模板中调用 `tRef()`。React 不要把结果
-预先放入 state 或模块常量。React Compiler
+直接写 `const label = tRef('保存')`。对象或数组可写成 `const labels = tRef(messages)`，
+整棵文案树会随语言变化重算。`tRef` 只在 Vue 模式导出，并返回只读计算属性；模板直接使用
+返回值，不要在模板中调用 `tRef()`。React 不要把结果预先放入 state 或模块常量。React Compiler
 可能继续复用无订阅渲染的旧结果，不能替代 `useI18n()`。
 
 启用对应的 ESLint preset 后，`no-eager-translation` 和 `no-unsubscribed-t` 会提示这些
@@ -159,12 +159,12 @@ Promise 会 reject，并保留当前语言。Vue / React 组件可以直接使�
 
 ## 生成文件是否需要提交？
 
-需要。源码变更与以下文件应在同一个 PR 中提交：
+只提交包含权威数据或开发声明的文件。源码变更与以下文件应在同一个 PR 中提交：
 
 - `src/ai-i18n.d.ts`，或通过 `dts` 设置的自定义声明路径；
 - `i18n/translations.json`；
-- `i18n/overrides.json`；
-- `i18n/extracted/*.json`；
-- `i18n/locales/**`。
+- `i18n/overrides.json`。
 
-这样可以让源码结构、Translation Memory、人工覆盖和最终 Runtime 文案保持一致。
+`i18n/extracted/` 与 `i18n/locales/` 是 Build 可重新生成的本地产物，应加入
+`.gitignore`。首次调用 MCP、`extracted/` 缺失或为空，或者切换分支和修改提取相关配置后，
+先运行目标应用的一次完整 Build。Dev 只提取浏览器实际访问过的模块。

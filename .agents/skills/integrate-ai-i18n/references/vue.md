@@ -90,13 +90,19 @@ Destructuring `t` does not break reactivity. Calling it from the template reads 
 Runtime revision, so language and translation updates trigger a new render. Only the translated
 result is a snapshot: do not write `const label = t('保存')` when `label` must update. Call `t()` in
 the template or import the standalone Vue-only API and use `const label = tRef('保存')`.
-`tRef()` returns a readonly `ComputedRef<string>` and also unwraps Ref values inside tagged-template
-interpolations. Read `.value` in script; templates unwrap it. It is not returned by `useI18n()`.
+`tRef()` returns a readonly computed Ref and also unwraps Ref values inside tagged-template
+interpolations. It accepts a whole static message-only object or array, so
+`const labels = tRef(messages)` recomputes every translated string leaf and preserves the tree
+shape. Read `.value` in script; templates unwrap it. It is not returned by `useI18n()`.
 Create it once in setup or a composable. Never call `tRef()` in a template or render function,
 because that creates a new computed on every render.
 
-For object or array copy, use `defineI18nMessages({...})` without an import and pass its members to
-`t()`. The Vue SFC transform erases the macro and understands compiler-generated `unref` wrappers.
+Pass a whole local or imported static message-only tree directly to `t(messages)` or
+`tRef(messages)` without `as const` or a macro. Every string leaf is treated as copy and translated;
+keep routes and semantic keys out of the tree. Only plain objects, arrays, and primitive leaves are
+supported; per-leaf comments and interpolation are not. When selecting one member or a finite
+dynamic index, use `defineI18nMessages({...})` without an import and pass that member to `t()`. The
+Vue SFC transform erases the macro and understands compiler-generated `unref` wrappers.
 
 Do not save or directly return a translated setup snapshot, whether it appears in `<script setup>`,
 a directly exported options object, or an imported `defineComponent()` object/function signature

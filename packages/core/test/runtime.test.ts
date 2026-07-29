@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, expectTypeOf, it, vi } from 'vitest';
 import { TranslationConflictError, createI18nRuntime } from '../src/index';
 
 const locales = [
@@ -55,7 +55,67 @@ describe('@ai-i18n/core runtime', () => {
     const name = 'Ada';
     const count = 2;
 
-    expect(runtime.t`你好 ${name}，共有 ${count} 项`).toBe('2 items for Ada');
+    const translated = runtime.t`你好 ${name}，共有 ${count} 项`;
+    expectTypeOf(translated).toEqualTypeOf<string>();
+    expect(translated).toBe('2 items for Ada');
+  });
+
+  it('translates message-only object and array trees without mutating input', async () => {
+    const runtime = createI18nRuntime({
+      sourceLang: 'zh-CN',
+      defaultLang: 'zh-CN',
+      locales,
+    });
+    runtime.registerModule('src/messages.ts', {
+      'zh-CN': { 保存: '保存', 取消: '取消', 等待中: '等待中' },
+      'en-US': { 保存: 'Save', 取消: 'Cancel', 等待中: 'Pending' },
+    });
+    const messages = {
+      buttons: { save: '保存', cancel: '取消' },
+      states: ['等待中'],
+      count: 1,
+      enabled: true,
+      empty: null,
+    };
+
+    const source = runtime.t(messages);
+    expectTypeOf(source).toEqualTypeOf<{
+      buttons: { save: string; cancel: string };
+      states: string[];
+      count: number;
+      enabled: boolean;
+      empty: null;
+    }>();
+    expect(source).toEqual(messages);
+    expect(source).not.toBe(messages);
+    expect(source.buttons).not.toBe(messages.buttons);
+
+    await runtime.setLang('en-US');
+    expect(runtime.t(messages)).toEqual({
+      buttons: { save: 'Save', cancel: 'Cancel' },
+      states: ['Pending'],
+      count: 1,
+      enabled: true,
+      empty: null,
+    });
+    expect(messages.buttons.save).toBe('保存');
+  });
+
+  it('rejects unsupported and circular message trees', () => {
+    const runtime = createI18nRuntime({
+      sourceLang: 'zh-CN',
+      defaultLang: 'zh-CN',
+      locales,
+    });
+    const circular: { label: string; self?: unknown } = { label: '保存' };
+    circular.self = circular;
+
+    expect(() => runtime.t(circular as never)).toThrow(
+      'Message trees cannot contain circular references',
+    );
+    expect(() => runtime.t({ date: new Date() } as never)).toThrow(
+      'Message trees may only contain plain objects and arrays',
+    );
   });
 
   it('warns once per locale, message, and mismatched translation', async () => {

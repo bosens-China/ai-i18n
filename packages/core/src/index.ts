@@ -4,6 +4,12 @@ export {
   translationComment,
 } from './message-id.js';
 export type { TranslationOptions } from './message-id.js';
+export { translateMessageTree } from './message-tree.js';
+export type {
+  MessageTree,
+  MessageTreeValue,
+  TranslatedMessageTree,
+} from './message-tree.js';
 export {
   AiI18nSchemaError,
   TranslationConflictError,
@@ -31,8 +37,8 @@ export type {
   LocaleLoader,
   LocaleMessages,
   ModuleMessages,
-  Translate,
 } from './runtime.js';
+export type { Translate } from './translate.js';
 export { resolveTranslationOverride } from './translation-override.js';
 export {
   createTemplateMessage,

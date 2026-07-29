@@ -89,8 +89,8 @@ In Vue, auto import removes the import statement but does not synthesize a templ
 Destructuring `const { t } = useI18n()` does not break Vue reactivity: each template call reads the
 adapter's Runtime revision. By contrast, `const label = t('Save')` stores only the current string;
 call `t()` in the template or use the standalone Vue-only `tRef('Save')`. It returns a readonly
-`ComputedRef<string>` and should be created in setup/composable code, not during template or render
-evaluation.
+computed Ref and should be created in setup/composable code, not during template or render
+evaluation. It also accepts a whole static message-only tree and preserves that tree's shape.
 
 ## Option rules
 
@@ -118,6 +118,12 @@ declared in every generated `ai-i18n.d.ts`. Vite erases it to `(value)` in brows
 transforms, while `aiI18nVitest()` applies the same erasure. A local binding with that name shadows
 the macro. It must be called directly rather than assigned or passed as a runtime value. It accepts
 any `T` and does not freeze, clone, validate, or execute collection members.
+
+A whole static message-only object or array can instead be passed directly to `t(messages)`, or to
+Vue `tRef(messages)`, without the macro or `as const`. Every string leaf is extracted and translated
+while primitive non-string leaves are preserved. Use `defineI18nMessages()` only when passing a
+member or finite dynamic index to `t()`. Whole-tree calls accept plain objects and arrays only and
+do not support per-leaf comments or tagged-template interpolation.
 
 ## Optional Provider
 
@@ -206,6 +212,11 @@ messages. The exact pruning order (a rare debugging detail): see
 Vite Dev accumulates browser-requested modules; visit lazy routes before judging coverage. Vite Build
 starts a fresh state and follows reachable imports. Both modes reconcile stable `translations.json`,
 `overrides.json`, `extracted/*.json`, and `locales/**`.
+
+Commit `translations.json`, `overrides.json`, and the generated `ai-i18n.d.ts`. Ignore
+`extracted/` and `locales/`; a full Build recreates both. Before first MCP use, after switching
+branches, or after source/extractor configuration changes, run a full Build when extracted output is
+missing, empty, or potentially stale. Dev only covers modules requested by the browser.
 
 `translations.json` uses schema v1 and contains `version`, monotonic `revision`, and messages keyed
 by readable message ID. Each message stores its `source`, `sourceLang`, optional comment, and target

@@ -1,8 +1,8 @@
 # @ai-i18n/vite
 
 Vite 的 ai-i18n 主插件。它在 Dev/Build 中提取显式 `t()`，维护可提交 Git 的
-`translations.json`、`overrides.json`、`extracted/*.json`、`locales/**`，并提供浏览器虚拟
-Runtime。
+`translations.json`、`overrides.json` 与 `src/ai-i18n.d.ts`，并生成可通过 Build 重建的
+`extracted/*.json`、`locales/**`，同时提供浏览器虚拟 Runtime。
 
 alpha 阶段请安装 `@ai-i18n/vite@alpha`，避免无标签安装命中较旧的 `latest`。
 Vue 模式要求 Vue ≥ 3.2.25。
@@ -32,7 +32,21 @@ Runtime 发现译文占位符不匹配时会输出 console warning，但仍继�
 `t(source, options?)` 只接受可选的 `{ comment }` 补充语境。message ID 由 source 与
 规范化 comment 共同生成；任一变化都会成为新的待翻译消息。`#` 与 `\` 会自动转义。
 
-对象或数组文案使用无需导入的编译宏：
+整棵静态纯文案对象或数组可以直接翻译，不要求 `as const` 或编译宏：
+
+```ts
+const messages = {
+  save: '保存',
+  states: ['等待中', '处理中'],
+};
+
+const labels = t(messages);
+// Vue setup：const labels = tRef(messages);
+```
+
+每个字符串叶子都会翻译，其他基础类型原样保留。只支持普通对象和数组，不支持 `Map`、
+`Set`、函数、循环引用或运行时生成的集合。需要选择对象或数组成员时，再使用无需导入的
+编译宏：
 
 ```ts
 const messages = defineI18nMessages({
@@ -47,8 +61,8 @@ t(messages.states[index]);
 
 `autoImport: true` 在 Vanilla 模式注入顶层 Runtime API，在 React 模式注入
 `useI18n` 与 `t`，在 Vue 模式额外注入 `tRef`。框架组件通过 `useI18n()` 建立更新订阅；
-Vue setup 中需要预先声明响应式 label 时可直接写
-`const label = tRef('保存')`，返回只读 `ComputedRef<string>`。同一 build 中不能调用 Hook 的
+Vue setup 中需要预先声明响应式 label 或文案树时可直接写
+`const label = tRef('保存')` 或 `const labels = tRef(messages)`，返回只读计算属性。同一 build 中不能调用 Hook 的
 普通 `.js` / `.ts` 工具模块可以使用顶层 `t`。框架模式属于整个 Vite build，不按单个文件
 扩展名切换。Vue 自动导入只省略 import；模板仍需在 `<script setup>` 中通过
 `const { t } = useI18n()` 建立 binding 与订阅。

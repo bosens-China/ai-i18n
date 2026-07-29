@@ -102,13 +102,16 @@ function SaveButton() {
 
 规则与 Vite 共用静态参数语义，包括从 `useI18n()` 获得的对象成员调用
 `i18n.t()`、`i18n['t']()`、省略式 `t('source', undefined)` 和 tagged template。
+整棵可静态求值的纯文案对象或数组可以直接传给 `t()` 或 Vue `tRef()`，不要求
+`defineI18nMessages()` 或 `as const`；规则会按去重后的字符串叶子计算静态候选数。
 Vue 模板必须在 `<script setup>` 中绑定 `useI18n()` 返回的 `t`；自动导入只省略 import，
 不会自动合成 Hook。`vue-auto-import` 会把裸 template-only `t()` 作为 error；模板中已
 绑定到 Runtime 顶层 `t` 的调用则由 `no-unsubscribed-t` warning。
 在 template 或 JSX/TSX 渲染期间调用 `tRef()` 会重复创建 `computed`，同一规则会提示在
 Vue setup 中只创建一次并使用返回的 Ref。
 
-对象或数组成员只有在根集合由 `defineI18nMessages()` 标记后才属于推荐写法。字符串拼接、
+对象或数组的成员级引用只有在根集合由 `defineI18nMessages()` 标记后才属于推荐写法。
+动态生成的树、非普通对象以及带第二参数的整树调用会报错。字符串拼接、
 逻辑表达式、`let` 文案、普通集合成员、`const tr = t`、命名空间调用、二次 Hook 解构、
 `useI18n().t()` 与 `require()` 都会报错。
 

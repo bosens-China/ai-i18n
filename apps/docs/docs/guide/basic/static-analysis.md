@@ -88,7 +88,22 @@ t(canSubmit ? '提交' : '返回');
 t`你好 ${user.name}，你有 ${unreadCount} 条消息`;
 ```
 
-需要按属性或索引组织文案时，使用无需 import 的编译宏：
+需要一次得到整组译文时，可以直接传入静态纯文案树：
+
+```ts
+const messages = {
+  actions: { save: '保存', cancel: '取消' },
+  states: ['等待中', '处理中', '已完成'],
+};
+
+const labels = t(messages);
+// Vue setup：const labels = tRef(messages);
+```
+
+分析器会提取所有字符串叶子；本地或导入的静态 `const` 都支持，不要求 `as const`。整树
+调用本身就是提取边界，因此不需要宏。
+
+需要按属性或索引挑选单条文案时，使用无需 import 的编译宏：
 
 ```ts
 const messages = defineI18nMessages({
@@ -128,6 +143,8 @@ Vite Analyzer 会尽量保留可恢复的静态文案；ESLint 则负责约束�
 | `const label = '保存'; t(label)`            | 提取                 | 允许             |
 | `t(ok ? '保存' : '取消')`                   | 提取两个候选         | 允许             |
 | `` t`你好 ${name}` ``                       | 提取编号模板         | 允许             |
+| `t({ save: '保存', states: ['等待中'] })`   | 提取所有字符串叶子   | 允许             |
+| `tRef(messages)`，集合可静态求值            | 提取所有字符串叶子   | 允许             |
 | `t(messages.states[index])`，集合已用宏标记 | 提取有限候选         | 允许             |
 | `t('保' + '存')`                            | 尽力提取             | 报错             |
 | `t(ok && '保存')`                           | 尽力提取             | 报错             |
@@ -148,6 +165,7 @@ Analyzer 负责证明文案能在构建期提取；语言切换后的刷新还�
 | Vue `<script setup>` 中 `const label = t('保存')` | 是   | setup 快照，不会自动更新              |
 | Vue 组件 `setup()` 中 `const label = t('保存')`   | 是   | setup 快照，不会自动更新              |
 | Vue setup 中 `const label = tRef('保存')`         | 是   | 返回 Ref，Runtime revision 变化后重算 |
+| Vue setup 中 `const labels = tRef(messages)`      | 是   | 整棵文案树随 Runtime revision 重算    |
 | Vue / React 组件渲染使用 Runtime 顶层 `t`         | 是   | 不建立订阅，语言切换不会主动触发渲染  |
 | Vue / React 组件渲染使用 `useI18n()` 返回的 `t`   | 是   | 建立框架订阅并刷新                    |
 | Vue template / render 中直接调用 `tRef()`         | 是   | 每次渲染创建 computed，不支持该用法   |
@@ -169,9 +187,13 @@ Analyzer 负责证明文案能在构建期提取；语言切换后的刷新还�
   `JSON.parse()` 和其他运行时结果不会在分析阶段执行。
 - `props.label` 等运行时成员只会报告无法静态提取；只有本地或导入的、可静态解析为对象或
   数组集合的成员才会建议使用 `defineI18nMessages()`。
+- 整棵文案树只支持普通对象、数组，以及字符串、数字、布尔值、`bigint`、`null`、
+  `undefined` 叶子。所有字符串叶子都会被当作文案；不要混入路由或业务 key。`Map`、`Set`、
+  函数、getter、循环引用和运行时生成的集合不受支持。
+- 整树调用不支持逐叶 `comment` 或 tagged template 插值；需要这些能力时逐项调用 `t()`。
 - `defineI18nMessages()` 必须直接调用，不能赋值给别名、作为参数传递或当作运行时工具。
 - Vite 不限制静态候选数量。ESLint 默认在单个表达式超过 1000 个 source/options 组合时
-  发出警告，但不会截断 Vite 提取。
+  发出警告；整树调用按去重后的字符串叶子计数，但不会截断 Vite 提取。
 - Dev 只分析浏览器实际请求到的模块；Build 只分析从入口可达的模块。未访问的懒路由和
   Build 不可达文件不会进入当前提取结果。
 - SSR 阶段会跳过提取、注册与 Runtime 注入；当前 Runtime 只支持浏览器端。

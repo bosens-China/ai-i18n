@@ -22,10 +22,14 @@ function tRef(
   strings: TemplateStringsArray,
   ...values: unknown[]
 ): ComputedRef<string>;
+function tRef<T extends MessageTree>(
+  messages: T,
+): ComputedRef<TranslatedMessageTree<T>>;
 ```
 
-返回 Vue 的只读 `ComputedRef<string>`。语言或 Runtime 翻译模块更新后，`value` 会重新计算；
-tagged template 插值如果是 Vue Ref，也会在 `computed` 内解包并建立依赖。
+字符串输入返回 Vue 的只读 `ComputedRef<string>`；文案树输入返回保持原结构的
+`ComputedRef<TranslatedMessageTree<T>>`。语言或 Runtime 翻译模块更新后，`value` 会重新
+计算；tagged template 插值如果是 Vue Ref，也会在 `computed` 内解包并建立依赖。
 
 source 与 options 的静态提取要求和 [`t()`](/api/runtime/functions/t) 相同。
 
@@ -55,10 +59,32 @@ function submit() {
 
 在脚本中读取 `.value`；模板会自动解包 Ref。
 
+## 响应式对象与数组
+
+需要在 setup 中复用一组会随语言切换更新的文案时，可以直接把静态文案树交给 `tRef()`：
+
+```vue
+<script setup lang="ts">
+import { tRef } from 'virtual:ai-i18n';
+import { messages } from './messages';
+
+const labels = tRef(messages);
+</script>
+
+<template>
+  <button>{{ labels.actions.save }}</button>
+  <span>{{ labels.states[0] }}</span>
+</template>
+```
+
+静态本地对象和导入对象都支持，不要求 `as const` 或 `defineI18nMessages()`。每个字符串叶子
+都会翻译，其他基础类型原样保留。输入必须是纯文案的普通对象或数组；不支持 `Map`、`Set`、
+函数、循环引用、getter、运行时生成的集合，也不能为单个叶子设置 `comment` 或插值。
+
 ## 与 `t()` 的分工
 
 - 模板或渲染函数当场展示：使用 `useI18n()` 返回的 `t`。
-- Vue setup / composable 需要预先声明响应式展示值：使用 `tRef()`。
+- Vue setup / composable 需要预先声明响应式字符串、对象或数组：使用 `tRef()`。
 - 事件、日志或普通工具函数需要即时字符串：使用 `t()`。
 
 不要在 template 或渲染函数中直接调用 `tRef()`：

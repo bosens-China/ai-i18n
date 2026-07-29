@@ -53,8 +53,12 @@ Evaluate `t()` at render or event time. A module-level `const label = t('保存'
 initialization snapshot; prefer `const getLabel = () => t('保存')`. The Vanilla ESLint preset reports
 the snapshot through `ai-i18n/no-eager-translation`.
 
-For object or array copy, use `defineI18nMessages({...})` without an import and pass its members to
-`t()`. Dynamic indexes enumerate only finite AST candidates; the macro does not execute or freeze
-the collection.
+For a whole static message-only object or array, call `t(messages)` at render or event time. It
+returns a translated tree snapshot with the same structure. Local and imported `const` trees need
+neither `as const` nor a macro. Every string leaf is translated and primitive non-string leaves are
+preserved; only plain objects and arrays are supported, with no per-leaf comment or interpolation.
+When selecting one member or a finite dynamic index, use `defineI18nMessages({...})` without an
+import and pass its member to `t()`. Dynamic indexes enumerate only finite AST candidates; the
+macro does not execute or freeze the collection.
 
 A runnable end-to-end example: fetch `https://bosens-china.github.io/ai-i18n/demo/vanilla.md`.

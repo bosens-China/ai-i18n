@@ -1,6 +1,6 @@
 ---
 title: t()
-description: 翻译静态文案或带动态值的模板字符串
+description: 翻译静态文案、文案树或带动态值的模板字符串
 ---
 
 从 `virtual:ai-i18n` 导入：
@@ -14,6 +14,7 @@ import { t } from 'virtual:ai-i18n';
 ```ts
 function t(source: string, options?: TranslationOptions): string;
 function t(strings: TemplateStringsArray, ...values: unknown[]): string;
+function t<T extends MessageTree>(messages: T): TranslatedMessageTree<T>;
 ```
 
 ## 参数
@@ -30,6 +31,38 @@ t('保存');
 t('保存', { comment: '按钮' });
 t('提交', { comment: '创建 Git 提交' });
 ```
+
+## 文案树
+
+整棵静态对象或数组可以直接传给 `t()`。每个字符串叶子都会翻译，返回值保持原有结构；
+数字、布尔值、`bigint`、`null` 与 `undefined` 原样保留：
+
+```ts
+// messages.ts
+export const messages = {
+  actions: {
+    save: '保存',
+    cancel: '取消',
+  },
+  states: ['等待中', '处理中'],
+  maxRetries: 3,
+};
+
+// React 组件或普通模块
+const labels = t(messages);
+// labels.actions.save: string
+// labels.states: string[]
+// labels.maxRetries: number
+```
+
+本地或导入的静态 `const` 都可以使用，不需要 `as const`，也不需要
+`defineI18nMessages()`。文案树应当是纯文案结构：只使用普通对象、数组和上述叶子值；
+不要混入路由、业务 key 等不应翻译的字符串，也不支持 `Map`、`Set`、函数、循环引用、
+getter 或其他运行时结果。
+
+整棵树调用不能为单个叶子设置 `comment`，也不能在叶子中使用 tagged template 插值。
+需要成员级语境或动态索引时，改用
+[`defineI18nMessages()`](/api/runtime/macros/define-i18n-messages) 后逐项调用 `t()`。
 
 message ID 由 `source` 和去除首尾空白后的 `comment` 共同生成。没有 comment 时通常就是 source；
 有 comment 时可读形式类似 `提交#创建 Git 提交`。正文或 comment 中的 `#` 和 `\` 会自动转义。
@@ -52,7 +85,8 @@ Runtime 会比较源文与译文的占位符。译文缺少、多出或改变编
 
 ## 返回值
 
-返回当前语言的译文。译文缺失或值为 `null` 时返回 source 文案。
+字符串调用返回当前语言的译文；译文缺失或值为 `null` 时返回 source 文案。文案树调用返回
+形状相同的新对象或数组，其中每个字符串叶子按相同规则翻译；不会修改输入值。
 
 :::warning 不要长期保存译后字符串
 已经写入 state、storage、请求体或文件元数据的字符串不会随语言切换更新。持久数据和业务判断
@@ -66,7 +100,7 @@ Vue / React 组件应使用 [`useI18n()`](/api/runtime/framework-api/use-i18n) �
 ESLint 生命周期检查见 [ESLint](/guide/quality/eslint)。
 
 Vue setup 中需要预先声明响应式 label 时，使用 Vue-only
-[`tRef()`](/api/runtime/framework-api/t-ref)。`t()` 始终返回字符串，不会因为调用位置不同而
-改成 Ref。
+[`tRef()`](/api/runtime/framework-api/t-ref)。`t()` 的字符串输入返回字符串，文案树输入
+返回翻译后的同形结构；两者都不会因为调用位置不同而变成 Ref。
 
 静态提取支持的表达式见[静态分析范围](/guide/basic/static-analysis)。

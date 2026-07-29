@@ -20,7 +20,11 @@ fs.writeFileSync(
 );
 fs.writeFileSync(
   path.join(sourceRoot, 'texts.ts'),
-  ["export const SAVE = '保存'", 'export const DYNAMIC = getText()'].join('\n'),
+  [
+    "export const SAVE = '保存'",
+    "export const MESSAGES = { save: '保存', states: ['等待', '完成'] }",
+    'export const DYNAMIC = getText()',
+  ].join('\n'),
 );
 fs.writeFileSync(
   path.join(sourceRoot, 'bridge.ts'),
@@ -99,6 +103,19 @@ describe('ai-i18n/t-static-args', () => {
         filename: path.join(sourceRoot, 'vue-ref.ts'),
       },
       {
+        code: "import { tRef } from 'virtual:ai-i18n'; const labels = tRef({ save: '保存', states: ['等待', '完成'], count: 2 })",
+        filename: path.join(sourceRoot, 'vue-ref-tree.ts'),
+      },
+      {
+        code: "import { t } from 'virtual:ai-i18n'; const messages = { save: '保存', states: ['等待', '完成'] }; t(messages)",
+        filename: path.join(sourceRoot, 'local-tree.ts'),
+      },
+      {
+        code: "import { MESSAGES } from '@/texts'; import { t } from 'virtual:ai-i18n'; t(MESSAGES)",
+        filename: path.join(sourceRoot, 'cross-file-tree.ts'),
+        options: [{ tsconfigPath }],
+      },
+      {
         code: "const { t } = useI18n(); export const View = () => <p>{t('Vue JSX')}</p>",
         filename: path.join(sourceRoot, 'View.tsx'),
         options: [{ autoImport: true }],
@@ -149,6 +166,16 @@ describe('ai-i18n/t-static-args', () => {
         code: "import { tRef } from 'virtual:ai-i18n'; tRef(props.label)",
         filename: path.join(sourceRoot, 'vue-ref-dynamic.ts'),
         errors: [{ messageId: 'invalidUsage' }],
+      },
+      {
+        code: "import { t } from 'virtual:ai-i18n'; t({ save: props.label })",
+        filename: path.join(sourceRoot, 'dynamic-tree.ts'),
+        errors: [{ messageId: 'invalidUsage' }],
+      },
+      {
+        code: "import { t } from 'virtual:ai-i18n'; t({ save: '保存' }, { comment: '不支持' })",
+        filename: path.join(sourceRoot, 'tree-options.ts'),
+        errors: [{ messageId: 'dynamicArg' }],
       },
       {
         code: "import { t } from 'virtual:ai-i18n'; t('保存', { comment: props.comment })",
@@ -275,11 +302,22 @@ describe('ai-i18n/t-static-args', () => {
         filename: path.join(sourceRoot, 'candidate-limit-valid.ts'),
         options: [{ maxStaticCandidates: 2 }],
       },
+      {
+        code: "import { tRef } from 'virtual:ai-i18n'; tRef({ first: 'a', second: 'b' })",
+        filename: path.join(sourceRoot, 'tree-candidate-limit-valid.ts'),
+        options: [{ maxStaticCandidates: 2 }],
+      },
     ],
     invalid: [
       {
         code: "import { t } from 'virtual:ai-i18n'; const messages = defineI18nMessages(['a', 'b', 'c']); t(messages[index])",
         filename: path.join(sourceRoot, 'candidate-limit-invalid.ts'),
+        options: [{ maxStaticCandidates: 2 }],
+        errors: [{ messageId: 'candidateLimit' }],
+      },
+      {
+        code: "import { tRef } from 'virtual:ai-i18n'; tRef({ first: 'a', second: ['b', 'c'] })",
+        filename: path.join(sourceRoot, 'tree-candidate-limit-invalid.ts'),
         options: [{ maxStaticCandidates: 2 }],
         errors: [{ messageId: 'candidateLimit' }],
       },

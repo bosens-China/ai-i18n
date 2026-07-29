@@ -1,22 +1,12 @@
-import { createMessageId, type TranslationOptions } from './message-id.js';
 import type { LangOption, TranslationValue } from './schema.js';
 import { TranslationConflictError } from './schema.js';
-import {
-  createTemplateMessage,
-  escapeTemplateLiteral,
-  formatTemplateMessage,
-  hasSameTemplateTokens,
-} from './template.js';
+import { hasSameTemplateTokens } from './template.js';
+import { createTranslate, type Translate } from './translate.js';
 
 export type ModuleMessages = Record<string, Record<string, TranslationValue>>;
 
 export type LocaleMessages = Record<string, TranslationValue>;
 export type LocaleLoader = () => Promise<LocaleMessages>;
-
-export interface Translate {
-  (source: string, options?: TranslationOptions): string;
-  (strings: TemplateStringsArray, ...values: unknown[]): string;
-}
 
 export type LangLoadState =
   | Readonly<{ status: 'idle'; targetLang: null; error: null }>
@@ -225,26 +215,7 @@ export function createI18nRuntime(options: I18nRuntimeOptions): I18nRuntime {
     }
   }
 
-  const t: Translate = (
-    source: string | TemplateStringsArray,
-    ...values: unknown[]
-  ) => {
-    if (typeof source === 'string') {
-      const message = escapeTemplateLiteral(source);
-      return formatTemplateMessage(
-        translate(
-          createMessageId(message, values[0] as TranslationOptions | undefined),
-          message,
-        ),
-        [],
-      );
-    }
-    const message = createTemplateMessage(source);
-    return formatTemplateMessage(
-      translate(createMessageId(message), message),
-      values,
-    );
-  };
+  const t = createTranslate(translate);
 
   const runtime: I18nRuntime = {
     t,

@@ -24,8 +24,11 @@ directories or edit generated JSON manually while the MCP tools are available.
 4. Pass that absolute path as `i18n_directory`. The server requires valid `translations.json`,
    `overrides.json`, and `extracted/`.
 
-Run the target app's Vite Dev/Build first when protocol files do not exist. Running ESLint does not
-create them.
+`translations.json` and `overrides.json` are committed; `extracted/` and `locales/` are ignored local
+Build outputs. Run the target app's full Vite Build before first MCP use when `extracted/` is missing
+or empty. Also Build after switching branches or changing source, Vite/plugin configuration, or
+extraction rules when the local output may be stale. Prefer Build over Dev because Dev only sees
+browser-requested modules. Running ESLint does not create protocol files.
 
 ## Understand tool results
 
@@ -44,6 +47,10 @@ Start with `ai_i18n_list_translations` using only the resolved `i18n_directory`.
 `view: "missing"` both discovers source files and returns the missing messages, avoiding a separate
 path-discovery call.
 
+If the first list returns no source files, run one full Build for the same target app and retry once.
+Do not loop builds or scan sibling apps when the retried result remains empty; the target build may
+legitimately contain no statically extracted messages.
+
 Optional parameters:
 
 - `source_files`: one or more exact paths copied from previous results;
@@ -60,6 +67,12 @@ terminology, and `missing_locales` as the default write targets. Copy `source_fi
 Vue source may use either `t()` or the Vue-only `tRef()` syntax. Both produce the same extracted
 message IDs from the same static source/options; the MCP protocol and all six tool schemas do not
 distinguish which Runtime API produced an entry.
+
+A whole static message-only object or array passed to `t(messages)` or Vue `tRef(messages)` produces
+one extracted entry per unique string leaf, attributed to the containing source file. Primitive
+non-string leaves do not produce entries. This extraction feature does not change MCP schemas. If
+these entries are absent after adding or changing a tree, run one full Build for the target app and
+retry the list once.
 
 The list intentionally reports raw `translations.json` state. A human override does not hide a
 still-null AI Translation Memory field.
@@ -133,7 +146,7 @@ reconciles them.
 - `I18N_DIRECTORY_NOT_FOUND`: recompute Vite root plus `aiI18n.directory`.
 - `I18N_DIRECTORY_NOT_ABSOLUTE`: resolve the directory to an absolute path before retrying.
 - `REQUIRED_PROTOCOL_FILE_MISSING` or `REQUIRED_PROTOCOL_DIRECTORY_MISSING`: run the target app's
-  Vite Dev/Build, then retry the same directory; do not scan for another.
+  full Vite Build, then retry the same directory once; do not scan for another.
 - `SOURCE_FILE_NOT_FOUND`: restart the relevant list call without `source_files`, then copy an exact
   returned path.
 - `MESSAGE_NOT_FOUND`: re-list the exact source file and copy the returned `message_id`.

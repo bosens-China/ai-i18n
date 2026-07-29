@@ -90,6 +90,9 @@ When reporting installation failures involving `fs-native-extensions`, Alpine/mu
 8. Run the app's type check and Vite build, then confirm schema-v1 `translations.json`,
    `overrides.json`, flat translation-free `extracted/*.json`, and target-only `locales/*.json`
    under the resolved output directory.
+9. Commit generated `ai-i18n.d.ts`, `translations.json`, and `overrides.json`. Add
+   `<directory>/extracted/` and `<directory>/locales/` to `.gitignore`; both are reproducible local
+   Build outputs. Preserve custom `directory` and `dts` paths when deriving these entries.
 
 When the user requests smaller initial bundles, configure `loading: {}`.
 Use `preload` only for target locales expected immediately, `prefetch` for likely later choices, and
@@ -112,8 +115,9 @@ also injects `tRef`. Use `useI18n()` in component render paths for reactive upda
 modules that cannot call it. In Vue `<script setup>`, destructuring
 `const { t } = useI18n()` remains reactive when the template calls `t()`. Storing an eager result
 such as `const label = t('Save')` does not; use the template call or the Vue-only standalone
-`const label = tRef('Save')`. `tRef()` returns a readonly `ComputedRef<string>` and must be created
-once in setup/composable code, never called during template or render evaluation.
+`const label = tRef('Save')`. `tRef()` returns a readonly computed Ref and also accepts a whole
+static message-only object or array. Create it once in setup/composable code, never during template
+or render evaluation.
 
 Do not add a translator, model, API key, HTML extraction, cache limit, cleanup override, Vue plugin,
 or React provider unless the project requires it. When automatic translation is requested, keep
@@ -154,19 +158,26 @@ config; Vite extraction has no candidate cap or matching plugin option.
   so changing source or comment creates a new untranslated message. `#` and `\` are escaped
   collision-free; do not invent or pass a separate ID. Source and options must be statically
   evaluable.
-- For object or array copy, use the import-free compiler macro
-  `const messages = defineI18nMessages({...})`, then pass members such as
-  `messages.save` or `messages.states[index]` to `t()`. The macro is an analysis marker that must be
-  called directly, not assigned or passed as a runtime value. It is not a freeze/validation helper;
-  Vite erases it to the original argument. Do not replace direct literals
-  with concatenation or logical expressions merely because the analyzer can recover candidates.
+- Pass a whole static message-only object or array directly to `t(messages)`, or to Vue
+  `tRef(messages)` when the whole result must remain reactive. Local and imported `const` trees are
+  supported without `as const` or a macro. Every string leaf is translated; number, boolean,
+  bigint, null, and undefined leaves are preserved. Keep routes, semantic keys, and other non-copy
+  strings out of these trees. Map, Set, functions, getters, cycles, runtime-built trees, per-leaf
+  comments, and per-leaf interpolation are unsupported.
+- When selecting object or array members, use the import-free compiler macro
+  `const messages = defineI18nMessages({...})`, then pass members such as `messages.save` or
+  `messages.states[index]` to `t()`. The macro is an analysis marker that must be called directly,
+  not assigned or passed as a runtime value. It is not a freeze/validation helper; Vite erases it
+  to the original argument. Do not replace direct literals with concatenation or logical
+  expressions merely because the analyzer can recover candidates.
 - Use tagged templates for dynamic values: `` t`你好 ${name}` ``. Expressions are represented as
   reorderable `{{0}}`, `{{1}}` placeholders and are not translated. Placeholder-shaped source text
   is escaped internally (`{{0}}` becomes `{{=0}}`) and is restored before display. Runtime logs a
   console warning when translation placeholders differ, then continues using that translation.
 - Vue/React Hook bindings work in JS, TS, JSX, and TSX, including composables and custom Hooks.
 - Vue `tRef()` is a direct `virtual:ai-i18n` import, not a `useI18n()` field. It shares the same
-  static source/options extraction rules as `t()` and returns a readonly computed Ref.
+  static extraction rules as `t()` and returns a readonly computed Ref. For a whole message tree,
+  the computed value preserves the input structure and recomputes every translated string leaf.
 - Plain JS/TS modules in a Vue or React build may import top-level `t`; translate at call time rather
   than caching its result. A component still needs `useI18n()` to subscribe to Runtime updates.
 - Vite does not cap static candidate expansion. ESLint warns per expression above its default 1000
@@ -178,8 +189,10 @@ config; Vite extraction has no candidate cap or matching plugin option.
   Missing translations always return source text.
 - Persist semantic codes, counters, and stable filenames rather than translated strings. Translate at
   the display boundary; never parse localized output for identifiers, storage state, or numbering.
-- Commit source, generated `ai-i18n.d.ts`, `translations.json`, `overrides.json`, `extracted/*.json`,
-  and `locales/**` together.
+- Commit source, generated `ai-i18n.d.ts`, `translations.json`, and `overrides.json` together.
+  Ignore `extracted/*.json` and `locales/**`; regenerate them with a full Build. Before first MCP
+  use, after switching branches, or after source/extractor configuration changes, Build when
+  extracted output is missing, empty, or potentially stale.
 
 ## Vitest
 

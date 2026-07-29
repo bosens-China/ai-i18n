@@ -4,6 +4,7 @@ import { diagnosticMessage } from './diagnostics.js';
 import {
   evaluateStaticValues,
   isDefineI18nMessagesCall,
+  type StaticResult,
   type StaticValue,
 } from './static-evaluator.js';
 
@@ -16,6 +17,65 @@ export type StaticWarningCode =
   | 'dynamic-argument'
   | 'unresolved-argument'
   | 'static-candidate-limit';
+
+export interface TranslationInput {
+  kind: 'source' | 'tree';
+  sources: string[];
+}
+
+export function evaluateTranslationInput(
+  node: Node | undefined,
+  module: Module,
+  seen = new Set<string>(),
+  dependencies = new Set<string>(),
+  maxCandidates = Number.POSITIVE_INFINITY,
+  onLimitExceeded = () => {},
+): TranslationInput | null | undefined {
+  const values = evaluateStaticValues(
+    node,
+    module,
+    seen,
+    dependencies,
+    maxCandidates,
+    onLimitExceeded,
+  );
+  if (values === undefined || values === null) return values;
+
+  if (
+    values.every(
+      (value) => value.kind === 'primitive' && typeof value.value === 'string',
+    )
+  ) {
+    return {
+      kind: 'source',
+      sources: uniqueStrings(
+        values.map((value) =>
+          value.kind === 'primitive' ? String(value.value) : '',
+        ),
+        maxCandidates,
+        onLimitExceeded,
+      ),
+    };
+  }
+  if (
+    !values.length ||
+    !values.every((value) => value.kind === 'array' || value.kind === 'object')
+  ) {
+    return null;
+  }
+
+  const sources = new Set<string>();
+  for (const value of values) {
+    const result = collectTreeStrings(
+      [value],
+      sources,
+      maxCandidates,
+      onLimitExceeded,
+    );
+    if (result !== true) return result;
+  }
+  return { kind: 'tree', sources: [...sources] };
+}
 
 export function evaluateStrings(
   node: Node | undefined,
@@ -40,6 +100,48 @@ export function evaluateStrings(
       : [],
   );
   return strings.length ? [...new Set(strings)] : null;
+}
+
+function collectTreeStrings(
+  values: StaticResult,
+  sources: Set<string>,
+  maxCandidates: number,
+  onLimitExceeded: () => void,
+): true | null | undefined {
+  if (values === undefined || values === null) return values;
+  for (const value of values) {
+    if (value.kind === 'primitive') {
+      if (typeof value.value !== 'string') continue;
+      sources.add(value.value);
+      if (sources.size > maxCandidates) {
+        onLimitExceeded();
+        return null;
+      }
+      continue;
+    }
+    const children =
+      value.kind === 'array' ? value.items : [...value.properties.values()];
+    for (const child of children) {
+      const result = collectTreeStrings(
+        child,
+        sources,
+        maxCandidates,
+        onLimitExceeded,
+      );
+      if (result !== true) return result;
+    }
+  }
+  return true;
+}
+
+function uniqueStrings(
+  values: string[],
+  maxCandidates: number,
+  onLimitExceeded: () => void,
+): string[] {
+  const unique = [...new Set(values)];
+  if (unique.length > maxCandidates) onLimitExceeded();
+  return unique;
 }
 
 export function evaluateTranslationOptions(
@@ -134,8 +236,8 @@ export function argumentWarning(
     file: module.path,
     ...sourceLocation(module.source, offset),
     message: diagnosticMessage(
-      't() 的 source 必须是可静态提取的字符串，options 必须是可静态提取的对象。',
-      't() source must be a statically extractable string and options must be a statically extractable object.',
+      '翻译参数必须是可静态提取的字符串或纯文案树；字符串 options 必须是仅包含 comment 的静态对象。',
+      'Translation input must be a statically extractable string or message-only tree; string options must be a static object containing only comment.',
     ),
   };
 }

@@ -16,6 +16,16 @@
   },
   {
     "type": "file",
+    "name": "message-tree",
+    "label": "MessageTree"
+  },
+  {
+    "type": "file",
+    "name": "translated-message-tree",
+    "label": "TranslatedMessageTree"
+  },
+  {
+    "type": "file",
     "name": "translator",
     "label": "Translator"
   },

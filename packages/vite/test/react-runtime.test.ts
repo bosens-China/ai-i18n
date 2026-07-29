@@ -64,6 +64,17 @@ describe('React runtime adapter', () => {
     const second = useI18n();
     expect(second.currentLang).toBe('en-US');
     expect(second.t('标题')).toBe('Title');
+    expect(
+      second.t({
+        heading: '标题',
+        actions: ['标题'],
+        count: 1,
+      }),
+    ).toEqual({
+      heading: 'Title',
+      actions: ['Title'],
+      count: 1,
+    });
     expect(second.t).not.toBe(first.t);
 
     unsubscribe();

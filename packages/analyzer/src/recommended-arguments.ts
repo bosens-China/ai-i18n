@@ -5,7 +5,11 @@ import {
   type NodeType,
 } from 'yuku-analyzer';
 import { diagnosticMessage } from './diagnostics.js';
-import { evaluateStrings, isDefineI18nMessagesCall } from './static-values.js';
+import {
+  evaluateStrings,
+  evaluateTranslationInput,
+  isDefineI18nMessagesCall,
+} from './static-values.js';
 
 type Node = NodeOfType<NodeType>;
 
@@ -64,6 +68,19 @@ export function recommendedArgumentIssue(
         recommendedArgumentIssue(node.consequent, module, new Set(seen)) ??
         recommendedArgumentIssue(node.alternate, module, new Set(seen))
       );
+    case 'ArrayExpression':
+    case 'ObjectExpression': {
+      const input = evaluateTranslationInput(node, module);
+      return input?.kind === 'tree' && !containsDiscouragedSyntax(node, module)
+        ? null
+        : {
+            code: 'non-recommended-argument',
+            message: diagnosticMessage(
+              '文案树只能包含静态对象、数组和字面量值，不能包含字符串拼接或逻辑表达式。',
+              'Message trees may only contain static objects, arrays, and literal values without string concatenation or logical expressions.',
+            ),
+          };
+    }
     case 'Identifier':
       return identifierIssue(node, module, seen);
     case 'MemberExpression': {
@@ -86,7 +103,7 @@ export function recommendedArgumentIssue(
               ),
             };
       }
-      return macroContainsDiscouragedSyntax(macro.node, macro.module)
+      return containsDiscouragedSyntax(macro.node, macro.module)
         ? {
             code: 'non-recommended-argument',
             message: diagnosticMessage(
@@ -245,12 +262,9 @@ function findMacroRoot(
     : null;
 }
 
-function macroContainsDiscouragedSyntax(
-  call: NodeOfType<'CallExpression'>,
-  module: Module,
-): boolean {
-  const argument = call.arguments[0];
-  if (!argument) return false;
+function containsDiscouragedSyntax(root: Node, module: Module): boolean {
+  const argument = root.type === 'CallExpression' ? root.arguments[0] : root;
+  if (!argument || argument.type === 'SpreadElement') return false;
   let discouraged = false;
   module.walk({
     BinaryExpression(node) {

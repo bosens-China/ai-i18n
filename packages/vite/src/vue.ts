@@ -2,6 +2,8 @@ import type {
   I18nRuntime,
   LangLoadState,
   LangOption,
+  MessageTree,
+  TranslatedMessageTree,
   TranslationOptions,
 } from '@ai-i18n/core';
 import { computed, readonly, shallowRef, unref } from 'vue';
@@ -22,6 +24,7 @@ export type UseI18n = () => VueI18n;
 export interface TranslateRef {
   (source: string, options?: TranslationOptions): ComputedRef<string>;
   (strings: TemplateStringsArray, ...values: unknown[]): ComputedRef<string>;
+  <T extends MessageTree>(messages: T): ComputedRef<TranslatedMessageTree<T>>;
 }
 
 export interface VueI18nAdapter {
@@ -33,9 +36,9 @@ export function createVueI18nAdapter(runtime: I18nRuntime): VueI18nAdapter {
   const revision = shallowRef(0);
   const langs = readonly(shallowRef(runtime.getLangs()));
   const translate = runtime.t as (
-    source: string | TemplateStringsArray,
+    source: unknown,
     ...values: unknown[]
-  ) => string;
+  ) => unknown;
 
   runtime.subscribe(() => {
     revision.value += 1;
@@ -45,13 +48,13 @@ export function createVueI18nAdapter(runtime: I18nRuntime): VueI18nAdapter {
     return revision.value;
   }
 
-  const t = ((source: string | TemplateStringsArray, ...values: unknown[]) => {
+  const t = ((source: unknown, ...values: unknown[]) => {
     trackRevision();
     return translate(source, ...values);
   }) as I18nRuntime['t'];
 
   // 在 computed 内解包插值 Ref，确保语言和动态插值任一变化都会重新计算。
-  const tRef = ((source: string | TemplateStringsArray, ...values: unknown[]) =>
+  const tRef = ((source: unknown, ...values: unknown[]) =>
     computed(() => {
       trackRevision();
       return translate(source, ...values.map(unref));
