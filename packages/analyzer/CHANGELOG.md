@@ -1,5 +1,12 @@
 # @ai-i18n/analyzer
 
+## [1.0.0-alpha.6](https://github.com/bosens-China/ai-i18n/compare/analyzer-v1.0.0-alpha.5...analyzer-v1.0.0-alpha.6) (2026-07-29)
+
+
+### Features
+
+* 新增 Vue tRef 响应式翻译 API ([e03a48b](https://github.com/bosens-China/ai-i18n/commit/e03a48b75a2b94c80f22af90598ab02b6acb5076))
+
 ## [1.0.0-alpha.5](https://github.com/bosens-China/ai-i18n/compare/analyzer-v1.0.0-alpha.4...analyzer-v1.0.0-alpha.5) (2026-07-29)
 
 

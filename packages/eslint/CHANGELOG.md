@@ -1,5 +1,19 @@
 # @ai-i18n/eslint-plugin
 
+## [1.0.0-alpha.7](https://github.com/bosens-China/ai-i18n/compare/eslint-plugin-v1.0.0-alpha.6...eslint-plugin-v1.0.0-alpha.7) (2026-07-29)
+
+
+### Features
+
+* 新增 Vue tRef 响应式翻译 API ([e03a48b](https://github.com/bosens-China/ai-i18n/commit/e03a48b75a2b94c80f22af90598ab02b6acb5076))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @ai-i18n/analyzer bumped to 1.0.0-alpha.6
+
 ## [1.0.0-alpha.6](https://github.com/bosens-China/ai-i18n/compare/eslint-plugin-v1.0.0-alpha.5...eslint-plugin-v1.0.0-alpha.6) (2026-07-29)
 
 
