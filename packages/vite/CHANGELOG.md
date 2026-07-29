@@ -1,5 +1,20 @@
 # @ai-i18n/vite
 
+## [1.0.0-alpha.7](https://github.com/bosens-China/ai-i18n/compare/vite-v1.0.0-alpha.6...vite-v1.0.0-alpha.7) (2026-07-29)
+
+
+### Features
+
+* 完善框架运行时与 ESLint 生命周期诊断 ([b2f51a9](https://github.com/bosens-China/ai-i18n/commit/b2f51a92b2254cd8387d2dee6ba5d2b3013da36a))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @ai-i18n/analyzer bumped to 1.0.0-alpha.5
+    * @ai-i18n/core bumped to 1.0.0-alpha.5
+
 ## [1.0.0-alpha.6](https://github.com/bosens-China/ai-i18n/compare/vite-v1.0.0-alpha.5...vite-v1.0.0-alpha.6) (2026-07-27)
 
 
