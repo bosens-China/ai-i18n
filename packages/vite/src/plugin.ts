@@ -87,11 +87,15 @@ export function aiI18n(options: AiI18nOptions): Plugin {
     sendTranslationUpdates,
     sendLocaleUpdates,
     requestMissingTranslations,
+    dispose: disposeDevUpdates,
   } = createDevUpdateSender({
     options: normalized,
     state: currentState,
     hot: () => devHot,
     coordinator: () => coordinator,
+    reportMissingTranslations(message) {
+      if (config?.command === 'serve') config.logger?.info(message);
+    },
     translationEvent: TRANSLATION_UPDATE_EVENT,
     localeEvent: LOCALE_UPDATE_EVENT,
   });
@@ -338,5 +342,9 @@ export function aiI18n(options: AiI18nOptions): Plugin {
     },
 
     hotUpdate: handleHotUpdate,
+
+    closeBundle() {
+      disposeDevUpdates();
+    },
   };
 }
