@@ -201,7 +201,8 @@ aiI18n({
 });
 ```
 
-如果你希望在 CI 环境下若有任何翻译请求失败（或没能完全覆盖 `null`），整个 Build 流程直接中断报错，请将 `provider.strict` 设为 `true`。
+如果希望 CI 在翻译请求失败或仍有 `null` 时中断 Build，请将 `provider.strict` 设为
+`true`。
 
 ## 自定义 Translator
 

@@ -28,7 +28,7 @@ glibc 镜像，例如 `node:24-bookworm-slim`。最终用于托管静态文件�
 ## 是否支持 SSR？
 
 当前 Runtime 仅支持浏览器端。SSR 阶段会跳过翻译提取、模块注册和 Runtime 注入，并输出
-warning；`defineI18nMessages()` 的编译期消除仍会执行。
+警告；`defineI18nMessages()` 的编译期消除仍会执行。
 
 如果项目需要服务端渲染译文、按请求选择 locale 或避免首屏 source fallback，当前版本
 无法提供完整支持。
@@ -79,16 +79,55 @@ Vite Dev 只分析浏览器实际请求到的模块。懒路由尚未访问时�
 ## 为什么切换语言后组件没有刷新？
 
 先检查组件是否从 `useI18n()` 获取 `t`。从 `virtual:ai-i18n` 导入或自动注入的 Runtime
-顶层 `t` 只读取当前语言，不会让 Vue / React 组件订阅后续变化：
+顶层 `t` 只读取当前语言，不会让 Vue / React 组件订阅后续变化。
+
+Vue 可以在 `<script setup>` 中解构 `t`，再在模板中调用：
+
+```vue
+<script setup lang="ts">
+import { useI18n } from 'virtual:ai-i18n';
+
+const { t } = useI18n();
+</script>
+
+<template>
+  <button>{{ t('保存') }}</button>
+</template>
+```
+
+解构不会破坏响应性。模板渲染时调用 `t()` 会读取 Vue 适配器内部的 Runtime revision；
+语言、加载状态或翻译模块更新后，模板会重新渲染。
+
+React 同样需要在组件中调用 Hook：
 
 ```tsx
-const { t } = useI18n(); // 组件渲染使用这个 t
+import { useI18n } from 'virtual:ai-i18n';
+
+function SaveButton() {
+  const { t } = useI18n();
+  return <button>{t('保存')}</button>;
+}
+```
+
+Vanilla JS 没有框架渲染周期，需要主动订阅并重新渲染：
+
+```js
+import { subscribe, t } from 'virtual:ai-i18n';
+
+function render() {
+  document.querySelector('#save').textContent = t('保存');
+}
+
+render();
+const unsubscribe = subscribe(render);
+
+// 页面或视图销毁时调用 unsubscribe()。
 ```
 
 再检查是否在模块初始化或 Vue setup 期间保存过译后字符串。`const label = t('保存')`
 只是当时的快照；普通工具模块改成 `const getLabel = () => t('保存')`，Vue 展示值可使用
-`computed(() => t('保存'))`。React Compiler 可能继续复用无订阅渲染的旧结果，不能替代
-`useI18n()`。
+`computed(() => t('保存'))`。React 不要把结果预先放入 state 或模块常量。React Compiler
+可能继续复用无订阅渲染的旧结果，不能替代 `useI18n()`。
 
 启用对应的 ESLint preset 后，`no-eager-translation` 和 `no-unsubscribed-t` 会提示这些
 可以确定的常见问题。规则不追踪任意跨函数或跨文件数据流，详情见

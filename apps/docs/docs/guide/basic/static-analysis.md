@@ -169,7 +169,7 @@ Analyzer 负责证明文案能在构建期提取；语言切换后的刷新还�
   数组集合的成员才会建议使用 `defineI18nMessages()`。
 - `defineI18nMessages()` 必须直接调用，不能赋值给别名、作为参数传递或当作运行时工具。
 - Vite 不限制静态候选数量。ESLint 默认在单个表达式超过 1000 个 source/options 组合时
-  发出 warning，但不会截断 Vite 提取。
+  发出警告，但不会截断 Vite 提取。
 - Dev 只分析浏览器实际请求到的模块；Build 只分析从入口可达的模块。未访问的懒路由和
   Build 不可达文件不会进入当前提取结果。
 - SSR 阶段会跳过提取、注册与 Runtime 注入；当前 Runtime 只支持浏览器端。

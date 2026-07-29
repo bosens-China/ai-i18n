@@ -51,7 +51,7 @@ type UseI18n = () => ReactI18n;
 
 | 字段            | Vue                            | React                   | 作用                         |
 | --------------- | ------------------------------ | ----------------------- | ---------------------------- |
-| `t`             | 响应式函数                     | Hook 订阅后的函数       | 翻译文案。                   |
+| `t`             | 调用时追踪 Runtime revision    | Hook 订阅后的函数       | 翻译文案。                   |
 | `setLang`       | 函数                           | 函数                    | 切换语言。                   |
 | `currentLang`   | `ComputedRef<string>`          | `string`                | 当前语言。                   |
 | `langs`         | 只读 `ShallowRef`              | `readonly LangOption[]` | 支持的语言列表。             |
@@ -65,7 +65,37 @@ type UseI18n = () => ReactI18n;
 自己的用户文案。下一次有效切换开始或加载成功后会清除它。完整三态见
 [`getLangLoadState()`](/api/runtime/functions/get-lang-load-state)。
 
-## Vue
+## Vue 中解构 `t`
+
+可以在 `<script setup>` 中解构 `t`，再直接在模板中调用：
+
+```vue
+<script setup lang="ts">
+import { useI18n } from 'virtual:ai-i18n';
+
+const { t } = useI18n();
+</script>
+
+<template>
+  <button>{{ t('保存') }}</button>
+</template>
+```
+
+这里的 `t` 是函数，不是 `ref`，因此不需要 `.value`。模板渲染时调用 `t()`，函数会读取
+Vue 适配器内部的 Runtime revision。语言、加载状态或翻译模块更新后，revision 变化会触发
+模板重新渲染；从 `useI18n()` 返回值中解构 `t` 不会切断这条依赖。
+
+不要在 setup 阶段提前保存译后字符串：
+
+```ts
+const { t } = useI18n();
+const label = t('保存'); // 只计算一次，不会随语言切换更新
+```
+
+需要在脚本中派生展示值时，使用 `computed(() => t('保存'))`；只在模板中展示时，直接调用
+`t('保存')` 即可。
+
+## Vue 示例
 
 ```vue
 <script setup lang="ts">
@@ -95,7 +125,7 @@ async function switchLanguage() {
 
 建议在 `<script setup>` 或 `setup()` 中调用。
 
-## React
+## React 示例
 
 ```tsx
 import { useI18n } from 'virtual:ai-i18n';

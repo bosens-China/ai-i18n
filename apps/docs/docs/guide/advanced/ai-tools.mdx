@@ -35,14 +35,16 @@ Agent + MCP 是 ai-i18n 提供的两种 AI 翻译方式之一，适合由 AI 编
 npx skills add bosens-China/ai-i18n --skill use-ai-i18n-mcp integrate-ai-i18n -y
 ```
 
-安装后，Skill 会被保存到 `.agents/skills/` 中。在之后的对话中，你可以直接告诉 Agent：“使用 `use-ai-i18n-mcp` 补译缺失的语言” 或 “使用 `integrate-ai-i18n` 指导项目接入”。
+安装后，Skill 会保存在 `.agents/skills/` 中。在之后的对话中，可以直接告诉 Agent：
+“使用 `use-ai-i18n-mcp` 补译缺失的语言”或“使用 `integrate-ai-i18n` 指导项目接入”。
 
 `integrate-ai-i18n` 内置“主题 → 官方文档页面”索引。常见配置直接保存在 Skill 本地文件中；
 遇到完整选项表或边界情况时，Agent 会读取上方文档索引中的 Markdown 页面。
 
 ## MCP
 
-Agent 补译依赖 `@ai-i18n/mcp` 暴露的底层写入能力。你需要在你最喜欢的 AI IDE 或 CLI 工具中注册这个 MCP 服务器。
+Agent 补译依赖 `@ai-i18n/mcp` 暴露的底层写入能力。需要在所使用的 AI IDE 或 CLI 工具中
+注册这个 MCP 服务器。
 
 不同的工具注册方式略有不同：
 

@@ -3,6 +3,8 @@ title: 测试（Vitest）
 description: 使用 aiI18nVitest() 在 Vitest 中提供 virtual:ai-i18n，无需手写 alias 或 mock，也不读写协议文件
 ---
 
+import { Tab, Tabs } from '@rspress/core/theme';
+
 单元测试通常不需要静态提取、Provider 调用或 `i18n/` 协议文件读写——这些正是正式 `aiI18n()`
 插件承担的构建期工作。继续在 `vitest.config.ts` 里注册 `aiI18n()`，或者手写 alias 把
 `virtual:ai-i18n` 指向自建 mock，都容易遇到问题：前者会触发 registration 静态依赖加载与文件
@@ -22,31 +24,86 @@ description: 使用 aiI18nVitest() 在 Vitest 中提供 virtual:ai-i18n，无需
 
 ## 快速开始
 
-```ts
-// vitest.config.ts
-import { aiI18nVitest } from '@ai-i18n/vite/vitest';
-import react from '@vitejs/plugin-react';
-import { defineConfig } from 'vitest/config';
+<Tabs>
+  <Tab label="React">
+    ```ts
+    // vitest.config.ts
+    import { aiI18nVitest } from '@ai-i18n/vite/vitest';
+    import react from '@vitejs/plugin-react';
+    import { defineConfig } from 'vitest/config';
 
-export default defineConfig({
-  plugins: [
-    aiI18nVitest({
-      sourceLang: 'zh-CN', // 测试 Runtime 固定回退的源码语言
-      // value 是语言标识，label 是组件中展示的名称。
-      locales: [
-        { value: 'zh-CN', label: '中文' },
-        { value: 'en-US', label: 'English' },
+    export default defineConfig({
+      plugins: [
+        aiI18nVitest({
+          sourceLang: 'zh-CN', // 测试 Runtime 固定回退的源码语言
+          // value 是语言标识，label 是组件中展示的名称。
+          locales: [
+            { value: 'zh-CN', label: '中文' },
+            { value: 'en-US', label: 'English' },
+          ],
+          autoImport: true, // 仅当正式 Vite 配置也开启自动导入时保持一致
+        }),
+        react(), // 提供 React 转换，并让测试插件自动识别 React 模式
       ],
-      autoImport: true, // 仅当正式 Vite 配置也开启自动导入时保持一致
-    }),
-    react(), // 提供 React 转换，并让测试插件自动识别 React 模式
-  ],
-});
-```
+    });
+    ```
 
-Vue 项目把 `react()` 换成 `vue()`，`framework` 同样按最终插件列表自动检测（`vite:vue`/
-`vite:vue-jsx` → `vue`，`vite:react*` → `react`，都不存在 → `vanilla`）；也可以显式传
-`framework` 覆盖检测结果。
+  </Tab>
+
+  <Tab label="Vue">
+    Vue 项目保留自己的 Vite Vue 插件：
+
+    ```ts
+    // vitest.config.ts
+    import { aiI18nVitest } from '@ai-i18n/vite/vitest';
+    import vue from '@vitejs/plugin-vue';
+    import { defineConfig } from 'vitest/config';
+
+    export default defineConfig({
+      plugins: [
+        aiI18nVitest({
+          sourceLang: 'zh-CN',
+          locales: [
+            { value: 'zh-CN', label: '中文' },
+            { value: 'en-US', label: 'English' },
+          ],
+          autoImport: true,
+        }),
+        vue(),
+      ],
+    });
+    ```
+
+  </Tab>
+
+  <Tab label="Vanilla JS">
+    Vanilla 项目不需要框架插件：
+
+    ```ts
+    // vitest.config.ts
+    import { aiI18nVitest } from '@ai-i18n/vite/vitest';
+    import { defineConfig } from 'vitest/config';
+
+    export default defineConfig({
+      plugins: [
+        aiI18nVitest({
+          sourceLang: 'zh-CN',
+          locales: [
+            { value: 'zh-CN', label: '中文' },
+            { value: 'en-US', label: 'English' },
+          ],
+          autoImport: true,
+        }),
+      ],
+    });
+    ```
+
+  </Tab>
+</Tabs>
+
+`framework` 会按最终插件列表检测：`vite:vue` / `vite:vue-jsx` 对应 Vue，
+`vite:react*` 对应 React，两者都不存在时对应 Vanilla。也可以显式传入 `framework`
+覆盖检测结果。
 
 ## 与正式配置共享 options
 

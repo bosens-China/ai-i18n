@@ -39,7 +39,7 @@ interface AiI18nOptions {
 | `sourceLang`  | `string`                                                                            | 是   | 无                   | 源码文案所属语言。                   |
 | `locales`     | [`readonly LangOption[]`](/api/vite/interfaces/lang-option)                         | 是   | 无                   | 项目支持的语言列表。                 |
 | `defaultLang` | `string`                                                                            | 否   | `sourceLang`         | 没有有效持久化值时使用的初始语言。   |
-| `persist`     | `boolean \| `[`AiI18nPersistOptions`](/api/vite/interfaces/ai-i18n-persist-options) | 否   | `false`              | 使用 localStorage 保存语言偏好。     |
+| `persist`     | `boolean` 或 [`AiI18nPersistOptions`](/api/vite/interfaces/ai-i18n-persist-options) | 否   | `false`              | 使用 localStorage 保存语言偏好。     |
 | `loading`     | [`AiI18nLocaleLoadingOptions`](/api/vite/interfaces/ai-i18n-locale-loading-options) | 否   | 全语言注册           | 按 locale 拆分语言资产。             |
 | `framework`   | [`AiI18nFramework`](/api/vite/type-aliases/ai-i18n-framework)                       | 否   | 自动检测             | 指定 Vanilla、Vue 或 React 模式。    |
 | `autoImport`  | `boolean`                                                                           | 否   | `false`              | 自动注入当前框架模式的 Runtime API。 |

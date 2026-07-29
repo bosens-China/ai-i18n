@@ -26,7 +26,7 @@ features:
     details: 了解 AST 支持哪些源码与调用写法，以及哪些内容不会提取。
     link: /guide/basic/static-analysis
   - title: 分包与按需加载
-    details: 按 locale 拆分 chunk，并为异步语言切换显示 Loading 状态。
+    details: 按 locale 拆分 chunk，并显示异步语言切换的加载状态。
     link: /guide/basic/locale-loading
   - title: 配置与 API
     details: 按层级查找 Vite 配置、Runtime 与 Provider 契约。
@@ -38,6 +38,6 @@ features:
     details: 区分必填与可选字段，并编写可维护的翻译提示词。
     link: /guide/advanced/ai-translation
   - title: AI 工具接入
-    details: 安装 Agent skills，并通过 MCP 安全补齐缺失翻译。
+    details: 安装 Agent Skills，并通过 MCP 安全补齐缺失翻译。
     link: /guide/advanced/ai-tools
 ---
