@@ -18,6 +18,16 @@ import { PackageManagerTabs } from '@rspress/core/theme';
 ESLint 9 和 10。
 :::
 
+:::tip pnpm monorepo
+插件应安装在实际加载 `eslint.config.*` 的 workspace 中。配置在仓库根目录，并从根目录
+执行 ESLint 时，使用 `pnpm add -Dw @ai-i18n/eslint-plugin@alpha`；子包有独立配置，并从
+该子包执行 ESLint 时，只安装在子包即可。
+
+例如，根配置中 `import '@ai-i18n/eslint-plugin'`，但插件只安装在 `apps/web`，pnpm 的
+依赖隔离会让根配置解析失败。是否需要安装在根目录，取决于加载了哪份配置，而不是被检查的
+源码位于哪个目录。
+:::
+
 :::tip Vue 项目
 Vue SFC 还需要宿主已有的 `eslint-plugin-vue`、`vue-eslint-parser` 与
 `@vue/compiler-sfc`。

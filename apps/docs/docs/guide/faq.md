@@ -58,6 +58,25 @@ glibc 镜像，例如 `node:24-bookworm-slim`。最终用于托管静态文件�
 
 局部变量、函数参数或显式 import 与自动导入 API 同名时，局部 binding 始终优先。
 
+## 为什么 Vue 模板里仍然找不到 `t`？
+
+`autoImport: true` 会自动提供 `useI18n`，但不会自动在每个组件中执行 composable。模板要
+订阅语言变化，仍需在 `<script setup>` 中取得组件级的 `t`：
+
+```vue
+<script setup lang="ts">
+const { t } = useI18n();
+</script>
+
+<template>
+  <button>{{ t('保存') }}</button>
+</template>
+```
+
+如果没有开启自动导入，再补上
+`import { useI18n } from 'virtual:ai-i18n'`。生成的 `src/ai-i18n.d.ts` 只负责让
+TypeScript 认识这些全局 API，不能代替 composable 调用。
+
 ## 为什么普通 JSX 或 Vue 模板文本没有被提取？
 
 ai-i18n 不猜测普通 UI 文本，只提取明确调用翻译 API 的内容：
@@ -156,6 +175,36 @@ Promise 会 reject，并保留当前语言。Vue / React 组件可以直接使�
 同时确认 `preload` 和 `prefetch` 只包含已配置的目标 locale，未包含 `sourceLang`，并且
 同一 locale 没有同时出现在两个列表中。完整示例见
 [语言分包与按需加载](/guide/basic/locale-loading)。
+
+## 如何让 Element Plus 跟随 ai-i18n 切换语言？
+
+把 `useI18n()` 的 `currentLang` 映射成 Element Plus locale，再传给根部的
+`ElConfigProvider`：
+
+```vue
+<script setup lang="ts">
+import { computed } from 'vue';
+import { ElConfigProvider } from 'element-plus';
+import en from 'element-plus/es/locale/lang/en';
+import zhCn from 'element-plus/es/locale/lang/zh-cn';
+
+const { currentLang } = useI18n();
+const elementPlusLocale = computed(() =>
+  currentLang.value === 'en-US' ? en : zhCn,
+);
+</script>
+
+<template>
+  <ElConfigProvider :locale="elementPlusLocale">
+    <RouterView />
+  </ElConfigProvider>
+</template>
+```
+
+示例开启了 `autoImport: true`；未开启时还要显式导入 `useI18n`。项目语言多于两种时，
+请把三元表达式改成完整的 locale 映射。Element Plus 的日期、时间类组件还使用 Day.js，
+对应语言需要按 [Element Plus 国际化文档](https://element-plus.org/en-US/guide/i18n)
+另外加载 Day.js locale。
 
 ## 生成文件是否需要提交？
 

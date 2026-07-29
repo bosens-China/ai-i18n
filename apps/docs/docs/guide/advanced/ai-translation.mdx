@@ -19,7 +19,8 @@ ai-i18n 提供两种 AI 翻译方式：
 
 :::tip 本页介绍 OpenAI Provider
 未配置 `provider` 时，ai-i18n 仍会完成提取、Runtime 和协议文件维护，目标语言的缺失值
-保持为 `null`，可以留给 Agent + MCP 补齐。
+保持为 `null`，可以留给 Agent + MCP 补齐。Vite Dev 会在终端汇总当前已访问模块中的
+未翻译数量；因为 Dev 只分析浏览器实际请求过的模块，这不是全项目覆盖率。
 :::
 
 ## 安装 Provider
