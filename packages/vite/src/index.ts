@@ -21,6 +21,7 @@ export type { AiI18nFramework } from './framework.js';
 export type { HtmlExtractorOptions } from './html.js';
 export type {
   I18nRuntime,
+  LangLoadState,
   LangOption,
   TranslationBatch,
   TranslationMessage,

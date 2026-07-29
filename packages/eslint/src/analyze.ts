@@ -5,12 +5,14 @@ import {
   Analyzer,
   extractMessages,
   findInvalidDefineI18nMessagesReferences,
+  findTranslationCalls,
   findUnboundCalls,
   validateRecommendedUsage,
   type Module,
   type ExtractWarningCode,
   type RecommendedUsageCode,
   type AnalysisLanguage,
+  type TranslationCall,
   type TranslationHookBinding,
 } from '@ai-i18n/analyzer';
 import { createImportResolver } from './resolve-import.js';
@@ -22,14 +24,52 @@ export interface StaticArgsWarning {
   message: string;
 }
 
+export interface StaticAnalysisResult {
+  warnings: StaticArgsWarning[];
+  translationCalls: TranslationCall[];
+}
+
+export type AutoImportApi = 't' | 'useI18n';
+export type AutoImportOption = boolean | readonly AutoImportApi[];
+
+interface AutoImportBindings {
+  t: boolean;
+  useI18n: boolean;
+}
+
+const POTENTIAL_TRANSLATION_RE =
+  /virtual:ai-i18n|\b(?:t|useI18n|defineI18nMessages)\b/;
+
 export function analyzeStaticArgs(
   code: string,
   filename: string,
   tsconfigPath?: string,
   lang?: AnalysisLanguage,
-  autoImport = false,
+  autoImport: AutoImportOption = false,
   maxStaticCandidates = Number.POSITIVE_INFINITY,
 ): StaticArgsWarning[] {
+  return analyzeStaticSource(
+    code,
+    filename,
+    tsconfigPath,
+    lang,
+    autoImport,
+    maxStaticCandidates,
+  ).warnings;
+}
+
+export function analyzeStaticSource(
+  code: string,
+  filename: string,
+  tsconfigPath?: string,
+  lang?: AnalysisLanguage,
+  autoImport: AutoImportOption = false,
+  maxStaticCandidates = Number.POSITIVE_INFINITY,
+): StaticAnalysisResult {
+  if (!hasPotentialTranslationCandidate(code)) {
+    return { warnings: [], translationCalls: [] };
+  }
+  const autoImports = normalizeAutoImports(autoImport);
   const resolve = createImportResolver(tsconfigPath);
   const analyzer = new Analyzer({ resolve });
   analyzer.addFile(
@@ -38,21 +78,24 @@ export function analyzeStaticArgs(
   );
   const entryPath = normalizeFilename(filename);
   const entry = analyzer.addFile(entryPath, code, lang ? { lang } : undefined);
-  if (!hasTranslationCandidate(entry, autoImport)) return [];
+  if (!hasTranslationCandidate(entry, autoImports)) {
+    return { warnings: [], translationCalls: [] };
+  }
   loadDependencies(analyzer, entry, resolve);
   analyzer.link();
+  const hooks = translationHooks(autoImports);
   const extraction = extractMessages(
     entry,
     AI_I18N_VIRTUAL_MODULE_ID,
-    translationHooks(autoImport),
-    autoImport,
+    hooks,
+    autoImports.t,
     maxStaticCandidates,
   ).warnings;
   const recommended = validateRecommendedUsage(
     entry,
     AI_I18N_VIRTUAL_MODULE_ID,
-    translationHooks(autoImport),
-    autoImport,
+    hooks,
+    autoImports.t,
   );
   const warnings = recommended.length
     ? [
@@ -63,15 +106,45 @@ export function analyzeStaticArgs(
         ...recommended,
       ]
     : extraction;
-  return warnings.map(({ code: warningCode, line, column, message }) => ({
-    code: warningCode,
-    line,
-    column,
-    message,
-  }));
+  return {
+    warnings: warnings.map(({ code: warningCode, line, column, message }) => ({
+      code: warningCode,
+      line,
+      column,
+      message,
+    })),
+    translationCalls: findTranslationCalls(
+      entry,
+      AI_I18N_VIRTUAL_MODULE_ID,
+      hooks,
+      autoImports.t,
+    ),
+  };
 }
 
-function hasTranslationCandidate(module: Module, autoImport: boolean): boolean {
+export function hasPotentialTranslationCandidate(code: string): boolean {
+  return POTENTIAL_TRANSLATION_RE.test(code);
+}
+
+export function normalizeAutoImports(
+  autoImport: AutoImportOption | undefined,
+): AutoImportBindings {
+  if (typeof autoImport === 'boolean') {
+    return { t: autoImport, useI18n: autoImport };
+  }
+  return {
+    t: autoImport?.includes('t') ?? false,
+    useI18n: autoImport?.includes('useI18n') ?? false,
+  };
+}
+
+function hasTranslationCandidate(
+  module: Module,
+  autoImports: AutoImportBindings,
+): boolean {
+  const unbound = ['defineI18nMessages'];
+  if (autoImports.t) unbound.push('t');
+  if (autoImports.useI18n) unbound.push('useI18n');
   return (
     module.imports.some(
       (item) =>
@@ -81,22 +154,19 @@ function hasTranslationCandidate(module: Module, autoImport: boolean): boolean {
           item.name === 'useI18n'),
     ) ||
     findInvalidDefineI18nMessagesReferences(module).length > 0 ||
-    findUnboundCalls(
-      module,
-      new Set(['defineI18nMessages', ...(autoImport ? ['t', 'useI18n'] : [])]),
-    ).length > 0
+    findUnboundCalls(module, new Set(unbound)).length > 0
   );
 }
 
 function translationHooks(
-  autoImport: boolean,
+  autoImports: AutoImportBindings,
 ): readonly TranslationHookBinding[] {
   return [
     {
       module: AI_I18N_VIRTUAL_MODULE_ID,
       hook: 'useI18n',
       property: 't',
-      autoImport,
+      autoImport: autoImports.useI18n,
     },
   ];
 }

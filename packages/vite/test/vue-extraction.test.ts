@@ -1,3 +1,6 @@
+import fs from 'node:fs/promises';
+import os from 'node:os';
+import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { analyzeModule, extractMessages } from '../src';
 import {
@@ -131,6 +134,32 @@ const LABEL = 'setup 脚本'
       prefix: '<script setup>\n',
       suffix: '</script>\n',
     });
+  });
+
+  it('resolves imported props and emits types through the host Vue compiler', async () => {
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), 'ai-i18n-vue-types-'));
+    await fs.writeFile(
+      path.join(root, 'contracts.ts'),
+      `export interface PanelProps {
+  label: string
+}
+export interface PanelEmits {
+  save: [value: string]
+}`,
+    );
+    const source = `<script setup lang="ts">
+import type { PanelEmits, PanelProps } from './contracts'
+defineProps<PanelProps>()
+defineEmits<PanelEmits>()
+</script>`;
+
+    try {
+      await expect(
+        extractFrameworkSource(source, path.join(root, 'Panel.vue'), 'vue'),
+      ).resolves.toMatchObject({ analysisLang: 'ts' });
+    } finally {
+      await fs.rm(root, { recursive: true, force: true });
+    }
   });
 });
 

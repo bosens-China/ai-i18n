@@ -279,7 +279,7 @@ describe('@ai-i18n/core runtime', () => {
     expect(runtime.getLang()).toBe('en-US');
     expect(runtime.t('保存')).toBe('Save');
     expect(runtime.t('缺失')).toBe('缺失');
-    expect(listener).toHaveBeenCalledOnce();
+    expect(listener).toHaveBeenCalledTimes(2);
     await runtime.setLang('zh-CN');
     await runtime.setLang('en-US');
     expect(loader).toHaveBeenCalledTimes(1);
@@ -379,6 +379,11 @@ describe('@ai-i18n/core runtime', () => {
 
     await vi.waitFor(() => expect(warn).toHaveBeenCalledOnce());
     expect(runtime.getLang()).toBe('zh-CN');
+    expect(runtime.getLangLoadState()).toEqual({
+      status: 'error',
+      targetLang: 'en-US',
+      error,
+    });
     expect(warn).toHaveBeenCalledWith(
       expect.stringContaining('Failed to load initial locale "en-US"'),
       error,

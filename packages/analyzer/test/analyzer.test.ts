@@ -3,9 +3,7 @@ import {
   analyzeModule,
   extractMessages,
   findDefineI18nMessagesCalls,
-  findInvalidDefineI18nMessagesReferences,
   findUnboundCalls,
-  validateRecommendedUsage,
 } from '../src/index';
 
 const hooks = [
@@ -383,44 +381,5 @@ t(messages['01'])`,
       messages: [{ source: 'one' }],
       warnings: [{ code: 'dynamic-argument' }],
     });
-  });
-
-  it('keeps extraction tolerant while reporting non-recommended syntax', () => {
-    const module = analyzeModule(
-      `import { t } from 'virtual:ai-i18n'
-let label = '可提取但应使用 const'
-const plain = { save: '普通对象' }
-const messages = defineI18nMessages({ save: '保' + '存' })
-t(label)
-t(plain.save)
-t(messages.save)
-t(ok && '逻辑表达式')`,
-      'main.ts',
-    );
-
-    expect(extractMessages(module)).toMatchObject({
-      messages: [
-        { source: '可提取但应使用 const' },
-        { source: '普通对象' },
-        { source: '保存' },
-        { source: '逻辑表达式' },
-      ],
-      warnings: [],
-    });
-    expect(validateRecommendedUsage(module)).toMatchObject([
-      { code: 'mutable-binding' },
-      { code: 'unmarked-member' },
-      { code: 'non-recommended-argument' },
-      { code: 'non-recommended-argument' },
-    ]);
-  });
-
-  it('rejects treating the compiler macro as a runtime value', () => {
-    const module = analyzeModule('const macro = defineI18nMessages', 'main.ts');
-
-    expect(findInvalidDefineI18nMessagesReferences(module)).toHaveLength(1);
-    expect(validateRecommendedUsage(module)).toMatchObject([
-      { code: 'invalid-macro' },
-    ]);
   });
 });

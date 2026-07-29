@@ -1,4 +1,4 @@
-import type { I18nRuntime } from '@ai-i18n/core';
+import type { I18nRuntime, LangLoadState } from '@ai-i18n/core';
 import { useCallback, useSyncExternalStore } from 'react';
 
 export interface ReactI18n {
@@ -6,6 +6,9 @@ export interface ReactI18n {
   setLang: I18nRuntime['setLang'];
   currentLang: ReturnType<I18nRuntime['getLang']>;
   langs: ReturnType<I18nRuntime['getLangs']>;
+  langLoadState: LangLoadState;
+  isLangLoading: boolean;
+  langLoadError: unknown | null;
 }
 
 export type UseI18n = () => ReactI18n;
@@ -41,11 +44,15 @@ export function createReactI18n(runtime: I18nRuntime): UseI18n {
         translate(source, ...values)) as I18nRuntime['t'],
       [revision, translate],
     );
+    const langLoadState = runtime.getLangLoadState();
     return {
       t,
       setLang: runtime.setLang,
       currentLang: runtime.getLang(),
       langs,
+      langLoadState,
+      isLangLoading: langLoadState.status === 'loading',
+      langLoadError: langLoadState.error,
     };
   };
 }

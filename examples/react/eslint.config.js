@@ -6,7 +6,7 @@ import rootConfig from '../../eslint.config.js';
 
 export default defineConfig([
   rootConfig,
-  aiI18n.configs.react,
+  aiI18n.configs['react-auto-import'],
   {
     files: ['**/*.{ts,tsx}'],
     extends: [reactHooks.configs.flat.recommended, reactRefresh.configs.vite],

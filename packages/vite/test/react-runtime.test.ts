@@ -70,4 +70,50 @@ describe('React runtime adapter', () => {
     await runtime.setLang('zh-CN');
     expect(listener).toHaveBeenCalledOnce();
   });
+
+  it('exposes language loading and error snapshots', async () => {
+    const error = new Error('offline');
+    let fail!: (error: Error) => void;
+    const runtime = createI18nRuntime({
+      sourceLang: 'zh-CN',
+      defaultLang: 'zh-CN',
+      locales: [
+        { value: 'zh-CN', label: '中文' },
+        { value: 'en-US', label: 'English' },
+      ],
+      localeLoaders: {
+        'en-US': () =>
+          new Promise((_, reject) => {
+            fail = reject;
+          }),
+      },
+    });
+    const useI18n = createReactI18n(runtime);
+
+    const idle = useI18n();
+    expect(idle).toMatchObject({
+      isLangLoading: false,
+      langLoadError: null,
+    });
+    expect(useI18n().langLoadState).toBe(idle.langLoadState);
+    const listener = vi.fn();
+    const unsubscribe = reactHooks.subscribe!(listener);
+    const request = runtime.setLang('en-US');
+    expect(listener).toHaveBeenCalledOnce();
+    expect(useI18n()).toMatchObject({
+      langLoadState: { status: 'loading', targetLang: 'en-US', error: null },
+      isLangLoading: true,
+      langLoadError: null,
+    });
+
+    fail(error);
+    await expect(request).rejects.toBe(error);
+    expect(listener).toHaveBeenCalledTimes(2);
+    expect(useI18n()).toMatchObject({
+      langLoadState: { status: 'error', targetLang: 'en-US', error },
+      isLangLoading: false,
+      langLoadError: error,
+    });
+    unsubscribe();
+  });
 });

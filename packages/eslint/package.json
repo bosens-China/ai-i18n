@@ -43,10 +43,18 @@
   "peerDependencies": {
     "@vue/compiler-sfc": ">=3.2.0",
     "eslint": ">=9.0.0",
+    "typescript": ">=5.0.0",
+    "vue": ">=3.2.25",
     "vue-eslint-parser": ">=9.0.0"
   },
   "peerDependenciesMeta": {
     "@vue/compiler-sfc": {
+      "optional": true
+    },
+    "typescript": {
+      "optional": true
+    },
+    "vue": {
       "optional": true
     },
     "vue-eslint-parser": {

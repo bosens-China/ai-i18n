@@ -18,6 +18,11 @@ export interface Translate {
   (strings: TemplateStringsArray, ...values: unknown[]): string;
 }
 
+export type LangLoadState =
+  | Readonly<{ status: 'idle'; targetLang: null; error: null }>
+  | Readonly<{ status: 'loading'; targetLang: string; error: null }>
+  | Readonly<{ status: 'error'; targetLang: string; error: unknown }>;
+
 export interface I18nRuntimeOptions {
   sourceLang: string;
   defaultLang: string;
@@ -32,6 +37,7 @@ export interface I18nRuntime {
   setLang(value: string): Promise<void>;
   getLang(): string;
   getLangs(): readonly LangOption[];
+  getLangLoadState(): LangLoadState;
   subscribe(listener: () => void): () => void;
   registerModule(moduleId: string, messages: ModuleMessages): void;
   replaceModule(moduleId: string, messages: ModuleMessages): void;
@@ -64,6 +70,7 @@ export function createI18nRuntime(options: I18nRuntimeOptions): I18nRuntime {
   let modules = new Map<string, ModuleMessages>();
   let catalog = new Map<string, Map<string, TranslationValue>>();
   let currentLang = lazy ? options.sourceLang : initialLang;
+  let langLoadState: LangLoadState = idleLangLoadState;
   let languageRequest = 0;
 
   if (localeLoaders) {
@@ -126,6 +133,18 @@ export function createI18nRuntime(options: I18nRuntimeOptions): I18nRuntime {
     listeners.forEach((listener) => listener());
   }
 
+  function updateLangLoadState(nextState: LangLoadState): boolean {
+    if (
+      langLoadState.status === nextState.status &&
+      langLoadState.targetLang === nextState.targetLang &&
+      langLoadState.error === nextState.error
+    ) {
+      return false;
+    }
+    langLoadState = nextState;
+    return true;
+  }
+
   function translate(messageId: string, sourceFallback: string) {
     const value = catalog.get(currentLang)?.get(messageId);
     if (value !== null && value !== undefined) {
@@ -171,12 +190,38 @@ export function createI18nRuntime(options: I18nRuntimeOptions): I18nRuntime {
       throw new RangeError(`[ai-i18n] unsupported locale "${value}"`);
     }
     const request = ++languageRequest;
-    if (lazy && value !== options.sourceLang) await loadLocale(value);
-    if (request === languageRequest) {
-      const changed = value !== currentLang;
-      currentLang = value;
-      if (persist) writePersistedLang(persistenceKey, value);
-      if (changed) notify();
+    const needsLoad =
+      lazy && value !== options.sourceLang && !loadedLocales.has(value);
+    if (
+      needsLoad &&
+      updateLangLoadState(
+        Object.freeze({ status: 'loading', targetLang: value, error: null }),
+      )
+    ) {
+      notify();
+    }
+    try {
+      if (needsLoad) await loadLocale(value);
+    } catch (error: unknown) {
+      // 旧请求仍按自身结果结束，但只有最后一次请求可以覆盖全局加载状态。
+      if (
+        request === languageRequest &&
+        updateLangLoadState(
+          Object.freeze({ status: 'error', targetLang: value, error }),
+        )
+      ) {
+        notify();
+      }
+      throw error;
+    }
+    if (request !== languageRequest) return;
+
+    const changed = value !== currentLang;
+    currentLang = value;
+    if (persist) writePersistedLang(persistenceKey, value);
+    const stateChanged = updateLangLoadState(idleLangLoadState);
+    if (changed || stateChanged) {
+      notify();
     }
   }
 
@@ -213,6 +258,9 @@ export function createI18nRuntime(options: I18nRuntimeOptions): I18nRuntime {
     getLangs() {
       return locales.map((locale) => ({ ...locale }));
     },
+    getLangLoadState() {
+      return langLoadState;
+    },
     subscribe(listener) {
       listeners.add(listener);
       return () => listeners.delete(listener);
@@ -246,6 +294,14 @@ export function createI18nRuntime(options: I18nRuntimeOptions): I18nRuntime {
   if (lazy && initialLang !== options.sourceLang) {
     // 默认目标语言异步加载；失败时保持同步可用的 source fallback。
     void changeLang(initialLang, false).catch((error: unknown) => {
+      const state = runtime.getLangLoadState();
+      if (
+        state.status !== 'error' ||
+        state.targetLang !== initialLang ||
+        state.error !== error
+      ) {
+        return;
+      }
       console.warn(
         `[ai-i18n] 初始语言“${initialLang}”加载失败，继续使用源语言“${options.sourceLang}” / Failed to load initial locale "${initialLang}"; continuing with source locale "${options.sourceLang}".`,
         error,
@@ -254,6 +310,12 @@ export function createI18nRuntime(options: I18nRuntimeOptions): I18nRuntime {
   }
   return runtime;
 }
+
+const idleLangLoadState: LangLoadState = Object.freeze({
+  status: 'idle',
+  targetLang: null,
+  error: null,
+});
 
 function resolvePersistenceKey(
   persist: I18nRuntimeOptions['persist'],

@@ -1,4 +1,5 @@
 import { createRequire } from 'node:module';
+import path from 'node:path';
 import { diagnosticMessage } from '@ai-i18n/analyzer';
 import {
   analyzeVueSource,
@@ -10,7 +11,12 @@ interface VueParserServices {
   getDocumentFragment?: () => unknown;
 }
 
-const require = createRequire(import.meta.url);
+type Require = ReturnType<typeof createRequire>;
+type NodeVueCompiler = VueCompiler & {
+  registerTS?: (loadTypeScript: () => unknown) => void;
+};
+
+const packageRequire = createRequire(import.meta.url);
 
 export function createVueAnalysisSource(
   source: string,
@@ -27,8 +33,8 @@ export function createVueAnalysisSource(
   }
 
   try {
-    // Vue 编译器仅在 configs.vue 真正处理 SFC 时加载，不影响 React/Vanilla 项目。
-    const compiler = require('@vue/compiler-sfc') as VueCompiler;
+    // Vue preset 真正处理 SFC 时才加载编译器，不影响 React/Vanilla 项目。
+    const compiler = loadVueCompiler(filename);
     return analyzeVueSource(source, filename, compiler);
   } catch (error) {
     if (isMissingVueCompiler(error)) {
@@ -43,10 +49,41 @@ export function createVueAnalysisSource(
   }
 }
 
+function loadVueCompiler(filename: string): VueCompiler {
+  const hostRequire = createRequire(path.resolve(filename));
+  // 优先复用宿主 Vue 的 Node wrapper，它会为 imported types 注册 TypeScript。
+  const compiler = (tryRequire(hostRequire, 'vue/compiler-sfc') ??
+    tryRequire(packageRequire, 'vue/compiler-sfc') ??
+    tryRequire(hostRequire, '@vue/compiler-sfc') ??
+    packageRequire('@vue/compiler-sfc')) as NodeVueCompiler;
+  compiler.registerTS?.(() => {
+    const typescript =
+      tryResolve(hostRequire, 'typescript') ??
+      tryResolve(packageRequire, 'typescript');
+    return packageRequire(typescript ?? 'typescript');
+  });
+  return compiler;
+}
+
+function tryRequire(require: Require, id: string): unknown {
+  const resolved = tryResolve(require, id);
+  return resolved ? require(resolved) : null;
+}
+
+function tryResolve(require: Require, id: string): string | null {
+  try {
+    return require.resolve(id);
+  } catch (error) {
+    if (isMissingVueCompiler(error)) return null;
+    throw error;
+  }
+}
+
 function isMissingVueCompiler(error: unknown): boolean {
   return (
     error instanceof Error &&
     'code' in error &&
-    error.code === 'MODULE_NOT_FOUND'
+    (error.code === 'MODULE_NOT_FOUND' ||
+      error.code === 'ERR_PACKAGE_PATH_NOT_EXPORTED')
   );
 }

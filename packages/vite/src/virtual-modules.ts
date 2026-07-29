@@ -38,6 +38,7 @@ export const t = runtime.t;
 export const setLang = runtime.setLang;
 export const getLang = runtime.getLang;
 export const getLangs = runtime.getLangs;
+export const getLangLoadState = runtime.getLangLoadState;
 export const subscribe = runtime.subscribe;
 export const __translate = (messageId, source) =>
   formatTemplateMessage(runtime.translate(messageId, source), []);
@@ -60,12 +61,18 @@ ${localeHotUpdate}
 }
 
 export function runtimeStubCode(framework: AiI18nFramework): string {
+  const adapter =
+    framework === 'vanilla'
+      ? ''
+      : `import { create${framework === 'vue' ? 'Vue' : 'React'}I18n } from '@ai-i18n/vite/${framework}';`;
   const hook =
     framework === 'vanilla'
       ? ''
-      : 'export const useI18n = () => ({ t, setLang, currentLang: getLang(), langs: getLangs() });';
+      : `const runtime = { t, setLang, getLang, getLangs, getLangLoadState, subscribe };
+export const useI18n = create${framework === 'vue' ? 'Vue' : 'React'}I18n(runtime);`;
   return `
 import { formatTemplateMessage } from '@ai-i18n/vite/runtime';
+${adapter}
 export const t = (source, ...values) =>
   typeof source === 'string'
     ? source
@@ -73,6 +80,8 @@ export const t = (source, ...values) =>
 export const setLang = async () => {};
 export const getLang = () => '';
 export const getLangs = () => [];
+const idleLangLoadState = Object.freeze({ status: 'idle', targetLang: null, error: null });
+export const getLangLoadState = () => idleLangLoadState;
 export const subscribe = () => () => {};
 export const __translate = (messageId, source) =>
   formatTemplateMessage(source, []);

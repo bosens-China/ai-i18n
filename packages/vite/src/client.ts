@@ -5,5 +5,6 @@ declare module 'virtual:ai-i18n' {
   export const setLang: I18nRuntime['setLang'];
   export const getLang: I18nRuntime['getLang'];
   export const getLangs: I18nRuntime['getLangs'];
+  export const getLangLoadState: I18nRuntime['getLangLoadState'];
   export const subscribe: I18nRuntime['subscribe'];
 }

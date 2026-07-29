@@ -5,7 +5,7 @@ import {
   type NodeType,
 } from 'yuku-analyzer';
 import { diagnosticMessage } from './diagnostics.js';
-import { isDefineI18nMessagesCall } from './static-values.js';
+import { evaluateStrings, isDefineI18nMessagesCall } from './static-values.js';
 
 type Node = NodeOfType<NodeType>;
 
@@ -69,13 +69,22 @@ export function recommendedArgumentIssue(
     case 'MemberExpression': {
       const macro = findMacroRoot(node, module, new Set());
       if (!macro) {
-        return {
-          code: 'unmarked-member',
-          message: diagnosticMessage(
-            '对象或数组文案请先用 defineI18nMessages() 标记，再传给 t()。',
-            'Mark object or array messages with defineI18nMessages() before passing them to t().',
-          ),
-        };
+        return isStaticCollectionMember(node, module) &&
+          Boolean(evaluateStrings(node, module)?.length)
+          ? {
+              code: 'unmarked-member',
+              message: diagnosticMessage(
+                '对象或数组文案请先用 defineI18nMessages() 标记，再传给 t()。',
+                'Mark object or array messages with defineI18nMessages() before passing them to t().',
+              ),
+            }
+          : {
+              code: 'non-recommended-argument',
+              message: diagnosticMessage(
+                't() 的参数无法静态提取，请传入静态文案。',
+                'The t() argument cannot be statically extracted; pass a static message.',
+              ),
+            };
       }
       return macroContainsDiscouragedSyntax(macro.node, macro.module)
         ? {
@@ -96,6 +105,52 @@ export function recommendedArgumentIssue(
         ),
       };
   }
+}
+
+function isStaticCollectionMember(
+  node: NodeOfType<'MemberExpression'>,
+  module: Module,
+): boolean {
+  return isStaticCollection(node.object, module, new Set());
+}
+
+function isStaticCollection(
+  node: Node,
+  module: Module,
+  seen: Set<string>,
+): boolean {
+  if (node.type === 'ObjectExpression' || node.type === 'ArrayExpression') {
+    return true;
+  }
+  if (node.type === 'MemberExpression') {
+    return isStaticCollection(node.object, module, seen);
+  }
+  if (
+    node.type === 'ParenthesizedExpression' ||
+    node.type === 'TSAsExpression' ||
+    node.type === 'TSSatisfiesExpression' ||
+    node.type === 'TSTypeAssertion' ||
+    node.type === 'TSNonNullExpression' ||
+    node.type === 'TSInstantiationExpression' ||
+    node.type === 'ChainExpression'
+  ) {
+    return isStaticCollection(node.expression, module, seen);
+  }
+  if (node.type !== 'Identifier') return false;
+  const symbol = module.symbolOf(node);
+  if (!symbol) return false;
+  const target = symbol.definition()?.symbol ?? symbol;
+  const key = `${target.module.path}:${target.id}`;
+  if (!target.has(SymbolFlags.Const) || seen.has(key)) {
+    return false;
+  }
+  const declaration = target.declarations[0];
+  const parent = declaration ? target.module.parentOf(declaration) : null;
+  return Boolean(
+    parent?.type === 'VariableDeclarator' &&
+    parent.init &&
+    isStaticCollection(parent.init, target.module, new Set([...seen, key])),
+  );
 }
 
 function identifierIssue(

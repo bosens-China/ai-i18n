@@ -202,6 +202,58 @@ describe('@ai-i18n/vite plugin updates', () => {
     expect(result).toEqual([register]);
   });
 
+  it('keeps Vue top-level t auto-import analysis during hot updates', async () => {
+    const { plugin, transform } = setupPlugin(
+      [],
+      undefined,
+      { ...options, autoImport: true },
+      [{ name: 'vite:vue' }],
+    );
+    const filename = '/workspace/src/hot-vue.ts';
+    await transform("export const label = t('before')", filename);
+
+    const registerId = '\0virtual:ai-i18n/register?module=src%2Fhot-vue.ts';
+    const register = { id: registerId };
+    const hotUpdate = objectHandler<
+      (
+        this: unknown,
+        options: {
+          type: 'update';
+          file: string;
+          timestamp: number;
+          modules: unknown[];
+          read: () => Promise<string>;
+        },
+      ) => Promise<unknown[] | undefined>
+    >(plugin.hotUpdate);
+    await hotUpdate.call(
+      {
+        environment: {
+          name: 'client',
+          moduleGraph: {
+            getModuleById: (id: string) =>
+              id === registerId ? register : undefined,
+            invalidateModule: vi.fn(),
+          },
+        },
+      },
+      {
+        type: 'update',
+        file: filename,
+        timestamp: 2,
+        modules: [],
+        read: async () => "export const label = t('after')",
+      },
+    );
+
+    const registration = await callHook<Promise<string>>(
+      plugin.load,
+      registerId,
+    );
+    expect(registration).toContain('"after"');
+    expect(registration).not.toContain('"before"');
+  });
+
   it('invalidates importer registration when an imported constant changes', async () => {
     const { plugin, transform } = setupPlugin(
       [],

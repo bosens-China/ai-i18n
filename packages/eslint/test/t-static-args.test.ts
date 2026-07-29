@@ -4,7 +4,8 @@ import path from 'node:path';
 import { RuleTester } from 'eslint';
 import tseslint from 'typescript-eslint';
 import vueParser from 'vue-eslint-parser';
-import { describe } from 'vitest';
+import { describe, expect, it } from 'vitest';
+import { diagnosticMessage } from '@ai-i18n/analyzer';
 import { staticCandidateLimit, tStaticArgs } from '../src/index';
 
 const fixtureRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'ai-i18n-eslint-'));
@@ -25,6 +26,13 @@ fs.writeFileSync(
   path.join(sourceRoot, 'bridge.ts'),
   "export { t } from 'virtual:ai-i18n'",
 );
+fs.writeFileSync(
+  path.join(sourceRoot, 'vue-types.ts'),
+  [
+    'export interface ImportedProps { label: string }',
+    'export interface ImportedEmits { save: [value: string] }',
+  ].join('\n'),
+);
 
 const tester = new RuleTester({
   languageOptions: {
@@ -44,6 +52,11 @@ const vueTester = new RuleTester({
     },
   },
 });
+
+const dynamicArgumentMessage = diagnosticMessage(
+  't() 的参数无法静态提取。source 请使用静态字符串，options 请使用只包含 comment 的静态对象。',
+  'The t() arguments cannot be statically extracted. Use a static string for source and a static object containing only comment for options.',
+);
 
 describe('ai-i18n/t-static-args', () => {
   tester.run('t-static-args', tStaticArgs, {
@@ -131,7 +144,7 @@ describe('ai-i18n/t-static-args', () => {
       {
         code: "import { t } from 'virtual:ai-i18n'; t('保存', { comment: props.comment })",
         filename: path.join(sourceRoot, 'comment.ts'),
-        errors: [{ messageId: 'dynamicArg' }],
+        errors: [{ message: dynamicArgumentMessage }],
       },
       {
         code: "import { t } from 'virtual:ai-i18n'; t('保存', '按钮')",
@@ -242,6 +255,10 @@ describe('ai-i18n/t-static-args', () => {
     ],
   });
 
+  it('classifies candidate limits as suggestions', () => {
+    expect(staticCandidateLimit.meta?.type).toBe('suggestion');
+  });
+
   tester.run('static-candidate-limit', staticCandidateLimit, {
     valid: [
       {
@@ -271,6 +288,19 @@ describe('ai-i18n/t-static-args', () => {
           "<template><button :title=\"t('保存')\">{{ t('提交') }}</button></template>",
         ].join('\n'),
         filename: path.join(sourceRoot, 'Static.vue'),
+      },
+      {
+        code: [
+          '<script setup lang="ts">',
+          "import type { ImportedEmits, ImportedProps } from './vue-types'",
+          "import { useI18n } from 'virtual:ai-i18n'",
+          'defineProps<ImportedProps>()',
+          'defineEmits<ImportedEmits>()',
+          'const { t } = useI18n()',
+          '</script>',
+          "<template>{{ t('已保存') }}</template>",
+        ].join('\n'),
+        filename: path.join(sourceRoot, 'ImportedTypes.vue'),
       },
       {
         code: "<template>{{ t('无需脚本') }}</template>",

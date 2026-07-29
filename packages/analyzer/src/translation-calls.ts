@@ -16,9 +16,13 @@ export interface TranslationHookBinding {
 
 export interface TranslationContext {
   translateSymbols: Set<YukuSymbol>;
+  runtimeTranslateSymbols: Set<YukuSymbol>;
+  hookTranslateSymbols: Set<YukuSymbol>;
   translationObjects: Map<YukuSymbol, Set<string>>;
   valueWrappers: Set<YukuSymbol>;
 }
+
+export type TranslationCalleeOrigin = 'runtime' | 'hook';
 
 export function createTranslationContext(
   module: Module,
@@ -26,6 +30,8 @@ export function createTranslationContext(
   translationHooks: readonly TranslationHookBinding[],
 ): TranslationContext {
   const translateSymbols = new Set<YukuSymbol>();
+  const runtimeTranslateSymbols = new Set<YukuSymbol>();
+  const hookTranslateSymbols = new Set<YukuSymbol>();
   const translationObjects = new Map<YukuSymbol, Set<string>>();
   const valueWrappers = new Set<YukuSymbol>();
 
@@ -38,6 +44,7 @@ export function createTranslationContext(
         item.local.definition()?.module.path === runtimeModuleId)
     ) {
       translateSymbols.add(item.local);
+      runtimeTranslateSymbols.add(item.local);
     }
     if (
       !item.typeOnly &&
@@ -53,9 +60,16 @@ export function createTranslationContext(
     module,
     translationHooks,
     translateSymbols,
+    hookTranslateSymbols,
     translationObjects,
   );
-  return { translateSymbols, translationObjects, valueWrappers };
+  return {
+    translateSymbols,
+    runtimeTranslateSymbols,
+    hookTranslateSymbols,
+    translationObjects,
+    valueWrappers,
+  };
 }
 
 export function isTranslationCallee(
@@ -64,22 +78,34 @@ export function isTranslationCallee(
   context: TranslationContext,
   autoImportRuntime: boolean,
 ): boolean {
+  return (
+    translationCalleeOrigin(node, module, context, autoImportRuntime) !== null
+  );
+}
+
+export function translationCalleeOrigin(
+  node: Node,
+  module: Module,
+  context: TranslationContext,
+  autoImportRuntime: boolean,
+): TranslationCalleeOrigin | null {
   if (
     autoImportRuntime &&
     node.type === 'Identifier' &&
     node.name === 't' &&
     !module.symbolOf(node)
   ) {
-    return true;
+    return 'runtime';
   }
   const symbol = valueSymbol(node, module, context.valueWrappers);
-  if (symbol && context.translateSymbols.has(symbol)) return true;
-  if (node.type !== 'MemberExpression') return false;
+  if (symbol && context.hookTranslateSymbols.has(symbol)) return 'hook';
+  if (symbol && context.runtimeTranslateSymbols.has(symbol)) return 'runtime';
+  if (node.type !== 'MemberExpression') return null;
   const objectSymbol = valueSymbol(node.object, module, context.valueWrappers);
   const properties = objectSymbol
     ? context.translationObjects.get(objectSymbol)
     : undefined;
-  if (!properties) return false;
+  if (!properties) return null;
   const property = node.computed
     ? node.property.type === 'Literal' &&
       typeof node.property.value === 'string'
@@ -88,7 +114,7 @@ export function isTranslationCallee(
     : node.property.type === 'Identifier'
       ? node.property.name
       : null;
-  return property !== null && properties.has(property);
+  return property !== null && properties.has(property) ? 'hook' : null;
 }
 
 export function isTranslationReference(
@@ -133,6 +159,7 @@ function collectHookTranslationSymbols(
   module: Module,
   bindings: readonly TranslationHookBinding[],
   translateSymbols: Set<YukuSymbol>,
+  hookTranslateSymbols: Set<YukuSymbol>,
   translationObjects: Map<YukuSymbol, Set<string>>,
 ): void {
   if (!bindings.length) return;
@@ -184,7 +211,10 @@ function collectHookTranslationSymbols(
           property.value.type === 'Identifier'
         ) {
           const symbol = module.symbolOf(property.value);
-          if (symbol) translateSymbols.add(symbol);
+          if (symbol) {
+            translateSymbols.add(symbol);
+            hookTranslateSymbols.add(symbol);
+          }
         }
       }
     },

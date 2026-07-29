@@ -6,7 +6,7 @@ import rootConfig from '../../eslint.config.js';
 
 export default defineConfig([
   rootConfig,
-  aiI18n.configs.vue,
+  aiI18n.configs['vue-auto-import'],
   pluginVue.configs['flat/essential'],
   {
     files: ['**/*.vue'],

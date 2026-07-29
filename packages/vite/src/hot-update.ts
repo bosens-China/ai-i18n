@@ -83,7 +83,7 @@ export function createHotUpdateHandler(dependencies: HotUpdateDependencies) {
               extraction,
               code!,
               dependencies.translationHooks(),
-              dependencies.autoImport() && framework === 'vanilla',
+              dependencies.autoImport(),
             ),
           )?.affectedModuleIds ?? []);
     const cache = await fileStore.sync(project.snapshot());

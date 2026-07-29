@@ -49,12 +49,17 @@ describe('framework integration', () => {
     expect(source).toContain('// @ts-nocheck');
     expect(source).toContain('/* eslint-disable */');
     expect(source).toContain("declare module 'virtual:ai-i18n'");
+    expect(source).toContain(
+      "export const getLangLoadState: I18nRuntime['getLangLoadState'];",
+    );
     expect(source).toContain("import('@ai-i18n/vite/vue').UseI18n");
     expect(source).toContain('declare const useI18n');
     expect(source).toContain(
+      "declare const t: import('@ai-i18n/vite').I18nRuntime['t'];",
+    );
+    expect(source).toContain(
       'declare const defineI18nMessages: <T>(messages: T) => T;',
     );
-    expect(source).not.toContain('declare const t:');
 
     await writeFrameworkTypes(root, 'react', true);
     const react = await fs.readFile(
@@ -62,7 +67,19 @@ describe('framework integration', () => {
       'utf8',
     );
     expect(react).toContain("import('@ai-i18n/vite/react').UseI18n");
+    expect(react).toContain(
+      "declare const t: import('@ai-i18n/vite').I18nRuntime['t'];",
+    );
     expect(react).not.toContain("import('@ai-i18n/vite/vue').UseI18n");
+
+    await writeFrameworkTypes(root, 'vanilla', true);
+    const vanillaAutoImport = await fs.readFile(
+      path.join(root, 'src/ai-i18n.d.ts'),
+      'utf8',
+    );
+    expect(vanillaAutoImport).toContain(
+      "declare const getLangLoadState: import('@ai-i18n/vite').I18nRuntime['getLangLoadState'];",
+    );
 
     await writeFrameworkTypes(root, 'vanilla', false);
     const vanilla = await fs.readFile(

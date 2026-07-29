@@ -82,12 +82,7 @@ export function createSourceTransformHandler(
     let update = project.update(
       extraction?.analysisCode ?? code,
       id,
-      sourceUpdateOptions(
-        extraction,
-        code,
-        translationHooks,
-        autoImport && framework === 'vanilla',
-      ),
+      sourceUpdateOptions(extraction, code, translationHooks, autoImport),
     );
     if (!update) return null;
     const { moduleId } = update;
@@ -100,12 +95,7 @@ export function createSourceTransformHandler(
     );
     if (analysisChanged) {
       update = project.update(extraction?.analysisCode ?? code, id, {
-        ...sourceUpdateOptions(
-          extraction,
-          code,
-          translationHooks,
-          autoImport && framework === 'vanilla',
-        ),
+        ...sourceUpdateOptions(extraction, code, translationHooks, autoImport),
         force: true,
       })!;
     }

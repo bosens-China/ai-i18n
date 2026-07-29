@@ -180,6 +180,9 @@ export function shouldIgnoreSource(id: string): boolean {
   const query = id.includes('?')
     ? new URLSearchParams(id.slice(id.indexOf('?') + 1))
     : null;
+  // definePage 请求承载的是 Vue Router 已提取出的 TS/TSX，不再是原始 SFC。
+  const isDefinePageSubmodule = Boolean(query?.has('definePage'));
+  const isAssetRequest = Boolean(query?.has('raw') || query?.has('url'));
   const isVueSubmodule = Boolean(query?.has('vue') && query.has('type'));
   const isExternalVueScript =
     isVueSubmodule &&
@@ -188,6 +191,8 @@ export function shouldIgnoreSource(id: string): boolean {
   return (
     id.includes('/node_modules/') ||
     id.includes('?html-proxy') ||
+    isDefinePageSubmodule ||
+    isAssetRequest ||
     (isVueSubmodule && !isExternalVueScript)
   );
 }

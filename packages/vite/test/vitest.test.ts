@@ -2,7 +2,7 @@ import type { Plugin, ResolvedConfig } from 'vite';
 import { expect, test } from 'vitest';
 import { aiI18nVitest } from '../src/vitest';
 
-test('Vitest plugin resolves a stateless React-compatible virtual runtime', () => {
+test('Vitest plugin resolves a React-compatible in-memory runtime', () => {
   const plugin = aiI18nVitest({
     sourceLang: 'zh-CN',
     locales: [
@@ -19,6 +19,9 @@ test('Vitest plugin resolves a stateless React-compatible virtual runtime', () =
   expect(id).toBe('\0virtual:ai-i18n:vitest');
   expect(code).toContain("from '@ai-i18n/vite/react'");
   expect(code).toContain('export const useI18n = createReactI18n(runtime)');
+  expect(code).toContain(
+    'export const getLangLoadState = runtime.getLangLoadState',
+  );
   expect(code).not.toContain('FileStore');
 });
 
@@ -40,6 +43,81 @@ test('Vitest plugin erases defineI18nMessages without a runtime import', async (
   expect(result?.code).toBe("const messages = ({ save: '保存' })");
 });
 
+test.each([
+  {
+    expected: 'import { t, getLangLoadState } from "virtual:ai-i18n";',
+    framework: 'vanilla' as const,
+    source: "t('Vanilla'); getLangLoadState()",
+  },
+  {
+    expected: 'import { useI18n, t } from "virtual:ai-i18n";',
+    framework: 'vue' as const,
+    source: "useI18n(); t('Vue')",
+  },
+  {
+    expected: 'import { useI18n, t } from "virtual:ai-i18n";',
+    framework: 'react' as const,
+    source: "useI18n(); t('React')",
+  },
+])(
+  'Vitest plugin injects $framework auto imports when enabled',
+  async ({ expected, framework, source }) => {
+    const plugin = aiI18nVitest({
+      sourceLang: 'zh-CN',
+      locales: [{ value: 'zh-CN', label: '中文' }],
+      framework,
+      autoImport: true,
+    });
+    const result = await callHook<
+      Promise<{ code: string; map: unknown } | null>
+    >(plugin.transform, source, '/workspace/src/auto-import.ts');
+
+    expect(result?.code).toContain(expected);
+  },
+);
+
+test('Vitest plugin leaves unbound runtime calls alone when auto import is disabled', async () => {
+  const plugin = aiI18nVitest({
+    sourceLang: 'zh-CN',
+    locales: [{ value: 'zh-CN', label: '中文' }],
+    framework: 'vue',
+  });
+
+  await expect(
+    callHook<Promise<unknown>>(
+      plugin.transform,
+      "useI18n(); t('显式导入')",
+      '/workspace/src/explicit.ts',
+    ),
+  ).resolves.toBeNull();
+});
+
+test('Vitest plugin injects Vue auto imports inside script setup', async () => {
+  const plugin = aiI18nVitest({
+    sourceLang: 'zh-CN',
+    locales: [{ value: 'zh-CN', label: '中文' }],
+    framework: 'vue',
+    autoImport: true,
+  });
+  const result = await callHook<Promise<{ code: string; map: unknown } | null>>(
+    plugin.transform,
+    [
+      '<script setup lang="ts">',
+      'const { t } = useI18n()',
+      '</script>',
+      "<template>{{ t('测试') }}</template>",
+    ].join('\n'),
+    '/workspace/src/App.vue',
+  );
+
+  expect(result).not.toBeNull();
+  const transformed = result!.code;
+  expect(transformed).toContain('import { useI18n } from "virtual:ai-i18n";');
+  expect(transformed.indexOf('import { useI18n }')).toBeLessThan(
+    transformed.indexOf('const { t }'),
+  );
+});
+
 test('Vitest plugin rejects using defineI18nMessages as a runtime value', async () => {
   const plugin = aiI18nVitest({
     sourceLang: 'zh-CN',
@@ -56,6 +134,38 @@ test('Vitest plugin rejects using defineI18nMessages as a runtime value', async 
       '/workspace/src/invalid-macro.ts',
     ),
   ).rejects.toThrow('must be called directly');
+});
+
+test('Vitest plugin skips definePage submodules but transforms external Vue scripts', async () => {
+  const plugin = aiI18nVitest({
+    sourceLang: 'zh-CN',
+    locales: [{ value: 'zh-CN', label: '中文' }],
+    framework: 'vue',
+  });
+
+  await expect(
+    callHook<Promise<unknown>>(
+      plugin.transform,
+      'export default () => <main />',
+      '/workspace/src/Page.vue?definePage&vue&lang.tsx',
+    ),
+  ).resolves.toBeNull();
+  await expect(
+    callHook<Promise<unknown>>(
+      plugin.transform,
+      "<template>{{ t('raw') }}</template>",
+      '/workspace/src/Page.vue?raw',
+    ),
+  ).resolves.toBeNull();
+
+  const external = await callHook<
+    Promise<{ code: string; map: unknown } | null>
+  >(
+    plugin.transform,
+    "const messages = defineI18nMessages({ save: '保存' })",
+    '/workspace/src/page.ts?vue&type=script&src=true&lang.ts',
+  );
+  expect(external?.code).toBe("const messages = ({ save: '保存' })");
 });
 
 function callHook<T>(hook: Plugin[keyof Plugin], ...args: unknown[]): T {

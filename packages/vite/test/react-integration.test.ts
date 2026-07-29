@@ -29,8 +29,7 @@ describe('React Vite integration', () => {
     await fs.writeFile(
       path.join(root, 'src/useLabel.ts'),
       `export function useLabel() {
-  const i18n = useI18n()
-  return i18n.t('React TS')
+  return t('React TS')
 }`,
     );
     await fs.writeFile(

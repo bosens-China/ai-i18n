@@ -32,6 +32,8 @@ import {
   isTranslationHookCall,
   isTranslationObject,
   isTranslationReference,
+  translationCalleeOrigin,
+  type TranslationCalleeOrigin,
   type TranslationHookBinding,
 } from './translation-calls.js';
 
@@ -43,7 +45,10 @@ export type {
   RecommendedUsageWarning,
 } from './recommended-usage.js';
 export { findInvalidDefineI18nMessagesReferences } from './static-values.js';
-export type { TranslationHookBinding } from './translation-calls.js';
+export type {
+  TranslationCalleeOrigin,
+  TranslationHookBinding,
+} from './translation-calls.js';
 
 export const AI_I18N_VIRTUAL_MODULE_ID = 'virtual:ai-i18n';
 
@@ -52,6 +57,12 @@ export type AnalysisLanguage = 'js' | 'jsx' | 'ts' | 'tsx';
 export interface SourceLocation {
   line: number;
   column: number;
+}
+
+export interface TranslationCall extends SourceLocation {
+  file: string;
+  kind: 'call' | 'tagged-template';
+  origin: TranslationCalleeOrigin;
 }
 
 export interface ExtractedMessage {
@@ -244,6 +255,45 @@ export function extractMessages(
     dependencies: [...dependencies].sort(),
     pending,
   };
+}
+
+export function findTranslationCalls(
+  module: Module,
+  runtimeModuleId = AI_I18N_VIRTUAL_MODULE_ID,
+  translationHooks: readonly TranslationHookBinding[] = [],
+  autoImportRuntime = false,
+): TranslationCall[] {
+  const calls: TranslationCall[] = [];
+  const translationContext = createTranslationContext(
+    module,
+    runtimeModuleId,
+    translationHooks,
+  );
+  const add = (node: Node, callee: Node, kind: TranslationCall['kind']) => {
+    const origin = translationCalleeOrigin(
+      callee,
+      module,
+      translationContext,
+      autoImportRuntime,
+    );
+    if (!origin) return;
+    calls.push({
+      file: module.path,
+      kind,
+      origin,
+      ...sourceLocation(module.source, node.start),
+    });
+  };
+
+  module.walk({
+    CallExpression(node) {
+      add(node, node.callee, 'call');
+    },
+    TaggedTemplateExpression(node) {
+      add(node, node.tag, 'tagged-template');
+    },
+  });
+  return calls;
 }
 
 export function findUnboundCalls(

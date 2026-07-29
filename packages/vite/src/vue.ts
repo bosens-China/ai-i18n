@@ -1,4 +1,4 @@
-import type { I18nRuntime, LangOption } from '@ai-i18n/core';
+import type { I18nRuntime, LangLoadState, LangOption } from '@ai-i18n/core';
 import { computed, readonly, shallowRef } from 'vue';
 import type { ComputedRef, DeepReadonly, ShallowRef } from 'vue';
 
@@ -7,6 +7,9 @@ export interface VueI18n {
   setLang: I18nRuntime['setLang'];
   currentLang: ComputedRef<string>;
   langs: DeepReadonly<ShallowRef<readonly LangOption[]>>;
+  langLoadState: ComputedRef<LangLoadState>;
+  isLangLoading: ComputedRef<boolean>;
+  langLoadError: ComputedRef<unknown | null>;
 }
 
 export type UseI18n = () => VueI18n;
@@ -28,6 +31,14 @@ export function createVueI18n(runtime: I18nRuntime): UseI18n {
       trackRevision();
       return runtime.getLang();
     });
+    const langLoadState = computed(() => {
+      trackRevision();
+      return runtime.getLangLoadState();
+    });
+    const isLangLoading = computed(
+      () => langLoadState.value.status === 'loading',
+    );
+    const langLoadError = computed(() => langLoadState.value.error);
     const translate = runtime.t as (
       source: string | TemplateStringsArray,
       ...values: unknown[]
@@ -40,6 +51,14 @@ export function createVueI18n(runtime: I18nRuntime): UseI18n {
       return translate(source, ...values);
     }) as I18nRuntime['t'];
 
-    return { t, setLang: runtime.setLang, currentLang, langs };
+    return {
+      t,
+      setLang: runtime.setLang,
+      currentLang,
+      langs,
+      langLoadState,
+      isLangLoading,
+      langLoadError,
+    };
   };
 }

@@ -12,6 +12,8 @@ const SOURCE_EXTENSIONS = [
   '.mjs',
   '.cjs',
 ] as const;
+const DIRECTORY_STAMP_TTL_MS = 250;
+const MAX_PROBE_CACHE_ENTRIES = 10_000;
 
 interface TsConfig {
   compilerOptions?: {
@@ -25,6 +27,26 @@ interface Alias {
   suffix: string;
   targets: string[];
 }
+
+interface CachedTsConfig {
+  stamp: string | null;
+  value: TsConfig;
+}
+
+interface CachedDirectoryStamp {
+  expiresAt: number;
+  value: string | null;
+}
+
+interface CachedProbe {
+  candidateDirectory: string | null;
+  parentDirectory: string | null;
+  resolved: string | null;
+}
+
+const tsconfigCache = new Map<string, CachedTsConfig>();
+const directoryStampCache = new Map<string, CachedDirectoryStamp>();
+const probeCache = new Map<string, CachedProbe>();
 
 export function createImportResolver(tsconfigPath?: string) {
   const aliases: Alias[] = [];
@@ -77,15 +99,40 @@ export function createImportResolver(tsconfigPath?: string) {
 }
 
 function probeSource(candidate: string): string | null {
+  candidate = path.normalize(candidate);
+  const cached = probeCache.get(candidate);
+  if (
+    cached &&
+    cached.parentDirectory === readDirectoryStamp(path.dirname(candidate)) &&
+    cached.candidateDirectory === readDirectoryStamp(candidate)
+  ) {
+    return cached.resolved;
+  }
+
+  let resolved: string | null = null;
   for (const extension of SOURCE_EXTENSIONS) {
     const file = `${candidate}${extension}`;
-    if (isFile(file)) return path.normalize(file);
+    if (isFile(file)) {
+      resolved = path.normalize(file);
+      break;
+    }
   }
-  for (const extension of SOURCE_EXTENSIONS.slice(1)) {
-    const file = path.join(candidate, `index${extension}`);
-    if (isFile(file)) return path.normalize(file);
+  if (!resolved) {
+    for (const extension of SOURCE_EXTENSIONS.slice(1)) {
+      const file = path.join(candidate, `index${extension}`);
+      if (isFile(file)) {
+        resolved = path.normalize(file);
+        break;
+      }
+    }
   }
-  return null;
+  if (probeCache.size >= MAX_PROBE_CACHE_ENTRIES) probeCache.clear();
+  probeCache.set(candidate, {
+    parentDirectory: readDirectoryStamp(path.dirname(candidate)),
+    candidateDirectory: readDirectoryStamp(candidate),
+    resolved,
+  });
+  return resolved;
 }
 
 function isFile(file: string) {
@@ -97,11 +144,53 @@ function isFile(file: string) {
 }
 
 function readTsConfig(filename: string): TsConfig {
+  const stamp = readFileStamp(filename);
+  const cached = tsconfigCache.get(filename);
+  if (cached?.stamp === stamp) return cached.value;
+  let value: TsConfig = {};
   try {
-    return JSON.parse(stripJsonComments(fs.readFileSync(filename, 'utf8'))) as TsConfig;
+    value = JSON.parse(
+      stripJsonComments(fs.readFileSync(filename, 'utf8')),
+    ) as TsConfig;
   } catch {
-    return {};
+    // 无效或不存在的 tsconfig 与未配置路径别名等价。
   }
+  tsconfigCache.set(filename, { stamp, value });
+  return value;
+}
+
+function readFileStamp(filename: string): string | null {
+  try {
+    const stat = fs.statSync(filename);
+    return stat.isFile()
+      ? `${stat.mtimeMs}:${stat.ctimeMs}:${stat.size}`
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+function readDirectoryStamp(directory: string): string | null {
+  const now = Date.now();
+  const cached = directoryStampCache.get(directory);
+  if (cached && cached.expiresAt > now) return cached.value;
+  let value: string | null = null;
+  try {
+    const stat = fs.statSync(directory);
+    if (stat.isDirectory()) {
+      value = `${stat.mtimeMs}:${stat.ctimeMs}:${stat.size}`;
+    }
+  } catch {
+    // 不存在的目录也要缓存，避免重复的失败探测。
+  }
+  if (directoryStampCache.size >= MAX_PROBE_CACHE_ENTRIES) {
+    directoryStampCache.clear();
+  }
+  directoryStampCache.set(directory, {
+    expiresAt: now + DIRECTORY_STAMP_TTL_MS,
+    value,
+  });
+  return value;
 }
 
 function stripJsonComments(source: string): string {

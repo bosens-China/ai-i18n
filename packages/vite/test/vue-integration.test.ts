@@ -37,8 +37,16 @@ describe('Vue Vite integration', () => {
     await fs.writeFile(
       path.join(root, 'src/useLabel.ts'),
       `export function useLabel() {
-  const i18n = useI18n()
-  return i18n.t('Vue TS')
+  return t('Vue TS')
+}`,
+    );
+    await fs.writeFile(
+      path.join(root, 'src/component-types.ts'),
+      `export interface AppProps {
+  title?: string
+}
+export interface AppEmits {
+  ready: [value: string]
 }`,
     );
     await fs.writeFile(
@@ -56,6 +64,9 @@ export default defineComponent({
       `<script setup lang="ts">
 import VueJsxPanel from './VueJsxPanel'
 import { useLabel } from './useLabel'
+import type { AppEmits, AppProps } from './component-types'
+defineProps<AppProps>()
+defineEmits<AppEmits>()
 const { t } = useI18n()
 const label = useLabel()
 </script>

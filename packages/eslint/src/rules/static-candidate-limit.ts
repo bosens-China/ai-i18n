@@ -1,15 +1,19 @@
 import type { Rule } from 'eslint';
-import { analyzeRuleContext } from '../rule-analysis.js';
+import type { AutoImportOption } from '../analyze.js';
+import {
+  analyzeRuleContext,
+  reportAnalysisFailureOnce,
+} from '../rule-analysis.js';
 
 interface RuleOptions {
   tsconfigPath?: string;
-  autoImport?: boolean;
+  autoImport?: AutoImportOption;
   maxStaticCandidates?: number;
 }
 
 export const staticCandidateLimit: Rule.RuleModule = {
   meta: {
-    type: 'problem',
+    type: 'suggestion',
     docs: {
       description: '警告单个 t() 展开的静态候选数量过多',
     },
@@ -18,7 +22,16 @@ export const staticCandidateLimit: Rule.RuleModule = {
         type: 'object',
         properties: {
           tsconfigPath: { type: 'string' },
-          autoImport: { type: 'boolean' },
+          autoImport: {
+            anyOf: [
+              { type: 'boolean' },
+              {
+                type: 'array',
+                items: { enum: ['t', 'useI18n'] },
+                uniqueItems: true,
+              },
+            ],
+          },
           maxStaticCandidates: {
             type: 'integer',
             minimum: 1,
@@ -54,8 +67,8 @@ export const staticCandidateLimit: Rule.RuleModule = {
               data: { reason: warning.message },
             });
           }
-        } catch {
-          // 主规则负责报告分析失败；本规则只补充候选数量警告。
+        } catch (error) {
+          reportAnalysisFailureOnce(context, node as Rule.Node, error);
         }
       },
     };

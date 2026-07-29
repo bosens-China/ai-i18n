@@ -11,9 +11,16 @@ export type AiI18nFramework = 'vanilla' | 'vue' | 'react';
 const PLAIN_SOURCE_RE = /\.[cm]?[jt]s$/;
 const JSX_SOURCE_RE = /\.[jt]sx$/;
 const AUTO_IMPORTS: Record<AiI18nFramework, readonly string[]> = {
-  vanilla: ['t', 'setLang', 'getLang', 'getLangs', 'subscribe'],
-  vue: ['useI18n'],
-  react: ['useI18n'],
+  vanilla: [
+    't',
+    'setLang',
+    'getLang',
+    'getLangs',
+    'getLangLoadState',
+    'subscribe',
+  ],
+  vue: ['useI18n', 't'],
+  react: ['useI18n', 't'],
 };
 
 export function resolveFramework(
@@ -75,7 +82,8 @@ export async function extractFrameworkSource(
   if (!supportsSource(filename, framework)) return null;
   if (!filename.endsWith('.vue')) return undefined;
 
-  const { compileScript, parse } = await import('@vue/compiler-sfc');
+  // Vue 的 Node 入口会注册宿主 TypeScript，支持解析宏中引用的外部类型。
+  const { compileScript, parse } = await import('vue/compiler-sfc');
   const analysis = analyzeVueSource(source, id, { parse, compileScript });
   return {
     analysisCode: analysis.code,
@@ -139,6 +147,7 @@ function frameworkTypes(
   export const setLang: I18nRuntime['setLang'];
   export const getLang: I18nRuntime['getLang'];
   export const getLangs: I18nRuntime['getLangs'];
+  export const getLangLoadState: I18nRuntime['getLangLoadState'];
   export const subscribe: I18nRuntime['subscribe'];${adapter ? `\n${adapter}` : ''}
 }`;
 
