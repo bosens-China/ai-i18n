@@ -121,4 +121,6 @@ it also identifies the build as Vue. Do not add a React Vite plugin to the same 
 SFC analysis respects template aliases, `v-for`/slot locals, and separate `<script>` scopes. External
 `<script src>` content is extracted under its JS/TS file. Ordinary template text is not guessed.
 
-A runnable end-to-end example: fetch `https://bosens-china.github.io/ai-i18n/demo/vue.md`.
+For the Vite scaffolding walkthrough, UI-library locale providers, and framework-specific FAQ,
+fetch `https://bosens-china.github.io/ai-i18n/guide/getting-started/vue.md`. A runnable example is
+available at `https://bosens-china.github.io/ai-i18n/demo/vue.md`.

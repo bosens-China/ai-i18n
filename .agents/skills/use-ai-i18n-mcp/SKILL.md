@@ -165,4 +165,4 @@ reconciles them.
   replace the workflow with broad source-tree editing.
 
 For installation failures involving `fs-native-extensions`, Alpine/musl, or `ADDON_NOT_FOUND`, refer
-to `https://bosens-china.github.io/ai-i18n/guide/faq.md`.
+to `https://bosens-china.github.io/ai-i18n/guide/faq/common.md`.

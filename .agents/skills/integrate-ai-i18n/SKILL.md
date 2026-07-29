@@ -52,17 +52,24 @@ at the same path with a `.md` extension — fetch that, not the `.html` page:
 | Locale loading edge cases | `https://bosens-china.github.io/ai-i18n/api/vite/interfaces/ai-i18n-locale-loading-options.md` |
 | Runtime API availability | `https://bosens-china.github.io/ai-i18n/api/runtime/overview.md` |
 | `t()` and template placeholders | `https://bosens-china.github.io/ai-i18n/api/runtime/functions/t.md` |
-| `useI18n()` | `https://bosens-china.github.io/ai-i18n/api/runtime/framework-api/use-i18n.md` |
-| Vue `tRef()` | `https://bosens-china.github.io/ai-i18n/api/runtime/framework-api/t-ref.md` |
+| Vue `useI18n()` | `https://bosens-china.github.io/ai-i18n/api/runtime/vue/use-i18n.md` |
+| React `useI18n()` | `https://bosens-china.github.io/ai-i18n/api/runtime/react/use-i18n.md` |
+| Vue `tRef()` | `https://bosens-china.github.io/ai-i18n/api/runtime/vue/t-ref.md` |
 | `getLangLoadState()` | `https://bosens-china.github.io/ai-i18n/api/runtime/functions/get-lang-load-state.md` |
-| Static extraction scope, recommended syntax, and AST limits | `https://bosens-china.github.io/ai-i18n/guide/basic/static-analysis.md` |
+| Common static extraction syntax and AST limits | `https://bosens-china.github.io/ai-i18n/guide/basic/static-analysis/common.md` |
+| Vue static extraction and refresh rules | `https://bosens-china.github.io/ai-i18n/guide/basic/static-analysis/vue.md` |
+| React static extraction and refresh rules | `https://bosens-china.github.io/ai-i18n/guide/basic/static-analysis/react.md` |
 | ai-i18n auto imports and generated declarations | `https://bosens-china.github.io/ai-i18n/guide/basic/auto-import.md` |
 | Locale chunking, lazy loading, and UI loading state | `https://bosens-china.github.io/ai-i18n/guide/basic/locale-loading.md` |
 | Protocol directory layout, Git conventions, and message-ID/comment behavior | `https://bosens-china.github.io/ai-i18n/guide/basic/directory.md` |
 | AI translation Provider setup and prompt tuning | `https://bosens-china.github.io/ai-i18n/guide/advanced/ai-translation.md` |
 | `aiI18nVitest()` usage | `https://bosens-china.github.io/ai-i18n/guide/quality/testing.md` |
 | ESLint plugin Flat Config examples per framework | `https://bosens-china.github.io/ai-i18n/guide/quality/eslint.md` |
-| Common integration questions and troubleshooting | `https://bosens-china.github.io/ai-i18n/guide/faq.md` |
+| Vue setup and UI-library locale providers | `https://bosens-china.github.io/ai-i18n/guide/getting-started/vue.md` |
+| Vue troubleshooting | `https://bosens-china.github.io/ai-i18n/guide/faq/vue.md` |
+| React setup and UI-library locale providers | `https://bosens-china.github.io/ai-i18n/guide/getting-started/react.md` |
+| React troubleshooting | `https://bosens-china.github.io/ai-i18n/guide/faq/react.md` |
+| Common integration questions and troubleshooting | `https://bosens-china.github.io/ai-i18n/guide/faq/common.md` |
 
 If a link 404s after a docs restructure, fetch `https://bosens-china.github.io/ai-i18n/llms.txt` (a
 generated site index) to relocate the page. These pages reflect the latest deploy from `main` and can
