@@ -20,6 +20,10 @@
 - monorepo 中每个 Vite build 独立解析；目标不明确时由 Agent 向用户确认。
 - `i18n_directory` 必须是经 realpath 校验的绝对目录，并同时包含合法
   `translations.json`、`overrides.json` 与 `extracted/`。
+- Git 只提交 `translations.json` 与 `overrides.json`；`extracted/` 和 `locales/` 是本地
+  Build 产物。首次使用、extracted 缺失或为空，或者切换分支和修改提取相关配置后，Agent
+  必须先运行目标 Vite build 的一次完整 Build。列表未返回 source file 时，Build 后重试
+  一次。
 - MCP 只读取单层 `extracted/*.json` 校验 source file 与 message 的归属；嵌套目录不属于
   当前协议。
 - 翻译工具只修改 `translations.json`，人工审校工具只修改 `overrides.json`。

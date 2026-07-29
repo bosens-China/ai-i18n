@@ -8,7 +8,9 @@ MCP 不扫描 workspace，也不执行 Vite 配置。Agent 必须先确认目标
 根目录或第一个同名目录当成协议目录。
 
 MCP 会校验绝对路径、目录是否存在，以及 `translations.json`、`overrides.json` 和
-`extracted/` 是否符合当前协议。缺少协议文件时，先运行目标应用的 Vite Dev/Build。
+`extracted/` 是否符合当前协议。`extracted/` 是不提交 Git 的本地 Build 产物。首次使用、
+目录缺失或为空，或者切换分支和修改提取相关配置后，先运行目标应用的一次完整 Vite Build。
+Dev 只包含浏览器实际请求过的模块。
 
 MCP 宿主可以直接执行 npm 包：
 

@@ -12,9 +12,9 @@ i18n/
 ├── translations.json          # AI / Provider Translation Memory
 ├── overrides.json             # 人工审校值
 ├── extracted/
-│   └── src_example.ts.json    # source / comment / location，不含译文
+│   └── src_example.ts.json    # Build 生成的本地源码提取缓存
 └── locales/
-    └── en-US.json             # 插件生成的最终运行时文案
+    └── en-US.json             # Build 生成的本地运行时文案
 ```
 
 四类文件各做一件事：
@@ -121,17 +121,26 @@ aiI18n({
 外部修改 extracted 的消息结构或 locales 的译文不会成为权威数据；下一次同步会根据源码和
 两类译文文件恢复它们。Vite 配置、插件、extractor 或 schema 变化后需要重启 Watch。
 
-## 应该提交什么
+## Git 提交约定
 
 :::important 最小可提交清单
 源码变更、生成的 `src/ai-i18n.d.ts`（或自定义 `dts` 路径）、
-`i18n/translations.json`、`i18n/overrides.json`、`i18n/extracted/*.json`、`i18n/locales/**`
-**应在同一 PR 中提交**。
+`i18n/translations.json` 与 `i18n/overrides.json` **应在同一 PR 中提交**。
 :::
+
+`extracted/` 可由完整 Build 从源码重新生成，`locales/` 可由源码结构、Translation Memory
+和人工覆盖重新生成。两者属于本地产物，不应提交。默认目录可以添加以下忽略规则；自定义
+`directory` 时同步替换路径：
+
+```text
+i18n/extracted/
+i18n/locales/
+```
 
 推荐流程：
 
-1. 运行 `vite dev` 并访问相关页面，或运行 `vite build`，生成最新协议文件。
+1. 首次使用、`extracted/` 缺失或为空时，运行目标应用的一次完整 `vite build`。
+   切换分支，或修改源码、Vite 配置、插件配置与提取规则后，也应重新 Build。
 2. 使用 `ai_i18n_list_translations` 查询缺失消息，再用
    `ai_i18n_set_translations` 补译；默认只填充 `null`。
 3. 人工审校不满意的文案时，使用 `ai_i18n_set_overrides`。`scope: "default"` 影响同一
@@ -139,8 +148,12 @@ aiI18n({
    `ai_i18n_list_overrides` 取得 opaque `override_id`。
 4. 也可以直接编辑 `overrides.json`。编辑期间应暂停 MCP 写入，避免编辑器绕过共享文件锁；
    不要把人工修订写进 `translations.json`。
-5. 再跑一次 Dev 或 Build，让插件重建 locales 并校准 extracted。
-6. 源码与四类 i18n 文件一起提交。
+5. 再运行一次 Build，让插件校准 extracted 并重建 locales。
+6. 提交源码、声明文件、`translations.json` 与 `overrides.json`。
+
+完整 Build 会跟随入口可达模块图提取。Dev 只包含浏览器实际请求过的模块，不适合作为首次
+MCP 补译前的完整提取步骤。`extracted/` 即使非空，也可能在切换分支后过期；无法确认其
+新鲜度时，应先 Build。
 
 :::warning 合并冲突
 分支合并时必须保留 `translations.json` 和 `overrides.json`。同一人工覆盖字段出现两个不同
@@ -150,7 +163,9 @@ aiI18n({
 ## Agent 协作边界
 
 - Agent 的普通补译只写 `translations.json`，人工审校只写 `overrides.json`。
-- `extracted/*.json` 与 `locales/**` 都是插件产物，不接受译文编辑。
+- `extracted/*.json` 与 `locales/**` 都是本地插件产物，不提交，也不接受译文编辑。
+- MCP 首次使用、未发现 extracted source，或本地提取结果可能过期时，先运行目标应用的
+  完整 Build，再重试查询。
 - `ai_i18n_set_translations` 默认只填充 `null`；覆盖非空值必须显式传
   `overwrite_existing: true`。只有用户明确要求人工审校时，Agent 才能调用
   `ai_i18n_set_overrides` 或 `ai_i18n_delete_overrides`，并根据影响全部调用还是某个带
