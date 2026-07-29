@@ -1,0 +1,17 @@
+[
+  {
+    "type": "file",
+    "name": "vanilla",
+    "label": "Vanilla"
+  },
+  {
+    "type": "file",
+    "name": "vue",
+    "label": "Vue"
+  },
+  {
+    "type": "file",
+    "name": "react",
+    "label": "React"
+  }
+]

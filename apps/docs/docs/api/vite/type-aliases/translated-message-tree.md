@@ -23,4 +23,4 @@ type TranslatedMessageTree<T> = T extends string
 
 该类型递归保留对象、数组和非字符串叶子的结构，只把字符串叶子映射为译文字符串。
 [`t()`](/api/runtime/functions/t) 返回该结构的当前快照；Vue
-[`tRef()`](/api/runtime/framework-api/t-ref) 返回包含该结构的只读计算属性。
+[`tRef()`](/api/runtime/vue/t-ref) 返回包含该结构的只读计算属性。

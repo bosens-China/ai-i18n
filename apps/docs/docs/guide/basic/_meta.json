@@ -1,11 +1,6 @@
 [
   {
-    "type": "file",
-    "name": "getting-started",
-    "label": "快速上手"
-  },
-  {
-    "type": "file",
+    "type": "dir",
     "name": "static-analysis",
     "label": "静态分析范围"
   },

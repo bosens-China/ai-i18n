@@ -10,7 +10,7 @@ const isPages = process.env.DEPLOY_TARGET === 'pages';
 export default defineConfig({
   root: path.join(rootDir, 'docs'),
   title: 'ai-i18n',
-  description: '面向 Vite 的浏览器端 AI 国际化插件',
+  description: 'Vite AI 国际化插件',
   icon: '/favicon.png',
   logo: {
     light: '/favicon.png',

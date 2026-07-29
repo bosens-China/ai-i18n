@@ -55,6 +55,8 @@ Runtime 和声明文件生成。
 
 ## 相关内容
 
-- [快速上手](/guide/basic/getting-started)
-- [静态分析范围](/guide/basic/static-analysis)
+- [Vue 快速上手](/guide/getting-started/vue)
+- [React 快速上手](/guide/getting-started/react)
+- [Vanilla 快速上手](/guide/getting-started/vanilla)
+- [通用静态分析](/guide/basic/static-analysis/common)
 - [目录说明](/guide/basic/directory)

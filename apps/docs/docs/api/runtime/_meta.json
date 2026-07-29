@@ -11,8 +11,13 @@
   },
   {
     "type": "dir",
-    "name": "framework-api",
-    "label": "框架 API"
+    "name": "vue",
+    "label": "Vue"
+  },
+  {
+    "type": "dir",
+    "name": "react",
+    "label": "React"
   },
   {
     "type": "dir",

@@ -1,0 +1,17 @@
+[
+  {
+    "type": "file",
+    "name": "common",
+    "label": "通用"
+  },
+  {
+    "type": "file",
+    "name": "vue",
+    "label": "Vue"
+  },
+  {
+    "type": "file",
+    "name": "react",
+    "label": "React"
+  }
+]

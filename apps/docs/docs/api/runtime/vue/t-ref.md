@@ -9,7 +9,7 @@ description: 在 Vue setup 中创建随语言变化更新的只读翻译 Ref
 import { tRef } from 'virtual:ai-i18n';
 ```
 
-React 与 Vanilla 模式不导出该 API。`tRef` 也不属于 `useI18n()` 的返回值。
+`tRef` 不属于 `useI18n()` 的返回值。
 
 ## 签名
 
@@ -31,7 +31,18 @@ function tRef<T extends MessageTree>(
 `ComputedRef<TranslatedMessageTree<T>>`。语言或 Runtime 翻译模块更新后，`value` 会重新
 计算；tagged template 插值如果是 Vue Ref，也会在 `computed` 内解包并建立依赖。
 
-source 与 options 的静态提取要求和 [`t()`](/api/runtime/functions/t) 相同。
+source 与 options 的静态提取要求和 [`t()`](/api/runtime/functions/t) 相同。除普通文本和
+整棵文案树外，也可以把 `defineI18nMessages()` 标记后的成员传给 `tRef()`：
+
+```ts
+const messages = defineI18nMessages({
+  actions: { save: '保存', cancel: '取消' },
+});
+
+const saveLabel = tRef(messages.actions.save);
+```
+
+`defineI18nMessages()` 是编译宏，无需 import；只有按属性或索引选择单条文案时才需要它。
 
 ## setup 中的展示值
 
@@ -39,10 +50,10 @@ source 与 options 的静态提取要求和 [`t()`](/api/runtime/functions/t) �
 
 ```vue
 <script setup lang="ts">
-import { ref } from 'vue';
+import { shallowRef } from 'vue';
 import { tRef } from 'virtual:ai-i18n';
 
-const name = ref('Ada');
+const name = shallowRef('Ada');
 const saveLabel = tRef('保存');
 const greeting = tRef`你好 ${name}`;
 
@@ -83,7 +94,7 @@ const labels = tRef(messages);
 
 ## 与 `t()` 的分工
 
-- 模板或渲染函数当场展示：使用 `useI18n()` 返回的 `t`。
+- 模板或渲染函数当场展示：使用 [`useI18n()`](./use-i18n) 返回的 `t`。
 - Vue setup / composable 需要预先声明响应式字符串、对象或数组：使用 `tRef()`。
 - 事件、日志或普通工具函数需要即时字符串：使用 `t()`。
 
@@ -95,4 +106,5 @@ const labels = tRef(messages);
 ```
 
 应在 setup 中创建一次，再把返回的 Ref 用于模板。对应生命周期问题由
-[`ai-i18n/no-unsubscribed-t`](/guide/quality/eslint#no-unsubscribed-t) 提示。
+[`ai-i18n/no-unsubscribed-t`](/guide/quality/eslint#no-unsubscribed-t) 提示。静态提取规则见
+[Vue 静态分析](/guide/basic/static-analysis/vue)。

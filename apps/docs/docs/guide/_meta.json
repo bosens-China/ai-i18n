@@ -1,8 +1,13 @@
 [
   {
     "type": "dir",
+    "name": "getting-started",
+    "label": "快速上手"
+  },
+  {
+    "type": "dir",
     "name": "basic",
-    "label": "基础指南"
+    "label": "使用指南"
   },
   {
     "type": "dir",
@@ -15,7 +20,7 @@
     "label": "进阶与 AI"
   },
   {
-    "type": "file",
+    "type": "dir",
     "name": "faq",
     "label": "常见问题"
   }

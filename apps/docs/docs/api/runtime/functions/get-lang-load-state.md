@@ -50,4 +50,5 @@ const unsubscribe = subscribe(() => {
 void setLang('en-US').catch(() => {});
 ```
 
-Vue 与 React 组件通常直接使用 [`useI18n()`](../framework-api/use-i18n) 返回的响应式状态。
+Vue 与 React 组件通常分别使用 [Vue `useI18n()`](../vue/use-i18n) 或
+[React `useI18n()`](../react/use-i18n) 返回的响应式状态。

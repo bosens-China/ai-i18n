@@ -29,4 +29,5 @@ type LangLoadState =
 快照及其字段只读。`error` 保留 loader reject 的原始值，可能是 falsy；判断失败必须使用
 `status === 'error'`。应用应在展示前把详情映射为自己的用户文案。
 读取方式见 [`getLangLoadState()`](/api/runtime/functions/get-lang-load-state)，Vue / React 的
-响应式派生值见 [`useI18n()`](/api/runtime/framework-api/use-i18n)。
+响应式派生值分别见 [Vue `useI18n()`](/api/runtime/vue/use-i18n) 和
+[React `useI18n()`](/api/runtime/react/use-i18n)。

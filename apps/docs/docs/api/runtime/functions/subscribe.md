@@ -29,5 +29,6 @@ const unsubscribe = subscribe(render);
 unsubscribe();
 ```
 
-Vue 与 React 组件通常不需要直接订阅。框架模式下使用
-[`useI18n()`](/api/runtime/framework-api/use-i18n) 即可。
+Vue 与 React 组件通常不需要直接订阅。请分别使用
+[Vue `useI18n()`](/api/runtime/vue/use-i18n) 或
+[React `useI18n()`](/api/runtime/react/use-i18n)。

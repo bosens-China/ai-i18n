@@ -21,21 +21,22 @@ import {
 
 ## 可用范围
 
-| API                                                                | Vanilla | Vue | React | 自动导入    |
-| ------------------------------------------------------------------ | ------- | --- | ----- | ----------- |
-| [`t()`](/api/runtime/functions/t)                                  | 是      | 是  | 是    | 全部模式    |
-| [`setLang()`](/api/runtime/functions/set-lang)                     | 是      | 是  | 是    | 仅 Vanilla  |
-| [`getLang()`](/api/runtime/functions/get-lang)                     | 是      | 是  | 是    | 仅 Vanilla  |
-| [`getLangs()`](/api/runtime/functions/get-langs)                   | 是      | 是  | 是    | 仅 Vanilla  |
-| [`getLangLoadState()`](/api/runtime/functions/get-lang-load-state) | 是      | 是  | 是    | 仅 Vanilla  |
-| [`subscribe()`](/api/runtime/functions/subscribe)                  | 是      | 是  | 是    | 仅 Vanilla  |
-| [`useI18n()`](/api/runtime/framework-api/use-i18n)                 | 否      | 是  | 是    | Vue / React |
-| [`tRef()`](/api/runtime/framework-api/t-ref)                       | 否      | 是  | 否    | 仅 Vue      |
+| API                                                                | Vanilla | Vue | React | 自动导入   |
+| ------------------------------------------------------------------ | ------- | --- | ----- | ---------- |
+| [`t()`](/api/runtime/functions/t)                                  | 是      | 是  | 是    | 全部模式   |
+| [`setLang()`](/api/runtime/functions/set-lang)                     | 是      | 是  | 是    | 仅 Vanilla |
+| [`getLang()`](/api/runtime/functions/get-lang)                     | 是      | 是  | 是    | 仅 Vanilla |
+| [`getLangs()`](/api/runtime/functions/get-langs)                   | 是      | 是  | 是    | 仅 Vanilla |
+| [`getLangLoadState()`](/api/runtime/functions/get-lang-load-state) | 是      | 是  | 是    | 仅 Vanilla |
+| [`subscribe()`](/api/runtime/functions/subscribe)                  | 是      | 是  | 是    | 仅 Vanilla |
+| [Vue `useI18n()`](/api/runtime/vue/use-i18n)                       | 否      | 是  | 否    | 仅 Vue     |
+| [React `useI18n()`](/api/runtime/react/use-i18n)                   | 否      | 否  | 是    | 仅 React   |
+| [`tRef()`](/api/runtime/vue/t-ref)                                 | 否      | 是  | 否    | 仅 Vue     |
 
-Vue 与 React 业务组件推荐使用 `useI18n()`，让框架自动响应语言变化。组件之外仍可显式导入
-基础函数。框架模式自动导入的顶层 `t()` 也主要面向不能调用 Hook 的普通模块；组件仅调用
-顶层 `t()` 不会建立更新订阅。普通模块也应在函数或 getter 中按需调用，避免在模块初始化时
-保存不会刷新的译文快照。
+Vue 与 React 业务组件推荐使用各自的 `useI18n()`，让框架自动响应语言变化。组件之外仍可
+显式导入基础函数。框架模式自动导入的顶层 `t()` 主要面向不能调用 Hook 的普通模块；组件
+仅调用顶层 `t()` 不会建立更新订阅。普通模块也应在函数或 getter 中按需调用，避免在模块
+初始化时保存不会刷新的译文快照。
 
 Vue setup 中需要预先声明响应式 label 或文案树时，可使用 `tRef()`；它按输入返回只读
 `ComputedRef<string>` 或同形文案树。React 与 Vanilla 不提供该语法糖。
