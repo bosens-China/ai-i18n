@@ -56,7 +56,13 @@ Runtime 会比较源文与译文的占位符。译文缺少、多出或改变编
 
 :::warning 不要长期保存译后字符串
 已经写入 state、storage、请求体或文件元数据的字符串不会随语言切换更新。持久数据和业务判断
-应保存稳定的语义 code、序号或消息标识，并在展示层调用 `t()`。
+应保存稳定的语义 code、序号或消息标识，并在展示层调用 `t()`。模块初始化时的
+`const label = t('保存')` 也是一次性快照；普通模块可改为
+`const getLabel = () => t('保存')`。
 :::
+
+Vue / React 组件应使用 [`useI18n()`](/api/runtime/framework-api/use-i18n) 返回的 `t` 建立
+语言变化订阅。Runtime 顶层 `t` 即使位于组件渲染函数中，也不会自行触发组件更新。对应
+ESLint 生命周期检查见 [ESLint](/guide/quality/eslint)。
 
 静态提取支持的表达式见[静态分析范围](/guide/basic/static-analysis)。

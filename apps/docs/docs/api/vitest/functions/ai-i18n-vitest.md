@@ -20,13 +20,16 @@ Runtime。
 
 ## 行为
 
-- 保留生产环境的 `t()`、`setLang()` 与框架 `useI18n()` 契约；
+- 保留生产环境的 `t()`、`setLang()`、`getLangLoadState()` 与框架 `useI18n()` 契约；
+- `autoImport: true` 时注入与生产框架模式相同的 Runtime API；
 - 消除 `defineI18nMessages()` 编译宏；
 - 不提取翻译；
 - 不调用 Provider；
 - 不读取或写入 `i18n/` 协议文件。
 
 测试 Runtime 没有目标语言译文，因此 `t()` 始终返回 source 文案。
+它也不创建语言 chunk loader，因此 `getLangLoadState()` 与 `useI18n()` 的加载状态字段固定
+为 `idle`；这里只保留 API 形状，不模拟生产加载失败。
 
 ## 示例
 

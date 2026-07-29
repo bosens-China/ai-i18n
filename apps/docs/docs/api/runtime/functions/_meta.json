@@ -21,6 +21,11 @@
   },
   {
     "type": "file",
+    "name": "get-lang-load-state",
+    "label": "getLangLoadState()"
+  },
+  {
+    "type": "file",
     "name": "subscribe",
     "label": "subscribe()"
   }

@@ -1,6 +1,6 @@
 ---
 name: integrate-ai-i18n
-description: Integrate ai-i18n into Vite browser projects and configure its static extraction runtime for Vue 3, React 18+, or vanilla JavaScript and TypeScript. Use when installing or registering @ai-i18n/vite, selecting or detecting a framework mode, enabling ai-i18n auto imports, importing virtual:ai-i18n or useI18n, enabling optional ESLint checks, configuring locale output directories and generated virtual-module types, migrating an existing Vite app, or diagnosing an incomplete ai-i18n setup.
+description: Integrate ai-i18n into Vite browser projects and configure its static extraction runtime for Vue 3, React 18+, or vanilla JavaScript and TypeScript. Use when installing or registering @ai-i18n/vite, selecting or detecting a framework mode, enabling ai-i18n auto imports, importing virtual:ai-i18n or useI18n, enabling optional ESLint checks, configuring locale output directories and generated virtual-module types, or diagnosing an incomplete ai-i18n setup.
 ---
 
 # Integrate ai-i18n
@@ -28,11 +28,15 @@ limitation when server-rendered translation is required.
 
 ## Load the relevant guidance
 
-Always read [Vite configuration](references/vite.md). Then read only the matching framework reference:
+Always read [Vite configuration](references/vite.md). Then read the reference matching the whole
+Vite build, not the extension of the file currently being edited:
 
 - Vue 3, `.vue`, or Vue JSX/TSX: [Vue integration](references/vue.md)
 - React JSX/TSX: [React integration](references/react.md)
-- Plain `.js` or `.ts`: [Vanilla integration](references/vanilla.md)
+- A build without Vue or React plugins: [Vanilla integration](references/vanilla.md)
+
+Plain `.js` / `.ts` files inside a Vue or React build still use that build's framework mode. They
+may import top-level Runtime functions when they cannot call a Hook.
 
 ## Fetch published docs for deeper detail
 
@@ -49,6 +53,7 @@ at the same path with a `.md` extension — fetch that, not the `.html` page:
 | Runtime API availability | `https://bosens-china.github.io/ai-i18n/api/runtime/overview.md` |
 | `t()` and template placeholders | `https://bosens-china.github.io/ai-i18n/api/runtime/functions/t.md` |
 | `useI18n()` | `https://bosens-china.github.io/ai-i18n/api/runtime/framework-api/use-i18n.md` |
+| `getLangLoadState()` | `https://bosens-china.github.io/ai-i18n/api/runtime/functions/get-lang-load-state.md` |
 | Static extraction scope, recommended syntax, and AST limits | `https://bosens-china.github.io/ai-i18n/guide/basic/static-analysis.md` |
 | ai-i18n auto imports and generated declarations | `https://bosens-china.github.io/ai-i18n/guide/basic/auto-import.md` |
 | Locale chunking, lazy loading, and UI Loading state | `https://bosens-china.github.io/ai-i18n/guide/basic/locale-loading.md` |
@@ -101,7 +106,9 @@ limit, Vite warns and keeps them. `cleanup.orphanMessages: true` is stronger and
 messages before capacity enforcement.
 
 ai-i18n auto imports are self-contained and disabled by default. When explicitly enabled, ai-i18n
-injects only its fixed mode-specific Runtime APIs.
+injects only its fixed mode-specific Runtime APIs. Vue and React inject both `useI18n` and top-level
+`t`; use the Hook in component render paths for reactive updates and top-level `t` in ordinary
+modules that cannot call a Hook.
 
 Do not add a translator, model, API key, HTML extraction, cache limit, cleanup override, Vue plugin,
 or React provider unless the project requires it. When automatic translation is requested, keep
@@ -111,12 +118,27 @@ secrets in the Node-side translator closure and follow [Vite configuration](refe
 
 Add `@ai-i18n/eslint-plugin@alpha` during prerelease only when checks are requested or auto-imported
 globals must be declared.
-Use exactly one of `configs.vanilla`, `configs.vue`, or `configs.react`, matching the resolved Vite
-mode. Preserve the host Vue parser and framework lint rules. For per-framework Flat Config examples,
-fetch the ESLint doc page from the table above. Presets warn when one `t()` expands beyond 1000 static
-source/options combinations. Change `ai-i18n/static-candidate-limit`'s positive-integer
-`maxStaticCandidates` option only in ESLint config; Vite extraction has no candidate cap or matching
-plugin option.
+With explicit Runtime imports, use `configs.recommended` for Vanilla/React or `configs.vue` for Vue
+SFC coverage. With `aiI18n({ autoImport: true })`, instead use exactly one of
+`configs['vanilla-auto-import']`, `configs['vue-auto-import']`, or
+`configs['react-auto-import']`, matching the resolved Vite mode. Only auto-import presets declare
+Runtime globals. Preserve the host Vue parser and framework lint rules. For per-framework Flat
+Config examples, fetch the ESLint doc page from the table above. All presets warn through
+`ai-i18n/no-eager-translation` when initialization stores a translated string instead of evaluating
+it in a function or getter. A Vue SFC's directly exported options object is also a one-time
+initialization boundary. Imported Vue `defineComponent()` object and function signatures receive
+the same check in `.vue`, `.ts`, and `.tsx` files. Vue and React presets also warn through
+`ai-i18n/no-unsubscribed-t` when JSX/TSX render code uses Runtime top-level `t` instead of the
+subscribed Hook/composable value; the explicit-import `recommended` preset applies the same JSX/TSX
+check. Event callbacks and standalone `console.log` / `warn` / `error` / `info` / `debug` calls
+remain valid; unknown calls still warn because they may retain the translated value. These rules
+intentionally do not follow arbitrary cross-function or cross-file data flow and have no autofix.
+In Vue auto-import mode, a bare template-only `t` is an error: auto import removes the import
+statement but does not synthesize `const { t } = useI18n()` or a component subscription.
+
+Presets also warn when one `t()` expands beyond 1000 static source/options combinations. Change
+`ai-i18n/static-candidate-limit`'s positive-integer `maxStaticCandidates` option only in ESLint
+config; Vite extraction has no candidate cap or matching plugin option.
 
 ## Preserve extraction semantics
 
@@ -137,6 +159,8 @@ plugin option.
   is escaped internally (`{{0}}` becomes `{{=0}}`) and is restored before display. Runtime logs a
   console warning when translation placeholders differ, then continues using that translation.
 - Vue/React Hook bindings work in JS, TS, JSX, and TSX, including composables and custom Hooks.
+- Plain JS/TS modules in a Vue or React build may import top-level `t`; translate at call time rather
+  than caching its result. A component still needs `useI18n()` to subscribe to Runtime updates.
 - Vite does not cap static candidate expansion. ESLint warns per expression above its default 1000
   source/options combinations; raise that rule threshold only for a known finite collection.
 - Vue SFC extraction respects compiler-sfc bindings and template-local scopes.
@@ -153,8 +177,9 @@ plugin option.
 
 Use `aiI18nVitest()` from `@ai-i18n/vite/vitest` in the Vitest config instead of the production
 `aiI18n()` or a hand-written alias. Pass the same source/default locales and keep the host React/Vue
-Vite plugin. The test plugin resolves `virtual:ai-i18n` with source fallback and framework Hooks but
-does not extract, call a Provider, or write protocol files.
+Vite plugin. Pass the same `autoImport` value when production enables it. The test plugin resolves
+`virtual:ai-i18n` with source fallback and framework Hooks, and injects the same mode-specific APIs
+when enabled, but does not extract, call a Provider, or write protocol files.
 It still erases `defineI18nMessages()` so test modules need no macro import or mock.
 
 ## Verify and report

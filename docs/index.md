@@ -4,7 +4,8 @@
 用户文档见 `apps/docs`（Rspress）。
 
 Phase 1–6 均为历史非规范记录，仅用于追溯需求、实现与验收，不作为当前实现依据。当前契约以
-`apps/docs`、[Phase 7 PRD](./phase-7/PRD.md)、[Phase 8 PRD](./phase-8/PRD.md) 和
+`apps/docs`、[Phase 7 PRD](./phase-7/PRD.md)、[Phase 8 PRD](./phase-8/PRD.md)、
+[Phase 9 PRD](./phase-9/PRD.md)、[Phase 10 PRD](./phase-10/PRD.md) 和
 [MCP PRD](./mcp/PRD.md) 为准。
 
 - [phase-1/PRD.md](./phase-1/PRD.md) — Phase 1 初始产品规格历史记录
@@ -33,6 +34,12 @@ Phase 1–6 均为历史非规范记录，仅用于追溯需求、实现与验�
 - [phase-8/PRD.md](./phase-8/PRD.md) — Analyzer、ESLint 与 Vite 开发者诊断中英文切换规格
 - [phase-8/TODO.md](./phase-8/TODO.md) — Phase 8 交付清单
 - [phase-8/ACCEPTANCE.md](./phase-8/ACCEPTANCE.md) — Phase 8 验收证据
+- [phase-9/PRD.md](./phase-9/PRD.md) — Vue query 边界、自动导入 preset 与语言加载状态规格
+- [phase-9/TODO.md](./phase-9/TODO.md) — Phase 9 交付清单
+- [phase-9/ACCEPTANCE.md](./phase-9/ACCEPTANCE.md) — Phase 9 验收证据
+- [phase-10/PRD.md](./phase-10/PRD.md) — 翻译生命周期、组件订阅与 ESLint preset 诊断规格
+- [phase-10/TODO.md](./phase-10/TODO.md) — Phase 10 交付清单
+- [phase-10/ACCEPTANCE.md](./phase-10/ACCEPTANCE.md) — Phase 10 验收证据
 - [mcp/PRD.md](./mcp/PRD.md) — `@ai-i18n/mcp` 六工具 CRUD、单份 JSON 文本输出、最终绝对
   目录校验与单层 extracted 契约
 - [mcp/TODO.md](./mcp/TODO.md) — MCP 交付清单

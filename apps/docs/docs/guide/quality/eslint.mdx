@@ -25,7 +25,7 @@ Vue SFC 还需要宿主已有的 `eslint-plugin-vue`、`vue-eslint-parser` 与
 
 ## 显式导入
 
-未启用 ai-i18n 自动导入时，使用 `recommended`：
+未启用 ai-i18n 自动导入时，Vanilla / React 使用 `recommended`：
 
 ```js
 // eslint.config.mjs
@@ -37,9 +37,10 @@ export default defineConfig([
 ]);
 ```
 
-该预设启用报错级别的 `ai-i18n/t-static-args` 和警告级别的
-`ai-i18n/static-candidate-limit`，并忽略 `.vue` 文件。它只检查实际绑定到
-`virtual:ai-i18n` 的 `t`。
+该预设启用报错级别的 `ai-i18n/t-static-args`，以及警告级别的
+`ai-i18n/static-candidate-limit`、`ai-i18n/no-eager-translation` 和
+`ai-i18n/no-unsubscribed-t`，并忽略 `.vue` 文件。它只检查实际绑定到
+`virtual:ai-i18n` 的 `t`。显式导入的 Vue 项目使用下文覆盖 SFC 的 `configs.vue`。
 
 ## 自动导入
 
@@ -51,21 +52,31 @@ import aiI18n from '@ai-i18n/eslint-plugin';
 import { defineConfig } from 'eslint/config';
 
 export default defineConfig([
-  ...aiI18n.configs.vanilla, // 声明并检查 Vanilla 自动导入；Vue/React 改用对应预设
+  ...aiI18n.configs['vanilla-auto-import'],
+  // Vue：...aiI18n.configs['vue-auto-import']
+  // React：...aiI18n.configs['react-auto-import']
 ]);
 ```
 
-| 预设              | 文件范围                  | 声明的只读全局                                                           |
-| ----------------- | ------------------------- | ------------------------------------------------------------------------ |
-| `configs.vanilla` | JS / TS                   | `t`、`setLang`、`getLang`、`getLangs`、`subscribe`、`defineI18nMessages` |
-| `configs.vue`     | JS / TS / JSX / TSX / Vue | `useI18n`、`defineI18nMessages`                                          |
-| `configs.react`   | JS / TS / JSX / TSX       | `useI18n`、`defineI18nMessages`                                          |
+| 预设                             | 文件范围                  | 声明的只读全局                                                                               |
+| -------------------------------- | ------------------------- | -------------------------------------------------------------------------------------------- |
+| `configs['vanilla-auto-import']` | JS / TS                   | `t`、`setLang`、`getLang`、`getLangs`、`getLangLoadState`、`subscribe`、`defineI18nMessages` |
+| `configs['vue-auto-import']`     | JS / TS / JSX / TSX / Vue | `useI18n`、`t`、`defineI18nMessages`                                                         |
+| `configs['react-auto-import']`   | JS / TS / JSX / TSX       | `useI18n`、`t`、`defineI18nMessages`                                                         |
 
 这些预设只声明并检查 ai-i18n 自己的 API。
 
+| 预设                  | `no-eager-translation` | `no-unsubscribed-t` |
+| --------------------- | ---------------------- | ------------------- |
+| `recommended`         | warning                | warning             |
+| `vue`                 | warning                | warning             |
+| `vanilla-auto-import` | warning                | 不启用              |
+| `vue-auto-import`     | warning                | warning             |
+| `react-auto-import`   | warning                | warning             |
+
 ## Vue Flat Config
 
-先配置宿主 Vue parser，再追加 ai-i18n 预设：
+先配置宿主 Vue parser，再按 Vite 的 `autoImport` 值追加 ai-i18n 预设：
 
 ```js
 // eslint.config.mjs
@@ -82,7 +93,8 @@ export default defineConfig([
       parserOptions: { parser: tseslint.parser }, // 解析 <script lang="ts">
     },
   },
-  ...aiI18n.configs.vue, // 声明 useI18n/宏全局并检查 Vue 中的静态文案
+  ...aiI18n.configs.vue, // autoImport: false，只声明宏全局
+  // ...aiI18n.configs['vue-auto-import'], // autoImport: true，声明 useI18n、t 与宏
 ]);
 ```
 
@@ -106,10 +118,24 @@ export default defineConfig([
       'ai-i18n': aiI18n, // 注册规则使用的插件名
     },
     rules: {
+      'ai-i18n/no-eager-translation': [
+        'warn', // 避免在初始化期间缓存不会刷新的译文
+        {
+          autoImport: ['t', 'useI18n'],
+          tsconfigPath: './tsconfig.json',
+        },
+      ],
+      'ai-i18n/no-unsubscribed-t': [
+        'warn', // Vue / React 组件渲染使用 Hook/composable 的 t
+        {
+          autoImport: ['t', 'useI18n'],
+          tsconfigPath: './tsconfig.json',
+        },
+      ],
       'ai-i18n/static-candidate-limit': [
         'warn', // 候选过多只提示，不截断 Vite 提取
         {
-          autoImport: true, // 检查未显式导入的 ai-i18n 全局 API
+          autoImport: ['t', 'useI18n'], // 与 Vue / React 自动导入契约一致
           tsconfigPath: './tsconfig.json', // 解析 tsconfig 中的 paths alias
           maxStaticCandidates: 2_000, // 单个 t() 允许的静态组合提示阈值
         },
@@ -117,7 +143,7 @@ export default defineConfig([
       'ai-i18n/t-static-args': [
         'error', // 无法静态提取或不推荐的参数写法直接报错
         {
-          autoImport: true, // 检查未显式导入的 ai-i18n 全局 API
+          autoImport: ['t', 'useI18n'], // Vanilla 只需配置 ['t']
           tsconfigPath: './tsconfig.json', // 解析 tsconfig 中的 paths alias
         },
       ],
@@ -126,12 +152,81 @@ export default defineConfig([
 ]);
 ```
 
+### `no-eager-translation`
+
+模块初始化时执行并保存 `t()`，只会保存当时语言的字符串：
+
+```ts
+export const saveLabel = t('保存'); // warning
+
+export function getSaveLabel() {
+  return t('保存'); // 允许：调用时读取当前语言
+}
+```
+
+规则覆盖变量初始化、对象或数组、后续赋值、类字段和默认导出，也覆盖 tagged template。
+函数、箭头函数、getter 与事件回调中的延迟执行允许。在 Vue `<script setup>` 中，
+`const label = t('保存')` 同样是一次性 setup 快照；请在模板中调用 `t()`，或用
+`computed(() => t('保存'))`。普通 Vue SFC 的 `export default { setup() {} }`，以及
+`.vue` / `.ts` / `.tsx` 中从 `vue` 导入的 `defineComponent({ setup() {} })` 或函数签名，
+也属于一次性初始化边界；直接返回 `{ label: t('保存') }` 同样会收到 warning。导入别名
+与 namespace import 会按 binding 识别，本地同名函数不会误报。
+
+### `no-unsubscribed-t`
+
+Vue template 以及 Vue / React JSX 或 TSX 组件在渲染路径直接调用从
+`virtual:ai-i18n` 导入或自动注入的 Runtime 顶层 `t`，不会订阅语言状态：
+
+```tsx
+function SaveButton() {
+  return <button>{t('保存')}</button>; // warning
+}
+
+function SaveButton() {
+  const { t } = useI18n();
+  return <button>{t('保存')}</button>; // 允许
+}
+```
+
+React Compiler 可能缓存组件计算，因此 `"use memo"` 不能解决缺失订阅；
+`"use no memo"` 也不会让语言切换触发渲染。`useI18n()` 使用外部状态订阅，并在 Runtime
+revision 变化时更新 Hook `t` 的引用。
+
+Vue 自动导入不会给裸模板标识符合成 Hook。`vue-auto-import` preset 的
+`t-static-args` 会把下面的写法作为 error：
+
+```vue
+<template>{{ t('保存') }}</template>
+```
+
+请在 `<script setup>` 中写 `const { t } = useI18n()`。显式导入模式下，ai-i18n 只认
+确定绑定到自身 Runtime 的调用；项目仍应启用 Vue 自己的未定义模板属性检查，发现其他未知
+组件上下文属性。
+
+事件处理器中的顶层 `t` 允许，因为它会在事件发生时重新读取当前语言。直接作为独立
+`console.log` / `warn` / `error` / `info` / `debug` 参数的翻译只用于即时日志，也允许。
+其他未知调用可能保存字符串，因此仍会 warning。第一版不会追踪跨函数、跨文件、IIFE 或
+`useMemo` / `useState` 等任意数据流；请继续避免把译后字符串长期放入 state、storage
+或业务模型。两条生命周期规则都不提供自动修复。
+
+四条规则可以独立启用。Analyzer 无法启动时，当前文件只报告一次双语分析错误；官方 preset
+让 `t-static-args` 优先承担这个 error，避免次级 warning 重复刷屏。
+
+### 生命周期规则选项
+
+`no-eager-translation` 与 `no-unsubscribed-t` 共享以下选项：
+
+| 选项           | 类型                              | 必填 | 默认值          | 作用                                  |
+| -------------- | --------------------------------- | ---- | --------------- | ------------------------------------- |
+| `autoImport`   | `boolean \| ('t' \| 'useI18n')[]` | 否   | `false`         | 检查指定的 ai-i18n 自动导入调用来源。 |
+| `tsconfigPath` | `string`                          | 否   | 不读取 tsconfig | 解析 TypeScript `paths` alias。       |
+
 ### `t-static-args` 选项
 
-| 选项           | 类型      | 必填 | 默认值          | 作用                                        |
-| -------------- | --------- | ---- | --------------- | ------------------------------------------- |
-| `autoImport`   | `boolean` | 否   | `false`         | 检查未显式导入、由 ai-i18n 注入的全局 API。 |
-| `tsconfigPath` | `string`  | 否   | 不读取 tsconfig | 解析 TypeScript `paths` alias。             |
+| 选项           | 类型                              | 必填 | 默认值          | 作用                                  |
+| -------------- | --------------------------------- | ---- | --------------- | ------------------------------------- |
+| `autoImport`   | `boolean \| ('t' \| 'useI18n')[]` | 否   | `false`         | 检查指定的 ai-i18n 自动导入调用来源。 |
+| `tsconfigPath` | `string`                          | 否   | 不读取 tsconfig | 解析 TypeScript `paths` alias。       |
 
 ### `static-candidate-limit` 选项
 
@@ -140,11 +235,14 @@ export default defineConfig([
 项目总文案数，也不是 Provider 批次大小。source 和 options 都有多个候选时，按两者的
 组合数量计算。
 
-| 选项                  | 类型      | 必填 | 默认值          | 作用                                        |
-| --------------------- | --------- | ---- | --------------- | ------------------------------------------- |
-| `autoImport`          | `boolean` | 否   | `false`         | 检查未显式导入、由 ai-i18n 注入的全局 API。 |
-| `tsconfigPath`        | `string`  | 否   | 不读取 tsconfig | 解析 TypeScript `paths` alias。             |
-| `maxStaticCandidates` | `number`  | 否   | `1000`          | 单个 `t()` 触发警告的正整数阈值。           |
+| 选项                  | 类型                              | 必填 | 默认值          | 作用                                  |
+| --------------------- | --------------------------------- | ---- | --------------- | ------------------------------------- |
+| `autoImport`          | `boolean \| ('t' \| 'useI18n')[]` | 否   | `false`         | 检查指定的 ai-i18n 自动导入调用来源。 |
+| `tsconfigPath`        | `string`                          | 否   | 不读取 tsconfig | 解析 TypeScript `paths` alias。       |
+| `maxStaticCandidates` | `number`                          | 否   | `1000`          | 单个 `t()` 触发警告的正整数阈值。     |
+
+`autoImport: true` 为向后兼容同时识别 `t` 与 `useI18n`。新配置优先直接使用对应 preset；手工
+配置时用数组精确匹配 Vite 模式，避免 ESLint 接受一个实际不会被该模式注入的全局名字。
 
 该规则只发出 ESLint warning，不截断 Vite 的静态提取。确实存在大型有限集合时，可以在
 ESLint 配置中调高阈值；Vite 插件本身没有对应选项。

@@ -55,8 +55,8 @@ and inject imports from `virtual:ai-i18n`. Other Vite plugins never change this 
 
 With auto import enabled, the available globals are:
 
-- Vanilla: `t`, `setLang`, `getLang`, `getLangs`, `subscribe`
-- Vue/React: `useI18n`
+- Vanilla: `t`, `setLang`, `getLang`, `getLangs`, `getLangLoadState`, `subscribe`
+- Vue/React: `useI18n`, `t`
 
 ai-i18n writes `src/ai-i18n.d.ts` by default. Set `dts: 'path/file.d.ts'` to move it or `dts: false`
 only when declarations are managed elsewhere. The file declares both `virtual:ai-i18n` and the
@@ -69,10 +69,20 @@ declarations also use stable Prettier-compatible formatting when that option is 
 Explicit imports are always supported:
 
 ```ts
-import { getLangs, setLang, t } from 'virtual:ai-i18n'
+import { getLangLoadState, getLangs, setLang, t } from 'virtual:ai-i18n'
 // Vue or React mode:
 import { useI18n } from 'virtual:ai-i18n'
 ```
+
+Vue/React components should obtain `t` from `useI18n()` so they subscribe to Runtime updates.
+Top-level `t` is intended for ordinary JS/TS modules that cannot call a Hook, and should be evaluated
+inside a function or getter rather than stored during module initialization. The matching ESLint
+presets report both initialization snapshots and unsubscribed JSX/TSX render calls. Explicit imports
+use `configs.recommended` (Vanilla/React) or `configs.vue`; auto imports use the matching
+`configs['vanilla-auto-import']`, `configs['vue-auto-import']`, or
+`configs['react-auto-import']`.
+In Vue, auto import removes the import statement but does not synthesize a template binding; call
+`useI18n()` in `<script setup>` before using `t` in the template.
 
 ## Option rules
 
@@ -153,8 +163,13 @@ lower-priority browser hint, and unlisted targets load on their first `setLang()
 `sourceLang` or place the same locale in both lists; duplicates within one list are normalized away.
 
 A non-source `defaultLang` is automatically preloaded and uses the source fallback until it loads; a
-failed `setLang()` keeps the current language. Concurrent-load Promise sharing and other edge cases:
-see `api/vite/interfaces/ai-i18n-locale-loading-options.md`.
+failed `setLang()` keeps the current language. `getLangLoadState()` exposes an immutable
+`idle` / `loading` / `error` snapshot. Vue and React `useI18n()` additionally returns
+`langLoadState`, `isLangLoading`, and `langLoadError`. Concurrent-load Promise sharing and other
+edge cases: see `api/vite/interfaces/ai-i18n-locale-loading-options.md`. Calls for the same locale
+reuse the underlying loader request; their `setLang()` wrapper Promises are not guaranteed to be
+reference-equal. Shared error state does not consume a rejected `setLang()` Promise; callers must
+still terminate it with `try/catch` or `.catch()`.
 
 ## Optional cache capacity
 
@@ -210,4 +225,5 @@ the user guide's `guide/basic/directory.md#dev-与-build` section.
 
 For Vitest, use `aiI18nVitest(options)` from `@ai-i18n/vite/vitest`. Do not run the production plugin
 or maintain a `virtual:ai-i18n` alias just for unit tests; see `guide/quality/testing.md` for the
-shared-options pattern and test-environment capability scope.
+shared-options pattern and test-environment capability scope. If production sets `autoImport: true`,
+pass the same value to `aiI18nVitest()` so unbound mode-specific APIs are injected in tests too.

@@ -25,8 +25,12 @@ function setLang(value: string): Promise<void>;
 没有启用语言分包时，Runtime 会立即提交切换。启用 `loading` 后，Runtime 先加载目标语言
 chunk，再切换语言并通知订阅者。
 
-相同 locale 的并发加载共享一个 Promise。不同 locale 的并发切换以最后一次调用为准。
-加载失败时 Promise 会 reject，当前语言保持不变。
+相同 locale 的并发调用会复用同一次底层语言包加载请求，但不保证各次 `setLang()` 返回的
+Promise 引用相等。不同 locale 的并发切换以最后一次调用为准。
+加载失败时 Promise 会 reject，当前语言保持不变，并通过
+[`getLangLoadState()`](./get-lang-load-state) 暴露 error 快照。
+共享状态不会消费 rejected Promise；即使 UI 只读取内置 error 状态，调用方仍需
+`await` + `catch` 或显式 `.catch()`，避免 unhandled rejection。
 
 配置 `persist` 后，切换成功的语言会写入 localStorage。
 
@@ -36,7 +40,7 @@ chunk，再切换语言并通知订阅者。
 try {
   await setLang('en-US');
 } catch {
-  // 保留当前语言，并向用户提供重试入口。
+  // 仅在需要业务级恢复动作时处理；通用 loading/error UI 可直接读取共享状态。
 }
 ```
 

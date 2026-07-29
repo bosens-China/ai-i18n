@@ -13,8 +13,10 @@ description: 使用 aiI18nVitest() 在 Vitest 中提供 virtual:ai-i18n，无需
 `virtual:ai-i18n` 时复用与生产环境相同的 Runtime 生成逻辑，但不提取翻译、不调用 Provider、
 也不接触磁盘上的任何协议文件。
 
-测试插件仍会执行 `defineI18nMessages()` 的编译期消除，因此使用消息集合宏的业务模块无需
-额外 mock 或 import。它只做宏转换，不在测试期间生成提取文件。
+测试插件仍会执行 `defineI18nMessages()` 的编译期消除；设置 `autoImport: true` 时，也会
+注入与生产框架模式相同的 Runtime API。因此使用消息集合宏或生产自动导入的业务模块无需
+额外 mock。ESLint 也应使用对应的 `*-auto-import` preset；测试配置与生产配置必须保持
+相同的 `autoImport` 值。测试插件不在测试期间生成提取文件。
 不经过 Vite 转换的 Jest、直接 Node 执行等环境不会识别该宏，需要改用
 `aiI18nVitest()`，或避免执行包含宏的源码。
 
@@ -35,6 +37,7 @@ export default defineConfig({
         { value: 'zh-CN', label: '中文' },
         { value: 'en-US', label: 'English' },
       ],
+      autoImport: true, // 仅当正式 Vite 配置也开启自动导入时保持一致
     }),
     react(), // 提供 React 转换，并让测试插件自动识别 React 模式
   ],
@@ -48,7 +51,7 @@ Vue 项目把 `react()` 换成 `vue()`，`framework` 同样按最终插件列表
 ## 与正式配置共享 options
 
 `AiI18nVitestOptions` 是 `AiI18nOptions` 的子集，只保留 `sourceLang`、`defaultLang`、
-`locales`、`framework`、`persist`。把这部分抽成共享文件，`vite.config.ts`
+`locales`、`framework`、`persist`、`autoImport`。把这部分抽成共享文件，`vite.config.ts`
 与 `vitest.config.ts` 各自引用，语言列表和运行时策略只需要改一处：
 
 ```ts
@@ -62,6 +65,7 @@ export const aiI18nOptions = {
     { value: 'en-US', label: 'English' },
   ],
   persist: { key: 'app-lang' }, // 使用指定 localStorage key 保存语言偏好
+  autoImport: true, // 两种环境使用同一模式化自动导入契约
 } as const;
 ```
 
@@ -101,13 +105,18 @@ export default defineConfig({
 | --------------------------- | -------------------------------------------------------------------------------------------------------- |
 | `t(source)` / `` t`...` ``  | 可用。测试 Runtime 没有加载任何目标语言译文，因此固定返回 source 文案。                                  |
 | `setLang(value)`            | 可用，可用于测试语言切换触发的重渲染，以及 `persist` 写入 localStorage。                                 |
-| `useI18n()`                 | Vue / React 模式下可用，Hook 行为与生产环境一致（`t` 的引用会随语言/Runtime 版本变化）。                 |
+| `useI18n()`                 | Vue / React 模式下可用；字段契约一致，但测试 Runtime 的语言加载状态固定为 `idle`。                       |
+| 自动导入                    | 仅在 `autoImport: true` 时注入，API 集合与同一框架模式的生产插件一致。                                   |
 | 静态提取 / `i18n/` 协议文件 | 不会发生，不会创建、读取或修改 `translations.json`、`overrides.json`、`extracted/*.json`、`locales/**`。 |
 | Provider / AI 自动翻译      | 不会调用；`provider` 不属于 `AiI18nVitestOptions`。                                                      |
 
 由于没有加载任何目标语言译文，`t('保存')` 始终返回 `"保存"`，即使调用过
 `await setLang('en-US')` 之后也是如此。可以把这类测试理解为契约测试——只断言组件确实调用了
 `t()` 并渲染出结果，不断言具体译文内容。
+
+`loading` 不属于 `AiI18nVitestOptions`，测试 Runtime 不创建语言 chunk loader。
+`getLangLoadState()` 以及 `useI18n()` 的 loading/error 字段仍存在，但固定为 `idle`；真实
+loading/error 变化应由应用自己的抽象单测或生产 Vite 集成测试覆盖。
 
 具体译文是否正确（例如 `en-US` 有没有翻译成 `"Save"`）属于协议文件的职责，不应该在单测里断言。
 这类校验交给 [AI 翻译](/guide/advanced/ai-translation) 的 Provider 流程或人工检查

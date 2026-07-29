@@ -17,7 +17,7 @@ function subscribe(listener: () => void): () => void;
 
 ## 参数
 
-`listener` 是无参数回调。语言变化或 Runtime 模块更新时，Runtime 会执行该回调。
+`listener` 是无参数回调。语言、语言加载状态或 Runtime 模块更新时，Runtime 会执行该回调。
 
 ## 返回值
 

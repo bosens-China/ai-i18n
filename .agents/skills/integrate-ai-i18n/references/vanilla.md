@@ -6,7 +6,14 @@ mode defaults to Vanilla.
 Explicit imports remain the simplest baseline:
 
 ```ts
-import { getLang, getLangs, setLang, subscribe, t } from 'virtual:ai-i18n'
+import {
+  getLang,
+  getLangLoadState,
+  getLangs,
+  setLang,
+  subscribe,
+  t,
+} from 'virtual:ai-i18n'
 
 function render() {
   document.querySelector('#app')!.textContent = t('保存')
@@ -14,8 +21,12 @@ function render() {
 
 render()
 subscribe(render)
-await setLang('en-US')
-console.log(getLang(), getLangs())
+try {
+  await setLang('en-US')
+} catch {
+  // render() reads shared error state; this consumes the rejected Promise.
+}
+console.log(getLang(), getLangs(), getLangLoadState())
 ```
 
 Default to `t(source)`. Use `` t`已加入 ${name}` `` for dynamic values. Pass an options object with
@@ -24,13 +35,19 @@ Default to `t(source)`. Use `` t`已加入 ${name}` `` for dynamic values. Pass 
 new untranslated message; do not invent comments for ordinary UI copy.
 
 Set `autoImport: true` explicitly to use these Runtime APIs without imports. ai-i18n injects them and
-generates `src/ai-i18n.d.ts`. Use `configs.vanilla` from `@ai-i18n/eslint-plugin` for the matching
-globals.
+generates `src/ai-i18n.d.ts`. Use `configs['vanilla-auto-import']` from
+`@ai-i18n/eslint-plugin` for the matching globals. With explicit imports, use
+`configs.recommended`.
 
-Runtime state changes do not mutate existing DOM. Re-render from `subscribe()` after language or HMR
-updates. Static extraction ignores unrelated strings and dynamic `t(variable)` calls. Vanilla mode
-does not analyze JSX/TSX; select React or Vue mode for those file types. Use `html: true` only when
-`index.html` contains supported translation bindings.
+Runtime state changes do not mutate existing DOM. Re-render from `subscribe()` after language,
+loading-state, or HMR updates. `getLangLoadState()` returns an immutable
+`idle` / `loading` / `error` snapshot. Static extraction ignores unrelated strings and dynamic
+`t(variable)` calls. Vanilla mode does not analyze JSX/TSX; select React or Vue mode for those file
+types. Use `html: true` only when `index.html` contains supported translation bindings.
+
+Evaluate `t()` at render or event time. A module-level `const label = t('保存')` stores an
+initialization snapshot; prefer `const getLabel = () => t('保存')`. The Vanilla ESLint preset reports
+the snapshot through `ai-i18n/no-eager-translation`.
 
 For object or array copy, use `defineI18nMessages({...})` without an import and pass its members to
 `t()`. Dynamic indexes enumerate only finite AST candidates; the macro does not execute or freeze

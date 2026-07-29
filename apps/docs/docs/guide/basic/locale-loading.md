@@ -54,41 +54,50 @@ aiI18n({
 ## 显示切换中的 Loading 状态
 
 `setLang()` 返回 Promise。目标语言 chunk 尚未加载时，它会等待资源完成；成功后才切换语言
-并通知组件更新。下面的 Vue 示例在等待期间禁用按钮并显示状态：
+并通知组件更新。Runtime 同时维护共享状态，下面的 Vue 示例不需要在每个组件重复声明
+loading / error ref：
 
 ```vue
 <script setup lang="ts">
 import { useI18n } from 'virtual:ai-i18n';
-import { ref } from 'vue';
 
-const { setLang, t } = useI18n(); // setLang() 返回语言包加载 Promise
-const switching = ref(false); // 控制按钮禁用与 Loading 文案
-const loadError = ref(''); // 保存可展示的加载错误
+const { isLangLoading, langLoadState, setLang, t } = useI18n();
 
 async function switchToFrench() {
-  switching.value = true;
-  loadError.value = '';
-
   try {
     await setLang('fr-FR');
   } catch {
-    loadError.value = t('语言包加载失败，请重试');
-  } finally {
-    switching.value = false;
+    // 仅在这里添加业务级恢复动作；通用错误展示直接读取 langLoadState.status。
   }
 }
 </script>
 
 <template>
-  <button :disabled="switching" @click="switchToFrench">
-    {{ switching ? t('正在加载语言包…') : t('切换到法语') }}
+  <button :disabled="isLangLoading" @click="switchToFrench">
+    {{ isLangLoading ? t('正在加载语言包…') : t('切换到法语') }}
   </button>
-  <p v-if="loadError">{{ loadError }}</p>
+  <p v-if="langLoadState.status === 'error'">
+    {{ t('语言包加载失败，请重试') }}
+  </p>
+  <small v-if="langLoadState.status === 'loading'">
+    {{ t('目标语言：') }} {{ langLoadState.targetLang }}
+  </small>
 </template>
 ```
 
 加载失败时，Runtime 会保留当前语言并让 Promise reject。应用可以像上例一样捕获错误，
-展示重试入口。
+执行日志、重试计数等业务动作；只需要通用 UI 时可以直接使用内置状态。
+
+普通 JavaScript / TypeScript 模块可以读取一次快照：
+
+```ts
+import { getLangLoadState } from 'virtual:ai-i18n';
+
+const state = getLangLoadState();
+```
+
+Vanilla UI 若要持续响应变化，应配合 `subscribe()` 重新渲染。状态的完整类型与并发语义见
+[`getLangLoadState()`](/api/runtime/functions/get-lang-load-state)。
 
 ## 配置规则
 
@@ -96,8 +105,8 @@ async function switchToFrench() {
 - 同一 locale 不能同时出现在两个列表中；同一列表内的重复值会自动去重。
 - 非 source 的 `defaultLang` 会自动按 preload 处理。资源就绪前先渲染 source fallback，
   加载完成后再通知订阅者更新。
-- 相同 locale 的并发加载会共享 Promise。不同 locale 的并发切换以最后一次
-  `setLang()` 调用为准。
+- 相同 locale 的并发调用会复用同一次底层语言包加载请求，不保证各次 `setLang()` 返回的
+  Promise 引用相等。不同 locale 的并发切换以最后一次调用为准。
 - 缺失或值为 `null` 的译文始终回退到 source 文案。
 
 完整字段类型与边界见

@@ -48,11 +48,12 @@ warning；`defineI18nMessages()` 的编译期消除仍会执行。
 
 1. 确认 `aiI18n({ autoImport: true })` 已显式开启。其他 Vite 插件不会改变该选项。
 2. 确认使用了当前框架模式支持的 API：Vanilla 自动导入 `t`、`setLang`、`getLang`、
-   `getLangs`、`subscribe`；Vue 和 React 自动导入 `useI18n`。
+   `getLangs`、`getLangLoadState`、`subscribe`；Vue 和 React 自动导入 `useI18n` 与 `t`。
 3. 修改 Vite 配置后重启开发服务器。
 4. TypeScript 项目启动一次 Vite，确认生成的 `src/ai-i18n.d.ts` 位于 `tsconfig.json`
    的 `include` 范围内。
-5. ESLint 项目使用与框架匹配的 `configs.vanilla`、`configs.vue` 或 `configs.react`。
+5. ESLint 项目使用与框架匹配的 `configs['vanilla-auto-import']`、
+   `configs['vue-auto-import']` 或 `configs['react-auto-import']`。
 
 局部变量、函数参数或显式 import 与自动导入 API 同名时，局部 binding 始终优先。
 
@@ -75,6 +76,24 @@ Vite Dev 只分析浏览器实际请求到的模块。懒路由尚未访问时�
 需要确认生产入口的完整覆盖范围时，运行一次 `vite build`。Build 只分析从入口可达的模块，
 不会扫描未被项目引用的文件。
 
+## 为什么切换语言后组件没有刷新？
+
+先检查组件是否从 `useI18n()` 获取 `t`。从 `virtual:ai-i18n` 导入或自动注入的 Runtime
+顶层 `t` 只读取当前语言，不会让 Vue / React 组件订阅后续变化：
+
+```tsx
+const { t } = useI18n(); // 组件渲染使用这个 t
+```
+
+再检查是否在模块初始化或 Vue setup 期间保存过译后字符串。`const label = t('保存')`
+只是当时的快照；普通工具模块改成 `const getLabel = () => t('保存')`，Vue 展示值可使用
+`computed(() => t('保存'))`。React Compiler 可能继续复用无订阅渲染的旧结果，不能替代
+`useI18n()`。
+
+启用对应的 ESLint preset 后，`no-eager-translation` 和 `no-unsubscribed-t` 会提示这些
+可以确定的常见问题。规则不追踪任意跨函数或跨文件数据流，详情见
+[ESLint](/guide/quality/eslint)。
+
 ## 为什么切换语言后仍然显示源文案？
 
 缺失翻译或值为 `null` 时，Runtime 固定回退到 source。检查
@@ -88,7 +107,9 @@ Vite Dev 只分析浏览器实际请求到的模块。懒路由尚未访问时�
 ## 为什么按需加载语言包时切换失败？
 
 配置 `loading` 后，未加载的目标语言会在 `setLang()` 时请求独立 chunk。加载失败时，
-Promise 会 reject，并保留当前语言。应用应捕获错误并提供重试入口。
+Promise 会 reject，并保留当前语言。Vue / React 组件可以直接使用 `useI18n()` 返回的
+`isLangLoading` 和 `langLoadState.status === 'error'` 显示通用状态；需要业务级恢复动作
+时，仍可捕获 Promise 并提供重试入口。
 
 同时确认 `preload` 和 `prefetch` 只包含已配置的目标 locale，未包含 `sourceLang`，并且
 同一 locale 没有同时出现在两个列表中。完整示例见

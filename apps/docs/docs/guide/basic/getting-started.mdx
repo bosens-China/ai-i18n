@@ -12,6 +12,7 @@ ai-i18n 通过 Vite 插件提取源码中的 `t()`，并向浏览器提供语言
 :::warning 环境要求
 
 - 使用 Vite ≥ 8。
+- Vue 模式使用 Vue ≥ 3.2.25。
 - Runtime 仅支持浏览器端，暂不支持 SSR。
 - 每个 Vite build 只能使用一种框架模式：Vanilla、Vue 或 React。
 
@@ -81,7 +82,11 @@ Vue 或 React 项目继续使用原有的 Vite 框架插件，无需安装额外
     subscribe(render); // 语言或翻译变化后重新渲染 DOM
 
     console.log(getLangs()); // 读取 vite.config.ts 中的 locales
-    await setLang('en-US'); // 切换语言；按需加载时会等待语言包
+    try {
+      await setLang('en-US'); // 切换语言；按需加载时会等待语言包
+    } catch {
+      // 语言保持不变；render() 可读取共享状态展示错误。
+    }
     ```
 
   </Tab>
@@ -122,11 +127,22 @@ Vue 或 React 项目继续使用原有的 Vite 框架插件，无需安装额外
       setLang, // 异步切换语言
       t, // 翻译源码文案，缺译时返回原文
     } = useI18n();
+
+    async function changeLanguage(value: string) {
+      try {
+        await setLang(value);
+      } catch {
+        // 语言保持不变；完整项目可通过 useI18n() 的共享状态显示错误。
+      }
+    }
     </script>
 
     <template>
       <p>{{ t('保存') }}</p>
-      <select :value="currentLang" @change="setLang(($event.target as HTMLSelectElement).value)">
+      <select
+        :value="currentLang"
+        @change="changeLanguage(($event.target as HTMLSelectElement).value)"
+      >
         <option v-for="lang in langs" :key="lang.value" :value="lang.value">
           {{ lang.label }}
         </option>
@@ -173,12 +189,20 @@ Vue 或 React 项目继续使用原有的 Vite 框架插件，无需安装额外
         t, // 翻译源码文案，缺译时返回原文
       } = useI18n();
 
+      async function changeLanguage(value: string) {
+        try {
+          await setLang(value);
+        } catch {
+          // 语言保持不变；完整项目可通过 useI18n() 的共享状态显示错误。
+        }
+      }
+
       return (
         <>
           <p>{t('保存')}</p>
           <select
             value={currentLang}
-            onChange={(event) => void setLang(event.target.value)}
+            onChange={(event) => void changeLanguage(event.target.value)}
           >
             {langs.map((lang) => (
               <option key={lang.value} value={lang.value}>

@@ -14,19 +14,25 @@ import type { AiI18nVitestOptions } from '@ai-i18n/vite/vitest';
 ```ts
 type AiI18nVitestOptions = Pick<
   AiI18nOptions,
-  'sourceLang' | 'defaultLang' | 'locales' | 'framework' | 'persist'
+  | 'sourceLang'
+  | 'defaultLang'
+  | 'locales'
+  | 'framework'
+  | 'persist'
+  | 'autoImport'
 >;
 ```
 
 ## 字段
 
-| 字段          | 必填 | 说明                                        |
-| ------------- | ---- | ------------------------------------------- |
-| `sourceLang`  | 是   | 测试源码使用的语言。                        |
-| `locales`     | 是   | Runtime 支持的语言列表。                    |
-| `defaultLang` | 否   | 没有有效持久化值时使用的初始语言。          |
-| `framework`   | 否   | 覆盖 Vanilla、Vue 或 React 的自动检测结果。 |
-| `persist`     | 否   | 测试 Runtime 的 localStorage 语言偏好配置。 |
+| 字段          | 必填 | 说明                                         |
+| ------------- | ---- | -------------------------------------------- |
+| `sourceLang`  | 是   | 测试源码使用的语言。                         |
+| `locales`     | 是   | Runtime 支持的语言列表。                     |
+| `defaultLang` | 否   | 没有有效持久化值时使用的初始语言。           |
+| `framework`   | 否   | 覆盖 Vanilla、Vue 或 React 的自动检测结果。  |
+| `persist`     | 否   | 测试 Runtime 的 localStorage 语言偏好配置。  |
+| `autoImport`  | 否   | 注入与生产框架模式相同的未绑定 Runtime API。 |
 
 `html`、`loading`、`cache`、`provider`、`directory`、`dts` 等构建期字段不属于该类型。
 

@@ -78,11 +78,11 @@ interface AiI18nOptions {
 
 `autoImport: true` 注入的 API 取决于最终模式：
 
-| 模式      | 自动导入的 API                                     |
-| --------- | -------------------------------------------------- |
-| `vanilla` | `t`、`setLang`、`getLang`、`getLangs`、`subscribe` |
-| `vue`     | `useI18n`                                          |
-| `react`   | `useI18n`                                          |
+| 模式      | 自动导入的 API                                                         |
+| --------- | ---------------------------------------------------------------------- |
+| `vanilla` | `t`、`setLang`、`getLang`、`getLangs`、`getLangLoadState`、`subscribe` |
+| `vue`     | `useI18n`、`t`                                                         |
+| `react`   | `useI18n`、`t`                                                         |
 
 完整接入方法见[自动导入](/guide/basic/auto-import)。
 

@@ -53,6 +53,16 @@ i18n.t('取消');
 i18n['t']('返回');
 ```
 
+Vue 或 React build 中的普通 `.js` / `.ts` 工具模块可以显式导入顶层 `t`：
+
+```ts
+import { t } from 'virtual:ai-i18n';
+
+export const getRetryMessage = () => t('请重试');
+```
+
+框架模式由整个 Vite build 决定，不会因为当前文件是 `.ts` 就切换为 Vanilla。
+
 开启 [自动导入](/guide/basic/auto-import) 后，分析器也会识别没有本地 binding 的全局调用。
 局部变量、参数或显式 import 始终优先，不会被当作自动导入 API。
 
@@ -94,6 +104,10 @@ t(messages.states[index]);
 枚举 AST 中可以证明的候选值。宏在 Vite 与 `aiI18nVitest()` 转换时消除为原参数，不会冻结、
 拷贝、校验或执行对象。
 
+`defineI18nMessages()` 同样适用于普通 `.js` / `.ts` 文件。它不需要 import；TypeScript
+类型来自 Vite 生成的 `ai-i18n.d.ts`。如果编辑器找不到该名字，请先生成声明文件并检查
+`tsconfig.json` 的 `include`，不要为宏添加运行时实现。
+
 翻译注释同样需要静态求值：
 
 ```ts
@@ -122,11 +136,37 @@ Vite Analyzer 会尽量保留可恢复的静态文案；ESLint 则负责约束�
 
 建议在项目中启用 [ESLint](/guide/quality/eslint)，让本地检查与构建提取保持一致。
 
+## 提取成功不等于会刷新
+
+Analyzer 负责证明文案能在构建期提取；语言切换后的刷新还取决于 `t()` 在什么时候执行，
+以及组件是否通过 `useI18n()` 订阅 Runtime。
+
+| 写法                                                  | 提取 | 语言切换行为                         |
+| ----------------------------------------------------- | ---- | ------------------------------------ |
+| `export const label = t('保存')`                      | 是   | 初始化时保存快照，不会自动更新       |
+| `export const getLabel = () => t('保存')`             | 是   | 每次调用读取当前语言                 |
+| Vue `<script setup>` 中 `const label = t('保存')`     | 是   | setup 快照，不会自动更新             |
+| Vue 组件 `setup()` 中 `const label = t('保存')`       | 是   | setup 快照，不会自动更新             |
+| Vue `computed(() => t('保存'))`，`t` 来自 `useI18n()` | 是   | Runtime revision 变化后重新计算      |
+| Vue / React 组件渲染使用 Runtime 顶层 `t`             | 是   | 不建立订阅，语言切换不会主动触发渲染 |
+| Vue / React 组件渲染使用 `useI18n()` 返回的 `t`       | 是   | 建立框架订阅并刷新                   |
+| Vue template-only 裸 `t`，没有 script binding         | 否   | 不受支持；Vue 可能推迟到运行时报错   |
+
+`ai-i18n/no-eager-translation` 检查初始化快照，
+`ai-i18n/no-unsubscribed-t` 检查 Vue template 与 JSX / TSX 渲染路径中的无订阅 Runtime
+`t`。`vue-auto-import` preset 还会拒绝没有 `<script setup>` binding 的裸模板 `t`。
+事件回调和普通延迟函数可以继续使用顶层 `t`，因为它们在实际调用时读取当前语言。规则不会
+追踪任意跨函数或跨文件数据流，完整边界见 [ESLint](/guide/quality/eslint)。
+
 ## 分析限制
 
 - 不提取普通字符串、普通 JSX 文本、普通 Vue 模板文本或普通 HTML 文本。
+- Vue 模板调用必须绑定到 `<script setup>` 中 `useI18n()` 返回的 `t`；自动导入只省略
+  `useI18n` 的 import，不会自动合成 Hook 调用。
 - `t(variable)` 只有在变量能被静态求值时才会提取。函数调用、getter、`await`、
   `JSON.parse()` 和其他运行时结果不会在分析阶段执行。
+- `props.label` 等运行时成员只会报告无法静态提取；只有本地或导入的、可静态解析为对象或
+  数组集合的成员才会建议使用 `defineI18nMessages()`。
 - `defineI18nMessages()` 必须直接调用，不能赋值给别名、作为参数传递或当作运行时工具。
 - Vite 不限制静态候选数量。ESLint 默认在单个表达式超过 1000 个 source/options 组合时
   发出 warning，但不会截断 Vite 提取。

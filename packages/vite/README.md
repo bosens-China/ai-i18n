@@ -5,6 +5,7 @@ Vite 的 ai-i18n 主插件。它在 Dev/Build 中提取显式 `t()`，维护可�
 Runtime。
 
 alpha 阶段请安装 `@ai-i18n/vite@alpha`，避免无标签安装命中较旧的 `latest`。
+Vue 模式要求 Vue ≥ 3.2.25。
 
 每个 Vite build 只使用一个 Vanilla、Vue 或 React 模式。ai-i18n 根据最终 Vite 插件列表
 推断模式，也可通过 `framework` 显式指定；同一 build 同时包含 Vue 与 React 插件族时会
@@ -44,7 +45,14 @@ t(messages.states[index]);
 宏只能直接调用，不能赋值或传递；它在客户端、SSR transform 与 `aiI18nVitest()` 中消除为
 原参数，不提供冻结或运行时校验。生成的 `ai-i18n.d.ts` 始终包含它的全局类型。
 
-Vitest 使用 `@ai-i18n/vite/vitest` 的 `aiI18nVitest()`，无需手写 alias，也不会读写协议文件。
+`autoImport: true` 在 Vanilla 模式注入顶层 Runtime API，在 Vue / React 模式注入
+`useI18n` 与 `t`。框架组件通过 `useI18n()` 建立更新订阅；同一 build 中不能调用 Hook 的
+普通 `.js` / `.ts` 工具模块可以使用顶层 `t`。框架模式属于整个 Vite build，不按单个文件
+扩展名切换。Vue 自动导入只省略 import；模板仍需在 `<script setup>` 中通过
+`const { t } = useI18n()` 建立 binding 与订阅。
+
+Vitest 使用 `@ai-i18n/vite/vitest` 的 `aiI18nVitest()`，无需手写 alias，也不会读写协议文件；
+生产开启自动导入时，把同一个 `autoImport: true` 传给测试插件。
 语言偏好可用 `persist` 配置；缺译固定返回 source 文案。
 
 ## Locale Lazy
@@ -70,7 +78,9 @@ aiI18n({
 
 目标语言加载期间继续返回 source fallback；加载成功后再提交切换并通知订阅者。相同 locale
 的并发切换共享请求，不同 locale 以最后一次调用为准。非 source 的 `defaultLang` 自动采用
-preload 语义。省略 `loading` 时保持全语言注册模式。
+preload 语义。`getLangLoadState()` 返回共享的 `idle` / `loading` / `error` 快照；
+Vue / React 的 `useI18n()` 额外返回 `langLoadState`、`isLangLoading` 与
+`langLoadError`。省略 `loading` 时保持全语言注册模式。
 
 ## Cache 容量
 

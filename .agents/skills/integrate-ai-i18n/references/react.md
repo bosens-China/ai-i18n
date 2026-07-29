@@ -31,8 +31,24 @@ Explicit import:
 import { useI18n } from 'virtual:ai-i18n'
 
 export function SaveButton() {
-  const { t, setLang, currentLang, langs } = useI18n()
-  return <button onClick={() => void setLang('en-US')}>{t('保存')}</button>
+  const { t, setLang, isLangLoading, langLoadState } = useI18n()
+  async function switchLanguage() {
+    try {
+      await setLang('en-US')
+    } catch {
+      // Shared state drives generic error UI; this consumes the rejected Promise.
+    }
+  }
+  return (
+    <>
+      <button disabled={isLangLoading} onClick={() => void switchLanguage()}>
+        {isLangLoading ? t('正在加载语言包…') : t('保存')}
+      </button>
+      {langLoadState.status === 'error' ? (
+        <p>{t('语言包加载失败，请重试')}</p>
+      ) : null}
+    </>
+  )
 }
 ```
 
@@ -41,17 +57,33 @@ Default to `t(source)`. Use `` t`已加入 ${name}` `` for dynamic values. Pass 
 `t('保存', { comment: '工具栏按钮' })`). It participates in the message ID, so changing it creates a
 new untranslated message; do not invent comments for ordinary UI copy.
 
-Set `autoImport: true` explicitly to omit the import. ai-i18n injects it and generates the
-declaration. Use `configs.react` from `@ai-i18n/eslint-plugin` to declare the global and validate
-static arguments.
+For ESLint with explicit imports, use `configs.recommended`. Set `autoImport: true` explicitly to
+omit the import; in React mode ai-i18n injects `useI18n` and top-level `t`, then generates both
+declarations. In that mode use `configs['react-auto-import']` instead.
+
+The framework mode applies to the whole build. An ordinary `.js` / `.ts` utility module may import
+top-level `t` from `virtual:ai-i18n`, or use its auto-imported form, because it cannot call a Hook.
+Do not use only top-level `t` in a component render path: it reads the current locale but does not
+subscribe that component to later Runtime updates. The React ESLint preset warns for this through
+`ai-i18n/no-unsubscribed-t`, and warns for module-initialization snapshots such as
+`const label = t('保存')` through `ai-i18n/no-eager-translation`.
 
 For object or array copy, use `defineI18nMessages({...})` without an import and pass its members to
 `t()`. Vite and `aiI18nVitest()` erase the marker before runtime.
 
 The Hook uses `useSyncExternalStore`, and its `t` function identity changes with the Runtime revision,
-so language and translation updates also invalidate React Compiler caches. It is recognized in JS,
-TS, JSX, and TSX, including custom Hooks in `.ts`. JSX text is not translated automatically. Do not
-add Vue Vite plugins to the same build.
+so language, translation, and loading-state updates also invalidate React Compiler caches. It
+returns `langLoadState`, `isLangLoading`, and `langLoadError`; the shared state covers the initial
+lazy default-locale load and follows last-call-wins for concurrent switches. The Hook is recognized
+in JS, TS, JSX, and TSX, including custom Hooks in `.ts`. JSX text is not translated automatically.
+Do not add Vue Vite plugins to the same build.
+
+React Compiler directives do not change the API boundary: `"use memo"` may cache an untracked
+top-level `t` result, while `"use no memo"` still does not subscribe the component. Use the Hook in
+both cases.
+
+Check `langLoadState.status === 'error'` when rendering failure UI. `langLoadError` preserves the
+original rejected value, which may itself be falsy, and is only the error detail.
 
 For locally linked workspaces, `resolve: { dedupe: ['react', 'react-dom'] }` can prevent a second React
 instance. A normal peer-resolved installation usually does not need this.

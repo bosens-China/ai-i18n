@@ -11,6 +11,11 @@
   },
   {
     "type": "file",
+    "name": "lang-load-state",
+    "label": "LangLoadState"
+  },
+  {
+    "type": "file",
     "name": "translator",
     "label": "Translator"
   },
