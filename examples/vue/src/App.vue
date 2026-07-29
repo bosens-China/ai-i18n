@@ -2,6 +2,7 @@
 import { computed } from 'vue';
 
 const { t, setLang, currentLang, langs } = useI18n();
+const translatedMessage = tRef('响应式文案会随语言立即更新');
 const currentLanguageLabel = computed(
   () =>
     langs.value.find(({ value }) => value === currentLang.value)?.label ??
@@ -44,7 +45,7 @@ const currentLanguageLabel = computed(
       <article class="demo-card demo-card--highlight">
         <span class="demo-label">{{ t('文案变化') }}</span>
         <div class="translation-output" aria-live="polite">
-          <p>{{ t('响应式文案会随语言立即更新') }}</p>
+          <p>{{ translatedMessage }}</p>
           <span>{{ t('模板会自动响应 Runtime 状态。') }}</span>
         </div>
       </article>

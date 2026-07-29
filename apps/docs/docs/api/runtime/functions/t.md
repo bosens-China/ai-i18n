@@ -65,4 +65,8 @@ Vue / React 组件应使用 [`useI18n()`](/api/runtime/framework-api/use-i18n) �
 语言变化订阅。Runtime 顶层 `t` 即使位于组件渲染函数中，也不会自行触发组件更新。对应
 ESLint 生命周期检查见 [ESLint](/guide/quality/eslint)。
 
+Vue setup 中需要预先声明响应式 label 时，使用 Vue-only
+[`tRef()`](/api/runtime/framework-api/t-ref)。`t()` 始终返回字符串，不会因为调用位置不同而
+改成 Ref。
+
 静态提取支持的表达式见[静态分析范围](/guide/basic/static-analysis)。

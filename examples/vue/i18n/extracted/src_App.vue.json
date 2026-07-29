@@ -5,7 +5,7 @@
       "locations": [
         {
           "column": 15,
-          "line": 17
+          "line": 18
         }
       ],
       "source": "Vue 示例"
@@ -15,7 +15,7 @@
       "locations": [
         {
           "column": 45,
-          "line": 34
+          "line": 35
         }
       ],
       "source": "交互式语言切换演示"
@@ -24,8 +24,8 @@
       "id": "响应式文案会随语言立即更新",
       "locations": [
         {
-          "column": 16,
-          "line": 47
+          "column": 26,
+          "line": 5
         }
       ],
       "source": "响应式文案会随语言立即更新"
@@ -35,7 +35,7 @@
       "locations": [
         {
           "column": 36,
-          "line": 36
+          "line": 37
         }
       ],
       "source": "当前语言"
@@ -45,7 +45,7 @@
       "locations": [
         {
           "column": 36,
-          "line": 45
+          "line": 46
         }
       ],
       "source": "文案变化"
@@ -55,7 +55,7 @@
       "locations": [
         {
           "column": 19,
-          "line": 48
+          "line": 49
         }
       ],
       "source": "模板会自动响应 Runtime 状态。"
@@ -65,7 +65,7 @@
       "locations": [
         {
           "column": 35,
-          "line": 21
+          "line": 22
         }
       ],
       "source": "语言"

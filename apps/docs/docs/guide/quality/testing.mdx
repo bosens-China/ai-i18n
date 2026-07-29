@@ -163,6 +163,7 @@ export default defineConfig({
 | `t(source)` / `` t`...` ``  | 可用。测试 Runtime 没有加载任何目标语言译文，因此固定返回 source 文案。                                  |
 | `setLang(value)`            | 可用，可用于测试语言切换触发的重渲染，以及 `persist` 写入 localStorage。                                 |
 | `useI18n()`                 | Vue / React 模式下可用；字段契约一致，但测试 Runtime 的语言加载状态固定为 `idle`。                       |
+| `tRef()`                    | 仅 Vue 模式可用；返回响应式 source fallback Ref，与生产环境保持相同 API 形状。                           |
 | 自动导入                    | 仅在 `autoImport: true` 时注入，API 集合与同一框架模式的生产插件一致。                                   |
 | 静态提取 / `i18n/` 协议文件 | 不会发生，不会创建、读取或修改 `translations.json`、`overrides.json`、`extracted/*.json`、`locales/**`。 |
 | Provider / AI 自动翻译      | 不会调用；`provider` 不属于 `AiI18nVitestOptions`。                                                      |

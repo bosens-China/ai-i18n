@@ -38,7 +38,7 @@ export default defineConfig({
 | 模式    | 自动导入的 API                                                         |
 | ------- | ---------------------------------------------------------------------- |
 | Vanilla | `t`、`setLang`、`getLang`、`getLangs`、`getLangLoadState`、`subscribe` |
-| Vue     | `useI18n`、`t`                                                         |
+| Vue     | `useI18n`、`t`、`tRef`                                                 |
 | React   | `useI18n`、`t`                                                         |
 
 插件只注入没有本地 binding 的调用。显式 import、局部变量或同名函数始终优先，不会被覆盖。
@@ -47,6 +47,19 @@ export default defineConfig({
 Vue 与 React build 中也可以包含普通 `.js` / `.ts` 工具模块。在这些非组件模块里使用顶层
 `t()`；在组件渲染路径中仍使用 `useI18n()`，由 Hook / composable 建立语言变化订阅。仅调用
 顶层 `t()` 不会使组件自动重新渲染，React Compiler 也不能补上缺失的订阅。
+
+Vue setup 中需要预先声明响应式 label 时，可以使用 Vue-only `tRef()`。它返回只读
+`ComputedRef<string>`，不需要先调用 `useI18n()`：
+
+```vue
+<script setup lang="ts">
+const label = tRef('保存');
+</script>
+
+<template>{{ label }}</template>
+```
+
+不要在 template 中直接调用 `tRef()`，否则每次渲染都会创建新的 `computed`。
 
 Vue 模板必须先在 `<script setup>` 中取得订阅版 `t`。自动导入只省略 import，不会把模板
 中的裸标识符自动改写成 Hook：

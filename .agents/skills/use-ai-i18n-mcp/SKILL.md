@@ -57,6 +57,10 @@ Use `source` as the text to translate, `comment` as author context, existing `tr
 terminology, and `missing_locales` as the default write targets. Copy `source_file` and opaque
 `message_id` exactly. Never substitute `source` for `message_id`.
 
+Vue source may use either `t()` or the Vue-only `tRef()` syntax. Both produce the same extracted
+message IDs from the same static source/options; the MCP protocol and all six tool schemas do not
+distinguish which Runtime API produced an entry.
+
 The list intentionally reports raw `translations.json` state. A human override does not hide a
 still-null AI Translation Memory field.
 

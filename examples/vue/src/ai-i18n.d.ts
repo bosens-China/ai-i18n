@@ -12,9 +12,13 @@ declare module 'virtual:ai-i18n' {
   export const setLang: I18nRuntime['setLang'];
   export const getLang: I18nRuntime['getLang'];
   export const getLangs: I18nRuntime['getLangs'];
+  export const getLangLoadState: I18nRuntime['getLangLoadState'];
   export const subscribe: I18nRuntime['subscribe'];
   export const useI18n: import('@ai-i18n/vite/vue').UseI18n;
+  export const tRef: import('@ai-i18n/vite/vue').TranslateRef;
 }
 
 declare const defineI18nMessages: <T>(messages: T) => T;
 declare const useI18n: import('@ai-i18n/vite/vue').UseI18n;
+declare const t: import('@ai-i18n/vite').I18nRuntime['t'];
+declare const tRef: import('@ai-i18n/vite/vue').TranslateRef;

@@ -1,7 +1,7 @@
 # @ai-i18n/eslint-plugin
 
 用于提前报告无法被 Vite/Yuku 静态提取、不符合推荐语法，或不会随语言切换刷新的 `t()`
-用法。规则检查解析到 `virtual:ai-i18n` 的 `t` binding，以及 Vue/React 模式下
+用法。规则检查解析到 `virtual:ai-i18n` 的 `t` / Vue-only `tRef` binding，以及 Vue/React 模式下
 `useI18n()` 解构或对象成员得到的 `t`。其他库或局部同名函数不受影响。
 
 alpha 阶段请安装 `@ai-i18n/eslint-plugin@alpha`；peer 支持 ESLint 9 和 10。
@@ -73,6 +73,7 @@ Vue preset 同时覆盖 Vue JSX/TSX，但宿主仍需用 `@vitejs/plugin-vue-jsx
 ```ts
 export const label = t('保存'); // warning：只保存初始化时的译文
 export const getLabel = () => t('保存'); // 允许：每次调用重新读取当前语言
+export const label = tRef('保存'); // Vue：允许，返回响应式 ComputedRef
 ```
 
 `recommended`、`vue`、`vue-auto-import` 与 `react-auto-import` 还启用
@@ -104,6 +105,8 @@ function SaveButton() {
 Vue 模板必须在 `<script setup>` 中绑定 `useI18n()` 返回的 `t`；自动导入只省略 import，
 不会自动合成 Hook。`vue-auto-import` 会把裸 template-only `t()` 作为 error；模板中已
 绑定到 Runtime 顶层 `t` 的调用则由 `no-unsubscribed-t` warning。
+在 template 或 JSX/TSX 渲染期间调用 `tRef()` 会重复创建 `computed`，同一规则会提示在
+Vue setup 中只创建一次并使用返回的 Ref。
 
 对象或数组成员只有在根集合由 `defineI18nMessages()` 标记后才属于推荐写法。字符串拼接、
 逻辑表达式、`let` 文案、普通集合成员、`const tr = t`、命名空间调用、二次 Hook 解构、
@@ -119,6 +122,7 @@ export default [
     languageOptions: {
       globals: {
         t: 'readonly',
+        tRef: 'readonly',
         useI18n: 'readonly',
         defineI18nMessages: 'readonly',
       },
@@ -128,21 +132,21 @@ export default [
       'ai-i18n/no-eager-translation': [
         'warn',
         {
-          autoImport: ['t', 'useI18n'],
+          autoImport: ['t', 'tRef', 'useI18n'],
           tsconfigPath: './tsconfig.json',
         },
       ],
       'ai-i18n/no-unsubscribed-t': [
         'warn',
         {
-          autoImport: ['t', 'useI18n'],
+          autoImport: ['t', 'tRef', 'useI18n'],
           tsconfigPath: './tsconfig.json',
         },
       ],
       'ai-i18n/static-candidate-limit': [
         'warn',
         {
-          autoImport: ['t', 'useI18n'],
+          autoImport: ['t', 'tRef', 'useI18n'],
           tsconfigPath: './tsconfig.json',
           maxStaticCandidates: 2_000,
         },
@@ -150,7 +154,7 @@ export default [
       'ai-i18n/t-static-args': [
         'error',
         {
-          autoImport: ['t', 'useI18n'],
+          autoImport: ['t', 'tRef', 'useI18n'],
           tsconfigPath: './tsconfig.json',
         },
       ],
@@ -159,8 +163,8 @@ export default [
 ];
 ```
 
-上例匹配 Vue / React 模式；Vanilla 手工配置只使用 `autoImport: ['t']`，并声明对应的顶层
-Runtime globals。日常接入优先使用预设，避免 Vite 与 ESLint 的 API 集合不一致。
+上例匹配 Vue 模式；React 应移除 `tRef`，Vanilla 只使用 `autoImport: ['t']`，并声明对应的
+顶层 Runtime globals。日常接入优先使用预设，避免 Vite 与 ESLint 的 API 集合不一致。
 
 `ai-i18n/static-candidate-limit` 默认在单个 `t()` 的 source 与 options 组合超过 1000 个
 时警告。`maxStaticCandidates` 必须是正整数，只改变 ESLint 的提示阈值；Vite 提取不设

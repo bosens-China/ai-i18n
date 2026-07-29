@@ -56,7 +56,8 @@ and inject imports from `virtual:ai-i18n`. Other Vite plugins never change this 
 With auto import enabled, the available globals are:
 
 - Vanilla: `t`, `setLang`, `getLang`, `getLangs`, `getLangLoadState`, `subscribe`
-- Vue/React: `useI18n`, `t`
+- Vue: `useI18n`, `t`, `tRef`
+- React: `useI18n`, `t`
 
 ai-i18n writes `src/ai-i18n.d.ts` by default. Set `dts: 'path/file.d.ts'` to move it or `dts: false`
 only when declarations are managed elsewhere. The file declares both `virtual:ai-i18n` and the
@@ -72,6 +73,8 @@ Explicit imports are always supported:
 import { getLangLoadState, getLangs, setLang, t } from 'virtual:ai-i18n'
 // Vue or React mode:
 import { useI18n } from 'virtual:ai-i18n'
+// Vue mode only:
+import { tRef } from 'virtual:ai-i18n'
 ```
 
 Vue/React components should obtain `t` from `useI18n()` so they subscribe to Runtime updates.
@@ -85,7 +88,9 @@ In Vue, auto import removes the import statement but does not synthesize a templ
 `useI18n()` in `<script setup>` before using `t` in the template.
 Destructuring `const { t } = useI18n()` does not break Vue reactivity: each template call reads the
 adapter's Runtime revision. By contrast, `const label = t('Save')` stores only the current string;
-call `t()` in the template or use `computed(() => t('Save'))`.
+call `t()` in the template or use the standalone Vue-only `tRef('Save')`. It returns a readonly
+`ComputedRef<string>` and should be created in setup/composable code, not during template or render
+evaluation.
 
 ## Option rules
 

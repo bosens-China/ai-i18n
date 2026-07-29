@@ -17,11 +17,11 @@ type AiI18nFramework = 'vanilla' | 'vue' | 'react';
 
 ## 值
 
-| 值          | 行为                                          |
-| ----------- | --------------------------------------------- |
-| `'vanilla'` | 提供基础 Runtime API，不生成 `useI18n()`。    |
-| `'vue'`     | 为 `virtual:ai-i18n` 增加 Vue `useI18n()`。   |
-| `'react'`   | 为 `virtual:ai-i18n` 增加 React `useI18n()`。 |
+| 值          | 行为                                                    |
+| ----------- | ------------------------------------------------------- |
+| `'vanilla'` | 提供基础 Runtime API，不生成 `useI18n()`。              |
+| `'vue'`     | 为 `virtual:ai-i18n` 增加 Vue `useI18n()` 与 `tRef()`。 |
+| `'react'`   | 为 `virtual:ai-i18n` 增加 React `useI18n()`。           |
 
 省略 [`AiI18nOptions.framework`](/api/vite/interfaces/ai-i18n-options) 时，插件根据最终 Vite
 插件列表自动检测。一个 build 同时包含 Vue 与 React 插件时会报错。

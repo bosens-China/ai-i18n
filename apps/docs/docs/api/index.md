@@ -17,6 +17,7 @@ API Reference 按导入入口组织。选择入口后，再按函数、接口、
 - 配置插件：[`aiI18n()`](/api/vite/functions/ai-i18n)
 - 查询全部插件选项：[`AiI18nOptions`](/api/vite/interfaces/ai-i18n-options)
 - 翻译文案：[`t()`](/api/runtime/functions/t)
+- 在 Vue setup 中创建响应式翻译值：[`tRef()`](/api/runtime/framework-api/t-ref)
 - 读取语言资源加载状态：[`getLangLoadState()`](/api/runtime/functions/get-lang-load-state)
 - 在 Vue 或 React 中使用：[`useI18n()`](/api/runtime/framework-api/use-i18n)
 - 配置 Vitest：[`aiI18nVitest()`](/api/vitest/functions/ai-i18n-vitest)

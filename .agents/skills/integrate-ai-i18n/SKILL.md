@@ -53,6 +53,7 @@ at the same path with a `.md` extension — fetch that, not the `.html` page:
 | Runtime API availability | `https://bosens-china.github.io/ai-i18n/api/runtime/overview.md` |
 | `t()` and template placeholders | `https://bosens-china.github.io/ai-i18n/api/runtime/functions/t.md` |
 | `useI18n()` | `https://bosens-china.github.io/ai-i18n/api/runtime/framework-api/use-i18n.md` |
+| Vue `tRef()` | `https://bosens-china.github.io/ai-i18n/api/runtime/framework-api/t-ref.md` |
 | `getLangLoadState()` | `https://bosens-china.github.io/ai-i18n/api/runtime/functions/get-lang-load-state.md` |
 | Static extraction scope, recommended syntax, and AST limits | `https://bosens-china.github.io/ai-i18n/guide/basic/static-analysis.md` |
 | ai-i18n auto imports and generated declarations | `https://bosens-china.github.io/ai-i18n/guide/basic/auto-import.md` |
@@ -106,12 +107,13 @@ limit, Vite warns and keeps them. `cleanup.orphanMessages: true` is stronger and
 messages before capacity enforcement.
 
 ai-i18n auto imports are self-contained and disabled by default. When explicitly enabled, ai-i18n
-injects only its fixed mode-specific Runtime APIs. Vue and React inject both `useI18n` and top-level
-`t`; use `useI18n()` in component render paths for reactive updates and top-level `t` in ordinary
+injects only its fixed mode-specific Runtime APIs. React injects `useI18n` and top-level `t`; Vue
+also injects `tRef`. Use `useI18n()` in component render paths for reactive updates and top-level `t` in ordinary
 modules that cannot call it. In Vue `<script setup>`, destructuring
 `const { t } = useI18n()` remains reactive when the template calls `t()`. Storing an eager result
-such as `const label = t('Save')` does not; use the template call or
-`computed(() => t('Save'))`.
+such as `const label = t('Save')` does not; use the template call or the Vue-only standalone
+`const label = tRef('Save')`. `tRef()` returns a readonly `ComputedRef<string>` and must be created
+once in setup/composable code, never called during template or render evaluation.
 
 Do not add a translator, model, API key, HTML extraction, cache limit, cleanup override, Vue plugin,
 or React provider unless the project requires it. When automatic translation is requested, keep
@@ -133,7 +135,8 @@ initialization boundary. Imported Vue `defineComponent()` object and function si
 the same check in `.vue`, `.ts`, and `.tsx` files. Vue and React presets also warn through
 `ai-i18n/no-unsubscribed-t` when JSX/TSX render code uses Runtime top-level `t` instead of the
 subscribed Hook/composable value; the explicit-import `recommended` preset applies the same JSX/TSX
-check. Event callbacks and standalone `console.log` / `warn` / `error` / `info` / `debug` calls
+check. It also reports Vue `tRef()` calls made during template or JSX/TSX rendering, because those
+calls create a new computed on every render. Event callbacks and standalone `console.log` / `warn` / `error` / `info` / `debug` calls
 remain valid; unknown calls still warn because they may retain the translated value. These rules
 intentionally do not follow arbitrary cross-function or cross-file data flow and have no autofix.
 In Vue auto-import mode, a bare template-only `t` is an error: auto import removes the import
@@ -162,6 +165,8 @@ config; Vite extraction has no candidate cap or matching plugin option.
   is escaped internally (`{{0}}` becomes `{{=0}}`) and is restored before display. Runtime logs a
   console warning when translation placeholders differ, then continues using that translation.
 - Vue/React Hook bindings work in JS, TS, JSX, and TSX, including composables and custom Hooks.
+- Vue `tRef()` is a direct `virtual:ai-i18n` import, not a `useI18n()` field. It shares the same
+  static source/options extraction rules as `t()` and returns a readonly computed Ref.
 - Plain JS/TS modules in a Vue or React build may import top-level `t`; translate at call time rather
   than caching its result. A component still needs `useI18n()` to subscribe to Runtime updates.
 - Vite does not cap static candidate expansion. ESLint warns per expression above its default 1000

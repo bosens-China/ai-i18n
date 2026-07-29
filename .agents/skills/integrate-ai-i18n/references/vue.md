@@ -72,7 +72,7 @@ new untranslated message; do not invent comments for ordinary UI copy.
 
 For ESLint with explicit imports, use `configs.vue` so SFCs are included without declaring Runtime
 globals. Set `autoImport: true` explicitly to omit the `useI18n` import; in Vue mode ai-i18n injects
-`useI18n` and top-level `t`, then generates both declarations. In that mode use
+`useI18n`, top-level `t`, and Vue-only `tRef`, then generates their declarations. In that mode use
 `configs['vue-auto-import']` instead.
 
 The framework mode applies to the whole build. An ordinary `.js` / `.ts` utility module may import
@@ -89,7 +89,11 @@ ai-i18n binding, is not extracted, and may compile to a missing component-contex
 Destructuring `t` does not break reactivity. Calling it from the template reads the adapter's
 Runtime revision, so language and translation updates trigger a new render. Only the translated
 result is a snapshot: do not write `const label = t('保存')` when `label` must update. Call `t()` in
-the template or use `computed(() => t('保存'))`.
+the template or import the standalone Vue-only API and use `const label = tRef('保存')`.
+`tRef()` returns a readonly `ComputedRef<string>` and also unwraps Ref values inside tagged-template
+interpolations. Read `.value` in script; templates unwrap it. It is not returned by `useI18n()`.
+Create it once in setup or a composable. Never call `tRef()` in a template or render function,
+because that creates a new computed on every render.
 
 For object or array copy, use `defineI18nMessages({...})` without an import and pass its members to
 `t()`. The Vue SFC transform erases the macro and understands compiler-generated `unref` wrappers.
@@ -97,7 +101,7 @@ For object or array copy, use `defineI18nMessages({...})` without an import and 
 Do not save or directly return a translated setup snapshot, whether it appears in `<script setup>`,
 a directly exported options object, or an imported `defineComponent()` object/function signature
 in `.vue`, `.ts`, or `.tsx`. Call `t` in the template, or derive a script value with
-`computed(() => t('保存'))`. The Vue ESLint preset reports the snapshot through
+`tRef('保存')`. The Vue ESLint preset reports the snapshot through
 `ai-i18n/no-eager-translation`.
 
 `currentLang`, `langs`, `langLoadState`, `isLangLoading`, and `langLoadError` are readonly refs and

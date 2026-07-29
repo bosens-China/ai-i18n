@@ -20,7 +20,8 @@ Runtime。
 
 ## 行为
 
-- 保留生产环境的 `t()`、`setLang()`、`getLangLoadState()` 与框架 `useI18n()` 契约；
+- 保留生产环境的 `t()`、`setLang()`、`getLangLoadState()`、框架 `useI18n()` 与 Vue-only
+  `tRef()` 契约；
 - `autoImport: true` 时注入与生产框架模式相同的 Runtime API；
 - 消除 `defineI18nMessages()` 编译宏；
 - 不提取翻译；

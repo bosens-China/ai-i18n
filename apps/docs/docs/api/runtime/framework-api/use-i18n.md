@@ -92,8 +92,16 @@ const { t } = useI18n();
 const label = t('保存'); // 只计算一次，不会随语言切换更新
 ```
 
-需要在脚本中派生展示值时，使用 `computed(() => t('保存'))`；只在模板中展示时，直接调用
-`t('保存')` 即可。
+需要在脚本中预先声明响应式展示值时，直接导入
+[`tRef()`](/api/runtime/framework-api/t-ref)；只在模板中展示时，调用 `t('保存')` 即可：
+
+```ts
+import { tRef } from 'virtual:ai-i18n';
+
+const label = tRef('保存');
+```
+
+`tRef` 是独立的 Vue-only API，不在 `useI18n()` 返回值中。
 
 ## Vue 示例
 

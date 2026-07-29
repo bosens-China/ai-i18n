@@ -48,7 +48,8 @@ glibc 镜像，例如 `node:24-bookworm-slim`。最终用于托管静态文件�
 
 1. 确认 `aiI18n({ autoImport: true })` 已显式开启。其他 Vite 插件不会改变该选项。
 2. 确认使用了当前框架模式支持的 API：Vanilla 自动导入 `t`、`setLang`、`getLang`、
-   `getLangs`、`getLangLoadState`、`subscribe`；Vue 和 React 自动导入 `useI18n` 与 `t`。
+   `getLangs`、`getLangLoadState`、`subscribe`；Vue 自动导入 `useI18n`、`t` 与 `tRef`，
+   React 自动导入 `useI18n` 与 `t`。
 3. 修改 Vite 配置后重启开发服务器。
 4. TypeScript 项目启动一次 Vite，确认生成的 `src/ai-i18n.d.ts` 位于 `tsconfig.json`
    的 `include` 范围内。
@@ -125,8 +126,10 @@ const unsubscribe = subscribe(render);
 ```
 
 再检查是否在模块初始化或 Vue setup 期间保存过译后字符串。`const label = t('保存')`
-只是当时的快照；普通工具模块改成 `const getLabel = () => t('保存')`，Vue 展示值可使用
-`computed(() => t('保存'))`。React 不要把结果预先放入 state 或模块常量。React Compiler
+只是当时的快照；普通工具模块改成 `const getLabel = () => t('保存')`，Vue setup 展示值可
+直接写 `const label = tRef('保存')`。`tRef` 只在 Vue 模式导出，并返回只读
+`ComputedRef<string>`；模板直接使用 `label`，不要在模板中调用 `tRef()`。React 不要把结果
+预先放入 state 或模块常量。React Compiler
 可能继续复用无订阅渲染的旧结果，不能替代 `useI18n()`。
 
 启用对应的 ESLint preset 后，`no-eager-translation` 和 `no-unsubscribed-t` 会提示这些
