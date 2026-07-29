@@ -41,6 +41,29 @@ npx skills add bosens-China/ai-i18n --skill use-ai-i18n-mcp integrate-ai-i18n -y
 `integrate-ai-i18n` 内置“主题 → 官方文档页面”索引。常见配置直接保存在 Skill 本地文件中；
 遇到完整选项表或边界情况时，Agent 会读取上方文档索引中的 Markdown 页面。
 
+## 统一 Skills 目录（可选）
+
+不同 AI 编码工具使用的配置目录并不相同。通用 Agent Skills 通常位于 `.agents/skills/`，
+并使用 `AGENTS.md`；Claude Code 则使用 `.claude/` 与 `CLAUDE.md`。如果项目需要同时兼容
+两种目录，或者要迁移已有的 Claude Code 配置，可以使用
+[Skillink](https://github.com/bosens-China/skillink) 管理同步关系。
+
+```sh
+npx @boses/skillink
+```
+
+Skillink 首次运行时会自动检测现有配置。项目已有 `.agents` 或 `AGENTS.md` 时，可以将其
+同步为 Claude Code 所需的目录和文件；旧项目只有 `.claude` 或 `CLAUDE.md` 时，也可以反向
+识别并同步到通用 Agent 配置。执行前可先预览变更：
+
+```sh
+npx @boses/skillink --dry-run
+```
+
+默认的软链接模式适合在本地维护单一数据源；需要提交同步后的真实文件，或团队包含 Windows
+环境时，可以选择复制模式。Skillink 只负责同步 Agent 配置与 Skills，不替代下面的 MCP
+服务器注册。
+
 ## MCP
 
 Agent 补译依赖 `@ai-i18n/mcp` 暴露的底层写入能力。需要在所使用的 AI IDE 或 CLI 工具中
@@ -107,8 +130,9 @@ claude mcp add --transport stdio --scope local ai-i18n -- npx -y @ai-i18n/mcp@al
 不能把仓库根目录或第一个同名目录直接当作结果。
 
 工具收到目录后会校验绝对路径、目录是否存在，并要求合法的 `translations.json`、
-`overrides.json` 与 `extracted/`。缺少协议文件时，请先运行目标应用的 Vite Dev/Build，
-不要改为全仓库扫描。
+`overrides.json` 与 `extracted/`。`extracted/` 是不提交 Git 的本地 Build 产物。首次使用、
+目录缺失或为空，或者切换分支和修改提取相关配置后，请先运行目标应用的一次完整 Vite
+Build，不要改为全仓库扫描。Dev 只包含浏览器实际请求过的模块。
 
 每次调用只返回一份紧凑 JSON 文本，避免同一结果以文本与 `structuredContent` 重复占用
 Agent 上下文；结果较大时继续按 `next_cursor` 分页。工具名、字段与错误码使用英文，由
@@ -149,8 +173,8 @@ Agent 按当前对话语言解释。
   prompt={`使用 use-ai-i18n-mcp：
 1. 先确认目标 Vite 应用，读取其 package script 与 vite.config.*；根据命令工作目录、
    Vite root 和 aiI18n.directory（默认 i18n）算出最终绝对 i18n_directory，不扫描仓库；
-2. 使用该 i18n_directory 列出所有仍有缺失翻译的文件；若目录或协议文件不存在，报告错误
-   并提示先运行该应用的 Vite Dev/Build；
+2. 首次使用、extracted 缺失或为空，或者切换分支和修改提取相关配置后，先运行该应用的
+   一次完整 Vite Build；若列表没有 source file，也 Build 后重试一次；
 3. 按原文语义和项目现有术语补齐目标语言；
 4. 普通补译使用 ai_i18n_set_translations 的默认保护，只写入 null；不要覆盖非空值。
    只有我明确要求审校修订时才使用 ai_i18n_set_overrides，并确认 scope 是 default
