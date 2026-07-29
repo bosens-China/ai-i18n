@@ -56,7 +56,7 @@ at the same path with a `.md` extension — fetch that, not the `.html` page:
 | `getLangLoadState()` | `https://bosens-china.github.io/ai-i18n/api/runtime/functions/get-lang-load-state.md` |
 | Static extraction scope, recommended syntax, and AST limits | `https://bosens-china.github.io/ai-i18n/guide/basic/static-analysis.md` |
 | ai-i18n auto imports and generated declarations | `https://bosens-china.github.io/ai-i18n/guide/basic/auto-import.md` |
-| Locale chunking, lazy loading, and UI Loading state | `https://bosens-china.github.io/ai-i18n/guide/basic/locale-loading.md` |
+| Locale chunking, lazy loading, and UI loading state | `https://bosens-china.github.io/ai-i18n/guide/basic/locale-loading.md` |
 | Protocol directory layout, Git conventions, and message-ID/comment behavior | `https://bosens-china.github.io/ai-i18n/guide/basic/directory.md` |
 | AI translation Provider setup and prompt tuning | `https://bosens-china.github.io/ai-i18n/guide/advanced/ai-translation.md` |
 | `aiI18nVitest()` usage | `https://bosens-china.github.io/ai-i18n/guide/quality/testing.md` |
@@ -107,8 +107,11 @@ messages before capacity enforcement.
 
 ai-i18n auto imports are self-contained and disabled by default. When explicitly enabled, ai-i18n
 injects only its fixed mode-specific Runtime APIs. Vue and React inject both `useI18n` and top-level
-`t`; use the Hook in component render paths for reactive updates and top-level `t` in ordinary
-modules that cannot call a Hook.
+`t`; use `useI18n()` in component render paths for reactive updates and top-level `t` in ordinary
+modules that cannot call it. In Vue `<script setup>`, destructuring
+`const { t } = useI18n()` remains reactive when the template calls `t()`. Storing an eager result
+such as `const label = t('Save')` does not; use the template call or
+`computed(() => t('Save'))`.
 
 Do not add a translator, model, API key, HTML extraction, cache limit, cleanup override, Vue plugin,
 or React provider unless the project requires it. When automatic translation is requested, keep

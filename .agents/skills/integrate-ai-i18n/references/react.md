@@ -25,9 +25,9 @@ export default defineConfig({
 The React plugin is detected from the final Vite plugin list. Set `framework: 'react'` only for a
 custom plugin setup that cannot be detected.
 
-Explicit import:
+Explicit import. This example is valid JSX and TSX:
 
-```tsx
+```jsx
 import { useI18n } from 'virtual:ai-i18n'
 
 export function SaveButton() {

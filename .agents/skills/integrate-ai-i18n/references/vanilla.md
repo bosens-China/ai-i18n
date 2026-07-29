@@ -3,9 +3,10 @@
 Install `@ai-i18n/vite@alpha` during prerelease and register `aiI18n()`. When no Vue or React Vite plugin is detected, the
 mode defaults to Vanilla.
 
-Explicit imports remain the simplest baseline:
+Explicit imports remain the simplest baseline. The following example is plain JavaScript and also
+works unchanged in TypeScript:
 
-```ts
+```js
 import {
   getLang,
   getLangLoadState,
@@ -15,8 +16,11 @@ import {
   t,
 } from 'virtual:ai-i18n'
 
+const app = document.querySelector('#app')
+if (!app) throw new Error('Missing #app element')
+
 function render() {
-  document.querySelector('#app')!.textContent = t('保存')
+  app.textContent = t('保存')
 }
 
 render()
@@ -24,7 +28,7 @@ subscribe(render)
 try {
   await setLang('en-US')
 } catch {
-  // render() reads shared error state; this consumes the rejected Promise.
+  console.error(getLangLoadState().error)
 }
 console.log(getLang(), getLangs(), getLangLoadState())
 ```

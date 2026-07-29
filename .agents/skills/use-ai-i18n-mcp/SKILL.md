@@ -49,7 +49,8 @@ Optional parameters:
 - `source_files`: one or more exact paths copied from previous results;
 - `locales`: one or more target locale values;
 - `view: "summary"`: per-file progress counts;
-- `view: "all"`: all raw Translation Memory messages;
+- `view: "all"`: every message in the selected extracted files, with raw `translations.json`
+  values; it does not expose inactive Translation Memory entries that no extracted file references;
 - `cursor` and `limit` for pagination.
 
 Use `source` as the text to translate, `comment` as author context, existing `translations` for
@@ -126,11 +127,20 @@ reconciles them.
 ## Handle common failures
 
 - `I18N_DIRECTORY_NOT_FOUND`: recompute Vite root plus `aiI18n.directory`.
+- `I18N_DIRECTORY_NOT_ABSOLUTE`: resolve the directory to an absolute path before retrying.
 - `REQUIRED_PROTOCOL_FILE_MISSING` or `REQUIRED_PROTOCOL_DIRECTORY_MISSING`: run the target app's
   Vite Dev/Build, then retry the same directory; do not scan for another.
+- `SOURCE_FILE_NOT_FOUND`: restart the relevant list call without `source_files`, then copy an exact
+  returned path.
 - `MESSAGE_NOT_FOUND`: re-list the exact source file and copy the returned `message_id`.
 - `TRANSLATION_CONFLICT`: re-list current values. Retry with `overwrite_existing: true` only when
   replacement was explicitly intended.
+- `TEMPLATE_TOKEN_MISMATCH`: preserve every runtime and escaped literal template token before
+  retrying.
+- `MESSAGE_SCOPE_REQUIRES_COMMENT`: use `scope: "message"` only for a listed message with a
+  non-empty static comment; otherwise use `scope: "default"` when the user intends a source-wide
+  override.
+- `DUPLICATE_TARGET`: deduplicate the batch by its exact write target and retry.
 - `UNKNOWN_LOCALE`: use values from `aiI18n({ locales })`, not labels.
 - `INVALID_CURSOR`: restart that listing without a cursor.
 - `INVALID_OVERRIDE_ID`: re-list overrides and copy the returned ID exactly.

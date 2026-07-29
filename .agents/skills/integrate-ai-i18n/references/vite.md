@@ -83,6 +83,9 @@ use `configs.recommended` (Vanilla/React) or `configs.vue`; auto imports use the
 `configs['react-auto-import']`.
 In Vue, auto import removes the import statement but does not synthesize a template binding; call
 `useI18n()` in `<script setup>` before using `t` in the template.
+Destructuring `const { t } = useI18n()` does not break Vue reactivity: each template call reads the
+adapter's Runtime revision. By contrast, `const label = t('Save')` stores only the current string;
+call `t()` in the template or use `computed(() => t('Save'))`.
 
 ## Option rules
 

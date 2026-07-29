@@ -86,6 +86,11 @@ still receive `t` from `const { t } = useI18n()` in `<script setup>`. A bare tem
 ai-i18n binding, is not extracted, and may compile to a missing component-context property; the
 `vue-auto-import` ESLint preset reports it as an error.
 
+Destructuring `t` does not break reactivity. Calling it from the template reads the adapter's
+Runtime revision, so language and translation updates trigger a new render. Only the translated
+result is a snapshot: do not write `const label = t('保存')` when `label` must update. Call `t()` in
+the template or use `computed(() => t('保存'))`.
+
 For object or array copy, use `defineI18nMessages({...})` without an import and pass its members to
 `t()`. The Vue SFC transform erases the macro and understands compiler-generated `unref` wrappers.
 
