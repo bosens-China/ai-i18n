@@ -78,6 +78,9 @@ t(dynamicMessages.save)`,
       { code: 'non-recommended-argument' },
     ]);
     expect(localWarnings[0]?.message).toContain('defineI18nMessages');
+    expect(localWarnings[0]?.message).toMatch(
+      /无需 import|does not need to be imported/,
+    );
     expect(localWarnings[1]?.message).not.toContain('defineI18nMessages');
     expect(localWarnings[2]?.message).not.toContain('defineI18nMessages');
 
@@ -114,6 +117,9 @@ t(text.length)`,
       { code: 'non-recommended-argument' },
     ]);
     expect(importedWarnings[0]?.message).toContain('defineI18nMessages');
+    expect(importedWarnings[0]?.message).toMatch(
+      /无需 import|does not need to be imported/,
+    );
     expect(importedWarnings[1]?.message).not.toContain('defineI18nMessages');
     expect(importedWarnings[2]?.message).not.toContain('defineI18nMessages');
   });

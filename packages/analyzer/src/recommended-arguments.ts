@@ -91,8 +91,8 @@ export function recommendedArgumentIssue(
           ? {
               code: 'unmarked-member',
               message: diagnosticMessage(
-                '对象或数组文案请先用 defineI18nMessages() 标记，再传给 t()。',
-                'Mark object or array messages with defineI18nMessages() before passing them to t().',
+                '对象或数组文案请先用 defineI18nMessages() 标记，再传给 t()。这是编译宏，无需 import。',
+                'Mark object or array messages with defineI18nMessages() before passing them to t(). It is a compile-time macro and does not need to be imported.',
               ),
             }
           : {
