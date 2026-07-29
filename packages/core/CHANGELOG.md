@@ -1,5 +1,12 @@
 # @ai-i18n/core
 
+## [1.0.0-alpha.6](https://github.com/bosens-China/ai-i18n/compare/core-v1.0.0-alpha.5...core-v1.0.0-alpha.6) (2026-07-29)
+
+
+### Features
+
+* 支持静态文案树翻译 ([7f5fb09](https://github.com/bosens-China/ai-i18n/commit/7f5fb09b9bc0e8313f5115dfb828fe3259b2264b))
+
 ## [1.0.0-alpha.5](https://github.com/bosens-China/ai-i18n/compare/core-v1.0.0-alpha.4...core-v1.0.0-alpha.5) (2026-07-29)
 
 

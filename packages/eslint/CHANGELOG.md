@@ -1,5 +1,19 @@
 # @ai-i18n/eslint-plugin
 
+## [1.0.0-alpha.8](https://github.com/bosens-China/ai-i18n/compare/eslint-plugin-v1.0.0-alpha.7...eslint-plugin-v1.0.0-alpha.8) (2026-07-29)
+
+
+### Features
+
+* 支持静态文案树翻译 ([7f5fb09](https://github.com/bosens-China/ai-i18n/commit/7f5fb09b9bc0e8313f5115dfb828fe3259b2264b))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @ai-i18n/analyzer bumped to 1.0.0-alpha.7
+
 ## [1.0.0-alpha.7](https://github.com/bosens-China/ai-i18n/compare/eslint-plugin-v1.0.0-alpha.6...eslint-plugin-v1.0.0-alpha.7) (2026-07-29)
 
 

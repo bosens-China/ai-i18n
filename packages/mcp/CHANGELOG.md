@@ -1,5 +1,14 @@
 # @ai-i18n/mcp
 
+## [1.0.0-alpha.8](https://github.com/bosens-China/ai-i18n/compare/mcp-v1.0.0-alpha.7...mcp-v1.0.0-alpha.8) (2026-07-29)
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @ai-i18n/core bumped to 1.0.0-alpha.6
+
 ## [1.0.0-alpha.7](https://github.com/bosens-China/ai-i18n/compare/mcp-v1.0.0-alpha.6...mcp-v1.0.0-alpha.7) (2026-07-29)
 
 
