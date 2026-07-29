@@ -66,6 +66,12 @@ describe('framework integration', () => {
     expect(source).toContain(
       'declare const defineI18nMessages: <T>(messages: T) => T;',
     );
+    expect(source).toContain(
+      '编译宏：标记可静态提取的文案对象或数组，无需 import',
+    );
+    expect(source).toContain('支持 t("保存")、t(messages) 和标签模板');
+    expect(source).toContain('@returns 取消订阅函数');
+    expect(source).toContain('随语言更新的只读 ComputedRef');
 
     await writeFrameworkTypes(root, 'react', true);
     const react = await fs.readFile(
