@@ -1,5 +1,12 @@
 # @ai-i18n/core
 
+## [1.0.0-alpha.5](https://github.com/bosens-China/ai-i18n/compare/core-v1.0.0-alpha.4...core-v1.0.0-alpha.5) (2026-07-29)
+
+
+### Features
+
+* 完善框架运行时与 ESLint 生命周期诊断 ([b2f51a9](https://github.com/bosens-China/ai-i18n/commit/b2f51a92b2254cd8387d2dee6ba5d2b3013da36a))
+
 ## [1.0.0-alpha.4](https://github.com/bosens-China/ai-i18n/compare/core-v1.0.0-alpha.3...core-v1.0.0-alpha.4) (2026-07-26)
 
 
