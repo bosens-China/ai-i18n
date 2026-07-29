@@ -95,6 +95,10 @@ describe('ai-i18n/t-static-args', () => {
         filename: path.join(sourceRoot, 'vue-hook.ts'),
       },
       {
+        code: "import { tRef } from 'virtual:ai-i18n'; const label = tRef('Vue Ref 静态文案')",
+        filename: path.join(sourceRoot, 'vue-ref.ts'),
+      },
+      {
         code: "const { t } = useI18n(); export const View = () => <p>{t('Vue JSX')}</p>",
         filename: path.join(sourceRoot, 'View.tsx'),
         options: [{ autoImport: true }],
@@ -139,6 +143,11 @@ describe('ai-i18n/t-static-args', () => {
       {
         code: "import { t } from 'virtual:ai-i18n'; t(props.label)",
         filename: path.join(sourceRoot, 'dynamic.ts'),
+        errors: [{ messageId: 'invalidUsage' }],
+      },
+      {
+        code: "import { tRef } from 'virtual:ai-i18n'; tRef(props.label)",
+        filename: path.join(sourceRoot, 'vue-ref-dynamic.ts'),
         errors: [{ messageId: 'invalidUsage' }],
       },
       {

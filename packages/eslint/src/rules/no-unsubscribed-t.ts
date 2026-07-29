@@ -24,7 +24,7 @@ export const noUnsubscribedT: Rule.RuleModule = {
   meta: {
     type: 'problem',
     docs: {
-      description: '警告组件渲染路径中未订阅语言状态的顶层 t',
+      description: '检查组件渲染路径中的翻译 API 生命周期',
     },
     schema: [
       {
@@ -36,7 +36,7 @@ export const noUnsubscribedT: Rule.RuleModule = {
               { type: 'boolean' },
               {
                 type: 'array',
-                items: { enum: ['t', 'useI18n'] },
+                items: { enum: ['t', 'tRef', 'useI18n'] },
                 uniqueItems: true,
               },
             ],
@@ -49,6 +49,10 @@ export const noUnsubscribedT: Rule.RuleModule = {
       unsubscribedT: diagnosticMessage(
         '组件渲染期间使用顶层 t 不会订阅语言状态，语言切换不会主动刷新，缓存的渲染结果也可能继续使用旧译文。请使用 useI18n() 返回的 t。',
         'Top-level t does not subscribe the component to language updates, so language changes do not trigger a render and cached render results may remain stale. Use the t returned by useI18n().',
+      ),
+      renderTRef: diagnosticMessage(
+        '不要在组件渲染或 template 中调用 tRef()，否则每次渲染都会创建新的 computed。请在 setup 中创建一次并使用返回的 Ref；渲染函数中请直接使用 useI18n() 返回的 t。',
+        'Do not call tRef() during component rendering or in a template because each render creates a new computed. Create it once in setup and use the returned Ref; in render functions, call the t returned by useI18n() directly.',
       ),
     },
   },
@@ -79,6 +83,19 @@ export const noUnsubscribedT: Rule.RuleModule = {
           return;
         }
         for (const { call, node } of matches) {
+          if (call.origin === 'vue-ref') {
+            if (templateNodes.has(node)) {
+              if (!isVueTemplateEventHandler(node)) {
+                context.report({ node, messageId: 'renderTRef' });
+              }
+              continue;
+            }
+            const owner = nearestFunction(node);
+            if (owner && jsxOwners.has(owner)) {
+              context.report({ node, messageId: 'renderTRef' });
+            }
+            continue;
+          }
           if (call.origin !== 'runtime') continue;
           if (templateNodes.has(node)) {
             if (!isVueTemplateEventHandler(node)) {

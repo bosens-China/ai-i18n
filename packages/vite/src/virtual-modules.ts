@@ -15,11 +15,15 @@ export function runtimeCode(
   const adapter =
     framework === 'vanilla'
       ? ''
-      : `import { create${framework === 'vue' ? 'Vue' : 'React'}I18n } from '@ai-i18n/vite/${framework}';`;
+      : framework === 'vue'
+        ? `import { createVueI18nAdapter } from '@ai-i18n/vite/vue';`
+        : `import { createReactI18n } from '@ai-i18n/vite/react';`;
   const hook =
     framework === 'vanilla'
       ? ''
-      : `export const useI18n = create${framework === 'vue' ? 'Vue' : 'React'}I18n(runtime);`;
+      : framework === 'vue'
+        ? `export const { useI18n, tRef } = createVueI18nAdapter(runtime);`
+        : `export const useI18n = createReactI18n(runtime);`;
   const localeHotUpdate = options.loading
     ? `
   import.meta.hot.on(${JSON.stringify(localeUpdateEvent)}, ({ locale, messages }) => {
@@ -64,12 +68,17 @@ export function runtimeStubCode(framework: AiI18nFramework): string {
   const adapter =
     framework === 'vanilla'
       ? ''
-      : `import { create${framework === 'vue' ? 'Vue' : 'React'}I18n } from '@ai-i18n/vite/${framework}';`;
+      : framework === 'vue'
+        ? `import { createVueI18nAdapter } from '@ai-i18n/vite/vue';`
+        : `import { createReactI18n } from '@ai-i18n/vite/react';`;
   const hook =
     framework === 'vanilla'
       ? ''
-      : `const runtime = { t, setLang, getLang, getLangs, getLangLoadState, subscribe };
-export const useI18n = create${framework === 'vue' ? 'Vue' : 'React'}I18n(runtime);`;
+      : framework === 'vue'
+        ? `const runtime = { t, setLang, getLang, getLangs, getLangLoadState, subscribe };
+export const { useI18n, tRef } = createVueI18nAdapter(runtime);`
+        : `const runtime = { t, setLang, getLang, getLangs, getLangLoadState, subscribe };
+export const useI18n = createReactI18n(runtime);`;
   return `
 import { formatTemplateMessage } from '@ai-i18n/vite/runtime';
 ${adapter}

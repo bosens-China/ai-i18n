@@ -68,11 +68,13 @@ import type { AppEmits, AppProps } from './component-types'
 defineProps<AppProps>()
 defineEmits<AppEmits>()
 const { t } = useI18n()
+const actionLabel = tRef('Vue Ref')
 const label = useLabel()
 </script>
 <template>
   <h1>{{ t('Vue SFC') }}</h1>
   <p>{{ label }}</p>
+  <button>{{ actionLabel }}</button>
   <VueJsxPanel />
 </template>`,
     );
@@ -126,12 +128,19 @@ const label = useLabel()
     expect(code).toContain('EN:Vue SFC');
     expect(code).toContain('EN:Vue TS');
     expect(code).toContain('EN:Vue TSX');
+    expect(code).toContain('EN:Vue Ref');
     expect(localeChunk?.isEntry).toBe(false);
     expect(localeChunk?.fileName).toMatch(/^assets\/en-US-/);
     expect(translator).toHaveBeenCalled();
-    expect(
-      await readJson(path.join(root, 'i18n/extracted/src_App.vue.json')),
-    ).toMatchObject({ messages: [{ id: 'Vue SFC' }] });
+    const appExtraction = await readJson(
+      path.join(root, 'i18n/extracted/src_App.vue.json'),
+    );
+    expect(appExtraction.messages).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ id: 'Vue SFC' }),
+        expect.objectContaining({ id: 'Vue Ref' }),
+      ]),
+    );
     expect(
       await readJson(path.join(root, 'i18n/extracted/src_useLabel.ts.json')),
     ).toMatchObject({ messages: [{ id: 'Vue TS' }] });

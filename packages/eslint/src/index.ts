@@ -88,20 +88,27 @@ plugin.configs!['vue-auto-import'] = [
     languageOptions: {
       globals: {
         t: 'readonly',
+        tRef: 'readonly',
         useI18n: 'readonly',
         defineI18nMessages: 'readonly',
       },
     },
     rules: {
-      'ai-i18n/t-static-args': ['error', { autoImport: ['t', 'useI18n'] }],
+      'ai-i18n/t-static-args': [
+        'error',
+        { autoImport: ['t', 'tRef', 'useI18n'] },
+      ],
       'ai-i18n/no-eager-translation': [
         'warn',
-        { autoImport: ['t', 'useI18n'] },
+        { autoImport: ['t', 'tRef', 'useI18n'] },
       ],
-      'ai-i18n/no-unsubscribed-t': ['warn', { autoImport: ['t', 'useI18n'] }],
+      'ai-i18n/no-unsubscribed-t': [
+        'warn',
+        { autoImport: ['t', 'tRef', 'useI18n'] },
+      ],
       'ai-i18n/static-candidate-limit': [
         'warn',
-        { autoImport: ['t', 'useI18n'] },
+        { autoImport: ['t', 'tRef', 'useI18n'] },
       ],
     },
   },

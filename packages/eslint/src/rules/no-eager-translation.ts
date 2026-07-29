@@ -29,7 +29,7 @@ export const noEagerTranslation: Rule.RuleModule = {
               { type: 'boolean' },
               {
                 type: 'array',
-                items: { enum: ['t', 'useI18n'] },
+                items: { enum: ['t', 'tRef', 'useI18n'] },
                 uniqueItems: true,
               },
             ],
@@ -40,8 +40,8 @@ export const noEagerTranslation: Rule.RuleModule = {
     ],
     messages: {
       eagerTranslation: diagnosticMessage(
-        '初始化期间保存的 t() 结果不会随语言切换更新。请改为函数或 Getter，在使用时调用 t()；组件视图请使用 useI18n()。',
-        'A t() result stored during initialization will not update when the language changes. Evaluate it lazily in a function or getter; use useI18n() in component views.',
+        '初始化期间保存的 t() 结果不会随语言切换更新。请改为函数或 Getter，在使用时调用 t()；Vue setup 中的响应式展示值可使用 tRef()。',
+        'A t() result stored during initialization will not update when the language changes. Evaluate it lazily in a function or getter; reactive display values in Vue setup can use tRef().',
       ),
     },
   },
@@ -64,7 +64,8 @@ export const noEagerTranslation: Rule.RuleModule = {
           reportAnalysisFailureOnce(context, program as Rule.Node, error);
           return;
         }
-        for (const { node } of matches) {
+        for (const { call, node } of matches) {
+          if (call.origin === 'vue-ref') continue;
           if (!storesOutsideFunction(node, context, isVueSfc)) continue;
           context.report({ node, messageId: 'eagerTranslation' });
         }

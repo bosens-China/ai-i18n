@@ -19,6 +19,7 @@ test('Vitest plugin resolves a React-compatible in-memory runtime', () => {
   expect(id).toBe('\0virtual:ai-i18n:vitest');
   expect(code).toContain("from '@ai-i18n/vite/react'");
   expect(code).toContain('export const useI18n = createReactI18n(runtime)');
+  expect(code).not.toContain('tRef');
   expect(code).toContain(
     'export const getLangLoadState = runtime.getLangLoadState',
   );
@@ -50,9 +51,9 @@ test.each([
     source: "t('Vanilla'); getLangLoadState()",
   },
   {
-    expected: 'import { useI18n, t } from "virtual:ai-i18n";',
+    expected: 'import { useI18n, t, tRef } from "virtual:ai-i18n";',
     framework: 'vue' as const,
-    source: "useI18n(); t('Vue')",
+    source: "useI18n(); t('Vue'); tRef('Vue Ref')",
   },
   {
     expected: 'import { useI18n, t } from "virtual:ai-i18n";',
@@ -115,6 +116,21 @@ test('Vitest plugin injects Vue auto imports inside script setup', async () => {
   expect(transformed).toContain('import { useI18n } from "virtual:ai-i18n";');
   expect(transformed.indexOf('import { useI18n }')).toBeLessThan(
     transformed.indexOf('const { t }'),
+  );
+});
+
+test('Vitest plugin exposes tRef only in the Vue runtime', () => {
+  const plugin = aiI18nVitest({
+    sourceLang: 'zh-CN',
+    locales: [{ value: 'zh-CN', label: '中文' }],
+    framework: 'vue',
+  });
+  const id = callHook<string>(plugin.resolveId, 'virtual:ai-i18n');
+  const code = callHook<string>(plugin.load, id);
+
+  expect(code).toContain("from '@ai-i18n/vite/vue'");
+  expect(code).toContain(
+    'export const { useI18n, tRef } = createVueI18nAdapter(runtime)',
   );
 });
 

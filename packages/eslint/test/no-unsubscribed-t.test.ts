@@ -98,6 +98,11 @@ describe('ai-i18n/no-unsubscribed-t', () => {
     ],
     invalid: [
       {
+        code: "import { tRef } from 'virtual:ai-i18n'; export function Panel() { return <p>{tRef('渲染')}</p> }",
+        filename: path.join(fixtureRoot, 'render-ref.tsx'),
+        errors: [{ messageId: 'renderTRef' }],
+      },
+      {
         code: "import { t } from 'virtual:ai-i18n'; export function VueButton() { return <button>{t('保存')}</button> }",
         filename: path.join(fixtureRoot, 'vue-render.tsx'),
         errors: [{ messageId: 'unsubscribedT' }],
@@ -144,6 +149,16 @@ describe('ai-i18n/no-unsubscribed-t', () => {
 
   vueTester.run('no-unsubscribed-t in Vue templates', noUnsubscribedT, {
     valid: [
+      {
+        code: [
+          '<script setup lang="ts">',
+          "import { tRef } from 'virtual:ai-i18n'",
+          "const label = tRef('Setup')",
+          '</script>',
+          '<template>{{ label }}</template>',
+        ].join('\n'),
+        filename: path.join(fixtureRoot, 'translated-ref.vue'),
+      },
       {
         code: [
           '<script setup lang="ts">',
@@ -195,6 +210,16 @@ describe('ai-i18n/no-unsubscribed-t', () => {
       },
     ],
     invalid: [
+      {
+        code: [
+          '<script setup lang="ts">',
+          "import { tRef } from 'virtual:ai-i18n'",
+          '</script>',
+          "<template>{{ tRef('Render') }}</template>",
+        ].join('\n'),
+        filename: path.join(fixtureRoot, 'render-ref.vue'),
+        errors: [{ messageId: 'renderTRef', line: 4, column: 14 }],
+      },
       {
         code: [
           '<script setup lang="ts">',

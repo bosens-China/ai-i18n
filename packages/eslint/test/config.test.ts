@@ -77,6 +77,7 @@ describe('@ai-i18n/eslint config', () => {
         languageOptions: {
           globals: {
             t: 'readonly',
+            tRef: 'readonly',
             useI18n: 'readonly',
             defineI18nMessages: 'readonly',
           },
@@ -84,17 +85,20 @@ describe('@ai-i18n/eslint config', () => {
         rules: {
           'ai-i18n/no-eager-translation': [
             'warn',
-            { autoImport: ['t', 'useI18n'] },
+            { autoImport: ['t', 'tRef', 'useI18n'] },
           ],
           'ai-i18n/no-unsubscribed-t': [
             'warn',
-            { autoImport: ['t', 'useI18n'] },
+            { autoImport: ['t', 'tRef', 'useI18n'] },
           ],
           'ai-i18n/static-candidate-limit': [
             'warn',
-            { autoImport: ['t', 'useI18n'] },
+            { autoImport: ['t', 'tRef', 'useI18n'] },
           ],
-          'ai-i18n/t-static-args': ['error', { autoImport: ['t', 'useI18n'] }],
+          'ai-i18n/t-static-args': [
+            'error',
+            { autoImport: ['t', 'tRef', 'useI18n'] },
+          ],
         },
       }),
     ]);
@@ -171,6 +175,30 @@ describe('@ai-i18n/eslint config', () => {
           (message) => message.ruleId === 'ai-i18n/t-static-args',
         ),
       ).toHaveLength(item.hookErrors);
+    }
+  });
+
+  it('enables the tRef auto import only for Vue', async () => {
+    for (const [name, expectedErrors] of [
+      ['vue', 1],
+      ['react', 0],
+      ['vanilla', 0],
+    ] as const) {
+      const eslint = new ESLint({
+        overrideConfigFile: true,
+        overrideConfig: plugin.configs![
+          `${name}-auto-import`
+        ] as Linter.Config[],
+      });
+      const [result] = await eslint.lintText('tRef(props.label)', {
+        filePath: `src/${name}.js`,
+      });
+
+      expect(
+        result?.messages.filter(
+          (message) => message.ruleId === 'ai-i18n/t-static-args',
+        ),
+      ).toHaveLength(expectedErrors);
     }
   });
 

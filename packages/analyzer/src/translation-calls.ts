@@ -17,12 +17,13 @@ export interface TranslationHookBinding {
 export interface TranslationContext {
   translateSymbols: Set<YukuSymbol>;
   runtimeTranslateSymbols: Set<YukuSymbol>;
+  runtimeRefSymbols: Set<YukuSymbol>;
   hookTranslateSymbols: Set<YukuSymbol>;
   translationObjects: Map<YukuSymbol, Set<string>>;
   valueWrappers: Set<YukuSymbol>;
 }
 
-export type TranslationCalleeOrigin = 'runtime' | 'hook';
+export type TranslationCalleeOrigin = 'runtime' | 'hook' | 'vue-ref';
 
 export function createTranslationContext(
   module: Module,
@@ -31,6 +32,7 @@ export function createTranslationContext(
 ): TranslationContext {
   const translateSymbols = new Set<YukuSymbol>();
   const runtimeTranslateSymbols = new Set<YukuSymbol>();
+  const runtimeRefSymbols = new Set<YukuSymbol>();
   const hookTranslateSymbols = new Set<YukuSymbol>();
   const translationObjects = new Map<YukuSymbol, Set<string>>();
   const valueWrappers = new Set<YukuSymbol>();
@@ -38,13 +40,14 @@ export function createTranslationContext(
   for (const item of module.imports) {
     if (
       !item.typeOnly &&
-      item.name === 't' &&
+      (item.name === 't' || item.name === 'tRef') &&
       item.local &&
       (item.specifier === runtimeModuleId ||
         item.local.definition()?.module.path === runtimeModuleId)
     ) {
       translateSymbols.add(item.local);
-      runtimeTranslateSymbols.add(item.local);
+      if (item.name === 'tRef') runtimeRefSymbols.add(item.local);
+      else runtimeTranslateSymbols.add(item.local);
     }
     if (
       !item.typeOnly &&
@@ -66,6 +69,7 @@ export function createTranslationContext(
   return {
     translateSymbols,
     runtimeTranslateSymbols,
+    runtimeRefSymbols,
     hookTranslateSymbols,
     translationObjects,
     valueWrappers,
@@ -92,13 +96,14 @@ export function translationCalleeOrigin(
   if (
     autoImportRuntime &&
     node.type === 'Identifier' &&
-    node.name === 't' &&
+    (node.name === 't' || node.name === 'tRef') &&
     !module.symbolOf(node)
   ) {
-    return 'runtime';
+    return node.name === 'tRef' ? 'vue-ref' : 'runtime';
   }
   const symbol = valueSymbol(node, module, context.valueWrappers);
   if (symbol && context.hookTranslateSymbols.has(symbol)) return 'hook';
+  if (symbol && context.runtimeRefSymbols.has(symbol)) return 'vue-ref';
   if (symbol && context.runtimeTranslateSymbols.has(symbol)) return 'runtime';
   if (node.type !== 'MemberExpression') return null;
   const objectSymbol = valueSymbol(node.object, module, context.valueWrappers);

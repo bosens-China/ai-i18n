@@ -29,16 +29,17 @@ export interface StaticAnalysisResult {
   translationCalls: TranslationCall[];
 }
 
-export type AutoImportApi = 't' | 'useI18n';
+export type AutoImportApi = 't' | 'tRef' | 'useI18n';
 export type AutoImportOption = boolean | readonly AutoImportApi[];
 
 interface AutoImportBindings {
   t: boolean;
+  tRef: boolean;
   useI18n: boolean;
 }
 
 const POTENTIAL_TRANSLATION_RE =
-  /virtual:ai-i18n|\b(?:t|useI18n|defineI18nMessages)\b/;
+  /virtual:ai-i18n|\b(?:t|tRef|useI18n|defineI18nMessages)\b/;
 
 export function analyzeStaticArgs(
   code: string,
@@ -74,7 +75,7 @@ export function analyzeStaticSource(
   const analyzer = new Analyzer({ resolve });
   analyzer.addFile(
     AI_I18N_VIRTUAL_MODULE_ID,
-    'export function t(source) { return source }',
+    'export function t(source) { return source } export function tRef(source) { return source }',
   );
   const entryPath = normalizeFilename(filename);
   const entry = analyzer.addFile(entryPath, code, lang ? { lang } : undefined);
@@ -88,14 +89,14 @@ export function analyzeStaticSource(
     entry,
     AI_I18N_VIRTUAL_MODULE_ID,
     hooks,
-    autoImports.t,
+    autoImports.t || autoImports.tRef,
     maxStaticCandidates,
   ).warnings;
   const recommended = validateRecommendedUsage(
     entry,
     AI_I18N_VIRTUAL_MODULE_ID,
     hooks,
-    autoImports.t,
+    autoImports.t || autoImports.tRef,
   );
   const warnings = recommended.length
     ? [
@@ -117,7 +118,7 @@ export function analyzeStaticSource(
       entry,
       AI_I18N_VIRTUAL_MODULE_ID,
       hooks,
-      autoImports.t,
+      autoImports.t || autoImports.tRef,
     ),
   };
 }
@@ -130,10 +131,12 @@ export function normalizeAutoImports(
   autoImport: AutoImportOption | undefined,
 ): AutoImportBindings {
   if (typeof autoImport === 'boolean') {
-    return { t: autoImport, useI18n: autoImport };
+    // boolean 保留跨框架的历史语义；Vue-only tRef 由 Vue preset 显式声明。
+    return { t: autoImport, tRef: false, useI18n: autoImport };
   }
   return {
     t: autoImport?.includes('t') ?? false,
+    tRef: autoImport?.includes('tRef') ?? false,
     useI18n: autoImport?.includes('useI18n') ?? false,
   };
 }
@@ -144,6 +147,7 @@ function hasTranslationCandidate(
 ): boolean {
   const unbound = ['defineI18nMessages'];
   if (autoImports.t) unbound.push('t');
+  if (autoImports.tRef) unbound.push('tRef');
   if (autoImports.useI18n) unbound.push('useI18n');
   return (
     module.imports.some(
@@ -151,6 +155,7 @@ function hasTranslationCandidate(
         !item.typeOnly &&
         (item.specifier === AI_I18N_VIRTUAL_MODULE_ID ||
           item.name === 't' ||
+          item.name === 'tRef' ||
           item.name === 'useI18n'),
     ) ||
     findInvalidDefineI18nMessagesReferences(module).length > 0 ||

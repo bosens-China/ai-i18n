@@ -27,7 +27,7 @@ export const staticCandidateLimit: Rule.RuleModule = {
               { type: 'boolean' },
               {
                 type: 'array',
-                items: { enum: ['t', 'useI18n'] },
+                items: { enum: ['t', 'tRef', 'useI18n'] },
                 uniqueItems: true,
               },
             ],

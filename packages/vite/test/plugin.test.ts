@@ -357,12 +357,14 @@ export const View = () => <p>{hookT('React JSX')}</p>`,
   it('uses framework adapters for SSR Hook stub shapes', async () => {
     for (const item of [
       {
-        adapter: 'createVueI18n',
+        adapter: 'createVueI18nAdapter',
+        hook: 'export const { useI18n, tRef } = createVueI18nAdapter(runtime)',
         frameworkPlugin: { name: 'vite:vue' },
         module: '@ai-i18n/vite/vue',
       },
       {
         adapter: 'createReactI18n',
+        hook: 'export const useI18n = createReactI18n(runtime)',
         frameworkPlugin: { name: 'vite:react-babel' },
         module: '@ai-i18n/vite/react',
       },
@@ -387,7 +389,7 @@ export const View = () => <p>{hookT('React JSX')}</p>`,
       expect(stub).toContain(
         `import { ${item.adapter} } from '${item.module}'`,
       );
-      expect(stub).toContain(`export const useI18n = ${item.adapter}(runtime)`);
+      expect(stub).toContain(item.hook);
     }
   });
 });

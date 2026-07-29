@@ -74,6 +74,10 @@ describe('ai-i18n/no-eager-translation', () => {
         code: "import { t } from 'virtual:ai-i18n'; const defineComponent = (value: unknown) => value; export default defineComponent({ setup() { return { label: t('本地同名') } } })",
         filename: path.join(fixtureRoot, 'local-define-component.ts'),
       },
+      {
+        code: "import { tRef } from 'virtual:ai-i18n'; export const label = tRef('响应式')",
+        filename: path.join(fixtureRoot, 'translated-ref.ts'),
+      },
     ],
     invalid: [
       {
@@ -138,6 +142,16 @@ describe('ai-i18n/no-eager-translation', () => {
 
   vueTester.run('no-eager-translation in Vue SFC', noEagerTranslation, {
     valid: [
+      {
+        code: [
+          '<script setup lang="ts">',
+          "import { tRef } from 'virtual:ai-i18n'",
+          "const label = tRef('响应式')",
+          '</script>',
+          '<template>{{ label }}</template>',
+        ].join('\n'),
+        filename: path.join(fixtureRoot, 'TranslatedRef.vue'),
+      },
       {
         code: [
           '<script setup lang="ts">',

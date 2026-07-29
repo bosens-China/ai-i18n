@@ -81,6 +81,7 @@ function analyzeRuleContextResult(
     const key = JSON.stringify([
       options.tsconfigPath ?? null,
       autoImports.t,
+      autoImports.tRef,
       autoImports.useI18n,
       limit,
     ]);

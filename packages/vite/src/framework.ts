@@ -19,7 +19,7 @@ const AUTO_IMPORTS: Record<AiI18nFramework, readonly string[]> = {
     'getLangLoadState',
     'subscribe',
   ],
-  vue: ['useI18n', 't'],
+  vue: ['useI18n', 't', 'tRef'],
   react: ['useI18n', 't'],
 };
 
@@ -128,11 +128,18 @@ function frameworkTypes(
   const adapter = adapterFramework
     ? `  export const useI18n: import('@ai-i18n/vite/${adapterFramework}').UseI18n;`
     : '';
+  const vueRef =
+    framework === 'vue'
+      ? `  export const tRef: import('@ai-i18n/vite/vue').TranslateRef;`
+      : '';
   const globals = autoImport
     ? AUTO_IMPORTS[framework]
         .map((name) => {
           if (name === 'useI18n') {
             return `declare const useI18n: import('@ai-i18n/vite/${adapterFramework}').UseI18n;`;
+          }
+          if (name === 'tRef') {
+            return `declare const tRef: import('@ai-i18n/vite/vue').TranslateRef;`;
           }
           return `declare const ${name}: import('@ai-i18n/vite').I18nRuntime['${name}'];`;
         })
@@ -148,7 +155,7 @@ function frameworkTypes(
   export const getLang: I18nRuntime['getLang'];
   export const getLangs: I18nRuntime['getLangs'];
   export const getLangLoadState: I18nRuntime['getLangLoadState'];
-  export const subscribe: I18nRuntime['subscribe'];${adapter ? `\n${adapter}` : ''}
+  export const subscribe: I18nRuntime['subscribe'];${adapter ? `\n${adapter}` : ''}${vueRef ? `\n${vueRef}` : ''}
 }`;
 
   return `/**

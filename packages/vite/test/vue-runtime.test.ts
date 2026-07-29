@@ -1,7 +1,7 @@
 import { createI18nRuntime } from '@ai-i18n/core';
-import { computed } from 'vue';
+import { computed, isReadonly, ref } from 'vue';
 import { describe, expect, it } from 'vitest';
-import { createVueI18n } from '../src/vue';
+import { createVueI18n, createVueI18nAdapter } from '../src/vue';
 
 describe('Vue runtime adapter', () => {
   it('updates computed language and translated text', async () => {
@@ -64,5 +64,33 @@ describe('Vue runtime adapter', () => {
     });
     expect(i18n.isLangLoading.value).toBe(false);
     expect(i18n.langLoadError.value).toBe(error);
+  });
+
+  it('creates a readonly translated ref that follows language and Ref values', async () => {
+    const runtime = createI18nRuntime({
+      sourceLang: 'zh-CN',
+      defaultLang: 'zh-CN',
+      locales: [
+        { value: 'zh-CN', label: '中文' },
+        { value: 'en-US', label: 'English' },
+      ],
+    });
+    runtime.registerModule('App.vue', {
+      'zh-CN': { 保存: '保存' },
+      'en-US': { 保存: 'Save' },
+    });
+    const { tRef } = createVueI18nAdapter(runtime);
+    const label = tRef('保存');
+    const name = ref('Ada');
+    const greeting = tRef`你好 ${name}`;
+
+    expect(isReadonly(label)).toBe(true);
+    expect(label.value).toBe('保存');
+    expect(greeting.value).toBe('你好 Ada');
+
+    name.value = 'Lin';
+    expect(greeting.value).toBe('你好 Lin');
+    await runtime.setLang('en-US');
+    expect(label.value).toBe('Save');
   });
 });

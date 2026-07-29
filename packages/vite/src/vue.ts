@@ -1,5 +1,10 @@
-import type { I18nRuntime, LangLoadState, LangOption } from '@ai-i18n/core';
-import { computed, readonly, shallowRef } from 'vue';
+import type {
+  I18nRuntime,
+  LangLoadState,
+  LangOption,
+  TranslationOptions,
+} from '@ai-i18n/core';
+import { computed, readonly, shallowRef, unref } from 'vue';
 import type { ComputedRef, DeepReadonly, ShallowRef } from 'vue';
 
 export interface VueI18n {
@@ -14,9 +19,23 @@ export interface VueI18n {
 
 export type UseI18n = () => VueI18n;
 
-export function createVueI18n(runtime: I18nRuntime): UseI18n {
+export interface TranslateRef {
+  (source: string, options?: TranslationOptions): ComputedRef<string>;
+  (strings: TemplateStringsArray, ...values: unknown[]): ComputedRef<string>;
+}
+
+export interface VueI18nAdapter {
+  useI18n: UseI18n;
+  tRef: TranslateRef;
+}
+
+export function createVueI18nAdapter(runtime: I18nRuntime): VueI18nAdapter {
   const revision = shallowRef(0);
   const langs = readonly(shallowRef(runtime.getLangs()));
+  const translate = runtime.t as (
+    source: string | TemplateStringsArray,
+    ...values: unknown[]
+  ) => string;
 
   runtime.subscribe(() => {
     revision.value += 1;
@@ -26,7 +45,19 @@ export function createVueI18n(runtime: I18nRuntime): UseI18n {
     return revision.value;
   }
 
-  return function useI18n() {
+  const t = ((source: string | TemplateStringsArray, ...values: unknown[]) => {
+    trackRevision();
+    return translate(source, ...values);
+  }) as I18nRuntime['t'];
+
+  // 在 computed 内解包插值 Ref，确保语言和动态插值任一变化都会重新计算。
+  const tRef = ((source: string | TemplateStringsArray, ...values: unknown[]) =>
+    computed(() => {
+      trackRevision();
+      return translate(source, ...values.map(unref));
+    })) as TranslateRef;
+
+  const useI18n: UseI18n = () => {
     const currentLang = computed(() => {
       trackRevision();
       return runtime.getLang();
@@ -39,18 +70,6 @@ export function createVueI18n(runtime: I18nRuntime): UseI18n {
       () => langLoadState.value.status === 'loading',
     );
     const langLoadError = computed(() => langLoadState.value.error);
-    const translate = runtime.t as (
-      source: string | TemplateStringsArray,
-      ...values: unknown[]
-    ) => string;
-    const t = ((
-      source: string | TemplateStringsArray,
-      ...values: unknown[]
-    ) => {
-      trackRevision();
-      return translate(source, ...values);
-    }) as I18nRuntime['t'];
-
     return {
       t,
       setLang: runtime.setLang,
@@ -61,4 +80,10 @@ export function createVueI18n(runtime: I18nRuntime): UseI18n {
       langLoadError,
     };
   };
+
+  return { useI18n, tRef };
+}
+
+export function createVueI18n(runtime: I18nRuntime): UseI18n {
+  return createVueI18nAdapter(runtime).useI18n;
 }

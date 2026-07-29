@@ -53,7 +53,13 @@ describe('framework integration', () => {
       "export const getLangLoadState: I18nRuntime['getLangLoadState'];",
     );
     expect(source).toContain("import('@ai-i18n/vite/vue').UseI18n");
+    expect(source).toContain(
+      "export const tRef: import('@ai-i18n/vite/vue').TranslateRef;",
+    );
     expect(source).toContain('declare const useI18n');
+    expect(source).toContain(
+      "declare const tRef: import('@ai-i18n/vite/vue').TranslateRef;",
+    );
     expect(source).toContain(
       "declare const t: import('@ai-i18n/vite').I18nRuntime['t'];",
     );
@@ -71,6 +77,7 @@ describe('framework integration', () => {
       "declare const t: import('@ai-i18n/vite').I18nRuntime['t'];",
     );
     expect(react).not.toContain("import('@ai-i18n/vite/vue').UseI18n");
+    expect(react).not.toContain('tRef');
 
     await writeFrameworkTypes(root, 'vanilla', true);
     const vanillaAutoImport = await fs.readFile(
@@ -80,6 +87,7 @@ describe('framework integration', () => {
     expect(vanillaAutoImport).toContain(
       "declare const getLangLoadState: import('@ai-i18n/vite').I18nRuntime['getLangLoadState'];",
     );
+    expect(vanillaAutoImport).not.toContain('tRef');
 
     await writeFrameworkTypes(root, 'vanilla', false);
     const vanilla = await fs.readFile(

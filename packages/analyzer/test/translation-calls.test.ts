@@ -18,14 +18,15 @@ const hooks = [
 describe('translation call discovery', () => {
   it('distinguishes Runtime and Hook bindings', () => {
     const module = analyzeModule(
-      `import { t as runtimeT, useI18n as useTranslation } from 'virtual:ai-i18n'
+      `import { t as runtimeT, tRef, useI18n as useTranslation } from 'virtual:ai-i18n'
 const { t: hookT } = useTranslation()
 const i18n = useTranslation()
 runtimeT('Runtime')
 hookT('Hook')
 i18n.t\`Member \${value}\`
 t('Auto import')
-function local(t) { t('Shadowed') }`,
+tRef('Imported Ref')
+function local(t, tRef) { t('Shadowed'); tRef('Shadowed Ref') }`,
       'View.tsx',
     );
 
@@ -36,6 +37,7 @@ function local(t) { t('Shadowed') }`,
       { kind: 'call', origin: 'hook', line: 5 },
       { kind: 'tagged-template', origin: 'hook', line: 6 },
       { kind: 'call', origin: 'runtime', line: 7 },
+      { kind: 'call', origin: 'vue-ref', line: 8 },
     ]);
   });
 
@@ -60,5 +62,16 @@ function local(t) { t('Shadowed') }`,
     expect(findTranslationCalls(entry)).toMatchObject([
       { kind: 'call', origin: 'runtime', line: 1 },
     ]);
+  });
+
+  it('recognizes an auto-imported tRef without treating a local binding as runtime', () => {
+    const module = analyzeModule(
+      "tRef('自动导入'); function render(tRef) { tRef('局部') }",
+      'View.vue.ts',
+    );
+
+    expect(
+      findTranslationCalls(module, AI_I18N_VIRTUAL_MODULE_ID, [], true),
+    ).toMatchObject([{ kind: 'call', origin: 'vue-ref', line: 1 }]);
   });
 });
