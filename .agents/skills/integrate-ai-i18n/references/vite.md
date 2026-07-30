@@ -46,6 +46,13 @@ import { useI18n } from 'virtual:ai-i18n'
 import { tRef } from 'virtual:ai-i18n'
 ```
 
+With `autoImport: true`, every mode injects `t`, `setLang`, `getLang`, `getLangs`,
+`getLangLoadState`, and `subscribe`. Vue additionally injects `useI18n` and `tRef`; React additionally
+injects `useI18n`. Plain `.js` and `.ts` files inherit the containing build's framework mode.
+
+Automatic imports do not add framework reactivity. `getLang()` and `getLangLoadState()` return
+call-time snapshots; rendered Vue and React state should come from `useI18n()`.
+
 The `locales` array must be non-empty, have unique `value` fields, and include `sourceLang`. Omit
 `defaultLang` when it is the same as `sourceLang`.
 

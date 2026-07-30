@@ -22,6 +22,7 @@ export default defineConfig([
     rules: {
       'ai-i18n/t-static-args': 'error',
       'ai-i18n/no-eager-translation': 'warn',
+      'ai-i18n/no-unsubscribed-runtime-state': 'warn',
       'ai-i18n/no-unsubscribed-t': 'warn',
       'ai-i18n/static-candidate-limit': 'warn',
     },
@@ -29,13 +30,14 @@ export default defineConfig([
 ]);
 ```
 
-| 规则                       | 解决的问题                                |
-| -------------------------- | ----------------------------------------- |
-| `t-static-args`            | 拒绝构建时无法确定或不推荐的 `t()` 参数。 |
-| `no-eager-translation`     | 避免过早计算并长期保存译后字符串。        |
-| `no-unsubscribed-t`        | 提醒 Vue、React 组件使用订阅版 `t`。      |
-| `static-candidate-limit`   | 文案候选数量过大时发出警告。              |
-| `no-redundant-auto-import` | 可选地删除自动导入已提供的显式导入。      |
+| 规则                            | 解决的问题                                |
+| ------------------------------- | ----------------------------------------- |
+| `t-static-args`                 | 拒绝构建时无法确定或不推荐的 `t()` 参数。 |
+| `no-eager-translation`          | 避免过早计算并长期保存译后字符串。        |
+| `no-unsubscribed-runtime-state` | 避免缓存或渲染非响应式语言状态快照。      |
+| `no-unsubscribed-t`             | 提醒 Vue、React 组件使用订阅版 `t`。      |
+| `static-candidate-limit`        | 文案候选数量过大时发出警告。              |
+| `no-redundant-auto-import`      | 可选地删除自动导入已提供的显式导入。      |
 
 ## 自动导入选项
 
@@ -48,15 +50,38 @@ export default defineConfig([
 ],
 ```
 
-Vue 使用 `t`、`tRef` 和 `useI18n`；React 使用 `t` 和 `useI18n`；Vanilla 使用 `t` 与语言
-相关 API。新项目优先使用对应的预设，只有手工配置时才填写该选项。
+翻译静态分析规则只需要列出 `t`、`tRef` 和 `useI18n`。框架自动导入的完整集合见
+[自动导入](/guide/basic/auto-import)；新项目优先使用对应的预设。
+
+`no-unsubscribed-runtime-state` 的自动导入选项只列出状态快照 API：
+
+```js
+'ai-i18n/no-unsubscribed-runtime-state': [
+  'warn',
+  { autoImport: ['getLang', 'getLangLoadState'] },
+],
+```
+
+它会提示模块顶层以及 Vue template / JSX 渲染路径中的直接快照读取。事件处理器、普通函数和
+即时日志允许按需读取；规则不追踪跨文件 store 数据流。
 
 `no-redundant-auto-import` 默认不包含在预设中。希望统一为自动导入风格时：
 
 ```js
 'ai-i18n/no-redundant-auto-import': [
   'warn',
-  { autoImport: ['t', 'tRef', 'useI18n'] },
+  {
+    autoImport: [
+      'useI18n',
+      't',
+      'setLang',
+      'getLang',
+      'getLangs',
+      'getLangLoadState',
+      'subscribe',
+      'tRef',
+    ],
+  },
 ],
 ```
 

@@ -63,6 +63,12 @@ setup, language chunking, cache limits, HTML extraction, ESLint rule options, an
   `defineI18nMessages()` only when selecting a member or finite dynamic index.
 - In Vue and React component render paths, use `useI18n()` and its `t`. Use top-level `t` only in
   ordinary modules, and evaluate it at call time instead of storing a translated snapshot.
+- Vue and React auto-import mode also provides the base Runtime language APIs. Use `setLang()`,
+  `getLang()`, `getLangs()`, `getLangLoadState()`, and `subscribe()` in ordinary modules, store
+  actions, and router hooks that cannot use a framework subscription API.
+- Treat `getLang()` and `getLangLoadState()` as call-time snapshots. For rendered framework state,
+  use `currentLang` and `langLoadState` from `useI18n()`; for a long-lived non-component listener,
+  keep and invoke the cleanup returned by `subscribe()`.
 - In Vue setup or composables, use `tRef()` for a reactive predeclared label. Do not call `tRef()` in
   templates or render functions.
 - Missing translations fall back to source text. Before judging translation coverage, run a full Build;
@@ -71,8 +77,10 @@ setup, language chunking, cache limits, HTML extraction, ESLint rule options, an
 ## Verify and report
 
 Check installation, resolved framework mode, Vite syntax, one runtime translation call, generated
-declarations, and the output directory. When handing off to `@ai-i18n/mcp`, provide the final absolute
-directory resolved from the target build's Vite `root` and `aiI18n.directory`.
+declarations, the matching ESLint preset, and the output directory. When handing off to
+`@ai-i18n/mcp`, provide the final absolute directory resolved from the target build's Vite `root` and
+`aiI18n.directory`. MCP translation writes identify a shared message by its source and optional
+static comment, not by a source file or an internal encoded message ID.
 
 Report the selected app, changes made, commands run, remaining unsupported scope, and any decisions
 that still need user input.

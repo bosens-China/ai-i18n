@@ -39,6 +39,11 @@ In component templates and render functions, always use the `t` returned by `use
 `t` is only for ordinary modules that cannot call a composable. It does not subscribe a component to
 language changes.
 
+With `autoImport: true`, Pinia actions, router guards, and ordinary TypeScript modules may directly
+use the base Runtime language APIs. `getLang()` and `getLangLoadState()` are snapshots, not refs. A
+store that exposes reactive language state should return the readonly refs from `useI18n()` or manage
+and clean up a `subscribe()` listener.
+
 Use the standalone Vue-only `tRef()` in setup or a composable when a predeclared label must react to
 language changes. Do not call `tRef()` in a template or render function. A static message-only object
 or array can be passed directly to `t()` or `tRef()`; use `defineI18nMessages()` only when selecting a
@@ -46,7 +51,8 @@ member or finite dynamic index.
 
 For explicit imports, use `configs.vue` from `@ai-i18n/eslint-plugin`. With `autoImport: true`, use
 `configs['vue-auto-import']`. Automatic imports remove the import statement, not the required
-`useI18n()` call in `<script setup>`.
+`useI18n()` call in `<script setup>`. Keep the preset enabled so snapshot reads in render paths are
+reported.
 
 For UI-library locales and Vue-specific troubleshooting, fetch
 `https://bosens-china.github.io/ai-i18n/guide/getting-started/vue.md` and

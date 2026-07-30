@@ -50,8 +50,8 @@ ai-i18n Runtime API。
 按顺序检查：
 
 1. 确认 `aiI18n({ autoImport: true })` 已显式开启。
-2. 确认使用了当前模式支持的 API：Vanilla 提供 `t`、语言 API 和 `subscribe`；Vue 提供
-   `useI18n`、`t` 与 `tRef`；React 提供 `useI18n` 与 `t`。
+2. 确认使用了当前模式支持的 API：三种模式都提供 `t`、语言 API 和 `subscribe`；Vue
+   额外提供 `useI18n` 与 `tRef`，React 额外提供 `useI18n`。
 3. 修改 Vite 配置后重启开发服务器。
 4. TypeScript 项目启动一次 Vite，确认生成的 `src/ai-i18n.d.ts` 位于 `tsconfig.json`
    的 `include` 范围内。

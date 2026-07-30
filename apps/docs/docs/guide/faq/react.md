@@ -26,6 +26,15 @@ function SaveButton() {
 也不要把 `t('保存')` 的结果放入模块常量或长期 state。保留 source 文案，在每次渲染时调用
 Hook 返回的 `t()`。
 
+## 非组件 TS 文件如何读取或切换语言？
+
+普通模块、store action、路由和事件处理器不能调用 React Hook，应使用顶层 Runtime API。
+开启 `autoImport: true` 后，可以直接调用 `setLang()`、`getLang()`、`getLangs()`、
+`getLangLoadState()` 与 `subscribe()`。
+
+其中 `getLang()` 与 `getLangLoadState()` 返回调用时快照。组件需要展示这些状态时仍应使用
+`useI18n()`，否则语言变化不会触发重新渲染。
+
 ## React Compiler 能否替代 `useI18n()`？
 
 不能。React Compiler 可以缓存渲染计算，但不会为 Runtime 顶层 `t` 自动建立外部状态订阅。

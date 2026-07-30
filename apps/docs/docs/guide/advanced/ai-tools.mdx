@@ -87,6 +87,10 @@ claude mcp add --transport stdio --scope local ai-i18n -- npx -y @ai-i18n/mcp@al
 
 - Agent 补译默认保留已有译文。需要修改已确认的措辞时，请明确说明“审校”或“覆盖”。
 - 在 monorepo 中，请说明目标应用名称或目录，避免 Agent 处理错误的 Vite 应用。
+- Agent 只在指定应用内处理翻译，不会自动扩展到仓库中的其他应用。
+- 同一条文案在多个文件中复用时，Agent 只需翻译一次，并会汇报实际影响范围。
+- 大型项目会自动分批处理；完成后，Agent 会再次检查剩余缺失项。
+- 同一文案出现互相矛盾的译文时，Agent 会请求确认，不会自行猜测。
 - Agent 工作期间不要并行手动修改同一份译文文件；完成后再进行人工审校。
 - 生成文件和提交规则见[生成文件与 Git](/guide/basic/directory)。
 

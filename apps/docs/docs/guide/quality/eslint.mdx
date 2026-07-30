@@ -68,7 +68,7 @@ export default defineConfig([
 | React   | `react-auto-import`   |
 
 这些预设会声明对应的 ai-i18n 全局 API，并检查其使用方式。生产配置和测试配置的 `autoImport`
-值应保持一致。
+值应保持一致。Vue 与 React preset 同时声明基础 Runtime API 和框架专属 API。
 
 ## 常见问题
 
@@ -101,6 +101,10 @@ function SaveButton() {
 
 不要在模块初始化、state、storage 或业务数据中长期保存已经翻译的字符串。Vue setup 中需要预先
 声明响应式展示文案时，使用 `tRef()`。
+
+`getLang()` 与 `getLangLoadState()` 同样返回快照。组件展示当前语言或加载状态时，使用
+`useI18n()` 返回的 `currentLang` 与 `langLoadState`；在 action、事件处理器或工具函数中
+按需读取 Runtime 快照不受限制。
 
 ### 为什么显式导入提示多余
 

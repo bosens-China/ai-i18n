@@ -22,6 +22,8 @@ files manually while the MCP tools are available.
 4. Pass the resulting absolute path as `i18n_directory`.
 
 If more than one Vite app is plausible, ask the user which app to use before calling MCP.
+The app's framework mode and `autoImport` setting affect source integration but do not change the MCP
+directory contract. Do not add or remove Runtime imports as part of a translation-only MCP task.
 
 The directory must contain `translations.json`, `overrides.json`, and `extracted/`. Run the target
 app's full Vite Build before the first MCP use when `extracted/` is missing or empty. Build again
@@ -34,22 +36,29 @@ Start with `ai_i18n_list_translations` and pass only `i18n_directory`. Its defau
 discovers source files and returns writable missing entries.
 
 - Follow `next_cursor` until `has_more` is false, unless the user asked for a sample.
-- Use `source` as the translation input and `comment` as author context.
+- Use `message.source` as the translation input and `message.comment` as author context.
 - Use `missing_locales` as the default set of target locales.
-- Copy `source_file` and opaque `message_id` exactly. Never substitute `source` for `message_id`.
+- Copy the complete `message` object into write tools. Internal message IDs are not part of the MCP
+  contract.
+- Treat `source_files` as the complete shared occurrence range. One message update affects every
+  listed file.
 - Use `view: "summary"` for progress counts and `view: "all"` only when the task requires existing
   values.
+- Lists request 100 records by default and accept `limit` up to 500. A size-limited page may contain
+  fewer records; complete it by following `next_cursor`.
 
 If the first list returns no source files, run one full Build for the same app and retry once. If the
 retry remains empty, report that the target build has no extracted messages; do not scan sibling apps.
 
 ## Update automatic translations
 
-Use `ai_i18n_set_translations` for ordinary translation work. A batch may contain at most 100 unique
-updates. Each update needs `source_file`, `message_id`, `locale`, and `value`.
+Use `ai_i18n_set_translations` for ordinary translation work. A batch may contain at most 500 inputs.
+Each update needs `message: { source, comment? }`, `locale`, and `value`.
 
 - Leave `overwrite_existing` unset or false unless the user explicitly asks to replace an existing
   automatic translation.
+- Identical repeated targets and values are applied once and reported through `deduplicated_count`.
+  Different values for one message and locale fail the whole batch.
 - Preserve product names, intentional whitespace, and every template token. Empty strings are valid
   translations.
 - Use `ai_i18n_clear_translations` only when the user asks to reset specific automatic translations.
@@ -78,7 +87,9 @@ cleared or deleted, unchanged, remaining, and failed counts.
 | --- | --- |
 | `I18N_DIRECTORY_NOT_FOUND` or `I18N_DIRECTORY_NOT_ABSOLUTE` | Recompute Vite root plus `aiI18n.directory`, then use an absolute path. |
 | `REQUIRED_PROTOCOL_FILE_MISSING` or `REQUIRED_PROTOCOL_DIRECTORY_MISSING` | Run one full Build for the same app and retry once. |
-| `SOURCE_FILE_NOT_FOUND` or `MESSAGE_NOT_FOUND` | List again and copy the exact returned path and ID. |
+| `SOURCE_FILE_NOT_FOUND` | Correct an exact `source_files` list filter using paths returned by the list tool. |
+| `MESSAGE_NOT_FOUND` | List again and copy the exact returned `message` object. |
+| `DUPLICATE_TARGET_CONFLICT` | Choose one value for the repeated message and locale, then retry the batch. |
 | `TRANSLATION_CONFLICT` | Re-list current values. Set `overwrite_existing: true` only with explicit user approval. |
 | `TEMPLATE_TOKEN_MISMATCH` | Preserve every template token before retrying. |
 | `MESSAGE_SCOPE_REQUIRES_COMMENT` | Use message scope only for a listed message with a static comment. |

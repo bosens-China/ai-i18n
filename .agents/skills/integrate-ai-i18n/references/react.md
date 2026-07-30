@@ -33,8 +33,13 @@ cannot call a Hook, but evaluate it at call time instead of saving a translated 
 A static message-only object or array can be passed directly to `t(messages)`; use
 `defineI18nMessages()` only when selecting a member or finite dynamic index.
 
+With `autoImport: true`, ordinary modules, store actions, router code, and event services may use the
+base Runtime language APIs without calling a Hook. `getLang()` and `getLangLoadState()` are snapshots;
+rendered state must come from `useI18n()`. Long-lived manual `subscribe()` listeners must retain and
+invoke their cleanup.
+
 For explicit imports, use `configs.recommended` from `@ai-i18n/eslint-plugin`. With
-`autoImport: true`, use `configs['react-auto-import']`.
+`autoImport: true`, use `configs['react-auto-import']` so snapshot reads in render paths are reported.
 
 For UI-library locales and React-specific troubleshooting, fetch
 `https://bosens-china.github.io/ai-i18n/guide/getting-started/react.md` and

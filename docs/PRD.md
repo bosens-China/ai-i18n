@@ -32,8 +32,10 @@
 
 - 插件在 Vanilla、Vue、React 三种互斥模式中运行。默认由最终 Vite 插件列表推断，也允许显式覆盖；同时命中 Vue 与 React 时拒绝启动。
 - 显式从 virtual:ai-i18n 导入的 API 始终可用。自动导入只减少 import 样板，不改变 Runtime 的导出边界。
-- Vanilla 自动导入 t() 与语言控制 API；Vue 自动导入 useI18n、t()、tRef()；React 自动导入 useI18n 与 t()。
+- 三种模式都自动导入 t()、语言控制 API 与 subscribe()；Vue 额外自动导入 useI18n() 与 tRef()，React 额外自动导入 useI18n()。
+- 自动导入按未绑定的值引用注入，覆盖直接调用、函数传递和对象简写；局部 binding、属性名、类型位置与赋值目标不能触发注入。
 - 框架组件应通过 useI18n() 获得 t()，以订阅语言变化。顶层 t() 适合普通模块、事件和即时日志，不会建立组件订阅。
+- getLang() 与 getLangLoadState() 返回调用时快照。ESLint 提示模块顶层缓存和可确定的组件渲染读取；action、事件与普通函数可以按需读取，跨文件 store 数据流不做不可靠推断。
 
 ### 响应式翻译
 
@@ -76,7 +78,7 @@
 ### 推荐语法与 ESLint
 
 - 静态可提取与推荐写法是两个独立维度。Analyzer 尽量提取有限静态值；ESLint 负责报告动态参数、超出候选上限和不推荐的调用来源。
-- ESLint 提供初始化快照和未订阅渲染诊断，帮助发现语言切换后不会刷新的译文；这些规则只分析可可靠判断的当前文件直接调用，不承诺覆盖所有数据流。
+- ESLint 提供译文初始化快照、Runtime 状态快照和未订阅渲染诊断，帮助发现语言切换后不会刷新的值；这些规则只分析可可靠判断的当前文件直接调用，不承诺覆盖所有数据流。
 - 可选的冗余自动导入规则只依据显式配置的当前自动导入集合判断，不读取或猜测 Vite 配置。
 - Analyzer、ESLint 与 Vite 的开发者诊断使用同一语言策略。AI_I18N_DIAGNOSTIC_LOCALE 可固定为 zh-CN 或 en-US；auto 与未设置时按 Node 时区选择。
 
@@ -90,6 +92,12 @@
 
 - MCP 是本地 stdio 服务，不扫描 workspace、不执行 Vite 配置，也不在启动时接收项目路径。
 - Agent 必须先确认目标 Vite 应用，再结合启动目录、Vite root 与 directory 计算最终绝对 i18n 目录。monorepo 中每个 Vite build 独立处理。
+- MCP 的公开消息身份是 source 与可选静态 comment 组成的对象；内部编码后的 message ID
+  不暴露给调用方，source_file 也不参与写入身份。
+- 相同消息跨文件共享一份翻译。列表按消息聚合并返回完整 source_files；相同目标和值的批量
+  重复输入只执行一次，同一目标的不同值必须失败，不能由工具猜测。
+- 列表默认请求 100 条并允许提高到 500 条；响应大小保护只能减少完整记录数量，不能截断单条
+  或破坏游标推进。
 - MCP 只读取 extracted/ 以校验消息归属；翻译工具只修改 translations.json，人工工具只修改 overrides.json，不修改 extracted/ 或 locales/。
 - 工具名、字段和稳定错误码使用英文；Agent 按用户语言解释结果。每次调用只返回一份紧凑 JSON 文本。
 - Agent 的安全操作流程以 use-ai-i18n-mcp Skill 为准；Vite 接入流程以 integrate-ai-i18n Skill 为准。

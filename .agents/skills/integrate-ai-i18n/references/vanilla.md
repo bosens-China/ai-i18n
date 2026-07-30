@@ -20,6 +20,8 @@ window.addEventListener('pagehide', unsubscribe, { once: true })
 ```
 
 Vanilla mode does not update the DOM automatically. Subscribe and render again after language changes.
+`getLang()` and `getLangLoadState()` are call-time snapshots; keep the cleanup returned by
+`subscribe()` for every long-lived listener.
 Use `t(source)` for ordinary copy, a tagged template for dynamic values, and `comment` only when
 translation context matters:
 

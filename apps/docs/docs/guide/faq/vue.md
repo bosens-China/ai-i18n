@@ -49,6 +49,14 @@ Vue 适配器返回只读响应式值。模板会自动解包，`<script setup>`
 `currentLang.value`。`langs`、`langLoadState`、`isLangLoading` 与 `langLoadError` 采用相同
 规则。
 
+## Pinia 或普通 TS 文件能否直接使用语言 API？
+
+可以。Vue 模式的 `autoImport: true` 同时提供 `setLang()`、`getLang()`、`getLangs()`、
+`getLangLoadState()` 与 `subscribe()`。Pinia action、路由守卫和普通工具函数可以直接调用。
+
+`getLang()` 与 `getLangLoadState()` 返回调用时快照，不是 Ref。Store 要长期暴露响应式语言
+状态时，使用 `useI18n()` 返回的只读 Ref，或通过 `subscribe()` 同步并在销毁时取消订阅。
+
 ## `tRef()` 是否来自 `useI18n()`？
 
 不是。`tRef` 是 Vue 模式下由 `virtual:ai-i18n` 独立导出的 API：
