@@ -16,6 +16,7 @@ fs.writeFileSync(
   tsconfigPath,
   JSON.stringify({
     compilerOptions: { baseUrl: '.', paths: { '@/*': ['src/*'] } },
+    include: ['src/**/*.ts', 'src/**/*.vue'],
   }),
 );
 fs.writeFileSync(
@@ -23,6 +24,7 @@ fs.writeFileSync(
   [
     "export const SAVE = '保存'",
     "export const MESSAGES = { save: '保存', states: ['等待', '完成'] }",
+    "export const MARKED = defineI18nMessages({ save: '保存', states: ['等待', '完成'] })",
     'export const DYNAMIC = getText()',
   ].join('\n'),
 );
@@ -89,6 +91,10 @@ describe('ai-i18n/t-static-args', () => {
         code: "import { SAVE } from '@/texts'; import { t } from 'virtual:ai-i18n'; t(SAVE)",
         filename: path.join(sourceRoot, 'cross-file.ts'),
         options: [{ tsconfigPath }],
+      },
+      {
+        code: "import { MARKED } from '@/texts'; import { t } from 'virtual:ai-i18n'; t(MARKED.save); t(MARKED.states[index])",
+        filename: path.join(sourceRoot, 'auto-cross-file-macro.ts'),
       },
       {
         code: "import { t as translate } from './bridge'; translate('重导出')",
@@ -348,6 +354,21 @@ describe('ai-i18n/t-static-args', () => {
           "<template>{{ t('已保存') }}</template>",
         ].join('\n'),
         filename: path.join(sourceRoot, 'ImportedTypes.vue'),
+      },
+      {
+        code: [
+          '<script setup lang="ts">',
+          "import { MARKED, MESSAGES } from '@/texts'",
+          "import { useI18n } from 'virtual:ai-i18n'",
+          'const { t } = useI18n()',
+          '</script>',
+          '<template>',
+          '  <p>{{ t(MARKED.save) }}</p>',
+          '  <p>{{ t(MARKED.states[index]) }}</p>',
+          '  <p>{{ t(MESSAGES) }}</p>',
+          '</template>',
+        ].join('\n'),
+        filename: path.join(sourceRoot, 'ImportedMessages.vue'),
       },
       {
         code: "<template>{{ t('无需脚本') }}</template>",
