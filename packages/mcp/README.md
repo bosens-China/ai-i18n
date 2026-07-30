@@ -27,29 +27,53 @@ server 使用 stdio 通信，标准输出专用于 MCP 协议。
 ## 工具
 
 - `ai_i18n_list_translations`：默认直接列出 `translations.json` 中仍缺失的消息，也可返回
-  文件汇总或全部消息。首次调用省略 `source_files` 即可发现路径。
+  文件汇总或全部消息。首次调用省略 `source_files` 即可发现路径。相同 `source + comment`
+  无论出现在哪些文件都只返回一条，并在 `source_files` 中列出完整共享范围。
 - `ai_i18n_set_translations`：默认只填充 `null`；显式传
-  `overwrite_existing: true` 时允许覆盖非空译文。
+  `overwrite_existing: true` 时允许覆盖非空译文。写入目标使用列表返回的
+  `message: { source, comment? }`，调用方不接触内部 message ID。
 - `ai_i18n_clear_translations`：把指定译文重置为 `null`，不删除消息或 locale。
 - `ai_i18n_list_overrides`：逐 locale 列出 `overrides.json` 中的人工值，包括 orphan，并
   返回删除所需的 opaque `override_id`。
 - `ai_i18n_set_overrides`：添加或覆盖人工值；`default` scope 影响同一原文的全部调用，
-  `message` scope 只接受带 comment 的消息。
+  `message` scope 只接受带 comment 的消息；两种 scope 都使用公开 `message` 对象定位。
 - `ai_i18n_delete_overrides`：使用列表返回的 `override_id` 删除具体人工值。
 
-列表结果较大时继续按 `next_cursor` 分页。所有工具只返回一份紧凑 JSON
+列表默认请求 100 条，`limit` 可在 1 到 500 之间调整。响应仍会保护在约 100,000 个字符内，
+所以记录较大时实际 `count` 可能小于 `limit`；每条记录保持完整，继续按 `next_cursor`
+即可无遗漏翻页。所有工具只返回一份紧凑 JSON
 `TextContent`，不重复返回 `structuredContent`。工具名、字段名、描述和错误码使用英文，
 由 Agent 按用户语言解释。
+
+普通翻译更新示例：
+
+```json
+{
+  "i18n_directory": "/absolute/path/to/i18n",
+  "updates": [
+    {
+      "message": {
+        "source": "#pack",
+        "comment": "设备名称"
+      },
+      "locale": "en-US",
+      "value": "Pack"
+    }
+  ]
+}
+```
 
 ## 写入边界
 
 - 翻译工具只修改 `translations.json`；人工审校工具只修改 `overrides.json`。
 - MCP 不修改 `extracted/` 或 `locales/`。
 - 每批写入都取得跨进程锁，在锁内重读并校验最新文件，然后按字段原子更新。
-- 每批最多 100 个目标，重复目标或任一非法目标会使整批失败。
+- 每批最多 500 个输入。相同目标与相同值重复出现时只写一次并返回
+  `deduplicated_count`；同一目标出现不同值时整批以 `DUPLICATE_TARGET_CONFLICT` 失败。
+- `affected_file_count` 统计目标消息在应用中实际出现的源文件数量。写入一次即可影响
+  `source_files` 中的全部 occurrence。
 - 模板占位符必须保持一致，空字符串是合法译文。
 - Vite Dev 运行时会自动重建 locales；否则在下一次 `vite dev` 或 `vite build` 时同步。
 
-写入时若指定文件中没有对应 `message_id`，请重新调用
-`ai_i18n_list_translations`，并原样复制返回的 `source_file` 与 `message_id`；
-不要用 `source` 代替。
+写入时若 `message` 不再存在，请重新调用 `ai_i18n_list_translations`，并原样复制返回的
+`message` 对象。`source_files` 只用于展示共享范围和精确文件过滤，不是写入身份的一部分。

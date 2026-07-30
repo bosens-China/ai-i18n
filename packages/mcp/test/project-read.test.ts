@@ -9,6 +9,7 @@ import {
   addFixtureSourceFile,
   cleanupFixtures,
   fixture,
+  readFixtureMemory,
 } from './project-fixture';
 
 afterEach(cleanupFixtures);
@@ -64,9 +65,8 @@ test('lists missing messages by default and file summaries on request', async ()
     has_more: true,
   });
   expect(missing.items[0]).toMatchObject({
-    source_file: 'src/home.ts',
     source_files: ['src/home.ts'],
-    message_id: '保存',
+    message: { source: '保存' },
     translations: { 'en-US': null, 'ja-JP': '保存する' },
     missing_locales: ['en-US'],
   });
@@ -77,7 +77,7 @@ test('lists missing messages by default and file summaries on request', async ()
     cursor: missing.next_cursor,
   });
   expect(remaining.items[0]).toMatchObject({
-    message_id: '退出',
+    message: { source: '退出' },
     missing_locales: ['ja-JP'],
   });
 
@@ -121,6 +121,36 @@ test('lists missing messages by default and file summaries on request', async ()
     total_file_count: 2,
     items: [{ source_file: 'src/home.ts' }, { source_file: 'src/settings.ts' }],
   });
+
+  await addFixtureSourceFile(directory, 'src/shared.ts', {
+    id: '保存',
+    source: '保存',
+  });
+  const shared = await service.listTranslations({
+    i18n_directory: directory,
+    limit: 100,
+  });
+  expect(
+    shared.items.filter(
+      (item) => 'message' in item && item.message.source === '保存',
+    ),
+  ).toEqual([
+    expect.objectContaining({
+      message: { source: '保存' },
+      source_files: ['src/home.ts', 'src/shared.ts'],
+    }),
+  ]);
+  const sharedFromOneFile = await service.listTranslations({
+    i18n_directory: directory,
+    source_files: ['src/shared.ts'],
+    limit: 100,
+  });
+  expect(sharedFromOneFile.items).toEqual([
+    expect.objectContaining({
+      message: { source: '保存' },
+      source_files: ['src/home.ts', 'src/shared.ts'],
+    }),
+  ]);
 });
 
 test('lists default, message-scoped, and orphaned human overrides', async () => {
@@ -154,7 +184,7 @@ test('lists default, message-scoped, and orphaned human overrides', async () => 
     expect.arrayContaining([
       expect.objectContaining({
         scope: 'default',
-        source: '保存',
+        message: { source: '保存' },
         locale: 'en-US',
         value: 'Keep',
         source_files: ['src/home.ts'],
@@ -163,20 +193,56 @@ test('lists default, message-scoped, and orphaned human overrides', async () => 
       }),
       expect.objectContaining({
         scope: 'message',
-        source: '保存',
-        message_id: '保存#toolbar',
-        comment: 'toolbar',
+        message: { source: '保存', comment: 'toolbar' },
         locale: 'ja-JP',
         orphaned: false,
       }),
       expect.objectContaining({
-        source: '旧文案',
+        message: { source: '旧文案' },
         value: 'Legacy',
         source_files: [],
         orphaned: true,
       }),
     ]),
   );
+});
+
+test('keeps escaped internal message ids out of the public contract', async () => {
+  const root = await fixture();
+  const directory = path.join(root, 'apps/web/i18n');
+  await addFixtureMessage(directory, {
+    id: '\\#pack',
+    source: '#pack',
+  });
+  const service = new AiI18nProjectService();
+  const listed = await service.listTranslations({
+    i18n_directory: directory,
+    limit: 100,
+  });
+  const item = listed.items.find(
+    (candidate) =>
+      'message' in candidate && candidate.message.source === '#pack',
+  );
+  expect(item).toMatchObject({ message: { source: '#pack' } });
+  expect(item).not.toHaveProperty('message_id');
+
+  await expect(
+    service.setTranslations({
+      i18n_directory: directory,
+      updates: [
+        {
+          message: { source: '#pack' },
+          locale: 'en-US',
+          value: 'Pack',
+        },
+      ],
+    }),
+  ).resolves.toMatchObject({ added_count: 1 });
+  expect(
+    (await readFixtureMemory(directory)).messages['\\#pack']?.translations[
+      'en-US'
+    ],
+  ).toBe('Pack');
 });
 
 test('rejects invalid project paths, filters, and protocol files with codes', async () => {

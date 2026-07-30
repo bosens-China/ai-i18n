@@ -1,5 +1,5 @@
-import type { ExtractedFile } from '@ai-i18n/core';
-import { encodeOverrideId, overrideTargetKey } from './override-id.js';
+import { createMessageId, type ExtractedFile } from '@ai-i18n/core';
+import { encodeOverrideId } from './override-id.js';
 import { paginate } from './pagination.js';
 import {
   cacheMessage,
@@ -10,6 +10,7 @@ import {
   validateLocales,
   type LoadedProject,
 } from './project-files.js';
+import { messageReference } from './project-targets.js';
 import type {
   ListOverridesInput,
   ListTranslationsInput,
@@ -20,7 +21,7 @@ import type {
   TranslationListResult,
 } from './project.js';
 
-const RESPONSE_CHARACTER_LIMIT = 25_000;
+const RESPONSE_CHARACTER_LIMIT = 100_000;
 
 export async function listTranslations(
   input: ListTranslationsInput,
@@ -51,7 +52,7 @@ export async function listTranslations(
         )
       : paginate(
           items as TranslationItem[],
-          (item) => item.message_id,
+          translationItemKey,
           input.limit,
           input.cursor,
           RESPONSE_CHARACTER_LIMIT,
@@ -104,11 +105,14 @@ export async function listOverrides(
     const defaultFiles = [...(filesBySource.get(source) ?? [])].sort();
     for (const [locale, value] of Object.entries(override.default ?? {})) {
       appendOverride(items, {
-        scope: 'default',
-        source,
-        locale,
-        value,
-        source_files: defaultFiles,
+        target: { scope: 'default', source, locale },
+        item: {
+          scope: 'default',
+          message: { source },
+          locale,
+          value,
+          source_files: defaultFiles,
+        },
       });
     }
     for (const [messageId, translations] of Object.entries(
@@ -122,13 +126,22 @@ export async function listOverrides(
       ].sort();
       for (const [locale, value] of Object.entries(translations)) {
         appendOverride(items, {
-          scope: 'message',
-          source,
-          message_id: messageId,
-          ...(matching[0]?.comment ? { comment: matching[0].comment } : {}),
-          locale,
-          value,
-          source_files: sourceFiles,
+          target: {
+            scope: 'message',
+            source,
+            message_id: messageId,
+            locale,
+          },
+          item: {
+            scope: 'message',
+            message: {
+              source,
+              ...(matching[0]?.comment ? { comment: matching[0].comment } : {}),
+            },
+            locale,
+            value,
+            source_files: sourceFiles,
+          },
         });
       }
     }
@@ -212,19 +225,23 @@ function collectMessages(
   files: readonly ExtractedFile[],
   locales?: readonly string[],
 ): TranslationItem[] {
-  const occurrences = collectOccurrences(files);
+  const selectedFiles = new Set(files.map((file) => file.source));
+  const selectedMessageIds = new Set(
+    files.flatMap((file) => file.messages.map((message) => message.id)),
+  );
+  // 文件过滤只缩小消息集合；source_files 始终展示该消息在整个应用中的真实共享范围。
+  const occurrences = collectOccurrences(project.extracted);
   return [...occurrences.entries()]
-    .map(([messageId, matching]) => {
-      const selected = matching[0]!;
+    .filter(([messageId]) => selectedMessageIds.has(messageId))
+    .map(([, matching]) => {
+      const selected =
+        matching.find((item) => selectedFiles.has(item.file)) ?? matching[0]!;
       const message = cacheMessage(project, selected);
       const translations = filterTranslations(message.translations, locales);
       const sourceFiles = [...new Set(matching.map((item) => item.file))];
       return {
-        source_file: selected.file,
         source_files: sourceFiles,
-        message_id: messageId,
-        source: selected.source,
-        ...(selected.comment ? { comment: selected.comment } : {}),
+        message: messageReference(selected),
         translations,
         missing_locales: Object.entries(translations)
           .filter(([, value]) => value === null)
@@ -236,37 +253,33 @@ function collectMessages(
         ...(files.length === 1 ? { locations: selected.locations } : {}),
       } satisfies TranslationItem;
     })
-    .sort((left, right) =>
-      left.message_id < right.message_id
-        ? -1
-        : left.message_id > right.message_id
-          ? 1
-          : 0,
-    );
+    .sort((left, right) => {
+      const leftKey = translationItemKey(left);
+      const rightKey = translationItemKey(right);
+      return leftKey < rightKey ? -1 : leftKey > rightKey ? 1 : 0;
+    });
 }
 
 function appendOverride(
   items: OverrideItem[],
-  item: Omit<OverrideItem, 'override_id' | 'orphaned'>,
+  input: {
+    target: Parameters<typeof encodeOverrideId>[0];
+    item: Omit<OverrideItem, 'override_id' | 'orphaned'>;
+  },
 ): void {
-  const target = {
-    scope: item.scope,
-    source: item.source,
-    ...(item.message_id ? { message_id: item.message_id } : {}),
-    locale: item.locale,
-  };
   items.push({
-    override_id: encodeOverrideId(target),
-    ...item,
-    orphaned: item.source_files.length === 0,
+    override_id: encodeOverrideId(input.target),
+    ...input.item,
+    orphaned: input.item.source_files.length === 0,
   });
 }
 
 function overrideItemKey(item: OverrideItem): string {
-  return overrideTargetKey({
-    scope: item.scope,
-    source: item.source,
-    ...(item.message_id ? { message_id: item.message_id } : {}),
-    locale: item.locale,
+  return item.override_id;
+}
+
+function translationItemKey(item: TranslationItem): string {
+  return createMessageId(item.message.source, {
+    comment: item.message.comment,
   });
 }

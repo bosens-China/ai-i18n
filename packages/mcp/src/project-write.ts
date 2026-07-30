@@ -10,12 +10,15 @@ import {
   overrideTargetKey,
   type OverrideTarget,
 } from './override-id.js';
+import { loadProject, type LoadedProject } from './project-files.js';
 import {
-  cacheMessage,
-  findExtracted,
-  loadProject,
-  type LoadedProject,
-} from './project-files.js';
+  affectedFileCount,
+  deduplicateTargets,
+  resolveTargets,
+  sourceFilesForSource,
+  targetDetails,
+  type ResolvedTarget,
+} from './project-targets.js';
 import type {
   ClearResult,
   ClearTranslationsInput,
@@ -27,17 +30,15 @@ import type {
   TranslationTarget,
 } from './project.js';
 
-interface ResolvedTarget<T extends TranslationTarget> {
-  input: T;
-  message: ExtractedMessage;
-}
-
 export async function setTranslations(
   input: SetTranslationsInput,
 ): Promise<SetResult> {
   const project = await loadProject(input.i18n_directory);
-  const targets = resolveTargets(project, input.updates, (target) =>
-    [target.message_id, target.locale].join('\0'),
+  const resolved = resolveTargets(project, input.updates);
+  const { targets, deduplicatedCount } = deduplicateTargets(
+    resolved,
+    (target) => [target.message.id, target.input.locale].join('\0'),
+    (target) => target.input.value,
   );
   for (const target of targets) {
     if (!hasSameTemplateTokens(target.message.source, target.input.value)) {
@@ -96,15 +97,22 @@ export async function setTranslations(
       }
     },
   );
-  return setResult(input.updates, addedCount, overwrittenCount, unchangedCount);
+  return setResult(
+    targets,
+    addedCount,
+    overwrittenCount,
+    unchangedCount,
+    deduplicatedCount,
+  );
 }
 
 export async function clearTranslations(
   input: ClearTranslationsInput,
 ): Promise<ClearResult> {
   const project = await loadProject(input.i18n_directory);
-  const targets = resolveTargets(project, input.targets, (target) =>
-    [target.message_id, target.locale].join('\0'),
+  const { targets, deduplicatedCount } = deduplicateTargets(
+    resolveTargets(project, input.targets),
+    (target) => [target.message.id, target.input.locale].join('\0'),
   );
   let clearedCount = 0;
   let unchangedCount = 0;
@@ -129,7 +137,8 @@ export async function clearTranslations(
   return {
     cleared_count: clearedCount,
     unchanged_count: unchangedCount,
-    affected_file_count: affectedFileCount(input.targets),
+    deduplicated_count: deduplicatedCount,
+    affected_file_count: affectedFileCount(targets),
   };
 }
 
@@ -137,13 +146,26 @@ export async function setOverrides(
   input: SetOverridesInput,
 ): Promise<SetResult> {
   const project = await loadProject(input.i18n_directory);
-  const targets = resolveTargets(project, input.updates, (target, message) =>
-    overrideTargetKey({
-      scope: target.scope,
-      source: message.source,
-      ...(target.scope === 'message' ? { message_id: message.id } : {}),
-      locale: target.locale,
-    }),
+  const resolved = resolveTargets(project, input.updates).map((target) =>
+    target.input.scope === 'default'
+      ? {
+          ...target,
+          sourceFiles: sourceFilesForSource(project, target.message.source),
+        }
+      : target,
+  );
+  const { targets, deduplicatedCount } = deduplicateTargets(
+    resolved,
+    (target) =>
+      overrideTargetKey({
+        scope: target.input.scope,
+        source: target.message.source,
+        ...(target.input.scope === 'message'
+          ? { message_id: target.message.id }
+          : {}),
+        locale: target.input.locale,
+      }),
+    (target) => target.input.value,
   );
   for (const target of targets) {
     if (target.input.scope === 'message' && !target.message.comment) {
@@ -177,7 +199,13 @@ export async function setOverrides(
       }
     },
   );
-  return setResult(input.updates, addedCount, overwrittenCount, unchangedCount);
+  return setResult(
+    targets,
+    addedCount,
+    overwrittenCount,
+    unchangedCount,
+    deduplicatedCount,
+  );
 }
 
 export async function deleteOverrides(
@@ -211,35 +239,6 @@ export async function deleteOverrides(
     deleted_count: deletedCount,
     unchanged_count: unchangedCount,
   };
-}
-
-function resolveTargets<T extends TranslationTarget>(
-  project: LoadedProject,
-  inputs: readonly T[],
-  key: (input: T, message: ExtractedMessage) => string,
-): Array<ResolvedTarget<T>> {
-  const targets = inputs.map((input) => {
-    const file = findExtracted(project, input.source_file);
-    const message = file.messages.find((item) => item.id === input.message_id);
-    if (!message) {
-      fail('MESSAGE_NOT_FOUND', {
-        ...targetDetails(input),
-        next_tool: 'ai_i18n_list_translations',
-      });
-    }
-    const cached = cacheMessage(project, message);
-    if (!(input.locale in cached.translations)) {
-      fail('UNKNOWN_LOCALE', {
-        ...targetDetails(input),
-        available_locales: Object.keys(cached.translations),
-      });
-    }
-    return { input, message };
-  });
-  rejectDuplicateTargets(targets, (target) =>
-    key(target.input, target.message),
-  );
-  return targets;
 }
 
 function lockedTranslations(
@@ -299,27 +298,17 @@ function cleanupOverride(
 }
 
 function setResult(
-  updates: readonly TranslationTarget[],
+  targets: readonly ResolvedTarget<TranslationTarget>[],
   addedCount: number,
   overwrittenCount: number,
   unchangedCount: number,
+  deduplicatedCount: number,
 ): SetResult {
   return {
     added_count: addedCount,
     overwritten_count: overwrittenCount,
     unchanged_count: unchangedCount,
-    affected_file_count: affectedFileCount(updates),
-  };
-}
-
-function affectedFileCount(items: readonly TranslationTarget[]): number {
-  return new Set(items.map((item) => item.source_file)).size;
-}
-
-function targetDetails(target: TranslationTarget): Record<string, string> {
-  return {
-    source_file: target.source_file,
-    message_id: target.message_id,
-    locale: target.locale,
+    deduplicated_count: deduplicatedCount,
+    affected_file_count: affectedFileCount(targets),
   };
 }

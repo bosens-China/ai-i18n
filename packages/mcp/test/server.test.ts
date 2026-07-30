@@ -36,7 +36,15 @@ test('registers six focused tools without legacy mode or output schemas', async 
     expect(setTranslations?.inputSchema).toMatchObject({
       properties: {
         overwrite_existing: { default: false, type: 'boolean' },
-        updates: { maxItems: 100, minItems: 1, type: 'array' },
+        updates: { maxItems: 500, minItems: 1, type: 'array' },
+      },
+    });
+    const listTranslations = tools.tools.find(
+      (tool) => tool.name === 'ai_i18n_list_translations',
+    );
+    expect(listTranslations?.inputSchema).toMatchObject({
+      properties: {
+        limit: { default: 100, maximum: 500, minimum: 1, type: 'integer' },
       },
     });
     expect(setTranslations?.inputSchema.properties).not.toHaveProperty('mode');

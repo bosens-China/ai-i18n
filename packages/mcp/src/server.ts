@@ -18,15 +18,22 @@ const DirectorySchema = z
   );
 const SourceFileSchema = z.string().min(1).max(4_096);
 const LocaleSchema = z.string().min(1).max(128);
-const MessageIdSchema = z.string().min(1).max(16_384);
 const CursorSchema = z.string().min(1).max(4_096).optional();
 const SourceFilesSchema = z.array(SourceFileSchema).min(1).max(100).optional();
 const LocalesSchema = z.array(LocaleSchema).min(1).max(100).optional();
-const LimitSchema = z.number().int().min(1).max(200).default(50);
+const LimitSchema = z.number().int().min(1).max(500).default(100);
+const MessageReferenceSchema = z
+  .object({
+    source: z.string().min(1).max(100_000),
+    comment: z.string().trim().min(1).max(100_000).optional(),
+  })
+  .strict()
+  .describe(
+    'Public message identity. The same source and optional comment share one translation across every source file.',
+  );
 const TranslationTargetSchema = z
   .object({
-    source_file: SourceFileSchema,
-    message_id: MessageIdSchema,
+    message: MessageReferenceSchema,
     locale: LocaleSchema,
   })
   .strict();
@@ -53,7 +60,7 @@ export function createAiI18nMcpServer(): McpServer {
     {
       title: 'List translations',
       description:
-        'Inspect extracted source files and raw translations.json values. Omit source_files on the first call. view defaults to missing and returns writable message_id values; summary returns per-file counts; all returns every message. Follow next_cursor until has_more is false.',
+        'Inspect extracted source files and raw translations.json values. Omit source_files on the first call. view defaults to missing and returns one writable message object per shared source and comment; summary returns per-file counts; all returns every message. Follow next_cursor until has_more is false.',
       inputSchema: z
         .object({
           i18n_directory: DirectorySchema,
@@ -76,12 +83,12 @@ export function createAiI18nMcpServer(): McpServer {
     {
       title: 'Set translation values',
       description:
-        'Atomically update raw translations.json values across source files. Existing non-null values are protected unless overwrite_existing is true. Copy source_file and message_id exactly from the list tool.',
+        'Atomically update raw translations.json values by message source and optional comment. The same message is shared across every source file. Identical duplicate updates are applied once; different values for one target fail the batch. Existing non-null values are protected unless overwrite_existing is true.',
       inputSchema: z
         .object({
           i18n_directory: DirectorySchema,
           overwrite_existing: z.boolean().default(false),
-          updates: z.array(TranslationUpdateSchema).min(1).max(100),
+          updates: z.array(TranslationUpdateSchema).min(1).max(500),
         })
         .strict(),
       annotations: writeAnnotations,
@@ -94,11 +101,11 @@ export function createAiI18nMcpServer(): McpServer {
     {
       title: 'Clear translation values',
       description:
-        'Atomically reset selected translations.json values to null. It does not remove messages, locales, extracted files, or overrides.',
+        'Atomically reset selected translations.json values to null by message source and optional comment. Duplicate targets are cleared once. It does not remove messages, locales, extracted files, or overrides.',
       inputSchema: z
         .object({
           i18n_directory: DirectorySchema,
-          targets: z.array(TranslationTargetSchema).min(1).max(100),
+          targets: z.array(TranslationTargetSchema).min(1).max(500),
         })
         .strict(),
       annotations: writeAnnotations,
@@ -131,11 +138,11 @@ export function createAiI18nMcpServer(): McpServer {
     {
       title: 'Set human review overrides',
       description:
-        'Atomically add or overwrite overrides.json values. default scope affects every occurrence of the same source; message scope requires a comment-specific message. Copy source_file and message_id exactly from the translation list.',
+        'Atomically add or overwrite overrides.json values by message source and optional comment. default scope affects every occurrence of the same source; message scope requires a comment-specific message. Identical duplicate updates are applied once; different values for one target fail the batch.',
       inputSchema: z
         .object({
           i18n_directory: DirectorySchema,
-          updates: z.array(OverrideUpdateSchema).min(1).max(100),
+          updates: z.array(OverrideUpdateSchema).min(1).max(500),
         })
         .strict(),
       annotations: writeAnnotations,
@@ -152,7 +159,7 @@ export function createAiI18nMcpServer(): McpServer {
       inputSchema: z
         .object({
           i18n_directory: DirectorySchema,
-          override_ids: z.array(z.string().min(1).max(16_384)).min(1).max(100),
+          override_ids: z.array(z.string().min(1).max(16_384)).min(1).max(500),
         })
         .strict(),
       annotations: writeAnnotations,

@@ -10,6 +10,11 @@ import {
 export type TranslationView = 'summary' | 'missing' | 'all';
 export type OverrideScope = 'default' | 'message';
 
+export interface MessageReference {
+  source: string;
+  comment?: string;
+}
+
 export interface ListTranslationsInput {
   i18n_directory: string;
   source_files?: readonly string[];
@@ -28,11 +33,8 @@ export interface TranslationFileItem {
 }
 
 export interface TranslationItem {
-  source_file: string;
   source_files: string[];
-  message_id: string;
-  source: string;
-  comment?: string;
+  message: MessageReference;
   translations: Record<string, string | null>;
   missing_locales: string[];
   occurrence_count: number;
@@ -61,9 +63,7 @@ export interface ListOverridesInput {
 export interface OverrideItem {
   override_id: string;
   scope: OverrideScope;
-  source: string;
-  message_id?: string;
-  comment?: string;
+  message: MessageReference;
   locale: string;
   value: string;
   source_files: string[];
@@ -76,15 +76,13 @@ export interface OverrideListResult extends Page<OverrideItem> {
 }
 
 export interface TranslationUpdate {
-  source_file: string;
-  message_id: string;
+  message: MessageReference;
   locale: string;
   value: string;
 }
 
 export interface TranslationTarget {
-  source_file: string;
-  message_id: string;
+  message: MessageReference;
   locale: string;
 }
 
@@ -113,12 +111,14 @@ export interface SetResult {
   added_count: number;
   overwritten_count: number;
   unchanged_count: number;
+  deduplicated_count: number;
   affected_file_count: number;
 }
 
 export interface ClearResult {
   cleared_count: number;
   unchanged_count: number;
+  deduplicated_count: number;
   affected_file_count: number;
 }
 

@@ -115,7 +115,11 @@ export async function addFixtureSourceFile(
   message: { id: string; source: string; comment?: string },
 ): Promise<void> {
   await fs.writeFile(
-    path.join(directory, 'extracted/extra.json'),
+    path.join(
+      directory,
+      'extracted',
+      `extra-${Buffer.from(sourceFile).toString('base64url')}.json`,
+    ),
     JSON.stringify({
       version: 1,
       source: sourceFile,
