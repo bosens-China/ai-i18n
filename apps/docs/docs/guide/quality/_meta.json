@@ -6,6 +6,11 @@
   },
   {
     "type": "file",
+    "name": "eslint-rules",
+    "label": "ESLint 规则参考"
+  },
+  {
+    "type": "file",
     "name": "testing",
     "label": "测试（Vitest）"
   }

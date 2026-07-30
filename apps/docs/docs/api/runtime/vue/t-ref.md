@@ -107,4 +107,4 @@ const labels = tRef(messages);
 
 应在 setup 中创建一次，再把返回的 Ref 用于模板。对应生命周期问题由
 [`ai-i18n/no-unsubscribed-t`](/guide/quality/eslint#no-unsubscribed-t) 提示。静态提取规则见
-[Vue 静态分析](/guide/basic/static-analysis/vue)。
+[Vue 文案写法](/guide/basic/static-analysis/vue)。

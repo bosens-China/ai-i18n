@@ -58,5 +58,5 @@ Runtime 和声明文件生成。
 - [Vue 快速上手](/guide/getting-started/vue)
 - [React 快速上手](/guide/getting-started/react)
 - [Vanilla 快速上手](/guide/getting-started/vanilla)
-- [通用静态分析](/guide/basic/static-analysis/common)
-- [目录说明](/guide/basic/directory)
+- [通用文案写法](/guide/basic/static-analysis/common)
+- [生成文件与 Git](/guide/basic/directory)

@@ -1,10 +1,9 @@
 ---
-title: Vue 静态分析
-description: Vue SFC、useI18n()、tRef() 与模板表达式的提取和刷新规则
+title: Vue 文案写法
+description: 在 Vue SFC 中使用 useI18n() 和 tRef() 翻译并更新文案
 ---
 
-本页只介绍 Vue 特有规则。参数静态求值、文案树和宏的通用规则见
-[通用静态分析](./common)。
+本页只介绍 Vue 特有写法。参数、文案树和宏的通用规则见[通用文案写法](./common)。
 
 ## 支持的源码
 
@@ -60,21 +59,21 @@ const selectedLabel = tRef(messages.save);
 
 ## 提取与响应式刷新
 
-| 写法                                               | 提取 | 语言切换行为                          |
-| -------------------------------------------------- | ---- | ------------------------------------- |
-| `<script setup>` 中 `const label = t('保存')`      | 是   | setup 快照，不会自动更新              |
-| `setup()` 中 `const label = t('保存')`             | 是   | setup 快照，不会自动更新              |
-| setup 中 `const label = tRef('保存')`              | 是   | 返回 Ref，Runtime revision 变化后重算 |
-| setup 中 `const labels = tRef(messages)`           | 是   | 整棵文案树随 Runtime revision 重算    |
-| 模板或 render 使用 Runtime 顶层 `t`                | 是   | 不建立订阅，不会主动触发渲染          |
-| 模板或 render 使用 `useI18n()` 返回的 `t`          | 是   | 建立 Vue 订阅并刷新                   |
-| 模板或 render 中直接调用 `tRef()`                  | 是   | 每次渲染创建 computed，不支持该用法   |
-| 仅有 template 的裸 `t`，没有 `<script setup>` 绑定 | 否   | 不受支持，Vue 可能推迟到运行时报错    |
+| 写法                                               | 提取 | 语言切换行为                        |
+| -------------------------------------------------- | ---- | ----------------------------------- |
+| `<script setup>` 中 `const label = t('保存')`      | 是   | setup 快照，不会自动更新            |
+| `setup()` 中 `const label = t('保存')`             | 是   | setup 快照，不会自动更新            |
+| setup 中 `const label = tRef('保存')`              | 是   | 返回 Ref，语言切换时自动更新        |
+| setup 中 `const labels = tRef(messages)`           | 是   | 整棵文案树随语言切换更新            |
+| 模板或 render 使用顶层 `t`                         | 是   | 不建立订阅，不会主动触发渲染        |
+| 模板或 render 使用 `useI18n()` 返回的 `t`          | 是   | 建立 Vue 订阅并刷新                 |
+| 模板或 render 中直接调用 `tRef()`                  | 是   | 每次渲染创建 computed，不支持该用法 |
+| 仅有 template 的裸 `t`，没有 `<script setup>` 绑定 | 否   | 不受支持，Vue 可能推迟到运行时报错  |
 
 `ai-i18n/no-eager-translation` 检查初始化快照。
-`ai-i18n/no-unsubscribed-t` 检查模板与 render 中无订阅的 Runtime `t`，以及渲染期间调用
+`ai-i18n/no-unsubscribed-t` 检查模板与 render 中未订阅的顶层 `t`，以及渲染期间调用
 `tRef()` 的错误生命周期。`vue-auto-import` preset 还会拒绝没有 `<script setup>` 绑定的
 裸模板 `t`。
 
-事件回调和普通延迟函数可以继续使用顶层 `t`，因为它们会在调用时读取当前语言。规则不会追踪
-任意跨函数或跨文件数据流，完整边界见 [ESLint](/guide/quality/eslint)。
+事件回调和普通延迟函数可以继续使用顶层 `t`，因为它们会在调用时读取当前语言。完整规则见
+[ESLint](/guide/quality/eslint)。

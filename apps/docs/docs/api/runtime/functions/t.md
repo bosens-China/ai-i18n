@@ -64,8 +64,7 @@ getter 或其他运行时结果。
 需要成员级语境或动态索引时，改用
 [`defineI18nMessages()`](/api/runtime/macros/define-i18n-messages) 后逐项调用 `t()`。
 
-message ID 由 `source` 和去除首尾空白后的 `comment` 共同生成。没有 comment 时通常就是 source；
-有 comment 时可读形式类似 `提交#创建 Git 提交`。正文或 comment 中的 `#` 和 `\` 会自动转义。
+相同原文搭配不同的 `comment` 会作为不同语境分别翻译。没有 `comment` 时，同一原文默认共享译文。
 
 ## Tagged template
 
@@ -77,8 +76,6 @@ t`你好 ${user.name}，你有 ${unreadCount} 条消息`;
 
 表达式会变成 `{{0}}`、`{{1}}` 等占位符，不会交给翻译模型。译文可以调整占位符顺序，
 Runtime 会在展示前填入原始值。
-
-源码中原样出现的 `{{0}}` 会在内部协议中转义为 `{{=0}}`，最终仍显示为 `{{0}}`。
 
 Runtime 会比较源文与译文的占位符。译文缺少、多出或改变编号时，浏览器输出 warning，
 但仍继续使用该译文。
@@ -104,4 +101,4 @@ Vue setup 中需要预先声明响应式 label 时，使用 Vue-only
 [`tRef()`](/api/runtime/vue/t-ref)。`t()` 的字符串输入返回字符串，文案树输入
 返回翻译后的同形结构；两者都不会因为调用位置不同而变成 Ref。
 
-静态提取支持的表达式见[通用静态分析](/guide/basic/static-analysis/common)。
+支持的文案写法见[通用文案写法](/guide/basic/static-analysis/common)。

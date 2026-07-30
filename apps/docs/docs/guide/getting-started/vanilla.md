@@ -3,6 +3,11 @@ title: Vanilla 快速上手
 description: 在 Vite Vanilla TypeScript 项目中安装 ai-i18n 并完成首次翻译
 ---
 
+## 开始前
+
+ai-i18n 要求 Vite 8 或更高版本，并且当前只支持浏览器端应用。需要 SSR、按请求选择语言或避免首屏
+源码回退的项目，暂不适合接入当前版本。
+
 ## 创建项目
 
 下面以 pnpm 和 TypeScript 模板为例：
@@ -68,4 +73,4 @@ pnpm build
 ```
 
 Dev 只提取浏览器实际请求过的模块。首次接入后应执行一次完整 Build，确认入口可达源码均已
-提取。生成文件及 Git 提交规则见[目录说明](/guide/basic/directory)。
+提取。生成文件及 Git 提交规则见[生成文件与 Git](/guide/basic/directory)。

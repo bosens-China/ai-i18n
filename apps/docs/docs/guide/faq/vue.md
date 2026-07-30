@@ -32,7 +32,7 @@ ai-i18n 不猜测普通 UI 文本。把需要翻译的文本放入已绑定的 `
 </template>
 ```
 
-支持的静态表达式、文案树与限制见 [Vue 静态分析](/guide/basic/static-analysis/vue)。
+支持的静态表达式、文案树与限制见 [Vue 文案写法](/guide/basic/static-analysis/vue)。
 
 ## 为什么切换语言后组件没有刷新？
 

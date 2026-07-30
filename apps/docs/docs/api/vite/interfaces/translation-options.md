@@ -23,7 +23,7 @@ interface TranslationOptions {
 | --------- | -------- | ---- | ---------------------------- |
 | `comment` | `string` | 否   | 向翻译器说明文案的业务语境。 |
 
-`comment` 必须能在构建期静态求值。ai-i18n 会去除首尾空白，再用它参与 message ID 计算。
+`comment` 必须能在构建期确定。相同原文使用不同的 `comment` 时，可以分别得到对应语境的译文。
 
 ```ts
 t('保存', { comment: '按钮' });

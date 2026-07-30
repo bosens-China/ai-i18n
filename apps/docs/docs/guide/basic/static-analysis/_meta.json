@@ -2,16 +2,16 @@
   {
     "type": "file",
     "name": "common",
-    "label": "通用"
+    "label": "通用文案写法"
   },
   {
     "type": "file",
     "name": "vue",
-    "label": "Vue"
+    "label": "Vue 文案写法"
   },
   {
     "type": "file",
     "name": "react",
-    "label": "React"
+    "label": "React 文案写法"
   }
 ]

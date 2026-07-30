@@ -1,59 +1,32 @@
 ---
 title: AI 翻译
-description: 选择 Agent + MCP 或 OpenAI-compatible Provider 完成翻译
+description: 使用 OpenAI-compatible Provider 自动补齐缺失译文
 ---
 
 import { PackageManagerTabs } from '@rspress/core/theme';
 
-## 选择翻译方式
+ai-i18n 提供两种补译方式：
 
-ai-i18n 提供两种 AI 翻译方式：
+| 方式                                    | 适用场景                                         |
+| --------------------------------------- | ------------------------------------------------ |
+| OpenAI Provider                         | 希望在 Vite 开发或构建时自动补齐缺失译文。       |
+| [Agent + MCP](/guide/advanced/ai-tools) | 希望由 AI 编码工具在明确指令下检查、补译和审校。 |
 
-| 方式            | 适用场景                                     | 需要的能力                            |
-| --------------- | -------------------------------------------- | ------------------------------------- |
-| OpenAI Provider | 在 Vite Dev 或 Build 期间自动补齐缺失翻译    | 安装 `@ai-i18n/openai`                |
-| Agent + MCP     | 由 AI 编码工具按指令检查、补齐并验证缺失翻译 | 为 Agent 配置 `@ai-i18n/mcp` 和 Skill |
+本页介绍 OpenAI-compatible Provider。未配置 Provider 时，ai-i18n 仍会提取文案和生成语言包；
+缺失译文会显示源码文案。
 
-两种方式任选其一即可。希望插件自动完成翻译时，使用 OpenAI Provider；希望由 Agent 在明确
-指令下补译时，参阅[接入 Agent](/guide/advanced/ai-tools)。
-
-:::tip 本页介绍 OpenAI Provider
-未配置 `provider` 时，ai-i18n 仍会完成提取、Runtime 和协议文件维护，目标语言的缺失值
-保持为 `null`，可以留给 Agent + MCP 补齐。Vite Dev 会在终端汇总当前已访问模块中的
-未翻译数量；因为 Dev 只分析浏览器实际请求过的模块，这不是全项目覆盖率。
-:::
-
-## 安装 Provider
+## 安装
 
 <PackageManagerTabs command="add @ai-i18n/openai@alpha" />
 
 :::warning Alpha 阶段
-预发布期间请显式安装 `@alpha`；npm `latest` 不代表当前推荐的 alpha 版本。
+预发布期间请显式安装 `@alpha`。`npm` 的 `latest` 标签不代表当前推荐的 alpha 版本。
 :::
 
-`@ai-i18n/openai` 借助 LangChain `ChatOpenAI` 连接符合 OpenAI-compatible 的 API 接口。它提供完整的超时、重试与链路追踪机制，但它不会替你选择具体的供应商或模型。
+## 最小配置
 
-## 必填与可选配置
-
-你可以通过传入配置给 `openAI()` 来灵活调整调用行为：
-
-| 字段           | 是否必填 | 默认值         | 作用与建议                                                                                                  |
-| -------------- | -------- | -------------- | ----------------------------------------------------------------------------------------------------------- |
-| `baseURL`      | 是       | 无             | 明确写到供应商的 OpenAI-compatible `/v1` 地址。                                                             |
-| `model`        | 是       | 无             | 显式选择的模型名，建议通过环境变量选择避免写死。                                                            |
-| `apiKey`       | 否       | 本地占位值     | 远程服务通常需要；本地无认证服务可省略。注意避免硬编码。                                                    |
-| `systemPrompt` | 否       | 内置翻译提示词 | 覆盖翻译目标、术语与风格约束。产品有固定术语时强烈建议编写。                                                |
-| `temperature`  | 否       | `1`            | 先使用默认值；需要更稳定的措辞时再降低。                                                                    |
-| `maxTokens`    | 否       | 由模型决定     | 单次响应 token 上限，只有供应商限制或批次响应截断时再设置。                                                 |
-| `timeoutMs`    | 否       | `120_000`      | 单次请求超时时间（毫秒）。网络较慢或本地模型较慢时适当调高。                                                |
-| `maxRetries`   | 否       | `3`            | LangChain 层的最大重试次数。遇到限流时结合供应商策略调整。                                                  |
-| `headers`      | 否       | 无             | 追加到 Provider 请求的 HTTP Header，仅用于部分供应商要求。                                                  |
-| `langSmith`    | 否       | 不启用         | 传入 `{ apiKey, project?, endpoint?, workspaceId? }` 后自动启用 LangSmith tracing，便于排查大模型输出质量。 |
-
-## 推荐配置
-
-Vite 配置在 Node 进程中执行。下面使用 `loadEnv()` 读取不带 `VITE_` 前缀的服务端变量，
-避免把大模型 API 密钥暴露给最终发到浏览器的代码中：
+Provider 在 Vite 的 Node.js 进程中运行。将密钥保留在服务端配置中，不要使用 `VITE_` 前缀，也不要
+在浏览器业务代码中导入 Provider。
 
 ```ts
 // vite.config.ts
@@ -67,35 +40,27 @@ function required(value: string | undefined, name: string): string {
 }
 
 export default defineConfig(({ mode }) => {
-  const env = loadEnv(mode, process.cwd(), 'AI_'); // 只读取 Vite Node 侧的 AI_ 变量
+  const env = loadEnv(mode, process.cwd(), 'AI_');
 
   return {
     plugins: [
       aiI18n({
-        sourceLang: 'zh-CN', // 源码中直接书写的文案语言
-        // value 是语言标识，label 是语言选择器中的展示名称。
+        sourceLang: 'zh-CN',
         locales: [
           { value: 'zh-CN', label: '中文' },
           { value: 'en-US', label: 'English' },
         ],
         provider: {
-          // 在 Dev/Build 中自动补齐缺失翻译
-          // openAI() 把 OpenAI-compatible 服务适配为 ai-i18n Translator。
           translator: openAI({
-            baseURL: required(env.AI_BASE_URL, 'AI_BASE_URL'), // API 根地址
-            model: required(env.AI_MODEL, 'AI_MODEL'), // 显式使用的模型名
-            apiKey: env.AI_API_KEY, // 只留在 Vite Node 进程中的认证密钥
-            // 覆盖产品语气、术语与不可翻译内容；Provider 会追加输入输出约束。
+            baseURL: required(env.AI_BASE_URL, 'AI_BASE_URL'),
+            model: required(env.AI_MODEL, 'AI_MODEL'),
+            apiKey: env.AI_API_KEY,
             systemPrompt: `
 你负责翻译面向开发者的 Web 产品界面。
 - 使用自然、简洁的目标语言，按钮优先使用动词。
-- ai-i18n、Vite、Vue、React 等产品名保持不变。
-- 保留代码、URL、变量名和占位符的原始写法。
-- 结合 comment 判断文案语境；没有 comment 时采用最常见的 UI 含义。
-- 术语约定：构建 = build，工作区 = workspace，自动导入 = auto import。
+- 保留 ai-i18n、Vite、Vue、React、代码、URL、变量名和占位符。
+- 结合 comment 判断文案语境。
             `.trim(),
-            // 如果需要追踪翻译质量，可以配置 langSmith:
-            // langSmith: { apiKey: env.AI_LANGSMITH_API_KEY, project: 'ai-i18n-docs' }
           }),
         },
       }),
@@ -107,164 +72,37 @@ export default defineConfig(({ mode }) => {
 `.env.local` 示例：
 
 ```dotenv
-# OpenAI-compatible API 根地址
 AI_BASE_URL=https://example.com/v1
-# 显式使用的模型名
 AI_MODEL=model-name
-# 可选认证密钥；无认证的本地服务可省略
 AI_API_KEY=replace-me
-# 可选：启用 LangSmith tracing
-# AI_LANGSMITH_API_KEY=xxx
 ```
 
-:::warning
-不要给密钥添加 `VITE_` 前缀，也不要在客户端源码中导入 Provider。
-:::
+本地无认证模型可以省略 `AI_API_KEY`。
 
-## 多语言请求里会发送什么
+## 编写翻译提示词
 
-Vite 先按“缺失目标 locale 集合”分组，再把同组消息交给 Translator。例如两条中文都缺少
-英文和日文，它们同属 `{ en-US, ja-JP }` 组，`@ai-i18n/openai` 会用一次模型调用处理，
-模型收到的用户内容是：
+提示词只需说明产品语境、语气和固定术语。推荐使用短规则：
 
-```json
-[{ "source": "查询" }, { "source": "查询", "comment": "按钮" }]
-```
+- 说明产品面向谁，例如开发者工具、消费应用或后台系统；
+- 规定按钮、错误提示和帮助文案的语言风格；
+- 列出必须保持不变的品牌名、代码、URL 和占位符；
+- 列出团队已确认的术语；
+- 要求优先参考 `comment` 消除歧义。
 
-每项都包含 `source`，并可包含 `comment`。模型只翻译 `source`；`comment` 只帮助模型理解
-业务语境，不应出现在译文中。正文和注释使用独立字段，因此正文中的 `#` 不会被误判为
-注释。目标语言和返回约束在系统提示中说明，返回结构为：
+不要在提示词中放入 API 密钥、内部地址或会频繁变化的业务信息。文案本身的具体语境应写在
+`t(source, { comment })` 中。
 
-```json
-{
-  "translations": [
-    { "en-US": "Search", "ja-JP": "検索" },
-    { "en-US": "Search", "ja-JP": "検索" }
-  ]
-}
-```
+## 验证结果与失败处理
 
-`translations` 的下标与输入下标固定对应，各语言键是同一行的译文。Provider 使用
-OpenAI-compatible JSON mode 保证返回合法 JSON，再按内部 Schema 严格校验结构；模型
-不需要看到 `messageId`、文件路径或源码位置。Vite 私下保留这些路由信息，并按下标和
-locale 写回缓存。
+Provider 只补齐缺失译文。翻译失败时，页面继续显示源码文案，不会阻塞本地开发。提交前运行一次完整
+Build，并检查关键页面和固定术语。
 
-如果已有缓存译文的消息只缺日文，而新消息同时缺少英文和日文，Vite 会拆成
-`{ ja-JP }` 与 `{ en-US, ja-JP }` 两组。前一组不会重复生成英文；同组消息仍会合并，并按
-`batchLength` 拆批。某组请求失败只会让该组保持 `null`，其他组的成功译文仍会保存。
+需要让 CI 在翻译请求失败或仍有缺失译文时停止构建，可以设置 `provider.strict: true`。批次大小、
+重试、并发和超时等高级选项见 [`AiI18nProviderOptions`](/api/vite/type-aliases/ai-i18n-provider-options)。
 
-## 如何编写 `systemPrompt`
+## 使用其他模型服务
 
-`systemPrompt` 只需要描述翻译要求。Provider 内部会在末尾追加目标语言、
-`source` / `comment` 输入约定和固定的 JSON 输出约束，**不要在自定义提示词中重复定义
-返回 JSON 的格式字段**。
+只要服务兼容 OpenAI API，就可以修改 `baseURL` 和 `model` 使用它。若需要接入其他 SDK，请实现
+[`Translator`](/api/vite/type-aliases/translator)。该 API 说明了输入、输出和错误处理约束。
 
-推荐把提示词写成短规则，而不是长篇角色设定。每条规则只约束一件事。
-
-### 建议包含
-
-1. **产品与读者**：说明是开发者工具、消费应用还是后台系统。
-2. **语气与长度**：例如“按钮使用动词”“错误信息说明原因和处理方式”。
-3. **固定术语**：列出团队已经确认的术语映射。
-4. **保留内容**：品牌名、代码、URL、变量名和占位符不翻译。
-5. **消歧方式**：要求优先使用请求中的 `comment`。
-
-### 不需要包含
-
-- JSON 字段、Schema 或返回示例；
-- API key、内部地址或其他秘密。
-- 与翻译无关的通用模型行为说明。
-- 每次都会变化的业务上下文；这类信息更适合放在 `t(source, { comment })` 的 `comment` 中。
-
-建议把提示词保存在 Vite 配置可导入的独立常量中，并纳入代码评审。术语发生变化时只修改一处。
-
-## 调度策略
-
-`provider` 配置除了接收上述 `openAI` 返回的 Translator 外，还能调整并发与调度：
-
-- Dev 模式默认防抖 `100` 毫秒，且不会阻塞首次模块响应。
-- 默认会拼出长字符串进行批量翻译（`batchLength: 12_000` 字符，不是 token 数）。
-- 最多允许 `5` 个批次并发处理（`maxConcurrency`）。
-- Build 模式会在结束前挂起等待必要翻译批次完成。
-
-```ts
-aiI18n({
-  sourceLang: 'zh-CN', // 源码文案使用的语言
-  locales, // 复用项目的完整语言列表
-  provider: {
-    // 调整自动翻译的批次、并发与失败策略
-    translator, // 实际执行翻译的函数
-    debounceMs: 100, // Dev 中合并连续缺译请求的等待时间，单位为毫秒
-    batchLength: 12_000, // 单批序列化字符上限，不是 token 数
-    maxConcurrency: 5, // 同时执行的最大翻译批次数
-    strict: false, // false 时失败只警告；true 时 Build/flush 会抛错
-  },
-});
-```
-
-如果希望 CI 在翻译请求失败或仍有 `null` 时中断 Build，请将 `provider.strict` 设为
-`true`。
-
-## 自定义 Translator
-
-如果不使用 OpenAI-compatible 接口，可以实现 `@ai-i18n/vite` 导出的 `Translator`。输入只有
-本批共同缺失的 `locales` 与 `messages[{ source, comment? }]`；返回数组与 messages 下标
-对应，每行必须且只能包含这些 locale。
-
-下面是使用 Google 官方 `@google/genai` SDK 接入 Gemini 的最小示例：
-
-<PackageManagerTabs command="add @google/genai" />
-
-```ts
-import type { Translator } from '@ai-i18n/vite';
-import { GoogleGenAI } from '@google/genai';
-
-const ai = new GoogleGenAI({
-  apiKey: process.env.GEMINI_API_KEY!, // 仅存在于 Vite Node 环境
-});
-
-const translator: Translator = async ({ locales, messages }) => {
-  const properties = Object.fromEntries(
-    locales.map((locale) => [
-      locale,
-      { anyOf: [{ type: 'string' }, { type: 'null' }] },
-    ]),
-  );
-  const response = await ai.models.generateContent({
-    model: process.env.GEMINI_MODEL!, // Gemini 模型名
-    contents: JSON.stringify(messages), // 本批 source/comment 输入，顺序必须保留
-    config: {
-      // 告诉模型翻译目标、comment 用法与占位符约束。
-      systemInstruction: [
-        `把输入 source 翻译为：${locales.join('、')}。`,
-        'comment 只用于理解语境，不得出现在译文中。',
-        '按输入下标返回结果，不要翻译 {{0}}、{{=0}} 等占位符。',
-      ].join('\n'),
-      responseMimeType: 'application/json', // 强制返回可解析 JSON
-      responseJsonSchema: {
-        type: 'array', // 返回数组与输入 messages 按下标对应
-        minItems: messages.length, // 不允许遗漏输入行
-        maxItems: messages.length, // 不允许增加额外行
-        items: {
-          type: 'object', // 每行是 locale → 译文/null 的对象
-          properties, // 只声明本批共同缺失的 locales
-          required: locales, // 每个目标 locale 都必须返回
-          additionalProperties: false, // 拒绝本批之外的语言字段
-        },
-      },
-    },
-  });
-  if (!response.text) throw new Error('Gemini returned no JSON text');
-  return JSON.parse(response.text);
-};
-
-aiI18n({
-  sourceLang: 'zh-CN', // 源码文案使用的语言
-  locales, // 项目支持的完整语言列表
-  provider: { translator }, // 注册自定义 Translator
-});
-```
-
-这里不需要构造或返回 message ID；Vite 会验证行数、locale 字段、值类型和模板占位符。
-无法可靠翻译时返回 `null`，不要用原文伪装成已翻译结果。API key 仍应只存在于 Vite 的
-Node 配置环境中。
+人工确认译文、处理同一句话的不同语境，以及提交规则见[补译与审校](/guide/basic/translations)。

@@ -77,7 +77,7 @@ Vite Dev 只分析浏览器实际请求到的模块。懒路由尚未访问时�
 
 可以通过 [AI 翻译](/guide/advanced/ai-translation)配置 Provider，也可以通过
 [接入 Agent](/guide/advanced/ai-tools)补齐缺失翻译。协议文件职责见
-[目录说明](/guide/basic/directory)。
+[生成文件与 Git](/guide/basic/directory)。
 
 ## 为什么按需加载语言包时切换失败？
 

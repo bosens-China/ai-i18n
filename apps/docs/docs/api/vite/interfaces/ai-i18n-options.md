@@ -106,5 +106,5 @@ interface AiI18nOptions {
 
 - [`aiI18n()`](/api/vite/functions/ai-i18n)
 - [语言分包与按需加载](/guide/basic/locale-loading)
-- [目录说明](/guide/basic/directory)
+- [生成文件与 Git](/guide/basic/directory)
 - [ESLint](/guide/quality/eslint)

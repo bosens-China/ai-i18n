@@ -112,4 +112,4 @@ async function switchLanguage() {
 ```
 
 建议在 `<script setup>` 或 `setup()` 中调用。静态提取规则见
-[Vue 静态分析](/guide/basic/static-analysis/vue)。
+[Vue 文案写法](/guide/basic/static-analysis/vue)。

@@ -1,91 +1,51 @@
 ---
-title: 接入 Agent
-description: 为你的项目配置 Agent Skills、MCP 服务器与文档索引，实现自动化补译
+title: 使用 Agent 补译
+description: 为 AI 编码工具配置 Skills 和 MCP，按项目语境补齐缺失译文
 ---
 
 import { Prompt } from '@rspress/core/theme';
 
-Agent + MCP 是 ai-i18n 提供的两种 AI 翻译方式之一，适合由 AI 编码工具在明确指令下检查、
-补齐并验证翻译。如果希望 Vite Dev 或 Build 自动调用模型补译，请改用
-[OpenAI Provider](/guide/advanced/ai-translation)。
+Agent + MCP 适合希望在明确指令下补译、审校和验证翻译的团队。如果希望开发或构建期间自动调用模型，
+请使用 [AI 翻译](/guide/advanced/ai-translation)。
 
-把 ai-i18n 接到 AI 编码工具时，可以通过三种途径增强 Agent 的能力：
+开始前，请先在目标 Vite 应用中完成 ai-i18n 接入，并运行一次完整 `vite build`。这样 Agent 才能读取
+当前应用的文案清单。
 
-1. **文档索引（llms.txt）**：提供机器友好的官方指南，让 Agent 自己查阅高级配置。
-2. **Skills**：安装任务指令集，告诉 Agent 如何按安全流程调用工具补译。
-3. **MCP（Model Context Protocol）**：为各类 AI 编码工具提供安全读取和写入翻译文件的底层能力。
+## 安装 Skills
 
-## 文档索引（llms.txt）
-
-当你希望 Agent 深入理解插件的高级用法、配置项或错误处理时，可以在任务对话中提供本站的
-文档索引：
-
-`https://bosens-china.github.io/ai-i18n/llms.txt`
-
-文档站点基于 Rspress 构建，并开启 SSG-MD。根路径同时提供纯 Markdown 索引和全量内容
-`llms-full.txt`，Agent 可以从索引继续读取对应的教程与 API 页面。
-
-## Skills
-
-你可以在宿主环境（终端或项目库）安装 `@ai-i18n` 提供的标准指令。
-
-在仓库根目录执行：
+推荐在项目根目录安装 ai-i18n 提供的 Skills：
 
 ```sh
 npx skills add bosens-China/ai-i18n --skill use-ai-i18n-mcp integrate-ai-i18n -y
 ```
 
-安装后，Skill 会保存在 `.agents/skills/` 中。在之后的对话中，可以直接告诉 Agent：
-“使用 `use-ai-i18n-mcp` 补译缺失的语言”或“使用 `integrate-ai-i18n` 指导项目接入”。
+安装后，你可以直接让 Agent 执行以下任务：
 
-`integrate-ai-i18n` 内置“主题 → 官方文档页面”索引。常见配置直接保存在 Skill 本地文件中；
-遇到完整选项表或边界情况时，Agent 会读取上方文档索引中的 Markdown 页面。
+- “使用 `integrate-ai-i18n` 检查这个 Vite 应用的接入。”
+- “使用 `use-ai-i18n-mcp` 补齐缺失的英文翻译，不要覆盖已有译文。”
 
-## 统一 Skills 目录（可选）
+Skills 会引导 Agent 选择正确的 Vite 应用，并区分自动译文与人工审校结果。
 
-不同 AI 编码工具使用的配置目录并不相同。通用 Agent Skills 通常位于 `.agents/skills/`，
-并使用 `AGENTS.md`；Claude Code 则使用 `.claude/` 与 `CLAUDE.md`。如果项目需要同时兼容
-两种目录，或者要迁移已有的 Claude Code 配置，可以使用
-[Skillink](https://github.com/bosens-China/skillink) 管理同步关系。
+## 注册 MCP 服务器
 
-```sh
-npx @boses/skillink
-```
-
-Skillink 首次运行时会自动检测现有配置。项目已有 `.agents` 或 `AGENTS.md` 时，可以将其
-同步为 Claude Code 所需的目录和文件；旧项目只有 `.claude` 或 `CLAUDE.md` 时，也可以反向
-识别并同步到通用 Agent 配置。执行前可先预览变更：
-
-```sh
-npx @boses/skillink --dry-run
-```
-
-默认的软链接模式适合在本地维护单一数据源；需要提交同步后的真实文件，或团队包含 Windows
-环境时，可以选择复制模式。Skillink 只负责同步 Agent 配置与 Skills，不替代下面的 MCP
-服务器注册。
-
-## MCP
-
-Agent 补译依赖 `@ai-i18n/mcp` 暴露的底层写入能力。需要在所使用的 AI IDE 或 CLI 工具中
-注册这个 MCP 服务器。
-
-不同的工具注册方式略有不同：
+在所使用的 AI 编码工具中注册 `@ai-i18n/mcp`。以下配置以当前 alpha 版本为例：
 
 ### Codex
 
-在 `~/.codex/config.toml` 中加入，或者写到项目的 `.codex/config.toml` 中：
+在 `~/.codex/config.toml` 或项目的 `.codex/config.toml` 中加入：
 
 ```toml
 [mcp_servers.ai_i18n]
-command = "npx" # 启动 MCP 服务器的命令
-args = ["-y", "@ai-i18n/mcp@alpha"] # 自动下载并运行当前 alpha 版本
+command = "npx"
+args = ["-y", "@ai-i18n/mcp@alpha"]
 ```
 
-或者在 Codex 桌面端 **Settings → MCP servers → Add server → STDIO** 中填写相同的 `command` 与 `args`。
+也可以在 Codex 桌面端依次打开 **Settings → MCP servers → Add server → STDIO**，填写相同的
+`command` 和 `args`。
 
 ### Cursor
 
-创建项目级 `.cursor/mcp.json`，或者写到全局的 `~/.cursor/mcp.json`：
+在项目的 `.cursor/mcp.json` 或全局 `~/.cursor/mcp.json` 中加入：
 
 ```json
 {
@@ -100,84 +60,35 @@ args = ["-y", "@ai-i18n/mcp@alpha"] # 自动下载并运行当前 alpha 版本
 
 ### Claude Code
 
-推荐注册为 local server，避免把绝对路径提交：
-
 ```sh
 claude mcp add --transport stdio --scope local ai-i18n -- npx -y @ai-i18n/mcp@alpha
 ```
 
-### Antigravity
+其他支持 MCP 的工具也可使用同样的 `npx -y @ai-i18n/mcp@alpha` 命令注册 STDIO 服务器。
 
-创建项目级 `.agents/mcp_config.json`：
+## 推荐提示词
 
-```json
-{
-  "mcpServers": {
-    "ai-i18n": {
-      "command": "npx",
-      "args": ["-y", "@ai-i18n/mcp@alpha"]
-    }
-  }
-}
-```
-
-### MCP 能力与边界
-
-接入后，Agent 会获得六个查询、设置与删除工具。注册命令不需要项目路径，MCP 也不会扫描 workspace
-猜测项目。Agent 必须先确认目标 Vite 应用，读取其启动脚本和 `vite.config.*`，再把 Vite
-`root` 与 `aiI18n({ directory })`（默认 `i18n`）解析成最终绝对
-`i18n_directory`。在 monorepo 中，每个 Vite build 分开处理；目标应用不明确时应先询问，
-不能把仓库根目录或第一个同名目录直接当作结果。
-
-工具收到目录后会校验绝对路径、目录是否存在，并要求合法的 `translations.json`、
-`overrides.json` 与 `extracted/`。`extracted/` 是不提交 Git 的本地 Build 产物。首次使用、
-目录缺失或为空，或者切换分支和修改提取相关配置后，请先运行目标应用的一次完整 Vite
-Build，不要改为全仓库扫描。Dev 只包含浏览器实际请求过的模块。
-
-每次调用只返回一份紧凑 JSON 文本，避免同一结果以文本与 `structuredContent` 重复占用
-Agent 上下文；结果较大时继续按 `next_cursor` 分页。工具名、字段与错误码使用英文，由
-Agent 按当前对话语言解释。
-
-六个工具各自只做一类操作：
-
-- `ai_i18n_list_translations`：首次省略 `source_files` 即可发现文件并直接读取缺失消息；
-  也可用 `view: "summary"` 查看文件统计，或用 `view: "all"` 读取全部消息。
-- `ai_i18n_set_translations` / `ai_i18n_clear_translations`：设置或清空
-  `translations.json` 的具体字段。
-- `ai_i18n_list_overrides` / `ai_i18n_set_overrides` /
-  `ai_i18n_delete_overrides`：查询、upsert 或删除 `overrides.json` 的人工值。
-
-**安全运作边界：**
-
-1. **分开 AI 与人工结果**：翻译设置/清空只写 `translations.json`；人工设置/删除只写
-   `overrides.json`。MCP 不修改 extracted 或 locales。
-2. **锁内重读与字段更新**：每批写入都取得跨进程锁并重读最新文件。普通补译默认只填充
-   `null`，显式 `overwrite_existing: true` 才允许覆盖。人工设置始终是 upsert；
-   `scope: "default"` 影响同一原文的全部调用，`scope: "message"` 只影响带 comment 的
-   目标消息。
-3. **自动校准与同步**：Vite Dev 运行时会自动重建 locales；否则在下一次
-   `vite dev` 或 `vite build` 时完成。
-4. **消息不存在时重新读取**：MCP 只报告指定 `message_id` 在该文件中不存在，不推断原因。
-   重新调用 `ai_i18n_list_translations` 并原样复制返回的 `source_file` 与
-   `message_id`；不要用 `source` 字段代替。
-
-## 最佳补译流程示例
-
-完成上述接入后，你可以把下面的提示词发给 Agent。Agent 会通过 Skill 中的指引调用 MCP 完成任务：
+完成配置后，将下面的提示发给 Agent：
 
 <Prompt
   eyebrow="给 Agent"
   title="批量补齐缺失翻译"
-  description="复制后发送给 Agent，按 MCP 安全流程补译。"
+  description="复制后发送给 Agent。"
   defaultCollapsed={false}
   prompt={`使用 use-ai-i18n-mcp：
-1. 先确认目标 Vite 应用，读取其 package script 与 vite.config.*；根据命令工作目录、
-   Vite root 和 aiI18n.directory（默认 i18n）算出最终绝对 i18n_directory，不扫描仓库；
-2. 首次使用、extracted 缺失或为空，或者切换分支和修改提取相关配置后，先运行该应用的
-   一次完整 Vite Build；若列表没有 source file，也 Build 后重试一次；
-3. 按原文语义和项目现有术语补齐目标语言；
-4. 普通补译使用 ai_i18n_set_translations 的默认保护，只写入 null；不要覆盖非空值。
-   只有我明确要求审校修订时才使用 ai_i18n_set_overrides，并确认 scope 是 default
-   （同一原文全部调用）还是 message（一个带 comment 的消息）；
-5. 再次查询并报告剩余缺失项。`}
+1. 确认目标 Vite 应用，并在需要时先运行一次完整 Build；
+2. 按原文语义和项目已有术语补齐缺失的英文翻译；
+3. 不要覆盖已有自动译文；
+4. 需要人工确认的文案写入人工审校结果，并说明影响范围；
+5. 再次检查剩余缺失项并汇报。`}
 />
+
+## 使用边界
+
+- Agent 补译默认保留已有译文。需要修改已确认的措辞时，请明确说明“审校”或“覆盖”。
+- 在 monorepo 中，请说明目标应用名称或目录，避免 Agent 处理错误的 Vite 应用。
+- Agent 工作期间不要并行手动修改同一份译文文件；完成后再进行人工审校。
+- 生成文件和提交规则见[生成文件与 Git](/guide/basic/directory)。
+
+MCP 提供读取、补译和人工审校所需的工具。具体工具字段属于 Agent 接入契约，通常不需要由
+应用开发者手动调用。

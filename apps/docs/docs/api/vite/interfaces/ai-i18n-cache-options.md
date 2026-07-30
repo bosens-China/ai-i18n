@@ -33,4 +33,5 @@ Translation Memory。现有 extracted 或 ProjectState 引用的消息属于活�
 活动数据自身超限时，插件会保留数据并输出 warning，因此这些字段是保护数据安全的软上限。
 `cleanup.orphanMessages: true` 会先删除全部非活跃消息。
 
-目录维护建议见[目录说明](/guide/basic/directory#目录维护清理策略与容量限制)。
+文件提交规则见[生成文件与 Git](/guide/basic/directory)。容量限制与清理策略仅在需要控制历史
+译文规模时再配置。

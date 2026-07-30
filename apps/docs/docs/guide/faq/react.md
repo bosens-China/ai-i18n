@@ -16,7 +16,7 @@ function SaveButton() {
 }
 ```
 
-支持的静态表达式、文案树与限制见 [React 静态分析](/guide/basic/static-analysis/react)。
+支持的静态表达式、文案树与限制见 [React 文案写法](/guide/basic/static-analysis/react)。
 
 ## 为什么切换语言后组件没有刷新？
 

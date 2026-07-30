@@ -100,4 +100,4 @@ React 适配器使用 `useSyncExternalStore` 订阅 Runtime revision。revision 
 导入 Runtime 顶层 `t` 没有这个订阅边界；`"use memo"` 或 `"use no memo"` 都不能替代
 `useI18n()`。
 
-静态提取规则见 [React 静态分析](/guide/basic/static-analysis/react)。
+文案写法见 [React 文案写法](/guide/basic/static-analysis/react)。

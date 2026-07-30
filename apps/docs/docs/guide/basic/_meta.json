@@ -2,7 +2,7 @@
   {
     "type": "dir",
     "name": "static-analysis",
-    "label": "静态分析范围"
+    "label": "可翻译文案"
   },
   {
     "type": "file",
@@ -17,6 +17,11 @@
   {
     "type": "file",
     "name": "directory",
-    "label": "目录说明"
+    "label": "生成文件与 Git"
+  },
+  {
+    "type": "file",
+    "name": "translations",
+    "label": "补译与审校"
   }
 ]

@@ -3,6 +3,11 @@ title: Vue 快速上手
 description: 从 create-vite 创建 Vue 3 项目，并完成 ai-i18n 配置、翻译与 Build 验证
 ---
 
+## 开始前
+
+ai-i18n 要求 Vite 8 或更高版本，并且当前只支持浏览器端应用。需要 SSR、按请求选择语言或避免首屏
+源码回退的项目，暂不适合接入当前版本。
+
 ## 创建项目
 
 下面以 pnpm 和 Vite 的 `vue-ts` 模板为例：
@@ -102,7 +107,7 @@ i18n/locales/
 ```
 
 应提交前三类声明或权威译文文件，忽略可重新生成的 `extracted/` 与 `locales/`。完整规则见
-[目录说明](/guide/basic/directory)。
+[生成文件与 Git](/guide/basic/directory)。
 
 ## 接入 UI 组件库
 

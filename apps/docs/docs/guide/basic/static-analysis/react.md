@@ -1,10 +1,9 @@
 ---
-title: React 静态分析
-description: React JSX、useI18n() 返回的 t 与组件刷新规则
+title: React 文案写法
+description: 在 React 组件中使用 useI18n() 翻译并响应语言切换
 ---
 
-本页只介绍 React 特有规则。参数静态求值、文案树和宏的通用规则见
-[通用静态分析](./common)。
+本页只介绍 React 特有写法。参数、文案树和宏的通用规则见[通用文案写法](./common)。
 
 ## 支持的源码
 
@@ -50,15 +49,14 @@ useI18n().t('保存'); // 不支持链式调用
 
 ## 提取与组件刷新
 
-| 写法                                        | 提取 | 语言切换行为                 |
-| ------------------------------------------- | ---- | ---------------------------- |
-| 组件渲染使用 Runtime 顶层 `t`               | 是   | 不建立订阅，不会主动重新渲染 |
-| 组件渲染使用 `useI18n()` 返回的 `t`         | 是   | 建立 React 订阅并重新渲染    |
-| 事件回调或普通延迟函数使用 Runtime 顶层 `t` | 是   | 调用时读取当前语言           |
+| 写法                                | 提取 | 语言切换行为                 |
+| ----------------------------------- | ---- | ---------------------------- |
+| 组件渲染使用顶层 `t`                | 是   | 不建立订阅，不会主动重新渲染 |
+| 组件渲染使用 `useI18n()` 返回的 `t` | 是   | 建立 React 订阅并重新渲染    |
+| 事件回调或普通延迟函数使用顶层 `t`  | 是   | 调用时读取当前语言           |
 
-React 适配器使用 `useSyncExternalStore` 订阅 Runtime revision。revision 改变时，Hook 返回的
-`t` 会获得新的函数引用，依赖该引用的缓存可以正确失效。`"use memo"` 或 `"use no memo"`
-不能替代 `useI18n()` 的订阅边界。
+`useI18n()` 会订阅语言变化，因此无需额外处理 React Compiler 或缓存。无论是否启用 React Compiler，
+组件渲染都应使用 Hook 返回的 `t`。
 
-`ai-i18n/no-unsubscribed-t` 会检查 JSX / TSX 渲染路径中的无订阅 Runtime `t`。规则不会追踪
-任意跨函数或跨文件数据流，完整边界见 [ESLint](/guide/quality/eslint)。
+`ai-i18n/no-unsubscribed-t` 会检查 JSX / TSX 渲染路径中未订阅的顶层 `t`。完整规则见
+[ESLint](/guide/quality/eslint)。
