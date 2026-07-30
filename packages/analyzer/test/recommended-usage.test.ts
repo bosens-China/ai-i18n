@@ -30,6 +30,49 @@ tRef({ cancel: '取消', metadata: { count: 2, enabled: true } })`,
     expect(validateRecommendedUsage(module)).toEqual([]);
   });
 
+  it('accepts Vue compiler unref wrappers around imported messages', () => {
+    const analyzer = new Analyzer({
+      resolve(specifier) {
+        if (specifier === AI_I18N_VIRTUAL_MODULE_ID) return specifier;
+        return specifier === './messages' ? '/messages.ts' : null;
+      },
+    });
+    analyzer.addFile(
+      AI_I18N_VIRTUAL_MODULE_ID,
+      'export function t(source) { return source }',
+    );
+    analyzer.addFile(
+      '/messages.ts',
+      `export const marked = defineI18nMessages({
+  save: '保存',
+  states: ['等待中', '已完成'],
+})
+export const tree = { cancel: '取消' }`,
+    );
+    const module = analyzer.addFile(
+      '/App.vue',
+      `import { unref as _unref } from 'vue'
+import { t } from 'virtual:ai-i18n'
+import { marked, tree } from './messages'
+t(_unref(marked).save)
+t(_unref(marked).states[index])
+t(_unref(tree))`,
+      { lang: 'ts' },
+    );
+    analyzer.link();
+
+    expect(extractMessages(module)).toMatchObject({
+      messages: [
+        { source: '保存' },
+        { source: '等待中' },
+        { source: '已完成' },
+        { source: '取消' },
+      ],
+      warnings: [],
+    });
+    expect(validateRecommendedUsage(module)).toEqual([]);
+  });
+
   it('keeps extraction tolerant while reporting non-recommended syntax', () => {
     const module = analyzeModule(
       `import { t } from 'virtual:ai-i18n'

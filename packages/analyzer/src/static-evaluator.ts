@@ -380,7 +380,7 @@ export function isDefineI18nMessagesCall(
   );
 }
 
-function isVueUnrefCall(
+export function isVueUnrefCall(
   node: NodeOfType<'CallExpression'>,
   module: Module,
 ): boolean {

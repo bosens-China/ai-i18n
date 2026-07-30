@@ -10,6 +10,7 @@ import {
   evaluateTranslationInput,
   isDefineI18nMessagesCall,
 } from './static-values.js';
+import { isVueUnrefCall } from './static-evaluator.js';
 
 type Node = NodeOfType<NodeType>;
 
@@ -68,6 +69,12 @@ export function recommendedArgumentIssue(
         recommendedArgumentIssue(node.consequent, module, new Set(seen)) ??
         recommendedArgumentIssue(node.alternate, module, new Set(seen))
       );
+    case 'CallExpression':
+      return isVueUnrefCall(node, module) &&
+        node.arguments.length === 1 &&
+        node.arguments[0]?.type !== 'SpreadElement'
+        ? recommendedArgumentIssue(node.arguments[0], module, seen)
+        : unsupportedArgumentIssue();
     case 'ArrayExpression':
     case 'ObjectExpression': {
       const input = evaluateTranslationInput(node, module);
@@ -114,14 +121,18 @@ export function recommendedArgumentIssue(
         : null;
     }
     default:
-      return {
-        code: 'non-recommended-argument',
-        message: diagnosticMessage(
-          '请使用字符串字面量、静态 const、条件表达式或 defineI18nMessages() 成员。',
-          'Use a string literal, static const, conditional expression, or defineI18nMessages() member.',
-        ),
-      };
+      return unsupportedArgumentIssue();
   }
+}
+
+function unsupportedArgumentIssue() {
+  return {
+    code: 'non-recommended-argument' as const,
+    message: diagnosticMessage(
+      '请使用字符串字面量、静态 const、条件表达式或 defineI18nMessages() 成员。',
+      'Use a string literal, static const, conditional expression, or defineI18nMessages() member.',
+    ),
+  };
 }
 
 function isStaticCollectionMember(
@@ -141,6 +152,14 @@ function isStaticCollection(
   }
   if (node.type === 'MemberExpression') {
     return isStaticCollection(node.object, module, seen);
+  }
+  if (
+    node.type === 'CallExpression' &&
+    isVueUnrefCall(node, module) &&
+    node.arguments.length === 1 &&
+    node.arguments[0]?.type !== 'SpreadElement'
+  ) {
+    return isStaticCollection(node.arguments[0], module, seen);
   }
   if (
     node.type === 'ParenthesizedExpression' ||
@@ -232,6 +251,14 @@ function findMacroRoot(
     isDefineI18nMessagesCall(node, module)
   ) {
     return { node, module };
+  }
+  if (
+    node.type === 'CallExpression' &&
+    isVueUnrefCall(node, module) &&
+    node.arguments.length === 1 &&
+    node.arguments[0]?.type !== 'SpreadElement'
+  ) {
+    return findMacroRoot(node.arguments[0], module, seen);
   }
   if (
     node.type === 'MemberExpression' ||
