@@ -34,9 +34,8 @@ React plugins is unsupported even when `framework` is set.
 
 ## Runtime imports and declarations
 
-`autoImport` defaults to `false`. Keep explicit imports unless the user explicitly requests automatic
-imports. ai-i18n writes `src/ai-i18n.d.ts` by default; keep it in the TypeScript project or configure
-an included `dts` path.
+Keep explicit imports. ai-i18n writes `src/ai-i18n.d.ts` by default; keep it in the TypeScript project
+or configure an included `dts` path.
 
 ```ts
 import { getLangs, setLang, t } from 'virtual:ai-i18n'
@@ -46,31 +45,16 @@ import { useI18n } from 'virtual:ai-i18n'
 import { tRef } from 'virtual:ai-i18n'
 ```
 
-With `autoImport: true`, every mode injects `t`, `setLang`, `getLang`, `getLangs`,
-`getLangLoadState`, and `subscribe`. Vue additionally injects `useI18n` and `tRef`; React additionally
-injects `useI18n`. Plain `.js` and `.ts` files inherit the containing build's framework mode.
-
-Automatic imports do not add framework reactivity. `getLang()` and `getLangLoadState()` return
-call-time snapshots; rendered Vue and React state should come from `useI18n()`.
-
 The `locales` array must be non-empty, have unique `value` fields, and include `sourceLang`. Omit
 `defaultLang` when it is the same as `sourceLang`.
 
-## Read more only when needed
+## Generated output and Build
 
-Fetch the matching Markdown page from the published docs for details not covered by this Skill:
+Run a full Vite Build after integration. Dev processes only modules requested by the browser, while a
+full Build processes the target entry's reachable module graph. The Build creates or refreshes:
 
-| Need | Page |
-| --- | --- |
-| Full plugin options | `https://bosens-china.github.io/ai-i18n/api/vite/interfaces/ai-i18n-options.md` |
-| Writing translatable copy | `https://bosens-china.github.io/ai-i18n/guide/basic/static-analysis/common.md` |
-| Vue or React copy patterns | `https://bosens-china.github.io/ai-i18n/guide/basic/static-analysis/vue.md` or `https://bosens-china.github.io/ai-i18n/guide/basic/static-analysis/react.md` |
-| Generated files, Git, and full Build | `https://bosens-china.github.io/ai-i18n/guide/basic/directory.md` |
-| Translation and human review | `https://bosens-china.github.io/ai-i18n/guide/basic/translations.md` |
-| Automatic translation | `https://bosens-china.github.io/ai-i18n/guide/advanced/ai-translation.md` |
-| Agent + MCP translation | `https://bosens-china.github.io/ai-i18n/guide/advanced/ai-tools.md` |
-| Automatic imports or language loading | `https://bosens-china.github.io/ai-i18n/guide/basic/auto-import.md` or `https://bosens-china.github.io/ai-i18n/guide/basic/locale-loading.md` |
-| ESLint, testing, or troubleshooting | `https://bosens-china.github.io/ai-i18n/guide/quality/eslint.md`, `https://bosens-china.github.io/ai-i18n/guide/quality/testing.md`, or `https://bosens-china.github.io/ai-i18n/guide/faq/common.md` |
+- the configured declaration file;
+- `translations.json` and `overrides.json`;
+- the rebuildable `extracted/` and `locales/` output.
 
-If a published page conflicts with the installed package or this local Skill, trust the installed
-package and local Skill. The deployed site can lag an unreleased repository change.
+Do not edit `extracted/` or `locales/` manually.

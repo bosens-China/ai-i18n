@@ -30,71 +30,32 @@ app's full Vite Build before the first MCP use when `extracted/` is missing or e
 after switching branches or changing source or extraction configuration when the local result may be
 stale. Prefer Build over Dev because Dev covers only browser-requested modules.
 
-## List missing translations
+Keep the resolved i18n directory's `extracted/` and `locales/` subdirectories in `.gitignore`. For
+complete generated-file and Git guidance, read
+[Generated files and Git](https://bosens-china.github.io/ai-i18n/guide/basic/directory.md).
 
-Start with `ai_i18n_list_translations` and pass only `i18n_directory`. Its default `view: "missing"`
-discovers source files and returns writable missing entries.
+## Load the tool contract
 
-- Follow `next_cursor` until `has_more` is false, unless the user asked for a sample.
-- Use `message.source` as the translation input and `message.comment` as author context.
-- Use `missing_locales` as the default set of target locales.
-- Copy the complete `message` object into write tools. Internal message IDs are not part of the MCP
-  contract.
-- Treat `source_files` as the complete shared occurrence range. One message update affects every
-  listed file.
-- Use `view: "summary"` for progress counts and `view: "all"` only when the task requires existing
-  values.
-- Lists request 100 records by default and accept `limit` up to 500. A size-limited page may contain
-  fewer records; complete it by following `next_cursor`.
+Read [Tool contracts](references/tool-contracts.md) before the first MCP call. It defines message
+identity, pagination, the six tool boundaries, batch behavior, and human review scopes.
 
-If the first list returns no source files, run one full Build for the same app and retry once. If the
-retry remains empty, report that the target build has no extracted messages; do not scan sibling apps.
+Read [Error recovery](references/recovery.md) only when a tool is unavailable, protocol files are
+missing or stale, or an MCP call returns an error.
 
-## Update automatic translations
+## Execute the workflow
 
-Use `ai_i18n_set_translations` for ordinary translation work. A batch may contain at most 500 inputs.
-Each update needs `message: { source, comment? }`, `locale`, and `value`.
+1. List missing translations with only the resolved `i18n_directory` on the first call.
+2. Follow every page unless the user requested a sample or narrower scope.
+3. Write ordinary translations without overwriting existing non-null values.
+4. Clear automatic translations or change human review values only when the user explicitly requests
+   or approves that action.
+5. Repeat the matching list operation to verify the result.
 
-- Leave `overwrite_existing` unset or false unless the user explicitly asks to replace an existing
-  automatic translation.
-- Identical repeated targets and values are applied once and reported through `deduplicated_count`.
-  Different values for one message and locale fail the whole batch.
-- Preserve product names, intentional whitespace, and every template token. Empty strings are valid
-  translations.
-- Use `ai_i18n_clear_translations` only when the user asks to reset specific automatic translations.
-  It sets the selected fields to `null` and does not remove messages or human reviews.
+Preserve product names, intentional whitespace, and every template token. Do not guess between
+conflicting non-empty values.
 
-## Manage human review
+## Report
 
-Human decisions belong in `overrides.json`, not `translations.json`.
-
-Use `ai_i18n_set_overrides` only when the user explicitly requests or approves human review wording:
-
-- `scope: "default"` affects every occurrence of the same source text.
-- `scope: "message"` affects one listed message and requires a non-empty static comment.
-- Setting an override is an upsert and may replace an existing human value.
-
-To remove a human value, first call `ai_i18n_list_overrides`, then pass the returned opaque
-`override_id` to `ai_i18n_delete_overrides`. Do not construct override IDs.
-
-## Verify and recover
-
-After automatic translation updates, repeat `ai_i18n_list_translations` with the same source and
-locale scope. After human-review changes, repeat `ai_i18n_list_overrides`. Report added, overwritten,
-cleared or deleted, unchanged, remaining, and failed counts.
-
-| Error | Recovery |
-| --- | --- |
-| `I18N_DIRECTORY_NOT_FOUND` or `I18N_DIRECTORY_NOT_ABSOLUTE` | Recompute Vite root plus `aiI18n.directory`, then use an absolute path. |
-| `REQUIRED_PROTOCOL_FILE_MISSING` or `REQUIRED_PROTOCOL_DIRECTORY_MISSING` | Run one full Build for the same app and retry once. |
-| `SOURCE_FILE_NOT_FOUND` | Correct an exact `source_files` list filter using paths returned by the list tool. |
-| `MESSAGE_NOT_FOUND` | List again and copy the exact returned `message` object. |
-| `DUPLICATE_TARGET_CONFLICT` | Choose one value for the repeated message and locale, then retry the batch. |
-| `TRANSLATION_CONFLICT` | Re-list current values. Set `overwrite_existing: true` only with explicit user approval. |
-| `TEMPLATE_TOKEN_MISMATCH` | Preserve every template token before retrying. |
-| `MESSAGE_SCOPE_REQUIRES_COMMENT` | Use message scope only for a listed message with a static comment. |
-| `UNKNOWN_LOCALE` | Use locale values from `aiI18n({ locales })`, not display labels. |
-| `INVALID_CURSOR` or `INVALID_OVERRIDE_ID` | Restart the corresponding list and copy the returned value exactly. |
-
-If MCP tools are unavailable, explain that `@ai-i18n/mcp` must be registered locally. Do not silently
-replace this workflow with broad source-tree editing.
+Report the selected app and absolute i18n directory, added, overwritten, cleared or deleted, unchanged,
+remaining, and failed counts. Explain unresolved errors in the user's language without exposing
+internal message IDs.

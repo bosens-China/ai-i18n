@@ -19,22 +19,4 @@ console.log(getLangs())
 window.addEventListener('pagehide', unsubscribe, { once: true })
 ```
 
-Vanilla mode does not update the DOM automatically. Subscribe and render again after language changes.
-`getLang()` and `getLangLoadState()` are call-time snapshots; keep the cleanup returned by
-`subscribe()` for every long-lived listener.
-Use `t(source)` for ordinary copy, a tagged template for dynamic values, and `comment` only when
-translation context matters:
-
-```ts
-t('保存', { comment: '工具栏按钮' })
-t`已加入 ${name}`
-```
-
-Evaluate `t()` at render or event time. Do not keep `const label = t('保存')` as a module-level
-snapshot. A static message-only object or array can be passed directly to `t(messages)`; use
-`defineI18nMessages()` only when selecting a member or finite dynamic index.
-
-For explicit imports, use `configs.recommended` from `@ai-i18n/eslint-plugin`. With
-`autoImport: true`, use `configs['vanilla-auto-import']`.
-
 For a complete example, fetch `https://bosens-china.github.io/ai-i18n/guide/getting-started/vanilla.md`.
