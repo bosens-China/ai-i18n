@@ -1,5 +1,14 @@
 # @ai-i18n/vite
 
+## [1.0.0-alpha.10](https://github.com/bosens-China/ai-i18n/compare/vite-v1.0.0-alpha.9...vite-v1.0.0-alpha.10) (2026-07-30)
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @ai-i18n/analyzer bumped to 1.0.0-alpha.8
+
 ## [1.0.0-alpha.9](https://github.com/bosens-China/ai-i18n/compare/vite-v1.0.0-alpha.8...vite-v1.0.0-alpha.9) (2026-07-29)
 
 

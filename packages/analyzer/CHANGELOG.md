@@ -1,5 +1,12 @@
 # @ai-i18n/analyzer
 
+## [1.0.0-alpha.8](https://github.com/bosens-China/ai-i18n/compare/analyzer-v1.0.0-alpha.7...analyzer-v1.0.0-alpha.8) (2026-07-30)
+
+
+### Bug Fixes
+
+* **analyzer:** 支持 Vue 编译器 unref 文案引用 ([de1d574](https://github.com/bosens-China/ai-i18n/commit/de1d57428f7a37563b8bf013db3ff97902458536))
+
 ## [1.0.0-alpha.7](https://github.com/bosens-China/ai-i18n/compare/analyzer-v1.0.0-alpha.6...analyzer-v1.0.0-alpha.7) (2026-07-29)
 
 
