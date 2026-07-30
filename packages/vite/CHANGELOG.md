@@ -1,5 +1,19 @@
 # @ai-i18n/vite
 
+## [1.0.0-alpha.11](https://github.com/bosens-China/ai-i18n/compare/vite-v1.0.0-alpha.10...vite-v1.0.0-alpha.11) (2026-07-30)
+
+
+### Features
+
+* **vite:** auto-import Runtime APIs in framework modes ([36bac00](https://github.com/bosens-China/ai-i18n/commit/36bac0025f5a145e4af3f32f5dc03fcea5f647c0))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @ai-i18n/analyzer bumped to 1.0.0-alpha.9
+
 ## [1.0.0-alpha.10](https://github.com/bosens-China/ai-i18n/compare/vite-v1.0.0-alpha.9...vite-v1.0.0-alpha.10) (2026-07-30)
 
 

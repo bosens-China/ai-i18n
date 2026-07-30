@@ -1,5 +1,12 @@
 # @ai-i18n/mcp
 
+## [1.0.0-alpha.9](https://github.com/bosens-China/ai-i18n/compare/mcp-v1.0.0-alpha.8...mcp-v1.0.0-alpha.9) (2026-07-30)
+
+
+### Features
+
+* **mcp:** use public message references ([d81ae8a](https://github.com/bosens-China/ai-i18n/commit/d81ae8a17a6d1943d927eb0948aeb53996df8d58))
+
 ## [1.0.0-alpha.8](https://github.com/bosens-China/ai-i18n/compare/mcp-v1.0.0-alpha.7...mcp-v1.0.0-alpha.8) (2026-07-29)
 
 
