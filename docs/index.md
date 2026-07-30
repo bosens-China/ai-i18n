@@ -1,57 +1,25 @@
 # 内部文档索引
 
-面向 Agent / 维护者。先读本文件，再按需打开下列文档。
-用户文档见 `apps/docs`（Rspress）。
+面向 Agent 与维护者。先读本文件，再按任务打开对应的现行文档。
 
-Phase 1–6 均为历史非规范记录，仅用于追溯需求、实现与验收，不作为当前实现依据。当前契约以
-`apps/docs`、[Phase 7 PRD](./phase-7/PRD.md)、[Phase 8 PRD](./phase-8/PRD.md)、
-[Phase 9 PRD](./phase-9/PRD.md)、[Phase 10 PRD](./phase-10/PRD.md) 和
-[Phase 11 PRD](./phase-11/PRD.md)、[Phase 12 PRD](./phase-12/PRD.md)、
-[Phase 13 PRD](./phase-13/PRD.md)、
-[MCP PRD](./mcp/PRD.md) 为准。
+## 权威顺序
 
-- [phase-1/PRD.md](./phase-1/PRD.md) — Phase 1 初始产品规格历史记录
-- [phase-1/TODO.md](./phase-1/TODO.md) — Phase 1 任务清单
-- [phase-1/ACCEPTANCE.md](./phase-1/ACCEPTANCE.md) — Phase 1 验收证据
-- [phase-1/YUKU-SPIKE.md](./phase-1/YUKU-SPIKE.md) — Yuku 历史准入 Spike（现有回归已并入 Analyzer）
-- [phase-2/PRD.md](./phase-2/PRD.md) — Phase 2 增量构建、按需语言与有界缓存规格
-- [phase-2/TODO.md](./phase-2/TODO.md) — Phase 2 任务清单
-- [phase-2/SPIKES.md](./phase-2/SPIKES.md) — Phase 2 Vite Watch / Locale 资产 Spike
-- [phase-2/ACCEPTANCE.md](./phase-2/ACCEPTANCE.md) — Phase 2 验收证据
-- [phase-3/PRD.md](./phase-3/PRD.md) — Phase 3 早期持久化协议与 React 响应式修复历史记录（现行协议见 Phase 7）
-- [phase-3/TODO.md](./phase-3/TODO.md) — Phase 3 交付清单
-- [phase-3/ACCEPTANCE.md](./phase-3/ACCEPTANCE.md) — Phase 3 验收证据
-- [phase-4/PRD.md](./phase-4/PRD.md) — Phase 4 DropRoom 实接反馈与 Runtime / Vite 改进历史记录
-- [phase-4/TODO.md](./phase-4/TODO.md) — Phase 4 交付清单
-- [phase-4/ACCEPTANCE.md](./phase-4/ACCEPTANCE.md) — Phase 4 验收证据
-- [phase-5/PRD.md](./phase-5/PRD.md) — Phase 5 Windows 文件 IO 与 Build 写放大历史记录（现行事务写入见 Phase 7）
-- [phase-5/TODO.md](./phase-5/TODO.md) — Phase 5 交付清单
-- [phase-5/ACCEPTANCE.md](./phase-5/ACCEPTANCE.md) — Phase 5 验收证据
-- [phase-6/PRD.md](./phase-6/PRD.md) — 静态消息集合宏、宽松提取与推荐语法规格
-- [phase-6/TODO.md](./phase-6/TODO.md) — Phase 6 交付清单
-- [phase-6/ACCEPTANCE.md](./phase-6/ACCEPTANCE.md) — Phase 6 验收证据
-- [phase-7/PRD.md](./phase-7/PRD.md) — 并发安全 AI Memory、显式消息元数据、comment 级人工覆盖与单层 extracted 协议
-- [phase-7/TODO.md](./phase-7/TODO.md) — Phase 7 交付清单
-- [phase-7/ACCEPTANCE.md](./phase-7/ACCEPTANCE.md) — Phase 7 验收证据
-- [phase-8/PRD.md](./phase-8/PRD.md) — Analyzer、ESLint 与 Vite 开发者诊断中英文切换规格
-- [phase-8/TODO.md](./phase-8/TODO.md) — Phase 8 交付清单
-- [phase-8/ACCEPTANCE.md](./phase-8/ACCEPTANCE.md) — Phase 8 验收证据
-- [phase-9/PRD.md](./phase-9/PRD.md) — Vue query 边界、自动导入 preset 与语言加载状态规格
-- [phase-9/TODO.md](./phase-9/TODO.md) — Phase 9 交付清单
-- [phase-9/ACCEPTANCE.md](./phase-9/ACCEPTANCE.md) — Phase 9 验收证据
-- [phase-10/PRD.md](./phase-10/PRD.md) — 翻译生命周期、组件订阅、autoImport 冗余导入与 ESLint preset 诊断规格
-- [phase-10/TODO.md](./phase-10/TODO.md) — Phase 10 交付清单
-- [phase-10/ACCEPTANCE.md](./phase-10/ACCEPTANCE.md) — Phase 10 验收证据
-- [phase-11/PRD.md](./phase-11/PRD.md) — Vue setup 响应式翻译语法糖 `tRef()` 规格
-- [phase-11/TODO.md](./phase-11/TODO.md) — Phase 11 交付清单
-- [phase-11/ACCEPTANCE.md](./phase-11/ACCEPTANCE.md) — Phase 11 验收证据
-- [phase-12/PRD.md](./phase-12/PRD.md) — `t()` / Vue `tRef()` 整棵静态文案树翻译规格
-- [phase-12/TODO.md](./phase-12/TODO.md) — Phase 12 交付清单
-- [phase-12/ACCEPTANCE.md](./phase-12/ACCEPTANCE.md) — Phase 12 验收证据
-- [phase-13/PRD.md](./phase-13/PRD.md) — ESLint tsconfig 自动发现、项目引用选择与 paths alias 规格
-- [phase-13/TODO.md](./phase-13/TODO.md) — Phase 13 交付清单
-- [phase-13/ACCEPTANCE.md](./phase-13/ACCEPTANCE.md) — Phase 13 验收证据
-- [mcp/PRD.md](./mcp/PRD.md) — `@ai-i18n/mcp` 六工具 CRUD、单份 JSON 文本输出、最终绝对
-  目录校验、单层 extracted 契约与本地 Build 前置流程
-- [mcp/TODO.md](./mcp/TODO.md) — MCP 交付清单
-- [release.md](./release.md) — CI / Release Please / npm Trusted Publishing 与补发说明
+1. [用户文档](../apps/docs/docs/index.md)：公开 API、配置、接入流程与产品行为。
+2. 各 packages/*/README.md：包级安装、运行和开发者配置；MCP 工具契约以
+   [packages/mcp/README.md](../packages/mcp/README.md) 与源码 schema 为准。
+3. [现行产品决策](./PRD.md)：跨模块的设计原因、边界与内部工作规则。
+4. [发布与 CI](./release.md)：维护者发布流程。
+
+代码、类型、测试和可执行工作流始终优先于说明性文档。
+
+## 进行中需求
+
+当前没有进行中的需求文档。新需求在 `docs/work/<feature-name>/` 下创建 `PRD.md` 与
+`TODO.md`：
+
+- PRD 只记录待确认或待实现的目标、决策和边界。
+- TODO 只保留未完成事项。
+- 完成后，将仍然有效的长期决策合并到 [PRD.md](./PRD.md)，再删除该工作目录。
+- PRD 不得超过 400 个物理行。达到 400 行时使用 file-line-audit Skill 审查；超过上限时按主题拆分。总 PRD 的主题文件放在 `docs/prd/`，根 `docs/PRD.md` 保持索引与跨主题决策。
+
+已完成的 TODO、验收记录、Phase PRD 与 Spike 不保留在工作树中；需要追溯时使用 Git 历史。

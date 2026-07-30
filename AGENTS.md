@@ -4,7 +4,8 @@
 
 以下为具体要求：
 
-- 内部需求、TODO、验收与 Spike：**先读 [`docs/index.md`](./docs/index.md)**，再按索引打开对应文件；有变化需同步更新该索引与正文
+- 内部需求与产品决策：**先读 [`docs/index.md`](./docs/index.md)**，再按索引打开对应文件；现行跨模块决策维护在 [`docs/PRD.md`](./docs/PRD.md)。进行中需求仅在 `docs/work/<feature-name>/` 创建 PRD/TODO；完成后将长期决策回填总 PRD 并删除工作目录。有变化需同步更新索引与正文
+- PRD 文档行数：总 PRD 与进行中需求 PRD 均不得超过 400 个物理行。达到 400 行时使用 `file-line-audit` Skill 审查；超过 400 行必须按主题拆分，不得创建按序号切分的 part 文件。总 PRD 的主题文件放在 `docs/prd/<topic>.md`，根 `docs/PRD.md` 保持索引与跨主题决策；进行中需求使用各自的 `prd/` 子目录
 - 面向用户的文档在 `apps/docs`（Rspress）；产品行为、接入流程或 MCP 契约变化时，必须同步更新用户文档
 - 重要模块涵盖测试，但是无关紧要的不需要书写避免测试膨胀，例如文案之类的，测试框架用vitest
 - 测试文件放到当前目录下的test文件夹下
