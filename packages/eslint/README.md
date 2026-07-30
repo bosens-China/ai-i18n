@@ -1,8 +1,8 @@
 # @ai-i18n/eslint-plugin
 
-用于提前报告无法被 Vite/Yuku 静态提取、不符合推荐语法，或不会随语言切换刷新的 `t()`
-用法。规则检查解析到 `virtual:ai-i18n` 的 `t` / Vue-only `tRef` binding，以及 Vue/React 模式下
-`useI18n()` 解构或对象成员得到的 `t`。其他库或局部同名函数不受影响。
+用于提前报告无法被 Vite/Yuku 静态提取、不符合推荐语法，或不会随语言切换刷新的 Runtime
+用法。规则检查解析到 `virtual:ai-i18n` 的翻译与状态 API，以及 Vue/React 模式下
+`useI18n()` 返回的订阅状态。其他库或局部同名函数不受影响。
 
 alpha 阶段请安装 `@ai-i18n/eslint-plugin@alpha`；peer 支持 ESLint 9 和 10。
 
@@ -40,18 +40,28 @@ export default [
     rules: {
       'ai-i18n/no-redundant-auto-import': [
         'warn',
-        { autoImport: ['t', 'tRef', 'useI18n'] },
+        {
+          autoImport: [
+            'useI18n',
+            't',
+            'setLang',
+            'getLang',
+            'getLangs',
+            'getLangLoadState',
+            'subscribe',
+            'tRef',
+          ],
+        },
       ],
     },
   },
 ];
 ```
 
-React 使用 `['t', 'useI18n']`；Vanilla 使用
-`['t', 'setLang', 'getLang', 'getLangs', 'getLangLoadState', 'subscribe']`。该规则不在
-preset 中默认启用。它只检查来自 `virtual:ai-i18n` 的未改名值导入，保留改名导入、
-namespace import、type import 和当前模式不会自动注入的 API，并支持 `eslint --fix`。
-import 内部有注释时只报告，不自动修改。
+React 使用上面的完整列表并移除 `tRef`；Vanilla 再移除 `useI18n`。该规则不在 preset 中
+默认启用。它只检查来自 `virtual:ai-i18n` 的未改名值导入，保留改名导入、namespace import、
+type import 和当前模式不会自动注入的 API，并支持 `eslint --fix`。import 内部有注释时只
+报告，不自动修改。
 
 ## Vue SFC
 
@@ -76,7 +86,7 @@ export default [
 ];
 ```
 
-两个 Vue preset 都复用宿主的 Vue parser，并启用四条适用规则。语义分析使用
+两个 Vue preset 都复用宿主的 Vue parser，并启用五条适用规则。语义分析使用
 Vue 项目已有的 `vue/compiler-sfc` Node 入口，与 Vite 提取器复用相同分析语义和
 source-map 映射，覆盖 `<script>`、`<script setup>`、模板插值和指令表达式。Vue、
 TypeScript 与 SFC 编译相关依赖均为可选 peer，不会安装到 React/Vanilla 项目。
@@ -117,9 +127,14 @@ function SaveButton() {
 事件回调和普通延迟函数中的 Runtime `t` 允许，独立的 `console.log` / `warn` / `error` /
 `info` / `debug` 调用也视为即时消费。其他未知调用仍会 warning。第一版不追踪跨函数、
 跨文件或 `useMemo` / `useState` 等任意数据流，因此规则提示的是可以确定的常见问题，
-不代表覆盖所有译文生命周期错误。两条规则都不提供自动修复。
+不代表覆盖所有译文生命周期错误。
 
-五条规则可独立启用。四条静态分析规则无法启动时，同一文件只报告一次双语错误；官方 preset 由
+所有 preset 还启用 `ai-i18n/no-unsubscribed-runtime-state`。模块顶层不能缓存
+`getLang()` 或 `getLangLoadState()` 的初始化快照；Vue template 与 JSX/TSX 渲染路径应使用
+`useI18n()` 返回的 `currentLang` 或 `langLoadState`。事件处理器、action、普通工具函数和
+即时 console 调用允许按需读取。规则只分析当前文件，不追踪跨文件 store 数据流。
+
+六条规则可独立启用。四条静态分析规则无法启动时，同一文件只报告一次双语错误；官方 preset 由
 `t-static-args` 优先报告，避免次级规则重复提示。
 
 规则与 Vite 共用静态参数语义，包括从 `useI18n()` 获得的对象成员调用
@@ -164,8 +179,13 @@ export default [
     languageOptions: {
       globals: {
         t: 'readonly',
-        tRef: 'readonly',
+        setLang: 'readonly',
+        getLang: 'readonly',
+        getLangs: 'readonly',
+        getLangLoadState: 'readonly',
+        subscribe: 'readonly',
         useI18n: 'readonly',
+        tRef: 'readonly',
         defineI18nMessages: 'readonly',
       },
     },
@@ -185,6 +205,10 @@ export default [
           tsconfigPath: './tsconfig.json', // 可选：覆盖自动发现入口
         },
       ],
+      'ai-i18n/no-unsubscribed-runtime-state': [
+        'warn',
+        { autoImport: ['getLang', 'getLangLoadState'] },
+      ],
       'ai-i18n/static-candidate-limit': [
         'warn',
         {
@@ -202,15 +226,27 @@ export default [
       ],
       'ai-i18n/no-redundant-auto-import': [
         'warn',
-        { autoImport: ['t', 'tRef', 'useI18n'] },
+        {
+          autoImport: [
+            'useI18n',
+            't',
+            'setLang',
+            'getLang',
+            'getLangs',
+            'getLangLoadState',
+            'subscribe',
+            'tRef',
+          ],
+        },
       ],
     },
   },
 ];
 ```
 
-上例匹配 Vue 模式；React 应移除 `tRef`，Vanilla 只使用 `autoImport: ['t']`，并声明对应的
-顶层 Runtime globals。日常接入优先使用预设，避免 Vite 与 ESLint 的 API 集合不一致。
+上例匹配 Vue 模式；React 应移除 `tRef`，Vanilla 再移除 `useI18n`。翻译静态分析规则的
+`autoImport` 仍只列 `t`、`tRef` 与 `useI18n`，状态快照规则只列 `getLang` 与
+`getLangLoadState`。日常接入优先使用预设，避免 Vite 与 ESLint 的 API 集合不一致。
 
 `ai-i18n/static-candidate-limit` 默认在单个 `t()` 的 source 与 options 组合超过 1000 个
 时警告。`maxStaticCandidates` 必须是正整数，只改变 ESLint 的提示阈值；Vite 提取不设

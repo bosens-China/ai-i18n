@@ -1,19 +1,8 @@
 import type { Rule } from 'eslint';
 import { diagnosticMessage } from '@ai-i18n/analyzer';
+import { ALL_AUTO_IMPORT_APIS, type AutoImportApi } from '../auto-imports.js';
 
 const RUNTIME_MODULE = 'virtual:ai-i18n';
-const AUTO_IMPORT_APIS = [
-  't',
-  'tRef',
-  'useI18n',
-  'setLang',
-  'getLang',
-  'getLangs',
-  'getLangLoadState',
-  'subscribe',
-] as const;
-
-type AutoImportApi = (typeof AUTO_IMPORT_APIS)[number];
 
 interface RuleOptions {
   autoImport: readonly AutoImportApi[];
@@ -43,7 +32,7 @@ export const noRedundantAutoImport: Rule.RuleModule = {
         properties: {
           autoImport: {
             type: 'array',
-            items: { enum: AUTO_IMPORT_APIS },
+            items: { enum: ALL_AUTO_IMPORT_APIS },
             minItems: 1,
             uniqueItems: true,
           },

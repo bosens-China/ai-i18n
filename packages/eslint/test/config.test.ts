@@ -5,6 +5,7 @@ import { describe, expect, it } from 'vitest';
 import plugin, {
   noEagerTranslation,
   noRedundantAutoImport,
+  noUnsubscribedRuntimeState,
   noUnsubscribedT,
   staticCandidateLimit,
   tStaticArgs,
@@ -20,6 +21,10 @@ describe('@ai-i18n/eslint config', () => {
       'no-redundant-auto-import',
       noRedundantAutoImport,
     );
+    expect(plugin.rules).toHaveProperty(
+      'no-unsubscribed-runtime-state',
+      noUnsubscribedRuntimeState,
+    );
     expect(plugin.rules).toHaveProperty('no-unsubscribed-t', noUnsubscribedT);
     expect(plugin.rules).toHaveProperty('t-static-args', tStaticArgs);
     expect(plugin.rules).toHaveProperty(
@@ -31,6 +36,7 @@ describe('@ai-i18n/eslint config', () => {
         ignores: ['**/*.vue'],
         rules: {
           'ai-i18n/no-eager-translation': 'warn',
+          'ai-i18n/no-unsubscribed-runtime-state': 'warn',
           'ai-i18n/no-unsubscribed-t': 'warn',
           'ai-i18n/static-candidate-limit': 'warn',
           'ai-i18n/t-static-args': 'error',
@@ -45,6 +51,7 @@ describe('@ai-i18n/eslint config', () => {
         },
         rules: {
           'ai-i18n/no-eager-translation': 'warn',
+          'ai-i18n/no-unsubscribed-runtime-state': 'warn',
           'ai-i18n/no-unsubscribed-t': 'warn',
           'ai-i18n/static-candidate-limit': 'warn',
           'ai-i18n/t-static-args': 'error',
@@ -56,6 +63,11 @@ describe('@ai-i18n/eslint config', () => {
         languageOptions: {
           globals: {
             t: 'readonly',
+            setLang: 'readonly',
+            getLang: 'readonly',
+            getLangs: 'readonly',
+            getLangLoadState: 'readonly',
+            subscribe: 'readonly',
             useI18n: 'readonly',
             defineI18nMessages: 'readonly',
           },
@@ -64,6 +76,10 @@ describe('@ai-i18n/eslint config', () => {
           'ai-i18n/no-eager-translation': [
             'warn',
             { autoImport: ['t', 'useI18n'] },
+          ],
+          'ai-i18n/no-unsubscribed-runtime-state': [
+            'warn',
+            { autoImport: ['getLang', 'getLangLoadState'] },
           ],
           'ai-i18n/no-unsubscribed-t': [
             'warn',
@@ -82,8 +98,13 @@ describe('@ai-i18n/eslint config', () => {
         languageOptions: {
           globals: {
             t: 'readonly',
-            tRef: 'readonly',
+            setLang: 'readonly',
+            getLang: 'readonly',
+            getLangs: 'readonly',
+            getLangLoadState: 'readonly',
+            subscribe: 'readonly',
             useI18n: 'readonly',
+            tRef: 'readonly',
             defineI18nMessages: 'readonly',
           },
         },
@@ -91,6 +112,10 @@ describe('@ai-i18n/eslint config', () => {
           'ai-i18n/no-eager-translation': [
             'warn',
             { autoImport: ['t', 'tRef', 'useI18n'] },
+          ],
+          'ai-i18n/no-unsubscribed-runtime-state': [
+            'warn',
+            { autoImport: ['getLang', 'getLangLoadState'] },
           ],
           'ai-i18n/no-unsubscribed-t': [
             'warn',
@@ -117,6 +142,10 @@ describe('@ai-i18n/eslint config', () => {
         },
         rules: {
           'ai-i18n/no-eager-translation': ['warn', { autoImport: ['t'] }],
+          'ai-i18n/no-unsubscribed-runtime-state': [
+            'warn',
+            { autoImport: ['getLang', 'getLangLoadState'] },
+          ],
           'ai-i18n/static-candidate-limit': ['warn', { autoImport: ['t'] }],
           'ai-i18n/t-static-args': ['error', { autoImport: ['t'] }],
         },

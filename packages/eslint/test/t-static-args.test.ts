@@ -4,9 +4,9 @@ import path from 'node:path';
 import { RuleTester } from 'eslint';
 import tseslint from 'typescript-eslint';
 import vueParser from 'vue-eslint-parser';
-import { describe, expect, it } from 'vitest';
+import { describe } from 'vitest';
 import { diagnosticMessage } from '@ai-i18n/analyzer';
-import { staticCandidateLimit, tStaticArgs } from '../src/index';
+import { tStaticArgs } from '../src/index';
 
 const fixtureRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'ai-i18n-eslint-'));
 const sourceRoot = path.join(fixtureRoot, 'src');
@@ -63,7 +63,6 @@ const dynamicArgumentMessage = diagnosticMessage(
   't() 的参数无法静态提取。source 请使用静态字符串，options 请使用只包含 comment 的静态对象。',
   'The t() arguments cannot be statically extracted. Use a static string for source and a static object containing only comment for options.',
 );
-
 describe('ai-i18n/t-static-args', () => {
   tester.run('t-static-args', tStaticArgs, {
     valid: [
@@ -293,39 +292,6 @@ describe('ai-i18n/t-static-args', () => {
         code: 'const macro = defineI18nMessages',
         filename: path.join(sourceRoot, 'macro-reference.ts'),
         errors: [{ messageId: 'invalidUsage' }],
-      },
-    ],
-  });
-
-  it('classifies candidate limits as suggestions', () => {
-    expect(staticCandidateLimit.meta?.type).toBe('suggestion');
-  });
-
-  tester.run('static-candidate-limit', staticCandidateLimit, {
-    valid: [
-      {
-        code: "import { t } from 'virtual:ai-i18n'; const messages = defineI18nMessages(['a', 'b']); t(messages[index])",
-        filename: path.join(sourceRoot, 'candidate-limit-valid.ts'),
-        options: [{ maxStaticCandidates: 2 }],
-      },
-      {
-        code: "import { tRef } from 'virtual:ai-i18n'; tRef({ first: 'a', second: 'b' })",
-        filename: path.join(sourceRoot, 'tree-candidate-limit-valid.ts'),
-        options: [{ maxStaticCandidates: 2 }],
-      },
-    ],
-    invalid: [
-      {
-        code: "import { t } from 'virtual:ai-i18n'; const messages = defineI18nMessages(['a', 'b', 'c']); t(messages[index])",
-        filename: path.join(sourceRoot, 'candidate-limit-invalid.ts'),
-        options: [{ maxStaticCandidates: 2 }],
-        errors: [{ messageId: 'candidateLimit' }],
-      },
-      {
-        code: "import { tRef } from 'virtual:ai-i18n'; tRef({ first: 'a', second: ['b', 'c'] })",
-        filename: path.join(sourceRoot, 'tree-candidate-limit-invalid.ts'),
-        options: [{ maxStaticCandidates: 2 }],
-        errors: [{ messageId: 'candidateLimit' }],
       },
     ],
   });

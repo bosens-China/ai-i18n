@@ -51,6 +51,22 @@ tester.run('no-redundant-auto-import', noRedundantAutoImport, {
       output: '',
     },
     {
+      code: "import { getLang, getLangLoadState, getLangs, setLang, subscribe } from 'virtual:ai-i18n'",
+      options: [
+        {
+          autoImport: [
+            'setLang',
+            'getLang',
+            'getLangs',
+            'getLangLoadState',
+            'subscribe',
+          ],
+        },
+      ],
+      errors: [{ messageId: 'redundantImport' }],
+      output: '',
+    },
+    {
       code: "import { t, setLang } from 'virtual:ai-i18n'",
       options: [{ autoImport: ['t'] }],
       errors: [{ messageId: 'redundantImport' }],

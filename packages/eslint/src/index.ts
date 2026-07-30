@@ -1,7 +1,13 @@
 import { createRequire } from 'node:module';
 import type { ESLint } from 'eslint';
+import {
+  REACT_AUTO_IMPORTS,
+  RUNTIME_AUTO_IMPORTS,
+  VUE_AUTO_IMPORTS,
+} from './auto-imports.js';
 import { noEagerTranslation } from './rules/no-eager-translation.js';
 import { noRedundantAutoImport } from './rules/no-redundant-auto-import.js';
+import { noUnsubscribedRuntimeState } from './rules/no-unsubscribed-runtime-state.js';
 import { noUnsubscribedT } from './rules/no-unsubscribed-t.js';
 import { staticCandidateLimit } from './rules/static-candidate-limit.js';
 import { tStaticArgs } from './rules/t-static-args.js';
@@ -19,6 +25,7 @@ const plugin: ESLint.Plugin = {
   rules: {
     'no-eager-translation': noEagerTranslation,
     'no-redundant-auto-import': noRedundantAutoImport,
+    'no-unsubscribed-runtime-state': noUnsubscribedRuntimeState,
     'no-unsubscribed-t': noUnsubscribedT,
     'static-candidate-limit': staticCandidateLimit,
     't-static-args': tStaticArgs,
@@ -37,6 +44,7 @@ plugin.configs!.recommended = [
     rules: {
       'ai-i18n/t-static-args': 'error',
       'ai-i18n/no-eager-translation': 'warn',
+      'ai-i18n/no-unsubscribed-runtime-state': 'warn',
       'ai-i18n/no-unsubscribed-t': 'warn',
       'ai-i18n/static-candidate-limit': 'warn',
     },
@@ -53,6 +61,7 @@ plugin.configs!.vue = [
     rules: {
       'ai-i18n/t-static-args': 'error',
       'ai-i18n/no-eager-translation': 'warn',
+      'ai-i18n/no-unsubscribed-runtime-state': 'warn',
       'ai-i18n/no-unsubscribed-t': 'warn',
       'ai-i18n/static-candidate-limit': 'warn',
     },
@@ -66,18 +75,19 @@ plugin.configs!['vanilla-auto-import'] = [
     plugins: { 'ai-i18n': plugin },
     languageOptions: {
       globals: {
-        t: 'readonly',
-        setLang: 'readonly',
-        getLang: 'readonly',
-        getLangs: 'readonly',
-        getLangLoadState: 'readonly',
-        subscribe: 'readonly',
+        ...Object.fromEntries(
+          RUNTIME_AUTO_IMPORTS.map((name) => [name, 'readonly']),
+        ),
         defineI18nMessages: 'readonly',
       },
     },
     rules: {
       'ai-i18n/t-static-args': ['error', { autoImport: ['t'] }],
       'ai-i18n/no-eager-translation': ['warn', { autoImport: ['t'] }],
+      'ai-i18n/no-unsubscribed-runtime-state': [
+        'warn',
+        { autoImport: ['getLang', 'getLangLoadState'] },
+      ],
       'ai-i18n/static-candidate-limit': ['warn', { autoImport: ['t'] }],
     },
   },
@@ -89,9 +99,9 @@ plugin.configs!['vue-auto-import'] = [
     plugins: { 'ai-i18n': plugin },
     languageOptions: {
       globals: {
-        t: 'readonly',
-        tRef: 'readonly',
-        useI18n: 'readonly',
+        ...Object.fromEntries(
+          VUE_AUTO_IMPORTS.map((name) => [name, 'readonly']),
+        ),
         defineI18nMessages: 'readonly',
       },
     },
@@ -103,6 +113,10 @@ plugin.configs!['vue-auto-import'] = [
       'ai-i18n/no-eager-translation': [
         'warn',
         { autoImport: ['t', 'tRef', 'useI18n'] },
+      ],
+      'ai-i18n/no-unsubscribed-runtime-state': [
+        'warn',
+        { autoImport: ['getLang', 'getLangLoadState'] },
       ],
       'ai-i18n/no-unsubscribed-t': [
         'warn',
@@ -122,8 +136,9 @@ plugin.configs!['react-auto-import'] = [
     plugins: { 'ai-i18n': plugin },
     languageOptions: {
       globals: {
-        t: 'readonly',
-        useI18n: 'readonly',
+        ...Object.fromEntries(
+          REACT_AUTO_IMPORTS.map((name) => [name, 'readonly']),
+        ),
         defineI18nMessages: 'readonly',
       },
     },
@@ -132,6 +147,10 @@ plugin.configs!['react-auto-import'] = [
       'ai-i18n/no-eager-translation': [
         'warn',
         { autoImport: ['t', 'useI18n'] },
+      ],
+      'ai-i18n/no-unsubscribed-runtime-state': [
+        'warn',
+        { autoImport: ['getLang', 'getLangLoadState'] },
       ],
       'ai-i18n/no-unsubscribed-t': ['warn', { autoImport: ['t', 'useI18n'] }],
       'ai-i18n/static-candidate-limit': [
@@ -145,6 +164,7 @@ plugin.configs!['react-auto-import'] = [
 export {
   noEagerTranslation,
   noRedundantAutoImport,
+  noUnsubscribedRuntimeState,
   noUnsubscribedT,
   staticCandidateLimit,
   tStaticArgs,
