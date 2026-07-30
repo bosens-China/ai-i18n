@@ -17,6 +17,8 @@
 - 规则独立启用时仍报告分析失败，官方 preset 同一文件只报告一次。
 - 显式导入 preset 不声明 Runtime 全局，三种 `*-auto-import` preset 与 Vite 模式 API
   一一对应。
+- 可选的 `no-redundant-auto-import` 只报告当前模式已注入的未改名值导入；混合导入修复后
+  保留其他成员，改名、namespace、type import 与带内部注释的声明保持安全边界。
 - 文档明确静态提取与响应式刷新是两个独立问题，并列出第一版数据流边界。
 
 ## 验证结果
@@ -26,3 +28,9 @@
 - `pnpm --filter @ai-i18n/docs build`：Rspress 文档站及 Markdown 产物构建通过。
 - React Compiler 行为测试使用 annotation 模式真实编译，验证语言切换后文案从“标题”更新为
   “Title”，并确认 Compiler cache 被执行。
+
+## 冗余导入规则扩展验证
+
+- `pnpm --filter @ai-i18n/eslint-plugin check`：TypeScript 与 ESLint 通过。
+- `pnpm --filter @ai-i18n/eslint-plugin test`：8 个测试文件、163 个测试全部通过。
+- `pnpm --filter @ai-i18n/docs build`：Rspress 文档站及 Markdown 产物构建通过。

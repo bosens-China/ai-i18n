@@ -31,6 +31,28 @@ export default [
 只有 `*-auto-import` preset 会声明 Runtime 全局。所有 preset 都声明只读的
 `defineI18nMessages` 编译宏。
 
+希望在自动导入模式中禁止残留的同名显式 import 时，可以按需启用：
+
+```js
+export default [
+  ...aiI18n.configs['vue-auto-import'],
+  {
+    rules: {
+      'ai-i18n/no-redundant-auto-import': [
+        'warn',
+        { autoImport: ['t', 'tRef', 'useI18n'] },
+      ],
+    },
+  },
+];
+```
+
+React 使用 `['t', 'useI18n']`；Vanilla 使用
+`['t', 'setLang', 'getLang', 'getLangs', 'getLangLoadState', 'subscribe']`。该规则不在
+preset 中默认启用。它只检查来自 `virtual:ai-i18n` 的未改名值导入，保留改名导入、
+namespace import、type import 和当前模式不会自动注入的 API，并支持 `eslint --fix`。
+import 内部有注释时只报告，不自动修改。
+
 ## Vue SFC
 
 `.vue` 是可选文件格式。Vue 项目应先通过 `eslint-plugin-vue` 配置
@@ -97,7 +119,7 @@ function SaveButton() {
 跨文件或 `useMemo` / `useState` 等任意数据流，因此规则提示的是可以确定的常见问题，
 不代表覆盖所有译文生命周期错误。两条规则都不提供自动修复。
 
-四条规则可独立启用。分析无法启动时，同一文件只报告一次双语错误；官方 preset 由
+五条规则可独立启用。四条静态分析规则无法启动时，同一文件只报告一次双语错误；官方 preset 由
 `t-static-args` 优先报告，避免次级规则重复提示。
 
 规则与 Vite 共用静态参数语义，包括从 `useI18n()` 获得的对象成员调用
@@ -115,7 +137,24 @@ Vue setup 中只创建一次并使用返回的 Ref。
 逻辑表达式、`let` 文案、普通集合成员、`const tr = t`、命名空间调用、二次 Hook 解构、
 `useI18n().t()` 与 `require()` 都会报错。
 
-需要解析 `tsconfig` 路径别名时，可以显式配置规则：
+## tsconfig 自动发现与路径别名
+
+静态分析规则默认从当前文件向上寻找最近的 `tsconfig.json`，解析 `extends`，递归读取
+`references`，再按 importer 是否满足各项目的 `files`、`include`、`exclude` 选择实际
+配置。因此常见的 `@/*` TypeScript path alias 不需要额外选项。Vue 文件必须由项目显式
+包含，例如 `include: ['src/**/*.ts', 'src/**/*.vue']`。
+
+`tsconfigPath` 是自动发现入口的可选覆盖项，适用于非标准配置名或希望固定从某个 solution
+config 开始解析的项目。相对路径按 ESLint 进程的工作目录解析；指向带 `references` 的根
+配置后，仍会执行相同的递归与项目选择逻辑。
+
+TypeScript 6 的编译器仍执行已有的 `baseUrl` 解析，但会报告弃用诊断；TypeScript 7 将
+不再支持该选项。插件兼容 TypeScript 5/6 的 `baseUrl + paths`；新项目推荐省略
+`baseUrl`，写成 `"paths": { "@/*": ["./src/*"] }`。若旧项目还依赖 `baseUrl` 的未匹配
+bare import 查找，则用 `"*": ["./src/*"]` 显式保留。只存在于 Vite `resolve.alias`、
+未同步到 tsconfig `paths` 的 alias 不属于 ESLint 的 TypeScript 配置。
+
+需要覆盖自动发现入口时，可以显式配置规则：
 
 ```js
 import aiI18n from '@ai-i18n/eslint-plugin';
@@ -136,21 +175,21 @@ export default [
         'warn',
         {
           autoImport: ['t', 'tRef', 'useI18n'],
-          tsconfigPath: './tsconfig.json',
+          tsconfigPath: './tsconfig.json', // 可选：覆盖自动发现入口
         },
       ],
       'ai-i18n/no-unsubscribed-t': [
         'warn',
         {
           autoImport: ['t', 'tRef', 'useI18n'],
-          tsconfigPath: './tsconfig.json',
+          tsconfigPath: './tsconfig.json', // 可选：覆盖自动发现入口
         },
       ],
       'ai-i18n/static-candidate-limit': [
         'warn',
         {
           autoImport: ['t', 'tRef', 'useI18n'],
-          tsconfigPath: './tsconfig.json',
+          tsconfigPath: './tsconfig.json', // 可选：覆盖自动发现入口
           maxStaticCandidates: 2_000,
         },
       ],
@@ -158,8 +197,12 @@ export default [
         'error',
         {
           autoImport: ['t', 'tRef', 'useI18n'],
-          tsconfigPath: './tsconfig.json',
+          tsconfigPath: './tsconfig.json', // 可选：覆盖自动发现入口
         },
+      ],
+      'ai-i18n/no-redundant-auto-import': [
+        'warn',
+        { autoImport: ['t', 'tRef', 'useI18n'] },
       ],
     },
   },

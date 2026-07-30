@@ -76,6 +76,30 @@ export default defineConfig([
 
 这些预设只声明并检查 ai-i18n 自己的 API。
 
+自动导入 preset 不会默认要求删除显式 import。希望统一为纯自动导入写法时，可以额外启用
+可自动修复的 `no-redundant-auto-import`：
+
+```js
+export default defineConfig([
+  ...aiI18n.configs['vue-auto-import'],
+  {
+    rules: {
+      'ai-i18n/no-redundant-auto-import': [
+        'warn',
+        { autoImport: ['t', 'tRef', 'useI18n'] },
+      ],
+    },
+  },
+]);
+```
+
+React 使用 `['t', 'useI18n']`。Vanilla 使用
+`['t', 'setLang', 'getLang', 'getLangs', 'getLangLoadState', 'subscribe']`。
+该规则只删除来自 `virtual:ai-i18n`、导入名与本地名相同且确实由当前模式注入的值导入。
+改名导入、namespace import、type import 和未列入 `autoImport` 的 API 不会报错。运行
+`eslint --fix` 时，混合 import 会保留仍需显式导入的成员；import 内部有注释时只提示，
+避免自动修复丢失说明。
+
 | 预设                  | `no-eager-translation` | `no-unsubscribed-t` |
 | --------------------- | ---------------------- | ------------------- |
 | `recommended`         | warning                | warning             |
@@ -132,21 +156,21 @@ export default defineConfig([
         'warn', // 避免在初始化期间缓存不会刷新的译文
         {
           autoImport: ['t', 'tRef', 'useI18n'],
-          tsconfigPath: './tsconfig.json',
+          tsconfigPath: './tsconfig.json', // 可选：覆盖自动发现的项目配置
         },
       ],
       'ai-i18n/no-unsubscribed-t': [
         'warn', // Vue / React 组件渲染使用 Hook/composable 的 t
         {
           autoImport: ['t', 'tRef', 'useI18n'],
-          tsconfigPath: './tsconfig.json',
+          tsconfigPath: './tsconfig.json', // 可选：覆盖自动发现的项目配置
         },
       ],
       'ai-i18n/static-candidate-limit': [
         'warn', // 候选过多只提示，不截断 Vite 提取
         {
           autoImport: ['t', 'tRef', 'useI18n'], // Vue 自动导入契约
-          tsconfigPath: './tsconfig.json', // 解析 tsconfig 中的 paths alias
+          tsconfigPath: './tsconfig.json', // 可选：覆盖自动发现的项目配置
           maxStaticCandidates: 2_000, // 单个 t() 允许的静态组合提示阈值
         },
       ],
@@ -154,13 +178,61 @@ export default defineConfig([
         'error', // 无法静态提取或不推荐的参数写法直接报错
         {
           autoImport: ['t', 'tRef', 'useI18n'], // Vue；React 不包含 tRef
-          tsconfigPath: './tsconfig.json', // 解析 tsconfig 中的 paths alias
+          tsconfigPath: './tsconfig.json', // 可选：覆盖自动发现的项目配置
         },
+      ],
+      'ai-i18n/no-redundant-auto-import': [
+        'warn', // 可选：删除 autoImport 已提供的同名显式导入
+        { autoImport: ['t', 'tRef', 'useI18n'] },
       ],
     },
   },
 ]);
 ```
+
+### tsconfig 自动发现与 `paths`
+
+静态分析规则默认从当前被检查文件向上寻找最近的 `tsconfig.json`，无需为了常见的
+`@/*` alias 单独配置 `tsconfigPath`。找到配置后，插件会：
+
+1. 解析 JSONC 与 `extends`；
+2. 递归读取 `references`；
+3. 按当前文件是否满足各项目的 `files`、`include`、`exclude` 选择实际项目；
+4. 使用该项目的 `compilerOptions.paths` 和当前 TypeScript 的 `baseUrl` 语义解析 import。
+
+Vue SFC 不是 TypeScript 默认输入扩展名，因此项目必须显式包含它，例如
+`include: ['src/**/*.ts', 'src/**/*.vue']`。手动 `tsconfigPath` 适用于配置文件使用了非标准
+名称、需要从指定 solution config 开始解析，或 ESLint 进程无法从源码目录向上发现正确
+配置的情况；相对路径以 ESLint 进程的工作目录为基准，指向带 `references` 的根配置也会
+继续执行同一套项目选择逻辑。
+
+:::warning TypeScript 6 的 `baseUrl`
+TypeScript 6 的编译器仍执行既有 `baseUrl` 解析，但会报告弃用诊断；TypeScript 7 将不再
+支持该选项。新配置优先省略 `baseUrl`，把目标显式写成相对 tsconfig 的路径：
+
+```json
+{
+  "compilerOptions": {
+    "paths": {
+      "@/*": ["./src/*"]
+    }
+  }
+}
+```
+
+如果旧项目还把 `baseUrl: './src'` 当成未匹配 bare import 的查找根，需要在移除它时显式
+补上 `"*": ["./src/*"]`，而不是只迁移命名 alias。
+
+ESLint 会兼容 TypeScript 5/6 中已有的 `baseUrl + paths` 项目。Vite 自己的模块解析仍由
+Vite 负责；只写在 `resolve.alias`、没有同步到 tsconfig `paths` 的 alias 不会自动成为
+ESLint 的 TypeScript alias。
+:::
+
+### `no-redundant-auto-import`
+
+该规则不依赖 Analyzer，也不读取 Vite 配置。启用时必须通过 `autoImport` 精确列出当前
+Vite 框架模式实际注入的 Runtime API。规则为 suggestion，并提供安全范围内的自动修复。
+它默认不包含在任何 preset 中，适合希望强制统一自动导入风格的项目按需开启。
 
 ### `t-static-args`
 
@@ -254,17 +326,17 @@ TSX 渲染期间调用。下面的写法会在每次渲染创建新的 `computed
 
 `no-eager-translation` 与 `no-unsubscribed-t` 共享以下选项：
 
-| 选项           | 类型                                        | 必填 | 默认值          | 作用                                  |
-| -------------- | ------------------------------------------- | ---- | --------------- | ------------------------------------- |
-| `autoImport`   | `boolean \| ('t' \| 'tRef' \| 'useI18n')[]` | 否   | `false`         | 检查指定的 ai-i18n 自动导入调用来源。 |
-| `tsconfigPath` | `string`                                    | 否   | 不读取 tsconfig | 解析 TypeScript `paths` alias。       |
+| 选项           | 类型                                        | 必填 | 默认值                    | 作用                                               |
+| -------------- | ------------------------------------------- | ---- | ------------------------- | -------------------------------------------------- |
+| `autoImport`   | `boolean \| ('t' \| 'tRef' \| 'useI18n')[]` | 否   | `false`                   | 检查指定的 ai-i18n 自动导入调用来源。              |
+| `tsconfigPath` | `string`                                    | 否   | 自动发现最近的 `tsconfig` | 覆盖自动发现入口，并解析项目引用与 `paths` alias。 |
 
 ### `t-static-args` 选项
 
-| 选项           | 类型                                        | 必填 | 默认值          | 作用                                  |
-| -------------- | ------------------------------------------- | ---- | --------------- | ------------------------------------- |
-| `autoImport`   | `boolean \| ('t' \| 'tRef' \| 'useI18n')[]` | 否   | `false`         | 检查指定的 ai-i18n 自动导入调用来源。 |
-| `tsconfigPath` | `string`                                    | 否   | 不读取 tsconfig | 解析 TypeScript `paths` alias。       |
+| 选项           | 类型                                        | 必填 | 默认值                    | 作用                                               |
+| -------------- | ------------------------------------------- | ---- | ------------------------- | -------------------------------------------------- |
+| `autoImport`   | `boolean \| ('t' \| 'tRef' \| 'useI18n')[]` | 否   | `false`                   | 检查指定的 ai-i18n 自动导入调用来源。              |
+| `tsconfigPath` | `string`                                    | 否   | 自动发现最近的 `tsconfig` | 覆盖自动发现入口，并解析项目引用与 `paths` alias。 |
 
 ### `static-candidate-limit` 选项
 
@@ -273,11 +345,11 @@ TSX 渲染期间调用。下面的写法会在每次渲染创建新的 `computed
 项目总文案数，也不是 Provider 批次大小。source 和 options 都有多个候选时，按两者的
 组合数量计算。整棵文案树按去重后的字符串叶子数计算。
 
-| 选项                  | 类型                                        | 必填 | 默认值          | 作用                                  |
-| --------------------- | ------------------------------------------- | ---- | --------------- | ------------------------------------- |
-| `autoImport`          | `boolean \| ('t' \| 'tRef' \| 'useI18n')[]` | 否   | `false`         | 检查指定的 ai-i18n 自动导入调用来源。 |
-| `tsconfigPath`        | `string`                                    | 否   | 不读取 tsconfig | 解析 TypeScript `paths` alias。       |
-| `maxStaticCandidates` | `number`                                    | 否   | `1000`          | 单个 `t()` 触发警告的正整数阈值。     |
+| 选项                  | 类型                                        | 必填 | 默认值                    | 作用                                               |
+| --------------------- | ------------------------------------------- | ---- | ------------------------- | -------------------------------------------------- |
+| `autoImport`          | `boolean \| ('t' \| 'tRef' \| 'useI18n')[]` | 否   | `false`                   | 检查指定的 ai-i18n 自动导入调用来源。              |
+| `tsconfigPath`        | `string`                                    | 否   | 自动发现最近的 `tsconfig` | 覆盖自动发现入口，并解析项目引用与 `paths` alias。 |
+| `maxStaticCandidates` | `number`                                    | 否   | `1000`                    | 单个 `t()` 触发警告的正整数阈值。                  |
 
 `autoImport: true` 为向后兼容识别跨框架的 `t` 与 `useI18n`。Vue-only `tRef` 必须使用
 `vue-auto-import` preset，或在数组中显式加入。新配置优先直接使用对应 preset；手工配置时

@@ -117,4 +117,6 @@ TypeScript 声明不会自动配置 ESLint。开启自动导入后，请按最�
 `configs['vue-auto-import']` 或 `configs['react-auto-import']`。这些预设会声明对应的
 只读全局，并检查静态提取语法。完整配置见
 [ESLint](/guide/quality/eslint)。它们还会提示初始化期译文快照；Vue / React preset 会
-提示组件渲染路径中没有订阅的顶层 `t`。
+提示组件渲染路径中没有订阅的顶层 `t`。如果项目希望禁止自动导入模式中残留的
+`virtual:ai-i18n` 显式导入，可以按框架 API 列表额外启用可自动修复的
+`ai-i18n/no-redundant-auto-import`；该规则默认不包含在 preset 中。

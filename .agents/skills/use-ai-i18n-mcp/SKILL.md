@@ -68,6 +68,10 @@ Vue source may use either `t()` or the Vue-only `tRef()` syntax. Both produce th
 message IDs from the same static source/options; the MCP protocol and all six tool schemas do not
 distinguish which Runtime API produced an entry.
 
+The optional ESLint rule `ai-i18n/no-redundant-auto-import` only removes redundant Runtime import
+syntax in projects that already enabled Vite auto imports. Its diagnostics and autofix do not
+change extraction semantics, message IDs, protocol files, or any MCP tool contract.
+
 A whole static message-only object or array passed to `t(messages)` or Vue `tRef(messages)` produces
 one extracted entry per unique string leaf, attributed to the containing source file. Primitive
 non-string leaves do not produce entries. This extraction feature does not change MCP schemas. If

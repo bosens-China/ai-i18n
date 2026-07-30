@@ -7,6 +7,7 @@ Phase 1–6 均为历史非规范记录，仅用于追溯需求、实现与验�
 `apps/docs`、[Phase 7 PRD](./phase-7/PRD.md)、[Phase 8 PRD](./phase-8/PRD.md)、
 [Phase 9 PRD](./phase-9/PRD.md)、[Phase 10 PRD](./phase-10/PRD.md) 和
 [Phase 11 PRD](./phase-11/PRD.md)、[Phase 12 PRD](./phase-12/PRD.md)、
+[Phase 13 PRD](./phase-13/PRD.md)、
 [MCP PRD](./mcp/PRD.md) 为准。
 
 - [phase-1/PRD.md](./phase-1/PRD.md) — Phase 1 初始产品规格历史记录
@@ -38,7 +39,7 @@ Phase 1–6 均为历史非规范记录，仅用于追溯需求、实现与验�
 - [phase-9/PRD.md](./phase-9/PRD.md) — Vue query 边界、自动导入 preset 与语言加载状态规格
 - [phase-9/TODO.md](./phase-9/TODO.md) — Phase 9 交付清单
 - [phase-9/ACCEPTANCE.md](./phase-9/ACCEPTANCE.md) — Phase 9 验收证据
-- [phase-10/PRD.md](./phase-10/PRD.md) — 翻译生命周期、组件订阅与 ESLint preset 诊断规格
+- [phase-10/PRD.md](./phase-10/PRD.md) — 翻译生命周期、组件订阅、autoImport 冗余导入与 ESLint preset 诊断规格
 - [phase-10/TODO.md](./phase-10/TODO.md) — Phase 10 交付清单
 - [phase-10/ACCEPTANCE.md](./phase-10/ACCEPTANCE.md) — Phase 10 验收证据
 - [phase-11/PRD.md](./phase-11/PRD.md) — Vue setup 响应式翻译语法糖 `tRef()` 规格
@@ -47,6 +48,9 @@ Phase 1–6 均为历史非规范记录，仅用于追溯需求、实现与验�
 - [phase-12/PRD.md](./phase-12/PRD.md) — `t()` / Vue `tRef()` 整棵静态文案树翻译规格
 - [phase-12/TODO.md](./phase-12/TODO.md) — Phase 12 交付清单
 - [phase-12/ACCEPTANCE.md](./phase-12/ACCEPTANCE.md) — Phase 12 验收证据
+- [phase-13/PRD.md](./phase-13/PRD.md) — ESLint tsconfig 自动发现、项目引用选择与 paths alias 规格
+- [phase-13/TODO.md](./phase-13/TODO.md) — Phase 13 交付清单
+- [phase-13/ACCEPTANCE.md](./phase-13/ACCEPTANCE.md) — Phase 13 验收证据
 - [mcp/PRD.md](./mcp/PRD.md) — `@ai-i18n/mcp` 六工具 CRUD、单份 JSON 文本输出、最终绝对
   目录校验、单层 extracted 契约与本地 Build 前置流程
 - [mcp/TODO.md](./mcp/TODO.md) — MCP 交付清单

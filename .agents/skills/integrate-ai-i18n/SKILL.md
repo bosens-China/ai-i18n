@@ -153,9 +153,28 @@ intentionally do not follow arbitrary cross-function or cross-file data flow and
 In Vue auto-import mode, a bare template-only `t` is an error: auto import removes the import
 statement but does not synthesize `const { t } = useI18n()` or a component subscription.
 
+When the user wants a pure auto-import code style, optionally enable
+`ai-i18n/no-redundant-auto-import` with the exact Vite mode API list. Use
+`['t', 'tRef', 'useI18n']` for Vue, `['t', 'useI18n']` for React, and
+`['t', 'setLang', 'getLang', 'getLangs', 'getLangLoadState', 'subscribe']` for Vanilla. The rule
+autofixes only unaliased value imports from `virtual:ai-i18n`; it preserves aliases, namespace
+imports, type imports, APIs outside the configured list, and import declarations containing
+internal comments. It is not enabled by any preset.
+
 Presets also warn when one `t()` expands beyond 1000 static source/options combinations. Change
 `ai-i18n/static-candidate-limit`'s positive-integer `maxStaticCandidates` option only in ESLint
 config; Vite extraction has no candidate cap or matching plugin option.
+
+The Analyzer-backed ESLint rules automatically discover the nearest `tsconfig.json` for each
+importer, parse `extends`, recursively follow `references`, and select the referenced project whose
+`files` / `include` / `exclude` contains that importer. Vue SFCs must be explicitly included with a
+`.vue` pattern. Use the per-rule `tsconfigPath` option only to override the discovery root, such as
+for a nonstandard filename or a solution config outside the source ancestry; a referenced root is
+still traversed. This resolver reads TypeScript `paths`, not arbitrary Vite-only `resolve.alias`
+entries. It preserves TypeScript 5/6 `baseUrl` behavior for existing projects, but TypeScript 6
+emits a deprecation diagnostic for `baseUrl` and TypeScript 7 removes it. Prefer no `baseUrl` and
+explicit relative targets such as `"@/*": ["./src/*"]`; if an old project relied on the unmatched
+bare-import lookup root, replace that behavior explicitly with `"*": ["./src/*"]`.
 
 ## Preserve extraction semantics
 
