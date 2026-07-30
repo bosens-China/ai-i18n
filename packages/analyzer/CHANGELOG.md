@@ -1,5 +1,12 @@
 # @ai-i18n/analyzer
 
+## [1.0.0-alpha.9](https://github.com/bosens-China/ai-i18n/compare/analyzer-v1.0.0-alpha.8...analyzer-v1.0.0-alpha.9) (2026-07-30)
+
+
+### Features
+
+* **vite:** auto-import Runtime APIs in framework modes ([36bac00](https://github.com/bosens-China/ai-i18n/commit/36bac0025f5a145e4af3f32f5dc03fcea5f647c0))
+
 ## [1.0.0-alpha.8](https://github.com/bosens-China/ai-i18n/compare/analyzer-v1.0.0-alpha.7...analyzer-v1.0.0-alpha.8) (2026-07-30)
 
 

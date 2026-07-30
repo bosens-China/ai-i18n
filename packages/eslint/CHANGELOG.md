@@ -1,5 +1,19 @@
 # @ai-i18n/eslint-plugin
 
+## [1.0.0-alpha.10](https://github.com/bosens-China/ai-i18n/compare/eslint-plugin-v1.0.0-alpha.9...eslint-plugin-v1.0.0-alpha.10) (2026-07-30)
+
+
+### Features
+
+* **eslint:** warn on unsubscribed Runtime state ([1b48321](https://github.com/bosens-China/ai-i18n/commit/1b48321918e2f7a5dee2dfd0ab1274fa0a140c50))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @ai-i18n/analyzer bumped to 1.0.0-alpha.9
+
 ## [1.0.0-alpha.9](https://github.com/bosens-China/ai-i18n/compare/eslint-plugin-v1.0.0-alpha.8...eslint-plugin-v1.0.0-alpha.9) (2026-07-30)
 
 
