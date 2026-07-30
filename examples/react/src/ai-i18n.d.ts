@@ -74,3 +74,35 @@ declare const useI18n: import('@ai-i18n/vite/react').UseI18n;
  * 支持 t("保存")、t(messages) 和标签模板 t`你好 ${name}`。
  */
 declare const t: import('@ai-i18n/vite').I18nRuntime['t'];
+
+/**
+ * 切换当前语言；按需加载启用时会等待目标语言 chunk。
+ * Switches the current language and waits for its chunk when lazy loading is enabled.
+ * @returns 切换完成后的 Promise；加载失败时 reject，并保留原语言。
+ */
+declare const setLang: import('@ai-i18n/vite').I18nRuntime['setLang'];
+
+/**
+ * 读取当前语言标识。
+ * Returns the current language identifier.
+ */
+declare const getLang: import('@ai-i18n/vite').I18nRuntime['getLang'];
+
+/**
+ * 读取配置中的语言选项，只读且保持配置顺序。
+ * Returns the configured readonly language options in configuration order.
+ */
+declare const getLangs: import('@ai-i18n/vite').I18nRuntime['getLangs'];
+
+/**
+ * 读取语言加载状态：idle、loading 或 error。
+ * Returns the language loading state: idle, loading, or error.
+ */
+declare const getLangLoadState: import('@ai-i18n/vite').I18nRuntime['getLangLoadState'];
+
+/**
+ * 订阅语言、加载状态和翻译模块更新。
+ * Subscribes to language, loading-state, and translation-module updates.
+ * @returns 取消订阅函数。
+ */
+declare const subscribe: import('@ai-i18n/vite').I18nRuntime['subscribe'];

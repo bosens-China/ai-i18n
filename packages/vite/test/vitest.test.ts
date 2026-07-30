@@ -51,14 +51,18 @@ test.each([
     source: "t('Vanilla'); getLangLoadState()",
   },
   {
-    expected: 'import { useI18n, t, tRef } from "virtual:ai-i18n";',
+    expected:
+      'import { useI18n, t, setLang, getLang, getLangs, getLangLoadState, subscribe, tRef } from "virtual:ai-i18n";',
     framework: 'vue' as const,
-    source: "useI18n(); t('Vue'); tRef('Vue Ref')",
+    source:
+      "useI18n(); t('Vue'); setLang('en-US'); getLang(); getLangs(); getLangLoadState(); subscribe(listener); tRef('Vue Ref')",
   },
   {
-    expected: 'import { useI18n, t } from "virtual:ai-i18n";',
+    expected:
+      'import { useI18n, t, setLang, getLang, getLangs, getLangLoadState, subscribe } from "virtual:ai-i18n";',
     framework: 'react' as const,
-    source: "useI18n(); t('React')",
+    source:
+      "useI18n(); t('React'); setLang('en-US'); getLang(); getLangs(); getLangLoadState(); subscribe(listener)",
   },
 ])(
   'Vitest plugin injects $framework auto imports when enabled',
@@ -76,6 +80,24 @@ test.each([
     expect(result?.code).toContain(expected);
   },
 );
+
+test('Vitest plugin injects auto-imported APIs used as values', async () => {
+  const plugin = aiI18nVitest({
+    sourceLang: 'zh-CN',
+    locales: [{ value: 'zh-CN', label: '中文' }],
+    framework: 'react',
+    autoImport: true,
+  });
+  const result = await callHook<Promise<{ code: string; map: unknown } | null>>(
+    plugin.transform,
+    'const switchLanguage = setLang; const runtime = { getLang }',
+    '/workspace/src/runtime.ts',
+  );
+
+  expect(result?.code).toContain(
+    'import { setLang, getLang } from "virtual:ai-i18n";',
+  );
+});
 
 test('Vitest plugin leaves unbound runtime calls alone when auto import is disabled', async () => {
   const plugin = aiI18nVitest({

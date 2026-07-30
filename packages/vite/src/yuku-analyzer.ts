@@ -6,6 +6,7 @@ export {
   findDefineI18nMessagesCalls,
   findInvalidDefineI18nMessagesReferences,
   findUnboundCalls,
+  findUnboundReferences,
 } from '@ai-i18n/analyzer';
 export type {
   DefineI18nMessagesCall,

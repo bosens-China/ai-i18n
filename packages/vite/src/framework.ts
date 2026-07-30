@@ -10,17 +10,18 @@ export type AiI18nFramework = 'vanilla' | 'vue' | 'react';
 
 const PLAIN_SOURCE_RE = /\.[cm]?[jt]s$/;
 const JSX_SOURCE_RE = /\.[jt]sx$/;
+const RUNTIME_AUTO_IMPORTS = [
+  't',
+  'setLang',
+  'getLang',
+  'getLangs',
+  'getLangLoadState',
+  'subscribe',
+] as const;
 const AUTO_IMPORTS: Record<AiI18nFramework, readonly string[]> = {
-  vanilla: [
-    't',
-    'setLang',
-    'getLang',
-    'getLangs',
-    'getLangLoadState',
-    'subscribe',
-  ],
-  vue: ['useI18n', 't', 'tRef'],
-  react: ['useI18n', 't'],
+  vanilla: RUNTIME_AUTO_IMPORTS,
+  vue: ['useI18n', ...RUNTIME_AUTO_IMPORTS, 'tRef'],
+  react: ['useI18n', ...RUNTIME_AUTO_IMPORTS],
 };
 
 export function resolveFramework(

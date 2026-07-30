@@ -330,6 +330,29 @@ export function findUnboundCalls(
   return [...found];
 }
 
+export function findUnboundReferences(
+  module: Module,
+  names: ReadonlySet<string>,
+): string[] {
+  const found = new Set<string>();
+  // 只接纳运行时读取；声明、属性名、类型引用和赋值目标都不能触发自动导入。
+  module.walk({
+    Identifier(node, context) {
+      const reference = context.reference;
+      if (
+        names.has(node.name) &&
+        reference &&
+        !reference.symbol &&
+        !reference.inTypePosition &&
+        !reference.isWrite
+      ) {
+        found.add(node.name);
+      }
+    },
+  });
+  return [...found];
+}
+
 export function findDefineI18nMessagesCalls(
   module: Module,
 ): DefineI18nMessagesCall[] {

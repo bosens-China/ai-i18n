@@ -83,6 +83,38 @@ declare const useI18n: import('@ai-i18n/vite/vue').UseI18n;
 declare const t: import('@ai-i18n/vite').I18nRuntime['t'];
 
 /**
+ * 切换当前语言；按需加载启用时会等待目标语言 chunk。
+ * Switches the current language and waits for its chunk when lazy loading is enabled.
+ * @returns 切换完成后的 Promise；加载失败时 reject，并保留原语言。
+ */
+declare const setLang: import('@ai-i18n/vite').I18nRuntime['setLang'];
+
+/**
+ * 读取当前语言标识。
+ * Returns the current language identifier.
+ */
+declare const getLang: import('@ai-i18n/vite').I18nRuntime['getLang'];
+
+/**
+ * 读取配置中的语言选项，只读且保持配置顺序。
+ * Returns the configured readonly language options in configuration order.
+ */
+declare const getLangs: import('@ai-i18n/vite').I18nRuntime['getLangs'];
+
+/**
+ * 读取语言加载状态：idle、loading 或 error。
+ * Returns the language loading state: idle, loading, or error.
+ */
+declare const getLangLoadState: import('@ai-i18n/vite').I18nRuntime['getLangLoadState'];
+
+/**
+ * 订阅语言、加载状态和翻译模块更新。
+ * Subscribes to language, loading-state, and translation-module updates.
+ * @returns 取消订阅函数。
+ */
+declare const subscribe: import('@ai-i18n/vite').I18nRuntime['subscribe'];
+
+/**
  * Vue 专用：把文案或文案树转换为随语言更新的只读 ComputedRef。
  * Vue only: converts a message or message tree into a readonly ComputedRef that follows language changes.
  * 请在 setup 中创建；模板中直接读取返回值，不要在模板中调用 tRef()。

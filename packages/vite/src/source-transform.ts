@@ -23,7 +23,7 @@ import {
 import {
   analyzeModule,
   findDefineI18nMessagesCalls,
-  findUnboundCalls,
+  findUnboundReferences,
 } from './yuku-analyzer.js';
 
 interface SourceTransformDependencies {
@@ -116,17 +116,17 @@ export function createSourceTransformHandler(
       project.hydrateOverrides(await store.loadOverrides());
     }
     dependencies.requestMissingTranslations(update.affectedModuleIds);
-    // 只注入没有本地 symbol 的调用，避免覆盖用户自己的同名函数。
-    const unboundCalls = autoImport
+    // 只注入没有本地 symbol 的值引用，避免覆盖用户自己的同名函数或变量。
+    const unboundReferences = autoImport
       ? new Set(
-          findUnboundCalls(
+          findUnboundReferences(
             currentModule,
             new Set(frameworkAutoImports(framework)),
           ),
         )
       : new Set<string>();
     const autoImports = frameworkAutoImports(framework).filter((name) =>
-      unboundCalls.has(name),
+      unboundReferences.has(name),
     );
     const needsRegistration = Boolean(result.messages.length || result.pending);
     const macroCalls =

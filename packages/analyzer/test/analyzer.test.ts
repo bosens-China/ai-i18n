@@ -6,6 +6,7 @@ import {
   extractMessages,
   findDefineI18nMessagesCalls,
   findUnboundCalls,
+  findUnboundReferences,
 } from '../src/index';
 
 const hooks = [
@@ -374,6 +375,27 @@ useI18n()`,
     expect(extractMessages(module, undefined, [], true)).toMatchObject({
       messages: [{ source: '自动导入' }],
     });
+  });
+
+  it('finds unbound auto-import value references without matching non-values', () => {
+    const module = analyzeModule(
+      `const switchLanguage = setLang
+const runtime = { getLang, loadState: getLangLoadState }
+type Setter = typeof setLang
+const named = { setLang: 'property' }
+setLang = localSetter
+function local(getLang) { return getLang }
+void runtime
+void named`,
+      'references.ts',
+    );
+
+    expect(
+      findUnboundReferences(
+        module,
+        new Set(['setLang', 'getLang', 'getLangLoadState']),
+      ),
+    ).toEqual(['setLang', 'getLang', 'getLangLoadState']);
   });
 
   it('extracts tagged templates with numbered interpolation placeholders', () => {

@@ -59,12 +59,13 @@ t(messages.states[index]);
 宏只能直接调用，不能赋值或传递；它在客户端、SSR transform 与 `aiI18nVitest()` 中消除为
 原参数，不提供冻结或运行时校验。生成的 `ai-i18n.d.ts` 始终包含它的全局类型。
 
-`autoImport: true` 在 Vanilla 模式注入顶层 Runtime API，在 React 模式注入
-`useI18n` 与 `t`，在 Vue 模式额外注入 `tRef`。框架组件通过 `useI18n()` 建立更新订阅；
+`autoImport: true` 在三种模式都注入顶层 Runtime API；React 额外注入 `useI18n`，Vue
+额外注入 `useI18n` 与 `tRef`。框架组件通过 `useI18n()` 建立更新订阅；
 Vue setup 中需要预先声明响应式 label 或文案树时可直接写
 `const label = tRef('保存')` 或 `const labels = tRef(messages)`，返回只读计算属性。同一 build 中不能调用 Hook 的
-普通 `.js` / `.ts` 工具模块可以使用顶层 `t`。框架模式属于整个 Vite build，不按单个文件
-扩展名切换。Vue 自动导入只省略 import；模板仍需在 `<script setup>` 中通过
+普通 `.js` / `.ts` 工具模块可以使用顶层 Runtime API。`getLang()` 与
+`getLangLoadState()` 返回快照，不会自动变成框架响应式状态。框架模式属于整个 Vite build，
+不按单个文件扩展名切换。Vue 自动导入只省略 import；模板仍需在 `<script setup>` 中通过
 `const { t } = useI18n()` 建立 binding 与订阅。
 
 Vitest 使用 `@ai-i18n/vite/vitest` 的 `aiI18nVitest()`，无需手写 alias，也不会读写协议文件；

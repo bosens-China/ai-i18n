@@ -17,7 +17,7 @@ import {
   AI_I18N_VIRTUAL_MODULE_ID,
   analyzeModule,
   findDefineI18nMessagesCalls,
-  findUnboundCalls,
+  findUnboundReferences,
 } from './yuku-analyzer.js';
 
 const TEST_RUNTIME_ID = '\0virtual:ai-i18n:vitest';
@@ -72,7 +72,9 @@ export function aiI18nVitest(options: AiI18nVitestOptions): Plugin {
         return transformDefineI18nMessages(code, id, calls);
       }
       const supported = frameworkAutoImports(framework);
-      const unbound = new Set(findUnboundCalls(module, new Set(supported)));
+      const unbound = new Set(
+        findUnboundReferences(module, new Set(supported)),
+      );
       const autoImports = supported.filter((name) => unbound.has(name));
       if (!autoImports.length && !calls.length) return null;
       return sourceRegistration({

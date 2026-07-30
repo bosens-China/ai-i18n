@@ -64,6 +64,12 @@ describe('framework integration', () => {
       "declare const t: import('@ai-i18n/vite').I18nRuntime['t'];",
     );
     expect(source).toContain(
+      "declare const getLang: import('@ai-i18n/vite').I18nRuntime['getLang'];",
+    );
+    expect(source).toContain(
+      "declare const setLang: import('@ai-i18n/vite').I18nRuntime['setLang'];",
+    );
+    expect(source).toContain(
       'declare const defineI18nMessages: <T>(messages: T) => T;',
     );
     expect(source).toContain(
@@ -81,6 +87,9 @@ describe('framework integration', () => {
     expect(react).toContain("import('@ai-i18n/vite/react').UseI18n");
     expect(react).toContain(
       "declare const t: import('@ai-i18n/vite').I18nRuntime['t'];",
+    );
+    expect(react).toContain(
+      "declare const getLangLoadState: import('@ai-i18n/vite').I18nRuntime['getLangLoadState'];",
     );
     expect(react).not.toContain("import('@ai-i18n/vite/vue').UseI18n");
     expect(react).not.toContain('tRef');

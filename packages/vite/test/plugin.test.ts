@@ -204,6 +204,29 @@ const messages = defineI18nMessages({ save: '保存' })
     expect(result?.code).toContain('register?module=src%2Fmain.ts');
   });
 
+  it.each([
+    ['vue', { name: 'vite:vue' }],
+    ['react', { name: 'vite:react-babel' }],
+  ] as const)(
+    'auto-imports Runtime value references in %s mode',
+    async (_framework, hostPlugin) => {
+      const { transform } = setupPlugin(
+        [],
+        undefined,
+        { ...options, autoImport: true },
+        [hostPlugin],
+      );
+      const result = await transform(
+        'const switchLanguage = setLang; const runtime = { getLang }',
+        '/workspace/src/runtime.ts',
+      );
+
+      expect(result?.code).toContain(
+        'import { setLang, getLang } from "virtual:ai-i18n";',
+      );
+    },
+  );
+
   it('keeps auto import disabled when it is not explicitly configured', async () => {
     const { transform } = setupPlugin([], undefined, options, [
       { name: 'host-plugin' },
