@@ -1,5 +1,20 @@
 # @ai-i18n/eslint-plugin
 
+## [1.0.0-alpha.9](https://github.com/bosens-China/ai-i18n/compare/eslint-plugin-v1.0.0-alpha.8...eslint-plugin-v1.0.0-alpha.9) (2026-07-30)
+
+
+### Features
+
+* **eslint:** 检测 autoImport 冗余导入 ([c3c6105](https://github.com/bosens-China/ai-i18n/commit/c3c6105b112c1dc4faff78602f1b93ca8d4e9b44))
+* **eslint:** 自动发现 tsconfig 项目配置 ([38ca09c](https://github.com/bosens-China/ai-i18n/commit/38ca09c8b48f9dca6af1afb2bc773232c405ff1a))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @ai-i18n/analyzer bumped to 1.0.0-alpha.8
+
 ## [1.0.0-alpha.8](https://github.com/bosens-China/ai-i18n/compare/eslint-plugin-v1.0.0-alpha.7...eslint-plugin-v1.0.0-alpha.8) (2026-07-29)
 
 
