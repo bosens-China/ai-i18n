@@ -1,6 +1,7 @@
 import { createRequire } from 'node:module';
 import type { ESLint } from 'eslint';
 import { noEagerTranslation } from './rules/no-eager-translation.js';
+import { noRedundantAutoImport } from './rules/no-redundant-auto-import.js';
 import { noUnsubscribedT } from './rules/no-unsubscribed-t.js';
 import { staticCandidateLimit } from './rules/static-candidate-limit.js';
 import { tStaticArgs } from './rules/t-static-args.js';
@@ -17,6 +18,7 @@ const plugin: ESLint.Plugin = {
   },
   rules: {
     'no-eager-translation': noEagerTranslation,
+    'no-redundant-auto-import': noRedundantAutoImport,
     'no-unsubscribed-t': noUnsubscribedT,
     'static-candidate-limit': staticCandidateLimit,
     't-static-args': tStaticArgs,
@@ -142,6 +144,7 @@ plugin.configs!['react-auto-import'] = [
 
 export {
   noEagerTranslation,
+  noRedundantAutoImport,
   noUnsubscribedT,
   staticCandidateLimit,
   tStaticArgs,

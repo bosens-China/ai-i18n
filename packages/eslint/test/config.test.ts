@@ -4,6 +4,7 @@ import vueParser from 'vue-eslint-parser';
 import { describe, expect, it } from 'vitest';
 import plugin, {
   noEagerTranslation,
+  noRedundantAutoImport,
   noUnsubscribedT,
   staticCandidateLimit,
   tStaticArgs,
@@ -14,6 +15,10 @@ describe('@ai-i18n/eslint config', () => {
     expect(plugin.rules).toHaveProperty(
       'no-eager-translation',
       noEagerTranslation,
+    );
+    expect(plugin.rules).toHaveProperty(
+      'no-redundant-auto-import',
+      noRedundantAutoImport,
     );
     expect(plugin.rules).toHaveProperty('no-unsubscribed-t', noUnsubscribedT);
     expect(plugin.rules).toHaveProperty('t-static-args', tStaticArgs);
