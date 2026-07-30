@@ -1,6 +1,9 @@
+import { DEMO_MESSAGES } from '@/messages';
+
 function App() {
   const { t, setLang, currentLang, langs } = useI18n();
   const currentLanguage = langs.find(({ value }) => value === currentLang);
+  const aliasStepIndex = currentLang === 'zh-CN' ? 0 : 1;
 
   return (
     <main className="demo-app">
@@ -41,6 +44,13 @@ function App() {
           <div className="translation-output" aria-live="polite">
             <p>{t('切换后，这段文案会立即更新。')}</p>
             <span>{t('useI18n 实时订阅 Runtime 并重渲染。')}</span>
+          </div>
+        </article>
+
+        <article className="demo-card">
+          <span className="demo-label">{t(DEMO_MESSAGES.aliasStatus)}</span>
+          <div className="translation-output">
+            <p>{t(DEMO_MESSAGES.steps[aliasStepIndex])}</p>
           </div>
         </article>
       </section>

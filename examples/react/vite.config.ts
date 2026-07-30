@@ -3,7 +3,10 @@ import { aiI18n } from '@ai-i18n/vite';
 import react from '@vitejs/plugin-react';
 
 export default defineConfig({
-  resolve: { dedupe: ['react', 'react-dom'] },
+  resolve: {
+    dedupe: ['react', 'react-dom'],
+    tsconfigPaths: true,
+  },
   plugins: [
     aiI18n({
       sourceLang: 'zh-CN',

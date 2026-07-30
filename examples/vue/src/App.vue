@@ -1,8 +1,10 @@
 <script setup lang="ts">
+import { DEMO_MESSAGES } from '@/messages';
 import { computed } from 'vue';
 
 const { t, setLang, currentLang, langs } = useI18n();
 const translatedMessage = tRef('响应式文案会随语言立即更新');
+const aliasStepIndex = computed(() => (currentLang.value === 'zh-CN' ? 0 : 1));
 const currentLanguageLabel = computed(
   () =>
     langs.value.find(({ value }) => value === currentLang.value)?.label ??
@@ -47,6 +49,13 @@ const currentLanguageLabel = computed(
         <div class="translation-output" aria-live="polite">
           <p>{{ translatedMessage }}</p>
           <span>{{ t('模板会自动响应 Runtime 状态。') }}</span>
+        </div>
+      </article>
+
+      <article class="demo-card">
+        <span class="demo-label">{{ t(DEMO_MESSAGES.aliasStatus) }}</span>
+        <div class="translation-output">
+          <p>{{ t(DEMO_MESSAGES.steps[aliasStepIndex]) }}</p>
         </div>
       </article>
     </section>

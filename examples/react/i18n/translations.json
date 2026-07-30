@@ -70,6 +70,13 @@
         "en-US": "useI18n subscribes to Runtime updates in real time"
       }
     },
+    "自动发现 tsconfig": {
+      "source": "自动发现 tsconfig",
+      "sourceLang": "zh-CN",
+      "translations": {
+        "en-US": null
+      }
+    },
     "让产品自然地说每一种语言": {
       "source": "让产品自然地说每一种语言",
       "sourceLang": "zh-CN",
@@ -91,14 +98,28 @@
         "en-US": "Language switching should be instantly visible"
       }
     },
+    "跨文件路径别名已通过静态分析": {
+      "source": "跨文件路径别名已通过静态分析",
+      "sourceLang": "zh-CN",
+      "translations": {
+        "en-US": null
+      }
+    },
     "这个示例把当前语言、切换动作和文案变化放在同一个视图里。": {
       "source": "这个示例把当前语言、切换动作和文案变化放在同一个视图里。",
       "sourceLang": "zh-CN",
       "translations": {
         "en-US": "This demo puts the current language, switch controls, and live copy in one view."
       }
+    },
+    "递归解析项目引用": {
+      "source": "递归解析项目引用",
+      "sourceLang": "zh-CN",
+      "translations": {
+        "en-US": null
+      }
     }
   },
-  "revision": 1,
+  "revision": 2,
   "version": 1
 }
