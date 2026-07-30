@@ -1,5 +1,22 @@
 # @ai-i18n/vite
 
+## [1.0.0-alpha.9](https://github.com/bosens-China/ai-i18n/compare/vite-v1.0.0-alpha.8...vite-v1.0.0-alpha.9) (2026-07-29)
+
+
+### Features
+
+* **vite:** 完善生成声明的 API 说明 ([3d252dc](https://github.com/bosens-China/ai-i18n/commit/3d252dcdc4c5defc5e84d61824a783cd5e1e58e3))
+* **vite:** 提示 Dev 未翻译文案 ([1d806b8](https://github.com/bosens-China/ai-i18n/commit/1d806b840ddc3ec5631d379425abcf4adf36f0f0))
+* 支持静态文案树翻译 ([7f5fb09](https://github.com/bosens-China/ai-i18n/commit/7f5fb09b9bc0e8313f5115dfb828fe3259b2264b))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @ai-i18n/analyzer bumped to 1.0.0-alpha.7
+    * @ai-i18n/core bumped to 1.0.0-alpha.6
+
 ## [1.0.0-alpha.8](https://github.com/bosens-China/ai-i18n/compare/vite-v1.0.0-alpha.7...vite-v1.0.0-alpha.8) (2026-07-29)
 
 

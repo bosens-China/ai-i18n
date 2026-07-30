@@ -1,5 +1,24 @@
 # @ai-i18n/analyzer
 
+## [1.0.0-alpha.7](https://github.com/bosens-China/ai-i18n/compare/analyzer-v1.0.0-alpha.6...analyzer-v1.0.0-alpha.7) (2026-07-29)
+
+
+### Features
+
+* 支持静态文案树翻译 ([7f5fb09](https://github.com/bosens-China/ai-i18n/commit/7f5fb09b9bc0e8313f5115dfb828fe3259b2264b))
+
+
+### Bug Fixes
+
+* **analyzer:** 明确编译宏无需导入 ([5028a3a](https://github.com/bosens-China/ai-i18n/commit/5028a3a2f348592bf57d26b16410ac1f454eff4c))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @ai-i18n/core bumped to 1.0.0-alpha.6
+
 ## [1.0.0-alpha.6](https://github.com/bosens-China/ai-i18n/compare/analyzer-v1.0.0-alpha.5...analyzer-v1.0.0-alpha.6) (2026-07-29)
 
 
