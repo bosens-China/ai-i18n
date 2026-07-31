@@ -22,6 +22,7 @@ interface CachedDirectoryStamp {
 
 interface CachedProbe {
   candidateDirectory: string | null;
+  expiresAt: number;
   parentDirectory: string | null;
   resolved: string | null;
 }
@@ -100,6 +101,7 @@ function probeSource(candidate: string): string | null {
   const cached = probeCache.get(candidate);
   if (
     cached &&
+    (cached.resolved !== null || cached.expiresAt > Date.now()) &&
     cached.parentDirectory === readDirectoryStamp(path.dirname(candidate)) &&
     cached.candidateDirectory === readDirectoryStamp(candidate)
   ) {
@@ -127,6 +129,7 @@ function probeSource(candidate: string): string | null {
   probeCache.set(candidate, {
     parentDirectory: readDirectoryStamp(path.dirname(candidate)),
     candidateDirectory: readDirectoryStamp(candidate),
+    expiresAt: Date.now() + DIRECTORY_STAMP_TTL_MS,
     resolved,
   });
   return resolved;
