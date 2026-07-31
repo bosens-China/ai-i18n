@@ -14,8 +14,9 @@
 
 ## 进行中需求
 
-当前没有进行中的需求文档。新需求在 `docs/work/<feature-name>/` 下创建 `PRD.md` 与
-`TODO.md`：
+当前没有进行中的需求。
+
+新需求在 `docs/work/<feature-name>/` 下创建 `PRD.md` 与 `TODO.md`：
 
 - PRD 只记录待确认或待实现的目标、决策和边界。
 - TODO 只保留未完成事项。

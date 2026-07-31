@@ -42,8 +42,7 @@ plugin in a source-only package, and do not promise extraction from prebuilt `no
 Every independent Vite build must use its own `directory`.
 
 Files under `extracted/` use SHA-256 hashes of normalized sources as physical names. Treat the JSON
-`source` field as authoritative; never derive a source path from a hash filename. A subsequent sync
-migrates the previous path-encoded filename for the same source.
+`source` field as authoritative; never derive a source path from a hash filename.
 
 ## Framework mode
 
@@ -61,6 +60,11 @@ React plugins is unsupported even when `framework` is set.
 Keep explicit imports. ai-i18n writes `src/ai-i18n.d.ts` by default; keep it in the TypeScript project
 or configure an included `dts` path.
 
+Vue auto import also writes an adjacent `.vue.d.ts` template bridge. If that path contains a
+non-generated user file, stop and ask the user to choose another `dts` path; never overwrite it.
+After changing `dts` or setting `dts: false`, explicitly remove the old generated primary and
+companion declarations because the plugin cannot infer a previous custom path.
+
 For an app-private workspace package that uses auto imports, configure `dts` to a file included by
 both the app and package TypeScript projects. Prefer explicit `virtual:ai-i18n` imports in reusable
 packages so they do not depend on one consumer's global declarations. Never let independent builds
@@ -71,7 +75,11 @@ import { getLangs, setLang, t } from 'virtual:ai-i18n'
 // Vue or React components:
 import { useI18n } from 'virtual:ai-i18n'
 // Vue only:
-import { tRef } from 'virtual:ai-i18n'
+import {
+  i18nComputed,
+  tComputed,
+  tRef,
+} from 'virtual:ai-i18n'
 ```
 
 The `locales` array must be non-empty, have unique `value` fields, and include `sourceLang`. Omit

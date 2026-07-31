@@ -19,7 +19,7 @@ API 参考按导入入口组织。选择入口后，再按函数、接口、类�
 - 翻译文案：[`t()`](/api/runtime/functions/t)
 - 在 Vue setup 中创建响应式翻译值：[`tRef()`](/api/runtime/vue/t-ref)
 - 读取语言资源加载状态：[`getLangLoadState()`](/api/runtime/functions/get-lang-load-state)
-- 在 Vue 中订阅语言变化：[`useI18n()`](/api/runtime/vue/use-i18n)
+- 在 Vue 中读取响应式语言状态：[`useI18n()`](/api/runtime/vue/use-i18n)
 - 在 React 中订阅语言变化：[`useI18n()`](/api/runtime/react/use-i18n)
 - 配置 Vitest：[`aiI18nVitest()`](/api/vitest/functions/ai-i18n-vitest)
 - 连接模型：[`openAI()`](/api/openai/functions/open-ai)

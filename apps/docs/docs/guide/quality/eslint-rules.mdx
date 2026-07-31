@@ -30,14 +30,14 @@ export default defineConfig([
 ]);
 ```
 
-| 规则                            | 解决的问题                                |
-| ------------------------------- | ----------------------------------------- |
-| `t-static-args`                 | 拒绝构建时无法确定或不推荐的 `t()` 参数。 |
-| `no-eager-translation`          | 避免过早计算并长期保存译后字符串。        |
-| `no-unsubscribed-runtime-state` | 避免缓存或渲染非响应式语言状态快照。      |
-| `no-unsubscribed-t`             | 提醒 Vue、React 组件使用订阅版 `t`。      |
-| `static-candidate-limit`        | 文案候选数量过大时发出警告。              |
-| `no-redundant-auto-import`      | 可选地删除自动导入已提供的显式导入。      |
+| 规则                            | 解决的问题                                 |
+| ------------------------------- | ------------------------------------------ |
+| `t-static-args`                 | 拒绝构建时无法确定或不推荐的 `t()` 参数。  |
+| `no-eager-translation`          | 避免过早计算并长期保存译后字符串。         |
+| `no-unsubscribed-runtime-state` | 避免缓存或渲染非响应式语言状态快照。       |
+| `no-unsubscribed-t`             | 检查框架渲染路径和 Vue getter 的生命周期。 |
+| `static-candidate-limit`        | 文案候选数量过大时发出警告。               |
+| `no-redundant-auto-import`      | 可选地删除自动导入已提供的显式导入。       |
 
 ## 自动导入选项
 
@@ -46,12 +46,18 @@ export default defineConfig([
 ```js
 'ai-i18n/t-static-args': [
   'error',
-  { autoImport: ['t', 'tRef', 'useI18n'] }, // Vue
+  { autoImport: ['t', 'tRef', 'tComputed', 'useI18n'] }, // Vue
 ],
 ```
 
-翻译静态分析规则只需要列出 `t`、`tRef` 和 `useI18n`。框架自动导入的完整集合见
-[自动导入](/guide/basic/auto-import)；新项目优先使用对应的预设。
+翻译静态分析规则只需要列出 `t`、`tRef`、`tComputed` 和 `useI18n`；
+`i18nComputed` 不接收待提取文案。框架自动导入的完整集合见
+[自动导入](/guide/basic/auto-import)；新项目优先使用对应的预设。规则会允许
+`tComputed()` 直接作为纯 Options `computed` 属性值，并拒绝把它放入 `data()`、template、
+render 或模块级缓存。自动导入模式下，纯 Options template 可以直接使用未绑定的 `t()`；
+本地同名值仍然遮挡。关闭自动导入时，`methods: { t }`、`methods: { t: translate }` 只有
+在值能解析到 ai-i18n Runtime `t` 时才作为 template binding。两种模式都不把 `this.t()`、
+`this.$t()` 视为翻译调用。
 
 `no-unsubscribed-runtime-state` 的自动导入选项只列出状态快照 API：
 
@@ -80,6 +86,8 @@ export default defineConfig([
       'getLangLoadState',
       'subscribe',
       'tRef',
+      'i18nComputed',
+      'tComputed',
     ],
   },
 ],

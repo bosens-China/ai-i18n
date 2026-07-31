@@ -29,6 +29,7 @@ const unsubscribe = subscribe(render);
 unsubscribe();
 ```
 
-Vue 与 React 组件通常不需要直接订阅。请分别使用
-[Vue `useI18n()`](/api/runtime/vue/use-i18n) 或
-[React `useI18n()`](/api/runtime/react/use-i18n)。
+Vue 与 React 组件通常不需要直接订阅。Vue Composition 使用
+[`useI18n()`](/api/runtime/vue/use-i18n)，纯 Options 使用
+[`i18nComputed()`](/api/runtime/vue/i18n-computed)，React 使用
+[`useI18n()`](/api/runtime/react/use-i18n)。

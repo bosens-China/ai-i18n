@@ -1,14 +1,22 @@
 ---
 title: Vue 3 示例
-description: 嵌入 Vue 3 示例应用，直观体验语言切换与文案更新
+description: 对照体验 script setup 与纯 Options API 的完整 Vue 能力
 ---
 
 import DemoFrame from '../../components/DemoFrame';
 
 ## Vue 3 集成演示
 
-基于 `useI18n` 响应式 Composable；setup 中需要预声明展示值时也可使用 Vue-only
-`tRef()`。Runtime 更新后 Vue 模板与响应式状态即时同步。
+示例提供两个 Tab：
+
+- **Setup + `lang="ts"`**：新组件的推荐写法。自动导入的 `t()` 同时用于 script 与
+  template，`useI18n()` 只读取 `currentLang`、加载状态与切换 action；预声明响应式文案
+  使用 `tRef()`。
+- **纯 Options API**：不使用 `setup()`。通过 `i18nComputed()` 暴露响应式状态，
+  `tComputed()` 创建响应式文案，script 与 template 直接使用自动导入的 `t()`。
+
+两个 Tab 共用同一个 Runtime。任一 Tab 切换语言后，另一个 Tab 的文案、当前语言与加载状态
+会同步更新；加载失败也会保留当前语言并展示共享错误状态。
 
 <DemoFrame framework="vue" title="Vue 3 集成演示" />
 

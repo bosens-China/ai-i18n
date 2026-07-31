@@ -8,5 +8,15 @@
     "type": "file",
     "name": "t-ref",
     "label": "tRef()"
+  },
+  {
+    "type": "file",
+    "name": "i18n-computed",
+    "label": "i18nComputed()"
+  },
+  {
+    "type": "file",
+    "name": "t-computed",
+    "label": "tComputed()"
   }
 ]

@@ -76,13 +76,9 @@ interface AiI18nOptions {
 
 同一个 build 同时出现 Vue 与 React 插件时会报错。显式设置 `framework` 不会绕过这项检查。
 
-`autoImport: true` 注入的 API 取决于最终模式：
-
-| 模式      | 自动导入的 API                                                         |
-| --------- | ---------------------------------------------------------------------- |
-| `vanilla` | `t`、`setLang`、`getLang`、`getLangs`、`getLangLoadState`、`subscribe` |
-| `vue`     | `useI18n`、`t`、`tRef`                                                 |
-| `react`   | `useI18n`、`t`                                                         |
+`autoImport: true` 注入的 API 取决于最终模式。三种模式都有 `t`、`setLang`、`getLang`、
+`getLangs`、`getLangLoadState` 与 `subscribe`；Vue 额外注入 `useI18n`、`tRef`、
+`i18nComputed`、`tComputed`，React 额外注入 `useI18n`。
 
 完整接入方法见[自动导入](/guide/basic/auto-import)。
 
@@ -98,7 +94,8 @@ interface AiI18nOptions {
 ## 声明文件
 
 默认声明文件始终包含 `virtual:ai-i18n` 和 `defineI18nMessages<T>(value)`。开启自动导入后，
-同一文件还会声明当前模式的 Runtime 全局 API。
+同一文件还会声明当前模式的 Runtime 全局 API。Vue 模式会额外声明 template 中可直接使用的
+`t`，供 Volar 与 `vue-tsc` 检查。
 
 只有宿主项目通过其他方式维护等价声明时，才建议设置 `dts: false`。
 

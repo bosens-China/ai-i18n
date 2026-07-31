@@ -56,16 +56,17 @@ aiI18n({
 ## 显示切换中的加载状态
 
 `setLang()` 返回 Promise。目标语言 chunk 尚未加载时，它会等待资源完成；成功后才切换语言
-并通知订阅者更新。Runtime 同时维护共享状态。Vue 与 React 组件通过 `useI18n()` 订阅，
-Vanilla JS 通过 `subscribe()` 订阅。
+并通知订阅者更新。Runtime 同时维护共享状态。Vue adapter 统一维护响应式 revision；
+Composition 组件通过 `useI18n()` 读取共享 Ref，纯 Options 组件通过 `i18nComputed()`
+读取已解包状态。React 组件通过 `useI18n()` 订阅，Vanilla JS 通过 `subscribe()` 订阅。
 
 <Tabs>
   <Tab label="Vue">
     ```vue
     <script setup lang="ts">
-    import { useI18n } from 'virtual:ai-i18n';
+    import { t, useI18n } from 'virtual:ai-i18n';
 
-    const { isLangLoading, langLoadState, setLang, t } = useI18n();
+    const { isLangLoading, langLoadState, setLang } = useI18n();
 
     async function switchToFrench() {
       try {
@@ -74,6 +75,48 @@ Vanilla JS 通过 `subscribe()` 订阅。
         // 仅在这里添加业务级恢复动作；通用错误展示直接读取 langLoadState.status。
       }
     }
+    </script>
+
+    <template>
+      <button :disabled="isLangLoading" @click="switchToFrench">
+        {{ isLangLoading ? t('正在加载语言包…') : t('切换到法语') }}
+      </button>
+      <p v-if="langLoadState.status === 'error'">
+        {{ t('语言包加载失败，请重试') }}
+      </p>
+      <small v-if="langLoadState.status === 'loading'">
+        {{ t('目标语言：') }} {{ langLoadState.targetLang }}
+      </small>
+    </template>
+    ```
+
+  </Tab>
+
+  <Tab label="Vue Options">
+    ```vue
+    <script lang="ts">
+    import { defineComponent } from 'vue';
+    import {
+      i18nComputed,
+      setLang,
+      t,
+    } from 'virtual:ai-i18n';
+
+    export default defineComponent({
+      computed: {
+        ...i18nComputed(),
+      },
+      methods: {
+        t,
+        async switchToFrench() {
+          try {
+            await setLang('fr-FR');
+          } catch {
+            // 通用错误展示直接读取响应式 langLoadState。
+          }
+        },
+      },
+    });
     </script>
 
     <template>

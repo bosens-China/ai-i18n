@@ -144,9 +144,9 @@ t(canSubmit ? '提交' : '返回');
 需要按索引读取一组文案时，使用 `defineI18nMessages()`。完整示例见
 [通用文案写法](/guide/basic/static-analysis/common)。
 
-### 为什么组件中的 `t()` 提示不会更新
+### 为什么 React 组件中的 `t()` 提示不会更新
 
-Vue 和 React 组件要使用 `useI18n()` 返回的 `t`，不能在渲染路径直接使用顶层 `t`：
+React 组件要使用 `useI18n()` 返回的 `t`，不能在渲染路径直接使用顶层 `t`：
 
 ```tsx
 function SaveButton() {
@@ -155,12 +155,20 @@ function SaveButton() {
 }
 ```
 
-不要在模块初始化、state、storage 或业务数据中长期保存已经翻译的字符串。Vue setup 中需要预先
-声明响应式展示文案时，使用 `tRef()`。
+Vue template、render 与 computed 可以直接使用顶层 `t()`，它会追踪 Vue adapter
+revision。不要在模块初始化、state、storage 或业务数据中长期保存已经翻译的字符串。Vue
+setup 中需要预先声明响应式展示文案时，使用 `tRef()`。纯 Options 组件使用
+`tComputed()` 时，应把它直接写成 `computed` 属性值；放在 `data()`、template、render
+或模块级变量中会得到 getter 而不是译文，规则会报告该用法。
+
+关闭自动导入时，纯 Options template 直接调用显式导入的 `t()`，需要在 `methods` 中建立
+`t` binding；规则也识别改名导入映射。开启自动导入后，无需 `methods: { t }`，规则会直接
+检查 script 和 template 中未绑定的 `t()`。本地同名 method 仍然遮挡自动导入。脚本内使用
+词法作用域中的 `t()`；`this.t()` 与 `this.$t()` 不属于静态提取写法。
 
 `getLang()` 与 `getLangLoadState()` 同样返回快照。组件展示当前语言或加载状态时，使用
-`useI18n()` 返回的 `currentLang` 与 `langLoadState`；在 action、事件处理器或工具函数中
-按需读取 Runtime 快照不受限制。
+Composition API 的 `useI18n()`；纯 Options 组件则在 `computed` 中展开
+`...i18nComputed()`。在 action、事件处理器或工具函数中按需读取 Runtime 快照不受限制。
 
 ### 为什么显式导入提示多余
 

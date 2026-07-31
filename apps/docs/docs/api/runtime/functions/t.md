@@ -92,13 +92,14 @@ Runtime 会比较源文与译文的占位符。译文缺少、多出或改变编
 `const getLabel = () => t('保存')`。
 :::
 
-Vue 组件应使用 [Vue `useI18n()`](/api/runtime/vue/use-i18n)，React 组件应使用
-[React `useI18n()`](/api/runtime/react/use-i18n)。两者返回的 `t` 会建立语言变化订阅。
-Runtime 顶层 `t` 即使位于组件渲染函数中，也不会自行触发组件更新。对应 ESLint 生命周期
+Vue 模式的顶层 `t` 会追踪 adapter revision，因此可以在 template、render、computed 与
+Options method 中直接使用。React 组件应使用
+[React `useI18n()`](/api/runtime/react/use-i18n) 建立语言变化订阅。对应 ESLint 生命周期
 检查见 [ESLint](/guide/quality/eslint)。
 
 Vue setup 中需要预先声明响应式 label 时，使用 Vue-only
-[`tRef()`](/api/runtime/vue/t-ref)。`t()` 的字符串输入返回字符串，文案树输入
+[`tRef()`](/api/runtime/vue/t-ref)；纯 Options 的 `computed` 使用
+[`tComputed()`](/api/runtime/vue/t-computed)。`t()` 的字符串输入返回字符串，文案树输入
 返回翻译后的同形结构；两者都不会因为调用位置不同而变成 Ref。
 
 支持的文案写法见[通用文案写法](/guide/basic/static-analysis/common)。

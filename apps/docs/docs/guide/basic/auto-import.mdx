@@ -6,7 +6,7 @@ description: 显式开启 ai-i18n 自动导入，并配置对应的 TypeScript �
 自动导入默认关闭。未配置时，请从 `virtual:ai-i18n` 显式导入 Runtime API：
 
 ```ts
-import { useI18n } from 'virtual:ai-i18n';
+import { t } from 'virtual:ai-i18n';
 ```
 
 ## 开启自动导入
@@ -38,22 +38,28 @@ export default defineConfig({
 | 模式    | 自动导入的 API                                                         |
 | ------- | ---------------------------------------------------------------------- |
 | Vanilla | `t`、`setLang`、`getLang`、`getLangs`、`getLangLoadState`、`subscribe` |
-| Vue     | 全部 Runtime API，以及 `useI18n`、`tRef`                               |
+| Vue     | 全部 Runtime API，以及 `useI18n`、`tRef`、`i18nComputed`、`tComputed`  |
 | React   | 全部 Runtime API，以及 `useI18n`                                       |
 
 插件只注入没有本地 binding 的值引用，直接调用、函数传递与对象简写都支持。显式 import、
 局部变量或同名函数始终优先，不会被覆盖。安装其他 Vite 插件不会自动开启该能力。
 
 Vue 与 React build 中也可以包含普通 `.js` / `.ts` 工具模块。在这些非组件模块里使用顶层
-Runtime API；在组件渲染路径中仍使用 `useI18n()`，由 Hook / composable 建立语言变化订阅。
+Runtime API。Vue template、render 与 computed 可以直接使用 `t()`；Vue 适配器会追踪语言
+revision。顶层 `t` 与 `useI18n().t` 是同一个函数，Vue 的响应式刷新来自 adapter 维护的
+共享 revision，并非每个组件调用 `useI18n()` 后单独订阅。React 组件仍使用
+`useI18n()` 建立订阅。
 `getLang()` 与 `getLangLoadState()` 返回调用时快照，自动导入不会把它们变成 Vue Ref 或
-React 响应式状态。仅调用顶层 Runtime API 不会使组件自动重新渲染，React Compiler 也不能
-补上缺失的订阅。
+React 响应式状态。顶层状态快照 API 不会使组件自动重新渲染，React Compiler 也不能补上
+缺失的订阅。
 
 | 使用位置                           | 推荐 API                                        |
 | ---------------------------------- | ----------------------------------------------- |
-| Vue / React 组件渲染               | `useI18n()`                                     |
+| Vue template、render、computed     | `t()`                                           |
+| React 组件渲染                     | `useI18n()`                                     |
 | Vue setup 中预声明响应式文案       | `tRef()`                                        |
+| Vue 纯 Options 响应式状态          | `i18nComputed()`                                |
+| Vue 纯 Options 预声明响应式文案    | `tComputed()`                                   |
 | 普通 TS/JS、store action、路由守卫 | 顶层 Runtime API                                |
 | 非组件模块长期监听语言变化         | `subscribe()`，并在销毁时调用返回的取消订阅函数 |
 
@@ -93,35 +99,81 @@ const labels = tRef({
 
 不要在 template 中直接调用 `tRef()`，否则每次渲染都会创建新的 `computed`。
 
-Vue 模板必须先取得订阅版 `t`。可以在 `<script setup>` 中声明，也可以由普通
-`<script>` 的 `setup()` 直接返回。自动导入只省略 import，不会把模板中的裸标识符自动
-改写成 Hook：
+Vue 的 `<script setup>`、普通 `<script>` 与 template 都可以直接写未绑定的 `t()`。
+生成的声明文件同时覆盖 TypeScript 作用域和 Vue template，因此 Volar 与 `vue-tsc` 无需
+额外的占位 import：
 
 ```vue
 <script setup lang="ts">
-const { t } = useI18n();
+const { currentLang, isLangLoading, setLang } = useI18n();
 </script>
 
-<template>{{ t('保存') }}</template>
+<template>
+  <button :disabled="isLangLoading">{{ t('保存') }}</button>
+</template>
 ```
 
-普通 `<script>` 的等价写法是：
+这里的顶层 `t` 与 `useI18n().t` 是同一个函数。新代码需要响应式语言状态时，
+`useI18n()` 通常只解构 Ref 和 action。
+
+纯 Options API 不需要用 `methods: { t }` 建立模板桥接。脚本中的 computed / method 与
+template 都可以直接调用词法作用域或模板作用域中的 `t()`：
 
 ```vue
 <script lang="ts">
-export default {
-  setup() {
-    const { t } = useI18n();
-    return { t };
+import { defineComponent } from 'vue';
+
+export default defineComponent({
+  computed: {
+    ...i18nComputed(),
+    buttonLabel: tComputed('保存'),
+    label() {
+      return t('保存');
+    },
   },
-};
+});
+</script>
+
+<template>
+  {{ t('保存') }} / {{ label }} / {{ buttonLabel }} / {{ currentLang }}
+</template>
+```
+
+插件只为未绑定的值引用注入 API。模板局部变量以及组件自身的 prop、data、computed、
+method、inject 或 setup 返回值会遮挡自动导入；本地同名 binding 始终优先。`this.t()`、
+`this.$t()`、mixin 与 `globalProperties` 不属于 ai-i18n 调用。
+
+### 关闭自动导入时
+
+`autoImport: false` 时仍需从 `virtual:ai-i18n` 显式导入。`<script setup>` 的顶层 import
+会自然暴露给 template：
+
+```vue
+<script setup lang="ts">
+import { t } from 'virtual:ai-i18n';
 </script>
 
 <template>{{ t('保存') }}</template>
 ```
 
-只写 `<template>{{ t('保存') }}</template>` 不受支持。Vue 会把它当作组件上下文属性，
-Vite 构建不一定报错；`vue-auto-import` ESLint preset 会把这种写法作为 error。
+普通 Options `<script>` 的 import 只存在于模块作用域。template 需要直接调用 `t()` 时，
+应建立真实组件 binding：
+
+```vue
+<script lang="ts">
+import { defineComponent } from 'vue';
+import { t } from 'virtual:ai-i18n';
+
+export default defineComponent({
+  methods: { t },
+});
+</script>
+
+<template>{{ t('保存') }}</template>
+```
+
+这项显式导入 bridge 的静态边界见
+[Vue 文案写法](/guide/basic/static-analysis/vue#显式导入下的-options-bridge)。
 
 顶层 `t` 应在实际需要文案时调用，不要在模块初始化期间保存译后字符串：
 
@@ -134,8 +186,12 @@ export const getLabel = () => t('保存'); // 每次调用读取当前语言
 
 插件默认在根目录的 `src/ai-i18n.d.ts` 声明虚拟模块和
 `defineI18nMessages<T>(value)` 编译宏。开启自动导入后，同一文件还会声明当前框架模式下的
-Runtime 全局 API，避免 IDE 报未定义错误。该文件由插件维护，带有 `@noformat` 等标记，
+Runtime 全局 API；Vue 模式会额外声明 template 可见的 `t`。因此普通 TypeScript、Vue
+script、Volar 与 `vue-tsc` 会读取同一份类型。该文件由插件维护，带有 `@noformat` 等标记，
 请勿手工编辑。
+
+Vue template 的类型声明不代表组件实例安装了全局 method。即使 IDE 能看到相应成员，也不要
+在 Options 脚本中写 `this.t()`；应直接调用 `t()`。ESLint 的 Vue preset 会检查这个边界。
 
 你可以通过 `dts` 选项调整生成行为：
 
@@ -151,6 +207,11 @@ aiI18n({
 声明文件会在首次启动 Vite 后生成。请将它纳入版本控制，并确保所在目录已被
 `tsconfig.json` 的 `include` 字段包含。
 :::
+
+Vue 模式开启自动导入时，还会在主声明旁生成相邻的 `.vue.d.ts` template 类型桥。若该路径
+已有不带 ai-i18n 生成标记的用户文件，启动会报错且不会覆盖。修改 `dts` 路径或改为
+`dts: false` 后，插件无法知道旧的自定义输出位置；请手动删除旧的主声明和相邻
+`.vue.d.ts`。
 
 ### Monorepo 子包
 
@@ -177,8 +238,8 @@ TypeScript 声明不会自动配置 ESLint。开启自动导入后，请按最�
 `@ai-i18n/eslint-plugin` 的 `configs['vanilla-auto-import']`、
 `configs['vue-auto-import']` 或 `configs['react-auto-import']`。这些预设会声明对应的
 只读全局，并检查静态提取语法。完整配置见
-[ESLint](/guide/quality/eslint)。它们还会提示初始化期译文快照；Vue / React preset 会
-提示组件渲染路径中没有订阅的顶层 `t`，并检查模块顶层或组件渲染中的
+[ESLint](/guide/quality/eslint)。它们还会提示初始化期译文快照；React preset 会提示
+组件渲染路径中没有订阅的顶层 `t`。Vue / React preset 都会检查模块顶层或组件渲染中的
 `getLang()` / `getLangLoadState()` 快照。如果项目希望禁止自动导入模式中残留的
 `virtual:ai-i18n` 显式导入，可以按完整框架 API 列表额外启用可自动修复的
 `ai-i18n/no-redundant-auto-import`；该规则默认不包含在 preset 中。

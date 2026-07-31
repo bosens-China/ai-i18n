@@ -94,8 +94,9 @@ const labels = tRef(messages);
 
 ## 与 `t()` 的分工
 
-- 模板或渲染函数当场展示：使用 [`useI18n()`](./use-i18n) 返回的 `t`。
+- 模板或渲染函数当场展示：直接使用 [`t()`](../functions/t)。
 - Vue setup / composable 需要预先声明响应式字符串、对象或数组：使用 `tRef()`。
+- 纯 Options API 的 computed：使用 [`tComputed()`](./t-computed)。
 - 事件、日志或普通工具函数需要即时字符串：使用 `t()`。
 
 不要在 template 或渲染函数中直接调用 `tRef()`：

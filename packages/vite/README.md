@@ -22,7 +22,7 @@ ai-i18n 根据 import binding 自动识别翻译调用，不要求 JSX 文件使
 但 `node_modules` 中的预构建依赖仍不参与源码提取。
 
 `extracted/` 的物理 JSON 文件名是标准化 source 的 SHA-256，文件内容仍保存完整 source。
-监听与 MCP 按 JSON 内容识别源码，不从 hash 反推；旧路径编码文件会在下一次同步时迁移。
+监听与 MCP 按 JSON 内容识别源码，不从 hash 反推。
 
 每个 Vite build 必须使用独立的 `directory`。多个应用不能通过共用 i18n 目录来共享译文，
 因为完整 Build 会按当前模块图重建 `extracted/` 与 `locales/`。
@@ -73,13 +73,39 @@ t(messages.states[index]);
 原参数，不提供冻结或运行时校验。生成的 `ai-i18n.d.ts` 始终包含它的全局类型。
 
 `autoImport: true` 在三种模式都注入顶层 Runtime API；React 额外注入 `useI18n`，Vue
-额外注入 `useI18n` 与 `tRef`。框架组件通过 `useI18n()` 建立更新订阅；
-Vue setup 中需要预先声明响应式 label 或文案树时可直接写
-`const label = tRef('保存')` 或 `const labels = tRef(messages)`，返回只读计算属性。同一 build 中不能调用 Hook 的
-普通 ESM 工具模块可以使用顶层 Runtime API。`getLang()` 与
+额外注入 `useI18n`、`tRef`、`i18nComputed` 与 `tComputed`。Vue 组件可在 `<script>`、
+`<script setup>`、Options API 的 `computed` / `methods` 与 template 中直接调用 `t()`。
+Vue 版顶层 `t` 会追踪 Runtime revision，因此 template、render 与 computed 会随语言切换
+刷新。`useI18n().t` 与顶层导出是同一个函数，Vue 的响应式刷新由 adapter 的共享 revision
+驱动，并非每个组件调用 Composable 后单独订阅。自动导入模式的新建 setup 组件直接使用
+裸 `t()`；`useI18n()` 用于读取响应式状态和 action。React 组件仍通过 `useI18n()` 建立
+更新订阅。
+
+Vue setup 中需要预先声明响应式 label 或文案树时，可写
+`const label = tRef('保存')` 或 `const labels = tRef(messages)`，返回只读计算属性。纯
+Options 组件把 `...i18nComputed()` 展开到 `computed`，即可直接读取 `currentLang`、
+`langs`、`langLoadState`、`isLangLoading` 与 `langLoadError`；预声明响应式文案使用
+`label: tComputed('保存')`。TypeScript 组件应使用 `defineComponent()`，并开启 `strict`
+或至少开启 `noImplicitThis`，以获得准确的 `this` 与 template 类型提示。
+自动导入模式下，生成的 dts 会同时声明 script 全局 API 与 Vue template 的 `t`，因此
+`<script setup>`、普通 `<script>`、纯 Options 和 template-only SFC 都无需补充 import 或
+`methods: { t }`；Volar 与 `vue-tsc` 可直接检查。关闭自动导入时，`<script setup>` 顶层
+显式 import 会自然成为 template binding；普通 Options `<script>` 的 import 不会成为组件
+实例属性，template 直接使用时仍需通过 `methods: { t }` 建立真实 binding。脚本调用始终写
+词法作用域的 `t()`，不使用 `this.t()`。
+
+Vue 自动导入会在主 dts 旁生成同名的 `.vue.d.ts` template 类型桥；若该路径已有不带
+ai-i18n 生成标记的用户文件，插件会报错且不会覆盖。把 `dts` 改到新路径或设为 `false`
+后，插件无法可靠推断旧的自定义路径，请手动删除旧的主 dts 与相邻 `.vue.d.ts`。
+
+同一 build 中不能调用 Hook 的普通 ESM 工具模块可以使用顶层 Runtime API。`getLang()` 与
 `getLangLoadState()` 返回快照，不会自动变成框架响应式状态。框架模式属于整个 Vite build，
-不按单个文件扩展名切换。Vue 自动导入只省略 import；模板仍需通过 `<script setup>` 绑定，
-或由普通 `<script>` 的 `setup()` 直接返回 `useI18n()` 的 binding，以建立订阅。
+不按单个文件扩展名切换。Vue 自动导入只处理未绑定的 API 引用；模板局部变量以及组件自身的
+prop、data、computed、method、inject 或 setup 返回值具有更高优先级。`this.t` 与
+`this.$t` 不属于 ai-i18n 调用。
+
+Vue template 的提取与自动注入目前只支持默认 HTML template 和 `lang="html"`。Pug 等
+预处理 template 请在 `<script>` / computed 中调用 `t()`，再把结果交给模板渲染。
 
 Vitest 使用 `@ai-i18n/vite/vitest` 的 `aiI18nVitest()`，无需手写 alias，也不会读写协议文件；
 生产开启自动导入时，把同一个 `autoImport: true` 传给测试插件。
@@ -110,7 +136,9 @@ aiI18n({
 的并发切换共享请求，不同 locale 以最后一次调用为准。非 source 的 `defaultLang` 自动采用
 preload 语义。`getLangLoadState()` 返回共享的 `idle` / `loading` / `error` 快照；
 Vue / React 的 `useI18n()` 额外返回 `langLoadState`、`isLangLoading` 与
-`langLoadError`。省略 `loading` 时保持全语言注册模式。
+`langLoadError`。纯 Options 组件通过 `...i18nComputed()` 获得同一组已解包的响应式状态，
+并可直接使用 Options `watch.currentLang` 监听成功的语言切换。省略 `loading` 时保持全语言
+注册模式。
 
 ## Cache 容量
 

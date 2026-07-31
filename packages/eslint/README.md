@@ -53,6 +53,8 @@ export default [
             'getLangLoadState',
             'subscribe',
             'tRef',
+            'i18nComputed',
+            'tComputed',
           ],
         },
       ],
@@ -61,10 +63,10 @@ export default [
 ];
 ```
 
-React 使用上面的完整列表并移除 `tRef`；Vanilla 再移除 `useI18n`。该规则不在 preset 中
-默认启用。它只检查来自 `virtual:ai-i18n` 的未改名值导入，保留改名导入、namespace import、
-type import 和当前模式不会自动注入的 API，并支持 `eslint --fix`。import 内部有注释时只
-报告，不自动修改。
+React 使用上面的完整列表并移除 `tRef`、`i18nComputed` 与 `tComputed`；Vanilla 再移除
+`useI18n`。该规则不在 preset 中默认启用。它只检查来自 `virtual:ai-i18n` 的未改名值导入，
+保留改名导入、namespace import、type import 和当前模式不会自动注入的 API，并支持
+`eslint --fix`。import 内部有注释时只报告，不自动修改。
 
 ## Vue SFC
 
@@ -94,10 +96,48 @@ Vue 项目已有的 `vue/compiler-sfc` Node 入口，与 Vite 提取器复用相
 source-map 映射，覆盖 `<script>`、`<script setup>`、模板插值和指令表达式。Vue、
 TypeScript 与 SFC 编译相关依赖均为可选 peer，不会安装到 React/Vanilla 项目。
 
-普通 `<script>` 模板只识别能静态证明来自 `useI18n()`、并由组件 `setup()` 中唯一的顶层
-`return { ... }` 直接暴露的 `t`、解构别名或 i18n 对象。条件或多分支 return、
-`this.t`、`this.$t`、mixin、`globalProperties` 与同名 Options method 不属于
-ai-i18n binding；返回对象含 spread、计算属性、重复键，或改写 i18n 对象 `.t` 时也会跳过。
+Vue SFC 可在 `<script>`、`<script setup>`、Options API 的 `computed` / `methods` 与
+template 中直接调用 Runtime `t`。显式导入和自动导入都支持；自动导入只处理未绑定且未被
+模板局部变量或组件自身 prop、data、computed、普通同名 method、inject、setup 返回值遮挡的
+`t`。自动导入模式下，纯 Options template 不需要 `methods: { t }`；关闭自动导入时，普通
+Options `<script>` 仍需通过真实 method binding 把显式导入的 Runtime 函数暴露给 template。
+
+纯 Options API 可在 `computed` 中展开 `...i18nComputed()` 获得响应式语言和加载状态，
+并把 `tComputed()` 直接写成 computed 属性值。`watch.currentLang` 可使用 Vue 原生 watcher
+监听语言变化：
+
+```ts
+import { defineComponent } from 'vue';
+import { i18nComputed, t, tComputed } from 'virtual:ai-i18n';
+
+export default defineComponent({
+  computed: {
+    ...i18nComputed(),
+    saveLabel: tComputed('保存'),
+  },
+  methods: {
+    t, // 让 Volar 与 template 都能识别 t()
+    notify() {
+      return t('保存成功'); // script 内继续使用 lexical t
+    },
+  },
+  watch: {
+    currentLang(next: string, previous: string) {
+      console.log(previous, next);
+    },
+  },
+});
+```
+
+使用 `defineComponent()` 后，`this.currentLang` 等展开后的 computed 字段可被 IDE 准确推断。
+Vue 3.5 的 Options `watch` 回调参数不会按 key 推断，TypeScript 项目应显式标注
+`next` / `previous`。
+
+上例展示关闭自动导入时的显式 import。开启 `autoImport` 后，应同时删除 ai-i18n import 和
+`methods: { t }`，script 与 template 直接使用裸 `t()`；本地 `t() {}` 或本地变量仍然
+遮挡。显式模式的改名导入可写成 `methods: { t: translate }`，只有能证明值来自
+`virtual:ai-i18n` 的 bridge 才参与 template 提取。两种模式都不支持 script 内的
+`this.t()`、`this.$t()`、mixin 与 `globalProperties`。
 
 Vue preset 同时覆盖 Vue JSX/TSX，但宿主仍需用 `@vitejs/plugin-vue-jsx` 编译这些文件。
 同一个 Vite build 不支持两种框架模式混用。
@@ -114,12 +154,15 @@ Vue preset 同时覆盖 Vue JSX/TSX，但宿主仍需用 `@vitejs/plugin-vue-jsx
 export const label = t('保存'); // warning：只保存初始化时的译文
 export const getLabel = () => t('保存'); // 允许：每次调用重新读取当前语言
 export const label = tRef('保存'); // Vue：允许，返回响应式 ComputedRef
+export default { computed: { label: tComputed('保存') } }; // 纯 Options：允许
 ```
 
 `recommended`、`vue`、`vue-auto-import` 与 `react-auto-import` 还启用
-`ai-i18n/no-unsubscribed-t`。Vue / React JSX 或 TSX 的组件渲染函数不能只调用 Runtime
-顶层 `t`，应从 `useI18n()` 获取 `t` 来建立框架订阅。React Compiler 的 `"use memo"`
-与 `"use no memo"` 都不会替代订阅。
+`ai-i18n/no-unsubscribed-t`。Vue template、render 与 JSX / TSX 中的 Runtime `t` 会追踪
+adapter revision，可以直接使用。React JSX / TSX 的组件渲染函数仍应从 `useI18n()` 获取
+`t`；React Compiler 的 `"use memo"` 与 `"use no memo"` 都不会替代订阅。两个 Vue preset
+还会报告 `this.t` 与 `this.$t`，避免 Vue template 类型桥让实例成员写法被误认为受支持；
+Options script 应直接调用词法作用域中的 `t()`。
 
 ```tsx
 function SaveButton() {
@@ -138,23 +181,26 @@ function SaveButton() {
 不代表覆盖所有译文生命周期错误。
 
 所有 preset 还启用 `ai-i18n/no-unsubscribed-runtime-state`。模块顶层不能缓存
-`getLang()` 或 `getLangLoadState()` 的初始化快照；Vue template 与 JSX/TSX 渲染路径应使用
-`useI18n()` 返回的 `currentLang` 或 `langLoadState`。事件处理器、action、普通工具函数和
-即时 console 调用允许按需读取。规则只分析当前文件，不追踪跨文件 store 数据流。
+`getLang()` 或 `getLangLoadState()` 的初始化快照；Vue Composition API 使用
+`useI18n()` 返回的状态，纯 Options API 在 `computed` 中展开 `...i18nComputed()`。
+事件处理器、action、普通工具函数和即时 console 调用允许按需读取。规则只分析当前文件，
+不追踪跨文件 store 数据流。
 
 六条规则可独立启用。四条静态分析规则无法启动时，同一文件只报告一次双语错误；官方 preset 由
 `t-static-args` 优先报告，避免次级规则重复提示。
 
 规则与 Vite 共用静态参数语义，包括从 `useI18n()` 获得的对象成员调用
 `i18n.t()`、`i18n['t']()`、省略式 `t('source', undefined)` 和 tagged template。
-整棵可静态求值的纯文案对象或数组可以直接传给 `t()` 或 Vue `tRef()`，不要求
+整棵可静态求值的纯文案对象或数组可以直接传给 `t()`、Vue `tRef()` 或 `tComputed()`，不要求
 `defineI18nMessages()` 或 `as const`；规则会按去重后的字符串叶子计算静态候选数。
-Vue 模板必须在 `<script setup>` 中绑定 `useI18n()` 返回的 `t`，或由普通 `<script>` 的
-`setup()` 直接返回该 binding；自动导入只省略 import，不会自动合成 Hook。
-`vue-auto-import` 会把裸 template-only `t()` 作为 error；模板中已绑定到 Runtime 顶层
-`t` 的调用则由 `no-unsubscribed-t` warning。
+Vue 模板可以直接调用显式导入或自动导入的 `t()`，包括只有 template 的 SFC。模板局部变量
+和组件自身同名 binding 会遮挡自动导入，ESLint 与 Vite 使用相同判断。
 在 template 或 JSX/TSX 渲染期间调用 `tRef()` 会重复创建 `computed`，同一规则会提示在
-Vue setup 中只创建一次并使用返回的 Ref。
+Vue setup 中只创建一次并使用返回的 Ref。`tComputed()` 只能直接作为纯 Options API 的
+Vue 组件根对象 `computed` 属性值；普通模块对象与 `data` 中嵌套的同名对象不属于组件
+computed。模块变量、`data/setup/methods`、template 与 render 中的调用都会提示改用对应的
+`tRef()` 或 `t()`。反过来，纯 Options 的 `computed/data/methods` 不应创建 `tRef()`：
+computed 使用 `tComputed()`，methods 在执行时调用 `t()`；`tRef()` 留给 setup/composable。
 
 对象或数组的成员级引用只有在根集合由 `defineI18nMessages()` 标记后才属于推荐写法。
 动态生成的树、非普通对象以及带第二参数的整树调用会报错。字符串拼接、
@@ -247,6 +293,8 @@ export default [
         subscribe: 'readonly',
         useI18n: 'readonly',
         tRef: 'readonly',
+        i18nComputed: 'readonly',
+        tComputed: 'readonly',
         defineI18nMessages: 'readonly',
       },
     },
@@ -255,25 +303,29 @@ export default [
       'ai-i18n/no-eager-translation': [
         'warn',
         {
-          autoImport: ['t', 'tRef', 'useI18n'],
+          autoImport: ['t', 'tRef', 'tComputed', 'useI18n'],
           tsconfigPath: './tsconfig.json', // 可选：覆盖自动发现入口
         },
       ],
       'ai-i18n/no-unsubscribed-t': [
         'warn',
         {
-          autoImport: ['t', 'tRef', 'useI18n'],
+          autoImport: ['t', 'tRef', 'tComputed', 'useI18n'],
+          framework: 'vue',
           tsconfigPath: './tsconfig.json', // 可选：覆盖自动发现入口
         },
       ],
       'ai-i18n/no-unsubscribed-runtime-state': [
         'warn',
-        { autoImport: ['getLang', 'getLangLoadState'] },
+        {
+          autoImport: ['getLang', 'getLangLoadState'],
+          framework: 'vue',
+        },
       ],
       'ai-i18n/static-candidate-limit': [
         'warn',
         {
-          autoImport: ['t', 'tRef', 'useI18n'],
+          autoImport: ['t', 'tRef', 'tComputed', 'useI18n'],
           tsconfigPath: './tsconfig.json', // 可选：覆盖自动发现入口
           maxStaticCandidates: 2_000,
         },
@@ -281,7 +333,7 @@ export default [
       'ai-i18n/t-static-args': [
         'error',
         {
-          autoImport: ['t', 'tRef', 'useI18n'],
+          autoImport: ['t', 'tRef', 'tComputed', 'useI18n'],
           tsconfigPath: './tsconfig.json', // 可选：覆盖自动发现入口
         },
       ],
@@ -297,6 +349,8 @@ export default [
             'getLangLoadState',
             'subscribe',
             'tRef',
+            'i18nComputed',
+            'tComputed',
           ],
         },
       ],
@@ -305,9 +359,10 @@ export default [
 ];
 ```
 
-上例匹配 Vue 模式；React 应移除 `tRef`，Vanilla 再移除 `useI18n`。翻译静态分析规则的
-`autoImport` 仍只列 `t`、`tRef` 与 `useI18n`，状态快照规则只列 `getLang` 与
-`getLangLoadState`。日常接入优先使用预设，避免 Vite 与 ESLint 的 API 集合不一致。
+上例匹配 Vue 模式；React 应移除 `tRef`、`i18nComputed` 与 `tComputed`，Vanilla 再移除
+`useI18n`。翻译静态分析规则的 `autoImport` 只列 `t`、`tRef`、`tComputed` 与
+`useI18n`，状态快照规则只列 `getLang` 与 `getLangLoadState`。日常接入优先使用预设，
+避免 Vite 与 ESLint 的 API 集合不一致。
 
 `ai-i18n/static-candidate-limit` 默认在单个 `t()` 的 source 与 options 组合超过 1000 个
 时警告。`maxStaticCandidates` 必须是正整数，只改变 ESLint 的提示阈值；Vite 提取不设

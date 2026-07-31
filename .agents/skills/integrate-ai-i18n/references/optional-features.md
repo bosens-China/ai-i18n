@@ -15,8 +15,12 @@ uses one. Do not enable adjacent features automatically.
 | Vitest | Do not add `aiI18nVitest()` unless requested. | `https://bosens-china.github.io/ai-i18n/guide/quality/testing.md` |
 
 When automatic imports are requested, every mode receives `t`, `setLang`, `getLang`, `getLangs`,
-`getLangLoadState`, and `subscribe`. Vue additionally receives `useI18n` and `tRef`; React additionally
-receives `useI18n`. Automatic imports do not create framework subscriptions by themselves.
+`getLangLoadState`, and `subscribe`. Vue additionally receives `useI18n`, `tRef`, `i18nComputed`, and
+`tComputed`; React additionally receives `useI18n`. Vue may use an unbound `t` directly in scripts
+and templates because the Vue adapter export tracks its revision. Keep the generated dts in the
+TypeScript project so Vue language-tools can type template `t`; do not add an Options
+`methods: { t }` bridge in automatic mode. Local Vue bindings take precedence, and `this.t` /
+`this.$t` remain unsupported. React automatic `t` still does not create a component subscription.
 
 When ESLint is also requested, use `configs.vue` for explicit Vue imports and `configs.recommended` for
 explicit React or Vanilla imports. With automatic imports, use `configs['vue-auto-import']`,

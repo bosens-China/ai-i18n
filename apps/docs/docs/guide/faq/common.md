@@ -51,16 +51,17 @@ ai-i18n Runtime API。
 
 1. 确认 `aiI18n({ autoImport: true })` 已显式开启。
 2. 确认使用了当前模式支持的 API：三种模式都提供 `t`、语言 API 和 `subscribe`；Vue
-   额外提供 `useI18n` 与 `tRef`，React 额外提供 `useI18n`。
+   额外提供 `useI18n`、`tRef`、`i18nComputed` 与 `tComputed`，React 额外提供
+   `useI18n`。
 3. 修改 Vite 配置后重启开发服务器。
 4. TypeScript 项目启动一次 Vite，确认生成的 `src/ai-i18n.d.ts` 位于 `tsconfig.json`
    的 `include` 范围内。
 5. ESLint 项目使用与框架匹配的 `vanilla-auto-import`、`vue-auto-import` 或
    `react-auto-import` preset。
 
-局部变量、函数参数或显式 import 与自动导入 API 同名时，本地 binding 始终优先。Vue 模板
-还必须在 `<script setup>` 中执行 `useI18n()`，或由普通 `<script>` 的 `setup()` 直接返回
-对应 binding，详见 [Vue 常见问题](/guide/faq/vue)。
+局部变量、函数参数或显式 import 与自动导入 API 同名时，本地 binding 始终优先。Vue
+template 可以直接使用未绑定的 `t()`；组件自身同名 binding 会遮挡自动导入。详见
+[Vue 常见问题](/guide/faq/vue)。
 
 ## 为什么 Dev 没有提取某个页面？
 
@@ -83,8 +84,9 @@ Vite Dev 只分析浏览器实际请求到的模块。懒路由尚未访问时�
 ## 为什么按需加载语言包时切换失败？
 
 配置 `loading` 后，未加载的目标语言会在 `setLang()` 时请求独立 chunk。加载失败时，
-Promise 会 reject，并保留当前语言。Vue 与 React 组件可使用 `useI18n()` 返回的
-`isLangLoading` 和 `langLoadState.status === 'error'` 显示状态；需要业务级恢复动作时，捕获
+Promise 会 reject，并保留当前语言。Vue Composition 与 React 组件可使用 `useI18n()`
+返回的 `isLangLoading` 和 `langLoadState.status === 'error'` 显示状态；纯 Vue Options
+组件把 `i18nComputed()` 展开到 `computed` 后读取同名字段。需要业务级恢复动作时，捕获
 Promise 并提供重试入口。
 
 同时确认 `preload` 和 `prefetch` 只包含已配置的目标 locale，未包含 `sourceLang`，并且

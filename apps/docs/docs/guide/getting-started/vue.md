@@ -56,9 +56,9 @@ ai-i18n 会从最终的 Vite 插件列表识别 Vue 模式。只有自定义插�
 
 ```vue
 <script setup lang="ts">
-import { useI18n } from 'virtual:ai-i18n';
+import { t, useI18n } from 'virtual:ai-i18n';
 
-const { currentLang, langs, setLang, t } = useI18n();
+const { currentLang, langs, setLang } = useI18n();
 
 async function changeLanguage(value: string) {
   try {
@@ -84,9 +84,55 @@ async function changeLanguage(value: string) {
 </template>
 ```
 
-`useI18n()` 返回的 `currentLang` 和 `langs` 是只读 Ref，在模板中会自动解包。组件需要展示
-随语言变化的文案时，应使用 `useI18n()` 返回的 `t`。不要在渲染路径中只调用 Runtime 顶层
-`t`，否则组件不会建立订阅。
+`useI18n()` 返回的 `currentLang` 和 `langs` 是只读 Ref，在模板中会自动解包。Vue 模式的
+顶层 `t` 会追踪语言 revision，因此模板中的文案会随语言切换刷新。
+
+### 纯 Options API
+
+已有组件如果完全不使用 `setup()`，把 `i18nComputed()` 展开到 Options `computed`：
+
+```vue
+<script lang="ts">
+import { defineComponent } from 'vue';
+import { i18nComputed, setLang, t, tComputed } from 'virtual:ai-i18n';
+
+export default defineComponent({
+  computed: {
+    ...i18nComputed(),
+    saveLabel: tComputed('保存'),
+  },
+  watch: {
+    currentLang(next: string, previous: string) {
+      console.log(previous, '->', next);
+    },
+  },
+  methods: {
+    t,
+    async changeLanguage(event: Event) {
+      const target = event.currentTarget;
+      if (!(target instanceof HTMLSelectElement)) return;
+      await setLang(target.value);
+    },
+  },
+});
+</script>
+
+<template>
+  <p>{{ t('按钮文案') }}：{{ saveLabel }}</p>
+  <select :value="currentLang" @change="changeLanguage">
+    <option v-for="lang in langs" :key="lang.value" :value="lang.value">
+      {{ lang.label }}
+    </option>
+  </select>
+</template>
+```
+
+Options 中的状态已经解包，不需要 `.value`。TypeScript 项目应使用 `defineComponent()`，
+并启用 `strict` 或 `noImplicitThis`，以获得 `this.currentLang`、methods 和 watch 的 IDE
+类型提示。这里未开启自动导入，因此普通 `<script>` 的 `t` import 需要通过
+`methods: { t }` 建立真实 template binding。开启 `autoImport: true` 后，删除 `t` import
+和这个 method bridge，script 与 template 都可以直接调用裸 `t()`。新组件仍推荐
+`<script setup lang="ts">`。
 
 ## 运行与验证
 
@@ -145,6 +191,6 @@ Ant Design Vue 使用相同方式，把 locale 传给 `ConfigProvider`。日期�
 
 ## 下一步
 
-- [Vue 常见问题](/guide/faq/vue)：排查模板 binding、响应式更新和 `tRef()`。
-- [自动导入](/guide/basic/auto-import)：显式开启后省略 `useI18n` import。
+- [Vue 常见问题](/guide/faq/vue)：排查模板 binding、Options 响应式状态和翻译 getter。
+- [自动导入](/guide/basic/auto-import)：显式开启后可直接省略 `t` 等 import。
 - [Vue 在线演示](/demo/vue)：查看可交互的完整示例。

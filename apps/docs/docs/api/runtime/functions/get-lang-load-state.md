@@ -50,5 +50,6 @@ const unsubscribe = subscribe(() => {
 void setLang('en-US').catch(() => {});
 ```
 
-Vue 与 React 组件通常分别使用 [Vue `useI18n()`](../vue/use-i18n) 或
-[React `useI18n()`](../react/use-i18n) 返回的响应式状态。
+Vue Composition 与 React 组件通常分别使用 [Vue `useI18n()`](../vue/use-i18n) 或
+[React `useI18n()`](../react/use-i18n) 返回的响应式状态。纯 Vue Options 组件使用
+[`i18nComputed()`](../vue/i18n-computed)。

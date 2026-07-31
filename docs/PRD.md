@@ -18,17 +18,17 @@
 - 基础 Vite 包保持框架中立。Vue 与 React 适配器按最终框架模式按需启用，不把框架运行时带入 Vanilla 项目。
 - 浏览器源码提取仅支持 ESM。Vanilla 支持 `.js`、`.mjs`、`.ts`、`.mts`；Vue 与 React 额外支持 `.jsx`、`.tsx`，Vue 额外支持 `.vue`。`.cjs`、`.cts`、`require()` 与 `module.exports` 不在支持范围内；Vite 对配置文件和 CommonJS 依赖的兼容不会扩大插件的源码提取范围。
 - 每个 Vite build 处理其入口可达的本地源码，包括 Vite root 外由 Vite 解析的 workspace 源码；协议中的 source 始终是相对当前 Vite root 的 POSIX 路径，不保存机器绝对路径。`node_modules` 中的预构建依赖不属于该范围。
-- `extracted/` 物理文件名固定为标准化 source 的 SHA-256；JSON 内的 source 是查找权威，文件监听与 MCP 不从 hash 反推路径。同步时自动移除同 source 的旧路径编码文件。
-- Vue 模板翻译 binding 必须可静态证明来自 `useI18n()`：支持 `<script setup>` binding，以及普通 `<script>` 中由组件 `setup()` 唯一顶层 `return { ... }` 直接暴露的 binding；不识别条件或多分支 return、含 spread/计算属性/重复键的返回对象、被改写 `.t` 的 hook 对象、`this.t`、`this.$t`、mixin、`globalProperties` 或任意同名 Options API method。
+- `extracted/` 物理文件名固定为标准化 source 的 SHA-256；JSON 内的 source 是查找权威，文件监听与 MCP 不从 hash 反推路径。
+- Vue SFC 可以在 `<script>`、`<script setup>`、Options API 的 `computed` / `methods` 与 HTML template 中直接调用 `t()`；Pug 等预处理 template 暂不分析。开启自动导入时，Vite 分别向 script 词法作用域和 template 可见的 setup 作用域注入真实 binding，并生成独立的 Vue template 类型桥；纯 Options template 不需要 `methods: { t }`。关闭自动导入时，`<script setup>` 的显式 import 可直接供 template 使用，纯 Options template 仍通过 `methods: { t }` 暴露显式导入。组件已有同名 binding 继续优先，改名导入映射同样支持；`this.t`、`this.$t`、mixin 与 `globalProperties` 不属于 ai-i18n 支持的静态提取写法。
 - 服务端渲染不在支持范围内。浏览器 Runtime 使用应用级状态，服务端共享会造成跨请求状态污染。
 - 解析器采用 Yuku。它已经通过正确性、性能和跨平台准入；不把解析器选择暴露为公共配置，避免形成无收益的兼容面。
 
 ### 显式提取与消息标识
 
-- 插件只提取显式的 t()、tagged template、Vue tRef() 和受支持的静态文案树调用；不会猜测普通文本、JSXText 或业务属性是否需要翻译。
+- 插件只提取显式的 t()、tagged template、Vue tRef()、Vue tComputed() 和受支持的静态文案树调用；不会猜测普通文本、JSXText 或业务属性是否需要翻译。
 - 消息 ID 由 source 与可选的静态 comment 构成，不包含文件路径。相同语义可复用 Translation Memory；需要区分语义时必须传入 comment。
 - 缺失译文保持 null，Runtime 回退 source 文案。Provider 与普通补译只补缺失字段，不能静默覆盖已提交译文。
-- defineI18nMessages() 是编译期宏，用于成员级静态集合访问。整棵静态文案树直接传给 t() 或 Vue tRef() 时不需要宏。
+- defineI18nMessages() 是编译期宏，用于成员级静态集合访问。整棵静态文案树直接传给 t()、Vue tRef() 或 Vue tComputed() 时不需要宏。
 
 ## Runtime 与框架
 
@@ -36,22 +36,25 @@
 
 - 插件在 Vanilla、Vue、React 三种互斥模式中运行。默认由最终 Vite 插件列表推断，也允许显式覆盖；同时命中 Vue 与 React 时拒绝启动。
 - 显式从 virtual:ai-i18n 导入的 API 始终可用。自动导入只减少 import 样板，不改变 Runtime 的导出边界。
-- 三种模式都自动导入 t()、语言控制 API 与 subscribe()；Vue 额外自动导入 useI18n() 与 tRef()，React 额外自动导入 useI18n()。
+- 三种模式都自动导入 t()、语言控制 API 与 subscribe()；Vue 额外自动导入 useI18n()、tRef()、i18nComputed() 与 tComputed()，React 额外自动导入 useI18n()。
 - 自动导入按未绑定的值引用注入，覆盖直接调用、函数传递和对象简写；局部 binding、属性名、类型位置与赋值目标不能触发注入。
-- 框架组件应通过 useI18n() 获得 t()，以订阅语言变化。顶层 t() 适合普通模块、事件和即时日志，不会建立组件订阅。
+- Vue template 类型桥与主 dts 相邻生成；同名文件没有 ai-i18n 生成标记时拒绝覆盖。修改 dts 路径或关闭生成后无法可靠推断旧自定义路径，旧声明由用户显式删除，不扫描目录猜测。
+- Vue 模式的顶层 t() 会读取 adapter revision，在 template、render 或 computed 的响应式执行路径中建立依赖；Options API 与 Composition API 均可直接使用。React 组件仍必须通过 useI18n() 订阅。普通模块中的 t() 不会自行创建响应式执行路径，应在实际需要文案时调用。
 - getLang() 与 getLangLoadState() 返回调用时快照。ESLint 提示模块顶层缓存和可确定的组件渲染读取；action、事件与普通函数可以按需读取，跨文件 store 数据流不做不可靠推断。
 
 ### 响应式翻译
 
 - Vue 的 tRef() 是独立导出，不属于 useI18n() 返回值。它在 setup 或 composable 中创建只读 ComputedRef，支持字符串、tagged template 和静态文案树。
-- t(messages) 返回当前语言的同形快照；Vue tRef(messages) 返回随 Runtime revision 更新的同形只读计算值。输入必须是纯静态文案树。
-- 不在模板、JSX 或渲染函数中调用 tRef()，避免每次渲染创建新的 computed。
+- 纯 Options 组件把 i18nComputed() 展开到 computed，获得已解包的 currentLang、langs、langLoadState、isLangLoading 与 langLoadError；组件级语言副作用使用原生 watch。
+- tComputed() 直接作为 Options computed 属性值，输入能力与 tRef() 一致。t(messages) 返回当前语言的同形快照；tRef(messages) 和 tComputed(messages) 返回随 Runtime revision 更新的同形计算值。
+- 不在模板、JSX 或渲染函数中调用 tRef() 或 tComputed()，避免重复创建 computed 或把 getter 当成译文；Options data 和模块变量也不保存 tComputed()。
+- defineComponent() 与 strict/noImplicitThis 是纯 Options TypeScript 的推荐配置。Vue 自身不会按 watch key 推断回调参数，因此 TypeScript 示例显式标注 currentLang 的 next/previous 为 string，不新增组件包装器。
 - React 适配器使用 useSyncExternalStore 订阅 Runtime revision，并在 revision 变化时更新 Hook 返回的 t() 引用，以兼容 React Compiler 的缓存语义。
 
 ### 语言加载
 
 - 未配置 loading 时，所有语言随 Runtime 注册。配置 loading 后，目标语言按 locale 拆分为独立资源。
-- getLangLoadState() 提供 idle、loading、error 的稳定快照；Vue 与 React 的 useI18n() 同时暴露加载状态、布尔值和错误。
+- getLangLoadState() 提供 idle、loading、error 的稳定快照；Vue 与 React 的 useI18n() 同时暴露加载状态、布尔值和错误，纯 Vue Options 通过 i18nComputed() 读取同一状态源。
 - 并发切换采用 last-call-wins。过期请求的完成或失败不能覆盖最新目标语言的状态。
 
 ## 翻译与持久化
@@ -84,7 +87,7 @@
 ### 推荐语法与 ESLint
 
 - 静态可提取与推荐写法是两个独立维度。Analyzer 尽量提取有限静态值；ESLint 负责报告动态参数、超出候选上限和不推荐的调用来源。
-- ESLint 提供译文初始化快照、Runtime 状态快照和未订阅渲染诊断，帮助发现语言切换后不会刷新的值；这些规则只分析可可靠判断的当前文件直接调用，不承诺覆盖所有数据流。
+- ESLint 提供译文初始化快照、Runtime 状态快照和未订阅渲染诊断，识别 tComputed() 的合法 computed 位置、错误生命周期、自动导入的裸 `t` 与关闭自动导入时纯 Options 的显式 `methods: { t }` bridge，并报告把 `this.t` / `this.$t` 当作 ai-i18n API 的写法；这些规则只分析可可靠判断的当前文件直接调用，不承诺覆盖所有数据流。
 - 可选的冗余自动导入规则只依据显式配置的当前自动导入集合判断，不读取或猜测 Vite 配置。
 - Analyzer、ESLint 与 Vite 的开发者诊断使用同一语言策略。AI_I18N_DIAGNOSTIC_LOCALE 可固定为 zh-CN 或 en-US；auto 与未设置时按 Node 时区选择。
 
