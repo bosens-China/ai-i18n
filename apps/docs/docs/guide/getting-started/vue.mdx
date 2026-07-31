@@ -3,6 +3,8 @@ title: Vue 快速上手
 description: 从 create-vite 创建 Vue 3 项目，并完成 ai-i18n 配置、翻译与 Build 验证
 ---
 
+import { Tab, Tabs } from '@rspress/core/theme';
+
 ## 开始前
 
 ai-i18n 要求 Vite 8 或更高版本，并且当前只支持浏览器端应用。需要 SSR、按请求选择语言或避免首屏
@@ -52,87 +54,93 @@ ai-i18n 会从最终的 Vite 插件列表识别 Vue 模式。只有自定义插�
 
 ## 编写第一个翻译组件
 
-将 `src/App.vue` 替换为：
+选择项目正在使用的 Vue API 风格，将 `src/App.vue` 替换为对应示例。新组件推荐使用
+`<script setup>`；已有纯 Options API 组件可以保持原有风格。
 
-```vue
-<script setup lang="ts">
-import { t, useI18n } from 'virtual:ai-i18n';
+<Tabs>
+  <Tab label="script setup">
+    `useI18n()` 返回的语言状态是只读 Ref。脚本中读取它们需要 `.value`，template 会自动解包。
 
-const { currentLang, langs, setLang } = useI18n();
+    ```vue title="src/App.vue"
+    <script setup lang="ts">
+    import { t, useI18n } from 'virtual:ai-i18n';
 
-async function changeLanguage(value: string) {
-  try {
-    await setLang(value);
-  } catch {
-    // 切换失败时保留当前语言；完整项目可显示 langLoadState 中的错误。
-  }
-}
-</script>
+    const { currentLang, langs, setLang } = useI18n();
 
-<template>
-  <main>
-    <p>{{ t('保存') }}</p>
-    <select
-      :value="currentLang"
-      @change="changeLanguage(($event.target as HTMLSelectElement).value)"
-    >
-      <option v-for="lang in langs" :key="lang.value" :value="lang.value">
-        {{ lang.label }}
-      </option>
-    </select>
-  </main>
-</template>
-```
+    async function changeLanguage(value: string) {
+      try {
+        await setLang(value);
+      } catch {
+        // 切换失败时保留当前语言；完整项目可显示 langLoadState 中的错误。
+      }
+    }
+    </script>
 
-`useI18n()` 返回的 `currentLang` 和 `langs` 是只读 Ref，在模板中会自动解包。Vue 模式的
-顶层 `t` 会追踪语言 revision，因此模板中的文案会随语言切换刷新。
+    <template>
+      <main>
+        <p>{{ t('保存') }}</p>
+        <select
+          :value="currentLang"
+          @change="changeLanguage(($event.target as HTMLSelectElement).value)"
+        >
+          <option v-for="lang in langs" :key="lang.value" :value="lang.value">
+            {{ lang.label }}
+          </option>
+        </select>
+      </main>
+    </template>
+    ```
 
-### 纯 Options API
+  </Tab>
 
-已有组件如果完全不使用 `setup()`，把 `i18nComputed()` 展开到 Options `computed`：
+  <Tab label="Options API">
+    纯 Options API 组件把 `i18nComputed()` 展开到 `computed`，获得已经解包的语言状态。
 
-```vue
-<script lang="ts">
-import { defineComponent } from 'vue';
-import { i18nComputed, setLang, t, tComputed } from 'virtual:ai-i18n';
+    ```vue title="src/App.vue"
+    <script lang="ts">
+    import { defineComponent } from 'vue';
+    import { i18nComputed, setLang, t } from 'virtual:ai-i18n';
 
-export default defineComponent({
-  computed: {
-    ...i18nComputed(),
-    saveLabel: tComputed('保存'),
-  },
-  watch: {
-    currentLang(next: string, previous: string) {
-      console.log(previous, '->', next);
-    },
-  },
-  methods: {
-    t,
-    async changeLanguage(event: Event) {
-      const target = event.currentTarget;
-      if (!(target instanceof HTMLSelectElement)) return;
-      await setLang(target.value);
-    },
-  },
-});
-</script>
+    export default defineComponent({
+      computed: {
+        ...i18nComputed(),
+      },
+      methods: {
+        t,
+        async changeLanguage(event: Event) {
+          const target = event.currentTarget;
+          if (!(target instanceof HTMLSelectElement)) return;
+          try {
+            await setLang(target.value);
+          } catch {
+            // 切换失败时保留当前语言。
+          }
+        },
+      },
+    });
+    </script>
 
-<template>
-  <p>{{ t('按钮文案') }}：{{ saveLabel }}</p>
-  <select :value="currentLang" @change="changeLanguage">
-    <option v-for="lang in langs" :key="lang.value" :value="lang.value">
-      {{ lang.label }}
-    </option>
-  </select>
-</template>
-```
+    <template>
+      <main>
+        <p>{{ t('保存') }}</p>
+        <select :value="currentLang" @change="changeLanguage">
+          <option v-for="lang in langs" :key="lang.value" :value="lang.value">
+            {{ lang.label }}
+          </option>
+        </select>
+      </main>
+    </template>
+    ```
 
-Options 中的状态已经解包，不需要 `.value`。TypeScript 项目应使用 `defineComponent()`，
-并启用 `strict` 或 `noImplicitThis`，以获得 `this.currentLang`、methods 和 watch 的 IDE
-类型提示。这里未开启自动导入，因此普通 `<script>` 的 `t` import 需要通过
-`methods: { t }` 建立真实 template binding。开启 `autoImport: true` 后，删除 `t` import
-和这个 method bridge，script 与 template 都可以直接调用裸 `t()`。新组件仍推荐
-`<script setup lang="ts">`。
+    当前示例使用显式导入，因此普通 `<script>` 中的 `t` 需要通过 `methods: { t }` 暴露给
+    template。开启 `autoImport: true` 后，应同时删除 `t` import 和这个 method bridge。
+
+  </Tab>
+</Tabs>
+
+两种写法使用同一个 Vue Runtime。顶层 `t` 会追踪语言 revision，因此 template 文案会随
+语言切换刷新。Options API 的 `defineComponent()` 与 watch 参数类型问题见
+[TypeScript 与生成声明](/guide/quality/typescript)。
 
 ## 运行与验证
 
@@ -193,4 +201,5 @@ Ant Design Vue 使用相同方式，把 locale 传给 `ConfigProvider`。日期�
 
 - [Vue 常见问题](/guide/faq/vue)：排查模板 binding、Options 响应式状态和翻译 getter。
 - [自动导入](/guide/basic/auto-import)：显式开启后可直接省略 `t` 等 import。
+- [TypeScript 与生成声明](/guide/quality/typescript)：了解 Vue 的两个声明文件并排查类型问题。
 - [Vue 在线演示](/demo/vue)：查看可交互的完整示例。

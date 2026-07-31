@@ -19,16 +19,22 @@ hero:
       link: /demo/vue
 
 features:
-  - title: 源码直写
-    details: 使用 t('中文')，由 Vite 自动提取，无需维护文案 key。
-    link: /guide/basic/static-analysis/common
-  - title: Vue / React 响应式
-    details: 使用 Composable 或 Hook，语言切换后组件自动更新。
+  - title: 快速上手
+    details: 按 Vanilla、Vue 或 React 完成安装、Vite 配置和第一次 Build。
     link: /guide/getting-started/vue
-  - title: AI 翻译
-    details: 按需接入模型或 Agent，增量补齐缺失译文。
+  - title: 接入与使用
+    details: 查找文案写法、自动导入、语言加载、生成文件和 Git 规则。
+    link: /guide/basic/static-analysis/common
+  - title: 工程质量
+    details: 接入 TypeScript 生成声明、ESLint 静态检查和 Vitest 测试。
+    link: /guide/quality/typescript
+  - title: 翻译自动化
+    details: 选择应用内 Provider 或外部 Agent 补齐译文，并保留人工审校入口。
     link: /guide/advanced/ai-translation
-  - title: 翻译可控
-    details: 翻译记忆、人工覆盖与源码一起进入 Git。
-    link: /guide/basic/directory
+  - title: 排查问题
+    details: 按通用、Vue 和 React 场景定位接入与运行问题。
+    link: /guide/faq/common
+  - title: API 参考
+    details: 按包入口查询公开函数、配置字段、类型与默认行为。
+    link: /api
 ---

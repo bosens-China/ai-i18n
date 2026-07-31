@@ -54,8 +54,8 @@ ai-i18n Runtime API。
    额外提供 `useI18n`、`tRef`、`i18nComputed` 与 `tComputed`，React 额外提供
    `useI18n`。
 3. 修改 Vite 配置后重启开发服务器。
-4. TypeScript 项目启动一次 Vite，确认生成的 `src/ai-i18n.d.ts` 位于 `tsconfig.json`
-   的 `include` 范围内。
+4. TypeScript 或 Vue template 报未定义时，按
+   [TypeScript 与生成声明](/guide/quality/typescript)确认生成文件。
 5. ESLint 项目使用与框架匹配的 `vanilla-auto-import`、`vue-auto-import` 或
    `react-auto-import` preset。
 
@@ -95,12 +95,6 @@ Promise 并提供重试入口。
 
 ## 生成文件是否需要提交？
 
-源码变更与以下文件应在同一个 PR 中提交：
-
-- `src/ai-i18n.d.ts`，或通过 `dts` 设置的自定义声明路径；
-- `i18n/translations.json`；
-- `i18n/overrides.json`。
-
-`i18n/extracted/` 与 `i18n/locales/` 是 Build 可重新生成的本地产物，应加入
-`.gitignore`。首次调用 MCP、`extracted/` 缺失或为空，或者切换分支和修改提取相关配置后，
-先运行目标应用的一次完整 Build。Dev 只提取浏览器实际访问过的模块。
+需要。权威译文与生成声明随源码提交，可重建的提取结果和语言包不提交。完整文件清单、Build
+时机与 Monorepo 归属统一见[生成文件与 Git](/guide/basic/directory)；声明文件本身的作用见
+[TypeScript 与生成声明](/guide/quality/typescript)。

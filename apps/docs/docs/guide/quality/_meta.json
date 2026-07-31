@@ -1,6 +1,11 @@
 [
   {
     "type": "file",
+    "name": "typescript",
+    "label": "TypeScript"
+  },
+  {
+    "type": "file",
     "name": "eslint",
     "label": "ESLint"
   },

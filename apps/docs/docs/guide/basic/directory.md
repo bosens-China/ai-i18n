@@ -25,6 +25,7 @@ i18n/
 将以下文件与源码一起提交：
 
 - `src/ai-i18n.d.ts`，或通过 `dts` 配置的声明文件；
+- Vue 自动导入模式生成的相邻 `.vue.d.ts` 声明文件；
 - `i18n/translations.json`；
 - `i18n/overrides.json`。
 
@@ -38,6 +39,9 @@ i18n/locales/
 :::important
 译文文件与引用它们的源码应在同一个 PR 中提交。这样其他开发者和 CI 才能得到一致的翻译结果。
 :::
+
+声明文件的作用和自定义路径见
+[TypeScript 与生成声明](/guide/quality/typescript)。
 
 ## 什么时候运行完整 Build
 
@@ -65,15 +69,12 @@ packages/
     └── src/
 ```
 
-`web` 引用 `packages/ui` 的本地 ESM 源码时，完整 Build 会把 UI 文案写入
-`apps/web/i18n`。其 `source_file` 使用相对 Web 的 Vite root 的 POSIX 路径，例如
-`../../packages/ui/src/Button.vue`。`extracted/` 中的物理文件名是该标准化路径的稳定
-SHA-256，例如 `<64 位十六进制 hash>.json`；它始终是目录下的单个合法文件名，不会访问
-父目录。文件内容中的 `source` 才是查找权威，MCP 不会尝试从 hash 反推路径。
+`web` 引用 `packages/ui` 的本地 ESM 源码时，完整 Build 会把 UI 文案纳入
+`apps/web/i18n`。共享源码包不需要重复注册 ai-i18n，也不需要单独创建 i18n 目录，除非它
+自己拥有独立的 Vite build。
 
-共享源码包不需要重复注册 ai-i18n，也不需要单独创建 i18n 目录，除非它自己拥有独立的
-Vite build。不要让 Web、Admin 或包构建共用一个目录：完整 Build 会按当前模块图重建
-`extracted/` 和 `locales/`，不同构建会相互覆盖。使用 MCP 时也应分别选择每个应用的目录。
+不要让 Web、Admin 或包构建共用一个目录。完整 Build 会按当前应用的模块图重建
+`extracted/` 和 `locales/`，不同构建会相互覆盖。补译或审校时也应分别选择每个应用。
 
 ## 缺译时会发生什么
 

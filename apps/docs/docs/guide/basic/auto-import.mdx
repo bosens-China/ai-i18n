@@ -1,6 +1,6 @@
 ---
 title: 自动导入
-description: 显式开启 ai-i18n 自动导入，并配置对应的 TypeScript 与 ESLint 声明
+description: 显式开启 ai-i18n 自动导入，并按框架模式配置 Runtime API 与 ESLint
 ---
 
 自动导入默认关闭。未配置时，请从 `virtual:ai-i18n` 显式导入 Runtime API：
@@ -100,8 +100,8 @@ const labels = tRef({
 不要在 template 中直接调用 `tRef()`，否则每次渲染都会创建新的 `computed`。
 
 Vue 的 `<script setup>`、普通 `<script>` 与 template 都可以直接写未绑定的 `t()`。
-生成的声明文件同时覆盖 TypeScript 作用域和 Vue template，因此 Volar 与 `vue-tsc` 无需
-额外的占位 import：
+生成的主声明与 Vue template 类型桥分别覆盖 TypeScript 作用域和 template，因此 Volar 与
+`vue-tsc` 无需额外的占位 import：
 
 ```vue
 <script setup lang="ts">
@@ -184,53 +184,9 @@ export const getLabel = () => t('保存'); // 每次调用读取当前语言
 
 ## TypeScript 支持
 
-插件默认在根目录的 `src/ai-i18n.d.ts` 声明虚拟模块和
-`defineI18nMessages<T>(value)` 编译宏。开启自动导入后，同一文件还会声明当前框架模式下的
-Runtime 全局 API；Vue 模式会额外声明 template 可见的 `t`。因此普通 TypeScript、Vue
-script、Volar 与 `vue-tsc` 会读取同一份类型。该文件由插件维护，带有 `@noformat` 等标记，
-请勿手工编辑。
-
-Vue template 的类型声明不代表组件实例安装了全局 method。即使 IDE 能看到相应成员，也不要
-在 Options 脚本中写 `this.t()`；应直接调用 `t()`。ESLint 的 Vue preset 会检查这个边界。
-
-你可以通过 `dts` 选项调整生成行为：
-
-```ts
-aiI18n({
-  autoImport: true, // 同时为自动导入的 Runtime API 生成全局类型
-  dts: 'types/ai-i18n-auto-imports.d.ts', // 修改声明文件的输出路径
-  // dts: false, // 完全禁用生成；此时需要自行维护等价声明
-});
-```
-
-:::tip
-声明文件会在首次启动 Vite 后生成。请将它纳入版本控制，并确保所在目录已被
-`tsconfig.json` 的 `include` 字段包含。
-:::
-
-Vue 模式开启自动导入时，还会在主声明旁生成相邻的 `.vue.d.ts` template 类型桥。若该路径
-已有不带 ai-i18n 生成标记的用户文件，启动会报错且不会覆盖。修改 `dts` 路径或改为
-`dts: false` 后，插件无法知道旧的自定义输出位置；请手动删除旧的主声明和相邻
-`.vue.d.ts`。
-
-### Monorepo 子包
-
-应用私有的 workspace 子包使用自动导入时，可以把 `dts` 输出到应用和子包 TypeScript
-项目都包含的位置：
-
-```ts
-// apps/web/vite.config.ts，路径相对于 Web 的 Vite root
-aiI18n({
-  autoImport: true,
-  dts: '../../types/web-ai-i18n.d.ts',
-});
-```
-
-随后在应用和子包的 `tsconfig.json` 中包含 `../../types/web-ai-i18n.d.ts`。共享子包不需要
-再次安装或注册 Vite 插件。
-
-如果子包会被多个应用或独立构建复用，优先在源码中显式导入 `virtual:ai-i18n`，避免依赖某个
-消费应用的全局声明。不同 Vite build 也不要写入同一份 dts 文件。
+自动导入依靠插件生成的 TypeScript 声明。Vue 模式还会生成相邻的 `.vue.d.ts` template
+类型桥。两个文件的职责、自定义 `dts` 路径和常见类型问题统一见
+[TypeScript 与生成声明](/guide/quality/typescript)。
 
 ## ESLint 配置
 

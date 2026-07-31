@@ -7,7 +7,7 @@
   {
     "type": "dir",
     "name": "basic",
-    "label": "使用指南"
+    "label": "接入与使用"
   },
   {
     "type": "dir",
@@ -17,11 +17,11 @@
   {
     "type": "dir",
     "name": "advanced",
-    "label": "进阶与 AI"
+    "label": "翻译自动化"
   },
   {
     "type": "dir",
     "name": "faq",
-    "label": "常见问题"
+    "label": "排查问题"
   }
 ]

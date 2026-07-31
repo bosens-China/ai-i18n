@@ -23,10 +23,10 @@ import { t } from 'virtual:ai-i18n';
 <template>{{ t('保存') }}</template>
 ```
 
-插件生成的 `ai-i18n.d.ts` 会让 Vue language-tools、Volar 与 `vue-tsc` 识别这个裸 `t`，
+插件生成的声明会让 Vue language-tools（Volar）与 `vue-tsc` 识别这个裸 `t`，
 无需为了 IDE 添加 import。`<script setup>`、普通 `<script>` 和纯 Options 也可以直接使用。
-如果仍提示找不到 `t`，请先启动一次 Vite，并确认声明文件在 `tsconfig.json` 的 `include`
-范围内。
+如果仍提示找不到 `t`，按
+[TypeScript 与生成声明](/guide/quality/typescript)检查 Vue 的两份声明文件。
 
 自动导入只处理未绑定的 `t`。模板局部变量和组件自身同名 prop、data、computed、method、
 inject 或 setup 返回值会遮挡它。本地 binding 始终优先。
@@ -106,7 +106,8 @@ export default defineComponent({
 });
 ```
 
-TypeScript 项目应使用 `defineComponent()`，并启用 `strict` 或 `noImplicitThis`。
+Options API 的组件实例与 watch 参数类型问题见
+[TypeScript 与生成声明](/guide/quality/typescript)。
 
 ## Pinia 或普通 TS 文件能否直接使用语言 API？
 

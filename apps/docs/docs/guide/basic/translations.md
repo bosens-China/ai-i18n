@@ -33,10 +33,33 @@ t('保存', { comment: '保存状态' });
 
 ## 直接编辑译文文件
 
-可以直接编辑两份 JSON 文件。请保持已有结构，只修改目标语言对应的译文值：
+Provider 或 Agent + MCP 会自动维护文件结构，适合批量补译和按语境审校。需要手工调整少量译文时，
+也可以编辑现有 JSON 文件，但不要用下面的示例覆盖已经生成的内容。
+
+`translations.json` 保存自动译文。保留文件中的 `version`、`revision`、消息标识和源码信息，只修改
+目标消息 `translations` 下的语言值。以下完整示例对应不带 `comment` 的 `t('保存')`：
 
 ```json
 {
+  "version": 1,
+  "revision": 0,
+  "messages": {
+    "保存": {
+      "source": "保存",
+      "sourceLang": "zh-CN",
+      "translations": {
+        "en-US": "Save"
+      }
+    }
+  }
+}
+```
+
+`overrides.json` 保存人工决定。没有语境区分的文案可以写入对应消息的 `default`：
+
+```json
+{
+  "version": 1,
   "messages": {
     "保存": {
       "default": {
@@ -47,8 +70,9 @@ t('保存', { comment: '保存状态' });
 }
 ```
 
-把人工决定写入 `overrides.json`，不要覆盖 `translations.json` 中的自动翻译。生成目录
-`i18n/extracted/` 和 `i18n/locales/` 不接受人工编辑。
+需要根据静态 `comment` 区分语境时，使用 [Agent + MCP](/guide/advanced/ai-tools) 列出现有文案，
+确认建议措辞后再写入人工审校结果。不要自行构造语境标识。生成目录 `i18n/extracted/` 和
+`i18n/locales/` 不接受人工编辑。
 
 ## 提交前检查
 

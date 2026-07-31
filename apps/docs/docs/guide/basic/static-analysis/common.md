@@ -100,8 +100,8 @@ t(messages.states[index]);
 ```
 
 `defineI18nMessages()` 同样适用于普通 `.js` / `.ts` 文件。它不需要 import；TypeScript
-类型来自 Vite 生成的 `ai-i18n.d.ts`。如果编辑器找不到该名字，请先启动一次 Vite，并检查
-`tsconfig.json` 是否包含声明文件。
+类型来自 Vite 生成的主声明。编辑器找不到该名字时，按
+[TypeScript 与生成声明](/guide/quality/typescript)排查。
 
 翻译注释同样需要静态求值：
 

@@ -91,17 +91,10 @@ interface AiI18nOptions {
 
 建议保留默认值。`orphanMessages: true` 会删除全部非活跃消息，优先级高于 Cache 容量限制。
 
-## 声明文件
-
-默认声明文件始终包含 `virtual:ai-i18n` 和 `defineI18nMessages<T>(value)`。开启自动导入后，
-同一文件还会声明当前模式的 Runtime 全局 API。Vue 模式会额外声明 template 中可直接使用的
-`t`，供 Volar 与 `vue-tsc` 检查。
-
-只有宿主项目通过其他方式维护等价声明时，才建议设置 `dts: false`。
-
 ## 相关内容
 
 - [`aiI18n()`](/api/vite/functions/ai-i18n)
 - [语言分包与按需加载](/guide/basic/locale-loading)
 - [生成文件与 Git](/guide/basic/directory)
+- [TypeScript 与生成声明](/guide/quality/typescript)
 - [ESLint](/guide/quality/eslint)

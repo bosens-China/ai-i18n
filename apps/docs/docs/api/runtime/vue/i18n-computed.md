@@ -80,13 +80,10 @@ Options `watch` 由 Vue 管理生命周期，组件卸载时会自动清理。�
 
 ## TypeScript 与 IDE 提示
 
-TypeScript 组件应使用 `defineComponent()`，并在 `tsconfig.json` 中启用 `strict` 或至少启用
-`noImplicitThis`。这样 IDE 才能推断 `this.currentLang`、`this.langs`、methods 和 watch 中
-的组件实例类型。Vue 自身的 Options `watch` 类型不会根据被监听的 key 推断回调参数，
-因此 TypeScript 下应像上例一样显式标注 `next` 和 `previous`。
-
-开启 `autoImport: true` 后可以省略 ai-i18n import；生成的 `ai-i18n.d.ts` 会同时声明
-`i18nComputed`。`defineComponent` 仍需从 Vue 导入。
+TypeScript 组件使用 `defineComponent()`。Vue 自身的 Options `watch` 类型不会根据被监听
+的 key 推断回调参数，因此应像上例一样显式标注 `next` 和 `previous`。自动导入的声明文件、
+组件实例类型和常见错误统一见
+[TypeScript 与生成声明](/guide/quality/typescript)。
 
 ## 同名 computed
 
