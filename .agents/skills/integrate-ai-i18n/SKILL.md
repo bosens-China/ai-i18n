@@ -26,6 +26,11 @@ automatic imports, language persistence, locale loading, cache cleanup, HTML ext
 test integration unless the user requests them. Do not remove an optional feature that is already
 configured.
 
+This Skill owns package installation, Vite configuration, Runtime source integration, and integration
+verification. Do not write translation or human review values as part of an integration-only task.
+When the user also requests Agent-assisted translation or review, complete the Build first, then use
+the `use-ai-i18n-mcp` Skill and its approval rules.
+
 ## Load only the needed references
 
 Always read:
@@ -51,6 +56,9 @@ of those features.
 5. Add one static translation call using the selected framework pattern.
 6. For TypeScript, keep the generated `ai-i18n.d.ts` in a path included by `tsconfig.json`.
 7. Run the target app's type check and a full Vite Build.
+
+For TypeScript configuration and the Vue companion declaration, read
+[TypeScript and generated declarations](https://bosens-china.github.io/ai-i18n/guide/quality/typescript.md).
 
 Keep the resolved i18n directory's `extracted/` and `locales/` subdirectories in `.gitignore`. For
 complete generated-file and Git guidance, read

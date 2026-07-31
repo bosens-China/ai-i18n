@@ -36,13 +36,9 @@ CommonJS as an incidental integration change. Vite config loading and dependency
 separate from ai-i18n source extraction.
 
 In a monorepo, one plugin instance also extracts Vite-resolved local ESM source outside the Vite root.
-Treat the consuming Vite build as the owner: root-external sources use root-relative POSIX
-`source_file` values such as `../../packages/ui/src/Button.vue`. Do not install or register the Vite
-plugin in a source-only package, and do not promise extraction from prebuilt `node_modules` code.
-Every independent Vite build must use its own `directory`.
-
-Files under `extracted/` use SHA-256 hashes of normalized sources as physical names. Treat the JSON
-`source` field as authoritative; never derive a source path from a hash filename.
+Treat the consuming Vite build as the owner. Do not install or register the Vite plugin in a
+source-only package, and do not promise extraction from prebuilt `node_modules` code. Every
+independent Vite build must use its own `directory`.
 
 ## Framework mode
 

@@ -24,6 +24,8 @@ files manually while the MCP tools are available.
 If more than one Vite app is plausible, ask the user which app to use before calling MCP.
 The app's framework mode and `autoImport` setting affect source integration but do not change the MCP
 directory contract. Do not add or remove Runtime imports as part of a translation-only MCP task.
+When package installation, Vite configuration, or Runtime source integration is incomplete or
+requested, use the `integrate-ai-i18n` Skill before starting this translation workflow.
 
 The selected app's extracted set includes every reachable local workspace source processed by that
 Vite build. Treat source-only packages as `source_files` within the consuming app, not as separate MCP
