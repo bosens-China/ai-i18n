@@ -26,6 +26,33 @@ async function switchLanguage(value: string) {
 </template>
 ```
 
+For an existing ordinary `<script>` component, keep Composition API and expose the hook binding
+directly from `setup()`:
+
+```vue
+<script lang="ts">
+import { defineComponent } from 'vue'
+import { useI18n } from 'virtual:ai-i18n'
+
+export default defineComponent({
+  setup() {
+    const { t } = useI18n()
+    return { t }
+  },
+})
+</script>
+
+<template>
+  <p>{{ t('保存') }}</p>
+</template>
+```
+
+Only treat bindings statically proven to come from `useI18n()` and exposed by the sole top-level
+`return { ... }` in `setup()` as template translation bindings. Do not infer conditional or multiple
+returns, `this.t`, `this.$t`, mixins, `globalProperties`, or same-named Options API methods. Prefer
+`<script setup>` for new components. Also reject return objects with spreads, computed or duplicate
+keys, and hook objects whose `.t` member is reassigned.
+
 Use the standalone Vue-only `tRef()` in setup or a composable when a predeclared label must react to
 language changes. Do not call `tRef()` in a template or render function. `tRef` is a standalone export,
 not part of the `useI18n()` return value.

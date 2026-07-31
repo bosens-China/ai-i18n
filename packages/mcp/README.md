@@ -7,6 +7,13 @@ MCP 不扫描 workspace，也不执行 Vite 配置。Agent 必须先确认目标
 解析为最终绝对 `i18n_directory`。在 monorepo 中，每个 Vite build 分开处理，不能把仓库
 根目录或第一个同名目录当成协议目录。
 
+目标应用完整 Build 时，其可达的本地 workspace 源码也会进入该应用的 `extracted/`。
+因此 `packages/ui` 等纯源码包不是另一个 MCP 目标；它的消息通过消费应用的
+`i18n_directory` 查询。多个 Vite build 不能共用一个协议目录，需要分别调用 MCP。
+
+`extracted/` 使用 source 的 SHA-256 作为物理文件名。MCP 扫描 JSON 内容并使用其中的
+标准化 `source`，不会从 hash 文件名推断源码路径。
+
 MCP 会校验绝对路径、目录是否存在，以及 `translations.json`、`overrides.json` 和
 `extracted/` 是否符合当前协议。`extracted/` 是不提交 Git 的本地 Build 产物。首次使用、
 目录缺失或为空，或者切换分支和修改提取相关配置后，先运行目标应用的一次完整 Vite Build。

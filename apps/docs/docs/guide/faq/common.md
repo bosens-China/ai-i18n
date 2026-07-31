@@ -59,7 +59,8 @@ ai-i18n Runtime API。
    `react-auto-import` preset。
 
 局部变量、函数参数或显式 import 与自动导入 API 同名时，本地 binding 始终优先。Vue 模板
-还必须在 `<script setup>` 中执行 `useI18n()`，详见 [Vue 常见问题](/guide/faq/vue)。
+还必须在 `<script setup>` 中执行 `useI18n()`，或由普通 `<script>` 的 `setup()` 直接返回
+对应 binding，详见 [Vue 常见问题](/guide/faq/vue)。
 
 ## 为什么 Dev 没有提取某个页面？
 

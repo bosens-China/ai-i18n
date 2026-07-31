@@ -25,10 +25,19 @@ If more than one Vite app is plausible, ask the user which app to use before cal
 The app's framework mode and `autoImport` setting affect source integration but do not change the MCP
 directory contract. Do not add or remove Runtime imports as part of a translation-only MCP task.
 
+The selected app's extracted set includes every reachable local workspace source processed by that
+Vite build. Treat source-only packages as `source_files` within the consuming app, not as separate MCP
+targets. Never point two Vite builds at one i18n directory; call the tools once per selected app.
+Use tool-returned `source_file` values; never decode or guess a source path from a physical filename.
+
 The directory must contain `translations.json`, `overrides.json`, and `extracted/`. Run the target
 app's full Vite Build before the first MCP use when `extracted/` is missing or empty. Build again
 after switching branches or changing source or extraction configuration when the local result may be
 stale. Prefer Build over Dev because Dev covers only browser-requested modules.
+
+Messages that exist only in `.cjs`, `.cts`, or CommonJS source do not enter `extracted/`. Do not
+diagnose their absence as stale MCP data or attempt an MCP write for them; report the unsupported
+source and require migration to supported browser ESM source before rebuilding.
 
 Keep the resolved i18n directory's `extracted/` and `locales/` subdirectories in `.gitignore`. For
 complete generated-file and Git guidance, read

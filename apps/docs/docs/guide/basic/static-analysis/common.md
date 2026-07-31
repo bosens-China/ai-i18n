@@ -11,8 +11,15 @@ ai-i18n 只处理明确传给翻译 API 的文案，不会猜测哪些普通文�
 
 ## 支持的源码
 
-Vanilla、Vue 和 React 模式都会分析 JS 与 TS 文件。Vue 和 React 还支持各自的组件源码，
-具体范围见对应框架页面。
+| 模式    | 参与提取的源码                                       |
+| ------- | ---------------------------------------------------- |
+| Vanilla | `.js`、`.mjs`、`.ts`、`.mts`                         |
+| Vue     | `.js`、`.mjs`、`.ts`、`.mts`、`.jsx`、`.tsx`、`.vue` |
+| React   | `.js`、`.mjs`、`.ts`、`.mts`、`.jsx`、`.tsx`         |
+
+表中的 JavaScript 与 TypeScript 源码必须作为浏览器端 ESM 模块使用。ai-i18n 不处理
+`.cjs`、`.cts`，也不识别通过 `require()` 获得的翻译 API。Vite 对配置文件或依赖中
+CommonJS 的兼容，不代表这些文件会参与 ai-i18n 提取。
 
 `index.html` 默认不参与提取。设置 `html: true` 后，插件会分析完整的 `t()` 文本节点，
 以及 `alt`、`aria-label`、`placeholder`、`title` 属性：
@@ -37,7 +44,7 @@ import { t as translate } from 'virtual:ai-i18n';
 translate('保存');
 ```
 
-Vue 或 React 构建中的普通 `.js` / `.ts` 工具模块也可以显式导入顶层 `t`：
+Vue 或 React 构建中的普通 ESM 工具模块也可以显式导入顶层 `t`：
 
 ```ts
 import { t } from 'virtual:ai-i18n';

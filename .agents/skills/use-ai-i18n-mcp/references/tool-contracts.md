@@ -17,6 +17,10 @@ discovers source files and returns writable missing entries.
 
 One message update affects every listed source file.
 
+Physical files under `extracted/` use the normalized source's SHA-256 as their filename. The JSON
+`source` field is authoritative, and MCP list filters read that value; never derive `source_files`
+from a hash filename.
+
 ## Automatic translations
 
 Use `ai_i18n_set_translations` for ordinary translation work. Each update contains

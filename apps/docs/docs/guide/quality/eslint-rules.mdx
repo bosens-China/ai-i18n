@@ -1,6 +1,6 @@
 ---
 title: ESLint 规则参考
-description: 按需调整 ai-i18n ESLint 规则、自动导入和 TypeScript 项目解析
+description: 按需调整 ai-i18n ESLint 规则、自动导入和项目路径解析
 ---
 
 本页面向需要自定义 ESLint 行为的项目。常规接入请先阅读 [ESLint](/guide/quality/eslint)。
@@ -88,10 +88,47 @@ export default defineConfig([
 它只会修复可安全删除的 `virtual:ai-i18n` 导入。改名导入、命名空间导入、类型导入和带注释的导入
 不会被自动修改。
 
-## TypeScript 与路径别名
+## 路径别名与项目配置
 
-规则会从正在检查的文件向上寻找最近的 `tsconfig.json`，通常不需要额外配置。项目使用非标准
-tsconfig 文件名、项目引用或特殊工作目录时，可以指定入口：
+项目可以通过共享 settings 显式提供本地源码 alias。显式 alias 拥有最高优先级，适合只在
+Vite `resolve.alias` 中配置别名的 JavaScript 项目：
+
+```js
+import { fileURLToPath } from 'node:url';
+
+export default [
+  {
+    settings: {
+      'ai-i18n': {
+        alias: {
+          '@': fileURLToPath(new URL('./src', import.meta.url)),
+        },
+      },
+    },
+  },
+];
+```
+
+第一版支持字符串到字符串的对象形式。replacement 必须使用绝对路径，并指向项目本地源码。
+暂不支持 Vite 的数组形式、正则 `find`、`customResolver` 或 resolver plugin。ESLint 不会加载
+或执行 `vite.config.*`；需要与 Vite 保持一致时，建议让两份配置导入同一个 alias 对象。
+
+显式 alias 未匹配当前导入时，规则会从正在检查的文件向上寻找最近的 `tsconfig.json` 或
+`jsconfig.json`。同一目录同时存在两者时，优先使用 `tsconfig.json`。纯 JavaScript 项目可以
+直接使用 `jsconfig.json`：
+
+```json
+{
+  "compilerOptions": {
+    "paths": {
+      "@/*": ["./src/*"]
+    }
+  },
+  "include": ["src/**/*.js", "src/**/*.jsx"]
+}
+```
+
+项目使用非标准配置名、项目引用或特殊工作目录时，可以指定入口：
 
 ```js
 'ai-i18n/t-static-args': [
@@ -100,10 +137,11 @@ tsconfig 文件名、项目引用或特殊工作目录时，可以指定入口�
 ],
 ```
 
-路径以 ESLint 的工作目录为基准。项目使用 `paths` 别名时，也应在 `tsconfig.json` 中声明；只写在
-Vite 的 `resolve.alias` 中，ESLint 无法据此解析导入。
+`tsconfigPath` 路径以 ESLint 的工作目录为基准，并覆盖自动发现入口。无论使用
+`tsconfig.json` 还是 `jsconfig.json`，插件都会解析 `extends`、项目 references 以及
+`files`、`include`、`exclude`。该选项沿用现有名称，也可以直接指向 `jsconfig.json`。
 
-Vue SFC 必须被 `tsconfig.json` 的 `include` 覆盖，例如：
+Vue SFC 必须被所选项目配置的 `include` 覆盖，例如：
 
 ```json
 {

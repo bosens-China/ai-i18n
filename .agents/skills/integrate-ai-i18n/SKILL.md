@@ -18,8 +18,8 @@ In a monorepo, identify one target Vite build. Ask the user only when more than 
 or when a new setup has no source and target language decision that can be inferred from existing
 configuration. Preserve configured values.
 
-Do not combine Vue and React in the same Vite build. Plain `.js` and `.ts` files use the mode of their
-containing Vite build, not a mode inferred from their extension.
+Do not combine Vue and React in the same Vite build. Supported framework-neutral ESM modules use the
+mode of their containing Vite build, not a mode inferred from their extension.
 
 Do not enable optional behavior by default. Keep explicit imports and omit automatic translation,
 automatic imports, language persistence, locale loading, cache cleanup, HTML extraction, ESLint, and

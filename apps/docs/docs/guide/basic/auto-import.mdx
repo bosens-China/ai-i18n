@@ -93,12 +93,28 @@ const labels = tRef({
 
 不要在 template 中直接调用 `tRef()`，否则每次渲染都会创建新的 `computed`。
 
-Vue 模板必须先在 `<script setup>` 中取得订阅版 `t`。自动导入只省略 import，不会把模板
-中的裸标识符自动改写成 Hook：
+Vue 模板必须先取得订阅版 `t`。可以在 `<script setup>` 中声明，也可以由普通
+`<script>` 的 `setup()` 直接返回。自动导入只省略 import，不会把模板中的裸标识符自动
+改写成 Hook：
 
 ```vue
 <script setup lang="ts">
 const { t } = useI18n();
+</script>
+
+<template>{{ t('保存') }}</template>
+```
+
+普通 `<script>` 的等价写法是：
+
+```vue
+<script lang="ts">
+export default {
+  setup() {
+    const { t } = useI18n();
+    return { t };
+  },
+};
 </script>
 
 <template>{{ t('保存') }}</template>
@@ -135,6 +151,25 @@ aiI18n({
 声明文件会在首次启动 Vite 后生成。请将它纳入版本控制，并确保所在目录已被
 `tsconfig.json` 的 `include` 字段包含。
 :::
+
+### Monorepo 子包
+
+应用私有的 workspace 子包使用自动导入时，可以把 `dts` 输出到应用和子包 TypeScript
+项目都包含的位置：
+
+```ts
+// apps/web/vite.config.ts，路径相对于 Web 的 Vite root
+aiI18n({
+  autoImport: true,
+  dts: '../../types/web-ai-i18n.d.ts',
+});
+```
+
+随后在应用和子包的 `tsconfig.json` 中包含 `../../types/web-ai-i18n.d.ts`。共享子包不需要
+再次安装或注册 Vite 插件。
+
+如果子包会被多个应用或独立构建复用，优先在源码中显式导入 `virtual:ai-i18n`，避免依赖某个
+消费应用的全局声明。不同 Vite build 也不要写入同一份 dts 文件。
 
 ## ESLint 配置
 

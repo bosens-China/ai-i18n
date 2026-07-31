@@ -16,6 +16,10 @@
 
 - ai-i18n 面向 Vite 8 项目，采用 pnpm monorepo 发布 Core、Analyzer、Vite、ESLint、OpenAI 和 MCP 包。
 - 基础 Vite 包保持框架中立。Vue 与 React 适配器按最终框架模式按需启用，不把框架运行时带入 Vanilla 项目。
+- 浏览器源码提取仅支持 ESM。Vanilla 支持 `.js`、`.mjs`、`.ts`、`.mts`；Vue 与 React 额外支持 `.jsx`、`.tsx`，Vue 额外支持 `.vue`。`.cjs`、`.cts`、`require()` 与 `module.exports` 不在支持范围内；Vite 对配置文件和 CommonJS 依赖的兼容不会扩大插件的源码提取范围。
+- 每个 Vite build 处理其入口可达的本地源码，包括 Vite root 外由 Vite 解析的 workspace 源码；协议中的 source 始终是相对当前 Vite root 的 POSIX 路径，不保存机器绝对路径。`node_modules` 中的预构建依赖不属于该范围。
+- `extracted/` 物理文件名固定为标准化 source 的 SHA-256；JSON 内的 source 是查找权威，文件监听与 MCP 不从 hash 反推路径。同步时自动移除同 source 的旧路径编码文件。
+- Vue 模板翻译 binding 必须可静态证明来自 `useI18n()`：支持 `<script setup>` binding，以及普通 `<script>` 中由组件 `setup()` 唯一顶层 `return { ... }` 直接暴露的 binding；不识别条件或多分支 return、含 spread/计算属性/重复键的返回对象、被改写 `.t` 的 hook 对象、`this.t`、`this.$t`、mixin、`globalProperties` 或任意同名 Options API method。
 - 服务端渲染不在支持范围内。浏览器 Runtime 使用应用级状态，服务端共享会造成跨请求状态污染。
 - 解析器采用 Yuku。它已经通过正确性、性能和跨平台准入；不把解析器选择暴露为公共配置，避免形成无收益的兼容面。
 
@@ -58,6 +62,7 @@
 - 最终译文优先级固定为：comment 对应的人工值、同 source 的人工默认值、AI 翻译、source fallback。
 - 人工审校必须写入 overrides.json，不污染 AI Translation Memory。空字符串是有效人工译文。
 - 提交源码、生成的类型声明、translations.json 和 overrides.json；extracted/ 与 locales/ 可由 Build 重建，不提交。
+- 一个 Vite build 独占一个协议目录。共享源码分别进入每个消费 build 的目录；多个 build 不能通过共用 directory 来共享 Translation Memory。
 
 ### 并发与兼容性
 
@@ -84,14 +89,15 @@
 
 ### 跨文件解析
 
-- ESLint 默认从被检查文件向上查找最近的 tsconfig.json，解析 extends 与项目 references，并按 files、include、exclude 选择实际项目。
-- TypeScript paths alias 属于 ESLint 的解析边界；只存在于 Vite resolve.alias 的别名必须同步到 tsconfig paths。
+- ESLint 的显式 `settings['ai-i18n'].alias` 拥有最高优先级。未命中显式 alias 时，从被检查文件向上查找最近的 `tsconfig.json` 或 `jsconfig.json`；同一目录同时存在两者时优先使用 `tsconfig.json`。项目配置继续解析 `extends` 与 references，并按 `files`、`include`、`exclude` 选择实际项目。
+- 显式 alias 面向 Vite 与 ESLint 共享的本地源码别名，replacement 必须是绝对路径。第一版只承诺字符串到字符串的对象形式，不模拟正则 alias、`customResolver` 或 resolver plugin。
 - Vite 继续使用自身的 resolve()，因此遵从最终 Vite alias、tsconfigPaths 与已注册 resolver plugin；ESLint 不加载或执行 Vite 配置。
 
 ## MCP 与 Agent 协作
 
 - MCP 是本地 stdio 服务，不扫描 workspace、不执行 Vite 配置，也不在启动时接收项目路径。
 - Agent 必须先确认目标 Vite 应用，再结合启动目录、Vite root 与 directory 计算最终绝对 i18n 目录。monorepo 中每个 Vite build 独立处理。
+- MCP 读取目标 build 的完整 extracted 集合，因此同一目录同时包含应用源码和它实际消费的本地 workspace 源码；纯源码子包不是独立 MCP 目标。
 - MCP 的公开消息身份是 source 与可选静态 comment 组成的对象；内部编码后的 message ID
   不暴露给调用方，source_file 也不参与写入身份。
 - 相同消息跨文件共享一份翻译。列表按消息聚合并返回完整 source_files；相同目标和值的批量

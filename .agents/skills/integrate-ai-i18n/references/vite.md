@@ -21,6 +21,30 @@ export default defineConfig({
 })
 ```
 
+## Source module boundary
+
+ai-i18n extracts only browser ESM source:
+
+| Mode | Source extensions |
+| --- | --- |
+| Vanilla | `.js`, `.mjs`, `.ts`, `.mts` |
+| Vue | `.js`, `.mjs`, `.ts`, `.mts`, `.jsx`, `.tsx`, `.vue` |
+| React | `.js`, `.mjs`, `.ts`, `.mts`, `.jsx`, `.tsx` |
+
+Do not promise extraction from `.cjs`, `.cts`, `require()`, or `module.exports`, and do not rewrite
+CommonJS as an incidental integration change. Vite config loading and dependency pre-bundling are
+separate from ai-i18n source extraction.
+
+In a monorepo, one plugin instance also extracts Vite-resolved local ESM source outside the Vite root.
+Treat the consuming Vite build as the owner: root-external sources use root-relative POSIX
+`source_file` values such as `../../packages/ui/src/Button.vue`. Do not install or register the Vite
+plugin in a source-only package, and do not promise extraction from prebuilt `node_modules` code.
+Every independent Vite build must use its own `directory`.
+
+Files under `extracted/` use SHA-256 hashes of normalized sources as physical names. Treat the JSON
+`source` field as authoritative; never derive a source path from a hash filename. A subsequent sync
+migrates the previous path-encoded filename for the same source.
+
 ## Framework mode
 
 ai-i18n detects the final Vite plugin list:
@@ -36,6 +60,11 @@ React plugins is unsupported even when `framework` is set.
 
 Keep explicit imports. ai-i18n writes `src/ai-i18n.d.ts` by default; keep it in the TypeScript project
 or configure an included `dts` path.
+
+For an app-private workspace package that uses auto imports, configure `dts` to a file included by
+both the app and package TypeScript projects. Prefer explicit `virtual:ai-i18n` imports in reusable
+packages so they do not depend on one consumer's global declarations. Never let independent builds
+overwrite one shared declaration file.
 
 ```ts
 import { getLangs, setLang, t } from 'virtual:ai-i18n'

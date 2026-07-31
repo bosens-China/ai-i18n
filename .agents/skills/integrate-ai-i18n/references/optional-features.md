@@ -22,6 +22,20 @@ When ESLint is also requested, use `configs.vue` for explicit Vue imports and `c
 explicit React or Vanilla imports. With automatic imports, use `configs['vue-auto-import']`,
 `configs['react-auto-import']`, or `configs['vanilla-auto-import']` for the resolved framework mode.
 
+When enabling ESLint, inspect the target build's `resolve.alias`. Do not load or execute
+`vite.config.*`. If a local-source alias exists only in Vite, prefer moving its string-to-string
+mapping into a shared module whose replacements are absolute paths, then pass the same object to Vite
+and ESLint through `settings['ai-i18n'].alias`. Do not create a TypeScript config only to duplicate
+that alias. Vite alias arrays, regular-expression matches, `customResolver`, and resolver plugins are
+outside this contract.
+
+ESLint import resolution checks `settings['ai-i18n'].alias` first. When no explicit alias matches, it
+searches upward from the importer for the nearest `tsconfig.json` or `jsconfig.json`; when both are in
+the same directory, `tsconfig.json` wins. Keep `tsconfigPath` only for non-standard config names or
+when the project must pin discovery to a specific solution config. Before reporting completion, run
+ESLint on at least one source file whose translation dependency is reached through an aliased import
+and confirm that the rule follows it.
+
 For an option or edge case not covered here, start with
 `https://bosens-china.github.io/ai-i18n/llms.txt`. Prefer the installed package's types and behavior
 when the deployed documentation conflicts with them.

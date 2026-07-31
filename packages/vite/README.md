@@ -11,8 +11,21 @@ Vue 模式要求 Vue ≥ 3.2.25。
 推断模式，也可通过 `framework` 显式指定；同一 build 同时包含 Vue 与 React 插件族时会
 报错。微前端仓库应在不同子构建中分别配置模式。
 
-JS、TS、JSX、TSX 使用共享分析器，并按当前模式补充对应 Hook 语义；Vue 模式还会编译
-SFC。ai-i18n 根据 import binding 自动识别翻译调用，不要求 JSX 文件使用框架后缀。
+源码提取只支持浏览器端 ESM。Vanilla 分析 `.js`、`.mjs`、`.ts`、`.mts`；Vue 与 React
+额外分析 `.jsx`、`.tsx`，Vue 额外分析 `.vue`。不支持 `.cjs`、`.cts`、`require()` 或
+`module.exports`。Vite 对配置文件和 CommonJS 依赖的兼容不属于 ai-i18n 源码提取能力。
+ai-i18n 根据 import binding 自动识别翻译调用，不要求 JSX 文件使用框架后缀。
+
+在 monorepo 中，一个插件实例会处理当前 Vite build 可达的本地 workspace ESM 源码，
+包括 Vite root 外的共享包。外部源码在协议中记录为相对当前 root 的 POSIX 路径，例如
+`../../packages/ui/src/Button.vue`；不会写入机器绝对路径。共享包不需要再次注册插件，
+但 `node_modules` 中的预构建依赖仍不参与源码提取。
+
+`extracted/` 的物理 JSON 文件名是标准化 source 的 SHA-256，文件内容仍保存完整 source。
+监听与 MCP 按 JSON 内容识别源码，不从 hash 反推；旧路径编码文件会在下一次同步时迁移。
+
+每个 Vite build 必须使用独立的 `directory`。多个应用不能通过共用 i18n 目录来共享译文，
+因为完整 Build 会按当前模块图重建 `extracted/` 与 `locales/`。
 
 ```ts
 import { aiI18n } from '@ai-i18n/vite';
@@ -63,10 +76,10 @@ t(messages.states[index]);
 额外注入 `useI18n` 与 `tRef`。框架组件通过 `useI18n()` 建立更新订阅；
 Vue setup 中需要预先声明响应式 label 或文案树时可直接写
 `const label = tRef('保存')` 或 `const labels = tRef(messages)`，返回只读计算属性。同一 build 中不能调用 Hook 的
-普通 `.js` / `.ts` 工具模块可以使用顶层 Runtime API。`getLang()` 与
+普通 ESM 工具模块可以使用顶层 Runtime API。`getLang()` 与
 `getLangLoadState()` 返回快照，不会自动变成框架响应式状态。框架模式属于整个 Vite build，
-不按单个文件扩展名切换。Vue 自动导入只省略 import；模板仍需在 `<script setup>` 中通过
-`const { t } = useI18n()` 建立 binding 与订阅。
+不按单个文件扩展名切换。Vue 自动导入只省略 import；模板仍需通过 `<script setup>` 绑定，
+或由普通 `<script>` 的 `setup()` 直接返回 `useI18n()` 的 binding，以建立订阅。
 
 Vitest 使用 `@ai-i18n/vite/vitest` 的 `aiI18nVitest()`，无需手写 alias，也不会读写协议文件；
 生产开启自动导入时，把同一个 `autoImport: true` 传给测试插件。

@@ -6,6 +6,9 @@
 
 alpha 阶段请安装 `@ai-i18n/eslint-plugin@alpha`；peer 支持 ESLint 9 和 10。
 
+官方 preset 与 Vite 源码范围一致，覆盖 `.js`、`.mjs`、`.ts`、`.mts` 以及当前框架支持的
+`.jsx`、`.tsx`、`.vue`。它们会排除 `.cjs` 与 `.cts`，也不会为这些文件声明自动导入全局。
+
 ## 按模式配置
 
 显式 import 时，Vanilla / React 使用 `recommended`，Vue 使用覆盖 SFC 的 `vue`：
@@ -91,6 +94,11 @@ Vue 项目已有的 `vue/compiler-sfc` Node 入口，与 Vite 提取器复用相
 source-map 映射，覆盖 `<script>`、`<script setup>`、模板插值和指令表达式。Vue、
 TypeScript 与 SFC 编译相关依赖均为可选 peer，不会安装到 React/Vanilla 项目。
 
+普通 `<script>` 模板只识别能静态证明来自 `useI18n()`、并由组件 `setup()` 中唯一的顶层
+`return { ... }` 直接暴露的 `t`、解构别名或 i18n 对象。条件或多分支 return、
+`this.t`、`this.$t`、mixin、`globalProperties` 与同名 Options method 不属于
+ai-i18n binding；返回对象含 spread、计算属性、重复键，或改写 i18n 对象 `.t` 时也会跳过。
+
 Vue preset 同时覆盖 Vue JSX/TSX，但宿主仍需用 `@vitejs/plugin-vue-jsx` 编译这些文件。
 同一个 Vite build 不支持两种框架模式混用。
 
@@ -141,9 +149,10 @@ function SaveButton() {
 `i18n.t()`、`i18n['t']()`、省略式 `t('source', undefined)` 和 tagged template。
 整棵可静态求值的纯文案对象或数组可以直接传给 `t()` 或 Vue `tRef()`，不要求
 `defineI18nMessages()` 或 `as const`；规则会按去重后的字符串叶子计算静态候选数。
-Vue 模板必须在 `<script setup>` 中绑定 `useI18n()` 返回的 `t`；自动导入只省略 import，
-不会自动合成 Hook。`vue-auto-import` 会把裸 template-only `t()` 作为 error；模板中已
-绑定到 Runtime 顶层 `t` 的调用则由 `no-unsubscribed-t` warning。
+Vue 模板必须在 `<script setup>` 中绑定 `useI18n()` 返回的 `t`，或由普通 `<script>` 的
+`setup()` 直接返回该 binding；自动导入只省略 import，不会自动合成 Hook。
+`vue-auto-import` 会把裸 template-only `t()` 作为 error；模板中已绑定到 Runtime 顶层
+`t` 的调用则由 `no-unsubscribed-t` warning。
 在 template 或 JSX/TSX 渲染期间调用 `tRef()` 会重复创建 `computed`，同一规则会提示在
 Vue setup 中只创建一次并使用返回的 Ref。
 
@@ -152,22 +161,74 @@ Vue setup 中只创建一次并使用返回的 Ref。
 逻辑表达式、`let` 文案、普通集合成员、`const tr = t`、命名空间调用、二次 Hook 解构、
 `useI18n().t()` 与 `require()` 都会报错。
 
-## tsconfig 自动发现与路径别名
+## Monorepo 子包
 
-静态分析规则默认从当前文件向上寻找最近的 `tsconfig.json`，解析 `extends`，递归读取
-`references`，再按 importer 是否满足各项目的 `files`、`include`、`exclude` 选择实际
-配置。因此常见的 `@/*` TypeScript path alias 不需要额外选项。Vue 文件必须由项目显式
-包含，例如 `include: ['src/**/*.ts', 'src/**/*.vue']`。
+被应用消费的本地源码子包不需要再次注册 `@ai-i18n/vite`。仓库根 ESLint 配置已经覆盖
+`packages/**` 时，只在根配置引入一次与消费应用一致的 preset；子包拥有独立
+`eslint.config.*` 或独立 lint 命令时，也必须引入该 preset，并确保
+`@ai-i18n/eslint-plugin` 能从该配置解析到。
+
+应用私有子包使用自动导入时，选择与消费它的 Vite build 相同的 `*-auto-import` preset，
+并让子包 TypeScript 项目包含该 build 生成的 dts。会被多个应用复用的子包优先显式导入
+`virtual:ai-i18n`，使用显式导入 preset，避免依赖单个应用的全局声明。
+
+## alias、tsconfig 与 jsconfig
+
+`settings['ai-i18n'].alias` 拥有最高解析优先级。纯 JavaScript 项目可以与 Vite 共享同一个
+本地源码 alias 对象，无需为了 ESLint 额外创建 `tsconfig.json`：
+
+```js
+// aliases.js
+import { fileURLToPath } from 'node:url';
+
+export const alias = {
+  '@': fileURLToPath(new URL('./src', import.meta.url)),
+};
+```
+
+```js
+// vite.config.js
+import { defineConfig } from 'vite';
+import { alias } from './aliases.js';
+
+export default defineConfig({ resolve: { alias } });
+```
+
+```js
+// eslint.config.js
+import aiI18n from '@ai-i18n/eslint-plugin';
+import { alias } from './aliases.js';
+
+export default [
+  ...aiI18n.configs.recommended,
+  {
+    settings: {
+      'ai-i18n': { alias },
+    },
+  },
+];
+```
+
+第一版只承诺字符串到字符串的对象形式。replacement 必须使用绝对路径，并指向项目本地源码。
+Vite 的数组形式、正则 `find`、`customResolver` 与 resolver plugin 不在支持范围内。插件不会
+加载或执行 `vite.config.*`。
+
+显式 alias 未匹配当前导入时，静态分析规则从 importer 向上寻找最近的 `tsconfig.json` 或
+`jsconfig.json`；同一目录同时存在两者时优先使用 `tsconfig.json`。插件解析 `extends`，
+递归读取 `references`，再按 importer 是否满足各项目的 `files`、`include`、`exclude`
+选择实际配置。因此常见的 `@/*` paths alias 不需要额外选项。Vue 文件必须由项目显式包含，
+例如 `include: ['src/**/*.ts', 'src/**/*.vue']`。
 
 `tsconfigPath` 是自动发现入口的可选覆盖项，适用于非标准配置名或希望固定从某个 solution
 config 开始解析的项目。相对路径按 ESLint 进程的工作目录解析；指向带 `references` 的根
-配置后，仍会执行相同的递归与项目选择逻辑。
+配置后，仍会执行相同的递归与项目选择逻辑。该选项沿用现有名称，也可以直接指向
+`jsconfig.json`。
 
 TypeScript 6 的编译器仍执行已有的 `baseUrl` 解析，但会报告弃用诊断；TypeScript 7 将
 不再支持该选项。插件兼容 TypeScript 5/6 的 `baseUrl + paths`；新项目推荐省略
 `baseUrl`，写成 `"paths": { "@/*": ["./src/*"] }`。若旧项目还依赖 `baseUrl` 的未匹配
-bare import 查找，则用 `"*": ["./src/*"]` 显式保留。只存在于 Vite `resolve.alias`、
-未同步到 tsconfig `paths` 的 alias 不属于 ESLint 的 TypeScript 配置。
+bare import 查找，则用 `"*": ["./src/*"]` 显式保留。只存在于 Vite `resolve.alias`
+的别名应通过共享对象传入 `settings['ai-i18n'].alias`。
 
 需要覆盖自动发现入口时，可以显式配置规则：
 

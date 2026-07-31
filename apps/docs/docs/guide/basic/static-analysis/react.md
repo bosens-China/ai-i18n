@@ -7,8 +7,8 @@ description: 在 React 组件中使用 useI18n() 翻译并响应语言切换
 
 ## 支持的源码
 
-React 模式分析 JS、TS、JSX 与 TSX 文件。普通 JSX 文本不会自动提取，文案必须传给翻译
-API。
+React 模式分析 `.js`、`.mjs`、`.ts`、`.mts`、`.jsx` 与 `.tsx` ESM 源码。不支持
+`.cjs`、`.cts` 或 CommonJS 调用方式。普通 JSX 文本不会自动提取，文案必须传给翻译 API。
 
 ## `useI18n()` 返回的 `t`
 

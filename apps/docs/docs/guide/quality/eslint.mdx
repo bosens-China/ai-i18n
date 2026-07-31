@@ -70,6 +70,62 @@ export default defineConfig([
 这些预设会声明对应的 ai-i18n 全局 API，并检查其使用方式。生产配置和测试配置的 `autoImport`
 值应保持一致。Vue 与 React preset 同时声明基础 Runtime API 和框架专属 API。
 
+### Monorepo 子包
+
+子包不需要因为被 Vite 应用消费而重复注册 `@ai-i18n/vite`。但 ESLint 配置取决于实际执行
+lint 的位置：
+
+- 仓库根 `eslint.config.*` 已覆盖 `packages/**` 时，只需在根配置使用一次对应 preset。
+- 子包拥有独立 `eslint.config.*` 或独立 lint 命令时，该配置也必须引入相同 preset。
+- 开启自动导入时，子包使用的 preset 必须与消费它的 Vite build 框架模式一致。
+
+可复用子包更适合显式导入 `virtual:ai-i18n` 并使用普通 `vue`、`recommended` 等显式导入
+preset，避免绑定到某个应用的自动导入约定。
+
+## JavaScript 项目的路径别名
+
+纯 JavaScript 项目不需要为了 ESLint 路径解析额外创建 `tsconfig.json`。如果项目已在 Vite
+中配置对象形式的本地源码 alias，可以导出同一个对象，并传给 ai-i18n 的 ESLint settings：
+
+```js
+// aliases.js
+import { fileURLToPath } from 'node:url';
+
+export const alias = {
+  '@': fileURLToPath(new URL('./src', import.meta.url)),
+};
+```
+
+```js
+// vite.config.js
+import { defineConfig } from 'vite';
+import { alias } from './aliases.js';
+
+export default defineConfig({
+  resolve: { alias },
+});
+```
+
+```js
+// eslint.config.js
+import aiI18n from '@ai-i18n/eslint-plugin';
+import { defineConfig } from 'eslint/config';
+import { alias } from './aliases.js';
+
+export default defineConfig([
+  ...aiI18n.configs.recommended,
+  {
+    settings: {
+      'ai-i18n': { alias },
+    },
+  },
+]);
+```
+
+replacement 必须使用绝对路径。显式 alias 的匹配结果优先；未匹配时，插件会继续查找
+`tsconfig.json` 或 `jsconfig.json`。插件不会加载或执行 `vite.config.*`。支持范围与查找顺序见
+[ESLint 规则参考](/guide/quality/eslint-rules)。
+
 ## 常见问题
 
 ### 为什么 `t()` 参数报错
@@ -125,5 +181,5 @@ AI_I18N_DIAGNOSTIC_LOCALE=en-US
 
 ## 下一步
 
-- [ESLint 规则参考](/guide/quality/eslint-rules)：按需调整规则选项和 TypeScript 路径解析。
+- [ESLint 规则参考](/guide/quality/eslint-rules)：按需调整规则选项和路径解析。
 - [测试（Vitest）](/guide/quality/testing)：在测试环境中使用 ai-i18n。

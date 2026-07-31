@@ -5,7 +5,7 @@ description: 排查 Vue 模板提取、语言切换更新、自动导入与 tRef
 
 ## 为什么模板里找不到 `t`？
 
-模板必须使用 `<script setup>` 中 `useI18n()` 返回的 `t`：
+模板中的 `t` 必须来自 `useI18n()`。推荐在 `<script setup>` 中直接绑定：
 
 ```vue
 <script setup lang="ts">
@@ -21,6 +21,29 @@ const { t } = useI18n();
 
 `autoImport: true` 只省略 import，不会自动执行 composable。自动导入模式仍需保留
 `const { t } = useI18n()`。
+
+已有普通 `<script>` 组件也可以在 `setup()` 中取得 `t`，再直接返回给模板：
+
+```vue
+<script lang="ts">
+import { defineComponent } from 'vue';
+import { useI18n } from 'virtual:ai-i18n';
+
+export default defineComponent({
+  setup() {
+    const { t } = useI18n();
+    return { t };
+  },
+});
+</script>
+
+<template>
+  <button>{{ t('保存') }}</button>
+</template>
+```
+
+`this.t`、`this.$t`、mixin、`globalProperties` 和任意同名 Options API method 不属于
+ai-i18n 的模板绑定。
 
 ## 为什么普通模板文本没有被提取？
 

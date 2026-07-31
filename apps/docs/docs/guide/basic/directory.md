@@ -50,6 +50,34 @@ i18n/locales/
 
 完整 Build 会处理从应用入口可达的模块。未被应用引用的文件不会进入翻译结果。
 
+## Monorepo 中的目录归属
+
+一个 Vite build 必须独占一个 i18n 目录。例如：
+
+```text
+apps/
+├── web/
+│   └── i18n/
+└── admin/
+    └── i18n/
+packages/
+└── ui/
+    └── src/
+```
+
+`web` 引用 `packages/ui` 的本地 ESM 源码时，完整 Build 会把 UI 文案写入
+`apps/web/i18n`。其 `source_file` 使用相对 Web 的 Vite root 的 POSIX 路径，例如
+`../../packages/ui/src/Button.vue`。`extracted/` 中的物理文件名是该标准化路径的稳定
+SHA-256，例如 `<64 位十六进制 hash>.json`；它始终是目录下的单个合法文件名，不会访问
+父目录。文件内容中的 `source` 才是查找权威，MCP 不会尝试从 hash 反推路径。
+
+从旧版升级后，下一次 Dev 或 Build 同步会把原来的路径编码文件迁移为 hash 文件名。两种
+文件不会长期重复保留。
+
+共享源码包不需要重复注册 ai-i18n，也不需要单独创建 i18n 目录，除非它自己拥有独立的
+Vite build。不要让 Web、Admin 或包构建共用一个目录：完整 Build 会按当前模块图重建
+`extracted/` 和 `locales/`，不同构建会相互覆盖。使用 MCP 时也应分别选择每个应用的目录。
+
 ## 缺译时会发生什么
 
 目标语言缺少译文时，页面会显示源码文案。你可以配置 [AI 翻译](/guide/advanced/ai-translation)，也可以按
