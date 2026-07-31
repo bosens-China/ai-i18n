@@ -1,5 +1,25 @@
 # @ai-i18n/vite
 
+## [1.0.0-alpha.12](https://github.com/bosens-China/ai-i18n/compare/vite-v1.0.0-alpha.11...vite-v1.0.0-alpha.12) (2026-07-31)
+
+
+### Features
+
+* **vite:** 完善 Vue Runtime 与类型桥接 ([3280399](https://github.com/bosens-China/ai-i18n/commit/32803999b5f05e09e57097b1905d712b5a883fc0))
+* **vite:** 完善 Vue 与 monorepo 源码提取 ([666dc15](https://github.com/bosens-China/ai-i18n/commit/666dc150a1cb9a5334cdf2b8106eaf3d963e7de6))
+
+
+### Bug Fixes
+
+* **vite:** 串行化 Dev 状态事务 ([fe29e5a](https://github.com/bosens-China/ai-i18n/commit/fe29e5a74eca7a383d441635f10ede3143c2c323))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @ai-i18n/analyzer bumped to 1.0.0-alpha.10
+
 ## [1.0.0-alpha.11](https://github.com/bosens-China/ai-i18n/compare/vite-v1.0.0-alpha.10...vite-v1.0.0-alpha.11) (2026-07-30)
 
 

@@ -1,5 +1,26 @@
 # @ai-i18n/eslint-plugin
 
+## [1.0.0-alpha.11](https://github.com/bosens-China/ai-i18n/compare/eslint-plugin-v1.0.0-alpha.10...eslint-plugin-v1.0.0-alpha.11) (2026-07-31)
+
+
+### Features
+
+* **eslint:** 支持 alias 与 jsconfig 解析 ([e53929c](https://github.com/bosens-China/ai-i18n/commit/e53929cd711953ee03b8fef4b7ffac2dc5c9efbb))
+* **eslint:** 补齐 Vue setup 与 Options API 响应式边界 ([213207a](https://github.com/bosens-China/ai-i18n/commit/213207aec48853e3bba41edf8fb7491aca309c0b))
+* **eslint:** 覆盖 Vue 响应式使用边界 ([eec455c](https://github.com/bosens-China/ai-i18n/commit/eec455cd17aa460b9c6bfaad044d12e78ea7e333))
+
+
+### Bug Fixes
+
+* **eslint:** 避免长期缓存未解析导入 ([401a8c1](https://github.com/bosens-China/ai-i18n/commit/401a8c1e183d65bd86ee08864a293972730fcab5))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @ai-i18n/analyzer bumped to 1.0.0-alpha.10
+
 ## [1.0.0-alpha.10](https://github.com/bosens-China/ai-i18n/compare/eslint-plugin-v1.0.0-alpha.9...eslint-plugin-v1.0.0-alpha.10) (2026-07-30)
 
 
