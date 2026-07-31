@@ -10,7 +10,7 @@ import {
   evaluateTranslationInput,
   isDefineI18nMessagesCall,
 } from './static-values.js';
-import { isVueUnrefCall } from './static-evaluator.js';
+import { isVueUnrefCall } from './static-call-detection.js';
 
 type Node = NodeOfType<NodeType>;
 
@@ -30,8 +30,8 @@ export function recommendedArgumentIssue(
     return {
       code: 'non-recommended-argument',
       message: diagnosticMessage(
-        't() 必须接收可静态提取的文案。',
-        't() requires a statically extractable message.',
+        '翻译调用必须接收可静态提取的文案。',
+        'A translation call requires a statically extractable message.',
       ),
     };
   }
@@ -42,8 +42,8 @@ export function recommendedArgumentIssue(
         : {
             code: 'non-recommended-argument',
             message: diagnosticMessage(
-              '请将字符串文案直接传给 t()。',
-              'Pass the message string directly to t().',
+              '请将字符串文案直接传给翻译调用。',
+              'Pass the message string directly to the translation call.',
             ),
           };
     case 'TemplateLiteral':
@@ -52,8 +52,8 @@ export function recommendedArgumentIssue(
         : {
             code: 'non-recommended-argument',
             message: diagnosticMessage(
-              '运行时插值请改用标签模板：t`...${value}`。',
-              'Use a tagged template for runtime interpolation: t`...${value}`.',
+              '运行时插值请改用翻译函数的标签模板写法。',
+              'Use the translation function as a tagged template for runtime interpolation.',
             ),
           };
     case 'ParenthesizedExpression':
@@ -98,15 +98,15 @@ export function recommendedArgumentIssue(
           ? {
               code: 'unmarked-member',
               message: diagnosticMessage(
-                '对象或数组文案请先用 defineI18nMessages() 标记，再传给 t()。这是编译宏，无需 import。',
-                'Mark object or array messages with defineI18nMessages() before passing them to t(). It is a compile-time macro and does not need to be imported.',
+                '对象或数组文案请先用 defineI18nMessages() 标记，再传给翻译调用。这是编译宏，无需 import。',
+                'Mark object or array messages with defineI18nMessages() before passing them to the translation call. It is a compile-time macro and does not need to be imported.',
               ),
             }
           : {
               code: 'non-recommended-argument',
               message: diagnosticMessage(
-                't() 的参数无法静态提取，请传入静态文案。',
-                'The t() argument cannot be statically extracted; pass a static message.',
+                '翻译调用的参数无法静态提取，请传入静态文案。',
+                'The translation-call argument cannot be statically extracted; pass a static message.',
               ),
             };
       }
@@ -199,8 +199,8 @@ function identifierIssue(
     return {
       code: 'non-recommended-argument',
       message: diagnosticMessage(
-        't() 不支持无法解析的变量，请使用 const 静态文案。',
-        't() cannot resolve this variable; use a static const message.',
+        '翻译调用不支持无法解析的变量，请使用 const 静态文案。',
+        'The translation call cannot resolve this variable; use a static const message.',
       ),
     };
   }
@@ -209,8 +209,8 @@ function identifierIssue(
     return {
       code: 'mutable-binding',
       message: diagnosticMessage(
-        '传给 t() 的静态变量必须使用 const 声明。',
-        'Static variables passed to t() must be declared with const.',
+        '传给翻译调用的静态变量必须使用 const 声明。',
+        'Static variables passed to a translation call must be declared with const.',
       ),
     };
   }
@@ -219,8 +219,8 @@ function identifierIssue(
     return {
       code: 'non-recommended-argument',
       message: diagnosticMessage(
-        't() 参数包含循环引用，无法按推荐语法提取。',
-        'The t() argument contains a circular reference and cannot be extracted.',
+        '翻译调用参数包含循环引用，无法按推荐语法提取。',
+        'The translation-call argument contains a circular reference and cannot be extracted.',
       ),
     };
   }
@@ -235,8 +235,8 @@ function identifierIssue(
     : {
         code: 'non-recommended-argument',
         message: diagnosticMessage(
-          '请向 t() 传入字符串字面量或可解析的 const 静态文案。',
-          'Pass a string literal or resolvable static const message to t().',
+          '请向翻译调用传入字符串字面量或可解析的 const 静态文案。',
+          'Pass a string literal or resolvable static const message to the translation call.',
         ),
       };
 }

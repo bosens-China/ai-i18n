@@ -1,9 +1,13 @@
 import { hasUnsafeSetupReturn } from './vue-setup-safety.js';
-
-type AstNode = {
-  type: string;
-  [key: string]: unknown;
-};
+import {
+  collectPatternNames,
+  isNode,
+  node,
+  nodes,
+  propertyName,
+  unwrapNode,
+  type AstNode,
+} from './vue-ast-utils.js';
 
 export interface OrdinarySetupTranslation {
   hook: string;
@@ -320,78 +324,11 @@ function collectStatementBindings(
     }
   } else if (
     statement.type === 'FunctionDeclaration' ||
-    statement.type === 'ClassDeclaration'
+    statement.type === 'ClassDeclaration' ||
+    statement.type === 'TSEnumDeclaration' ||
+    statement.type === 'TSImportEqualsDeclaration' ||
+    statement.type === 'TSModuleDeclaration'
   ) {
     collectPatternNames(node(statement.id), result);
   }
-}
-
-function collectPatternNames(
-  pattern: AstNode | null,
-  result: Set<string>,
-): void {
-  if (!pattern) return;
-  if (pattern.type === 'Identifier') {
-    result.add(String(pattern.name));
-  } else if (pattern.type === 'ObjectPattern') {
-    for (const property of nodes(pattern.properties)) {
-      collectPatternNames(
-        node(
-          property.type === 'RestElement' ? property.argument : property.value,
-        ),
-        result,
-      );
-    }
-  } else if (pattern.type === 'ArrayPattern') {
-    for (const element of nodes(pattern.elements)) {
-      collectPatternNames(element, result);
-    }
-  } else if (
-    pattern.type === 'AssignmentPattern' ||
-    pattern.type === 'RestElement'
-  ) {
-    collectPatternNames(node(pattern.left ?? pattern.argument), result);
-  }
-}
-
-function unwrapNode(value: AstNode | null): AstNode | null {
-  while (
-    value &&
-    (value.type === 'TSAsExpression' ||
-      value.type === 'TSSatisfiesExpression' ||
-      value.type === 'TSNonNullExpression' ||
-      value.type === 'TypeCastExpression' ||
-      value.type === 'ParenthesizedExpression')
-  ) {
-    value = node(value.expression);
-  }
-  return value;
-}
-
-function propertyName(value: unknown): string | null {
-  const target = node(value);
-  return target?.type === 'Identifier'
-    ? String(target.name)
-    : target?.type === 'StringLiteral' || target?.type === 'Literal'
-      ? typeof target.value === 'string'
-        ? target.value
-        : null
-      : null;
-}
-
-function nodes(value: unknown): AstNode[] {
-  return Array.isArray(value) ? value.filter(isNode) : [];
-}
-
-function node(value: unknown): AstNode | null {
-  return isNode(value) ? value : null;
-}
-
-function isNode(value: unknown): value is AstNode {
-  return (
-    typeof value === 'object' &&
-    value !== null &&
-    'type' in value &&
-    typeof value.type === 'string'
-  );
 }

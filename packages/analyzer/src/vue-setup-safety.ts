@@ -1,7 +1,10 @@
-type AstNode = {
-  type: string;
-  [key: string]: unknown;
-};
+import {
+  isNode,
+  node,
+  propertyName,
+  unwrapNode,
+  type AstNode,
+} from './vue-ast-utils.js';
 
 export function hasUnsafeSetupReturn(
   statements: readonly unknown[],
@@ -68,40 +71,4 @@ function isTranslationMember(
   }
   const object = unwrapNode(node(member.object));
   return object?.type === 'Identifier' && objects.has(String(object.name));
-}
-
-function unwrapNode(value: AstNode | null): AstNode | null {
-  while (
-    value &&
-    (value.type === 'TSAsExpression' ||
-      value.type === 'TSNonNullExpression' ||
-      value.type === 'ParenthesizedExpression')
-  ) {
-    value = node(value.expression);
-  }
-  return value;
-}
-
-function propertyName(value: unknown): string | null {
-  const target = node(value);
-  return target?.type === 'Identifier'
-    ? String(target.name)
-    : target?.type === 'StringLiteral' || target?.type === 'Literal'
-      ? typeof target.value === 'string'
-        ? target.value
-        : null
-      : null;
-}
-
-function node(value: unknown): AstNode | null {
-  return isNode(value) ? value : null;
-}
-
-function isNode(value: unknown): value is AstNode {
-  return (
-    typeof value === 'object' &&
-    value !== null &&
-    'type' in value &&
-    typeof value.type === 'string'
-  );
 }

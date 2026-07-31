@@ -14,7 +14,18 @@ import {
   type SourceLocation,
 } from './index.js';
 import { diagnosticMessage } from './diagnostics.js';
-import { createOrdinarySetupTemplateAnalysis } from './vue-setup-template.js';
+import {
+  analyzableTemplate,
+  createRegistrationTarget,
+  createTemplateOnlyLocationMapper,
+  templateImportMetadata,
+  vueCompileError,
+} from './vue-analysis-support.js';
+import { findVueTemplateRuntimeBinding } from './vue-runtime-template-bindings.js';
+import {
+  createInlineTemplateRuntimeAnalysis,
+  createOrdinarySetupTemplateAnalysis,
+} from './vue-setup-template.js';
 
 export interface VueCompiler {
   parse: typeof parseVue;
@@ -31,9 +42,14 @@ export interface VueRegistrationInsertion {
 export interface VueAnalysisSource {
   code: string;
   lang: AnalysisLanguage;
+  autoImportCode: string;
+  autoImportLang: AnalysisLanguage;
   mapLocation(location: SourceLocation): SourceLocation;
   registration: VueRegistrationInsertion;
+  templateRegistration?: VueRegistrationInsertion;
   macroCalls: DefineI18nMessagesCall[];
+  templateAutoImportCandidates?: readonly string[];
+  templateImports?: readonly string[];
 }
 
 export function analyzeVueSource(
@@ -54,32 +70,82 @@ export function analyzeVueSource(
     );
   }
 
-  const registrationBlock = writableScriptBlock(descriptor);
   const macroCalls = findMacroCalls(descriptor, id);
-  const registration = registrationBlock
-    ? { offset: registrationBlock.loc.start.offset }
-    : {
-        offset: 0,
-        prefix: '<script setup>\n',
-        suffix: '</script>\n',
-      };
+  const registrationTarget = createRegistrationTarget(descriptor);
+  const registrationMetadata = {
+    registration: registrationTarget.insertion,
+    ...(registrationTarget.templateInsertion
+      ? { templateRegistration: registrationTarget.templateInsertion }
+      : {}),
+  };
+  const autoImportBlocks = [descriptor.script, descriptor.scriptSetup].flatMap(
+    (block) => (block && !block.src ? [block] : []),
+  );
+  const autoImportMetadata = {
+    autoImportCode: autoImportBlocks.map((block) => block.content).join('\n'),
+    autoImportLang: scriptLanguage(
+      descriptor.scriptSetup?.lang ?? descriptor.script?.lang,
+    ),
+  };
 
   if (!descriptor.scriptSetup || descriptor.scriptSetup.src) {
     const script = descriptor.script;
-    if (
-      !script ||
-      script.src ||
-      !descriptor.template ||
-      descriptor.template.src ||
-      (descriptor.template.lang && descriptor.template.lang !== 'html')
-    ) {
+    const templateBlock = analyzableTemplate(descriptor);
+    if (!script && templateBlock) {
+      try {
+        const compiledTemplate = compiler.compileTemplate({
+          source: templateBlock.content,
+          filename: id,
+          id,
+        });
+        if (compiledTemplate.errors.length) {
+          throw new Error(compiledTemplate.errors.map(formatError).join('; '));
+        }
+        const analysis =
+          compiledTemplate.map && registrationTarget.exposesTemplateBindings
+            ? createOrdinarySetupTemplateAnalysis(
+                '',
+                [],
+                compiledTemplate.code,
+                'auto-import',
+              )
+            : null;
+        if (analysis) {
+          const scope = uniqueAnalysisName(
+            '__aiI18nTemplate',
+            compiledTemplate.code,
+          );
+          const prefix = `function ${scope}() {\n`;
+          return {
+            code: `${prefix}${analysis.templateCode}\n}\n${analysis.bridgeCode}`,
+            lang: 'js',
+            ...autoImportMetadata,
+            mapLocation: createTemplateOnlyLocationMapper(
+              createBlockSourceMapLocationMapper(
+                templateBlock,
+                compiledTemplate.map as unknown as RawSourceMap,
+              ),
+              countLines(prefix) - 1,
+              countLines(analysis.templateCode),
+            ),
+            ...registrationMetadata,
+            macroCalls,
+            ...templateImportMetadata(analysis.runtimeBinding),
+          };
+        }
+      } catch (error) {
+        throw vueCompileError(id, error);
+      }
+    }
+    if (!script || script.src || !templateBlock) {
       return {
         code: script && !script.src ? script.content : '',
         lang: scriptLanguage(script?.lang),
+        ...autoImportMetadata,
         mapLocation: script
           ? createBlockLocationMapper(script)
           : identityLocation,
-        registration,
+        ...registrationMetadata,
         macroCalls,
       };
     }
@@ -89,13 +155,11 @@ export function analyzeVueSource(
         sourceMap: true,
       });
       const compiledTemplate = compiler.compileTemplate({
-        source: descriptor.template.content,
+        source: templateBlock.content,
         filename: id,
         id,
         preprocessLang:
-          descriptor.template.lang === 'html'
-            ? undefined
-            : descriptor.template.lang,
+          templateBlock.lang === 'html' ? undefined : templateBlock.lang,
         compilerOptions: {
           bindingMetadata: compiledScript.bindings,
           expressionPlugins: /tsx?$/.test(script.lang ?? '')
@@ -108,80 +172,97 @@ export function analyzeVueSource(
         throw new Error(compiledTemplate.errors.map(formatError).join('; '));
       }
       // 普通 script 只在编译器能提供模板源码映射时扩展分析，避免产生错误诊断位置。
-      const template = compiledTemplate.map
+      const scriptAst = compiledScript.scriptAst ?? [];
+      const runtimeBinding = registrationTarget.exposesTemplateBindings
+        ? findVueTemplateRuntimeBinding([scriptAst])
+        : null;
+      const templateAnalysis = compiledTemplate.map
         ? createOrdinarySetupTemplateAnalysis(
             script.content,
-            compiledScript.scriptAst ?? [],
+            scriptAst,
             compiledTemplate.code,
+            runtimeBinding,
           )
         : null;
-      if (template) {
+      if (templateAnalysis) {
         const scope = uniqueAnalysisName(
           '__aiI18nTemplate',
           script.content,
           compiledTemplate.code,
         );
         const prefix = `${script.content}\nfunction ${scope}() {\n`;
-        const code = `${prefix}${template.templateCode}\n}\n${template.bridgeCode}`;
+        const code = `${prefix}${templateAnalysis.templateCode}\n}\n${templateAnalysis.bridgeCode}`;
         const templateMapper = createBlockSourceMapLocationMapper(
-          descriptor.template,
+          templateBlock,
           compiledTemplate.map as unknown as RawSourceMap,
         );
         return {
           code,
           lang: scriptLanguage(script.lang),
+          ...autoImportMetadata,
           mapLocation: createCombinedLocationMapper(
             script,
             templateMapper,
             countLines(prefix) - 1,
-            countLines(template.templateCode),
+            countLines(templateAnalysis.templateCode),
           ),
-          registration,
+          ...registrationMetadata,
           macroCalls,
+          ...templateImportMetadata(templateAnalysis.runtimeBinding),
         };
       }
     } catch (error) {
-      throw new Error(
-        diagnosticMessage(
-          `[ai-i18n] 编译 ${id} 失败：${formatError(error)}`,
-          `[ai-i18n] Failed to compile ${id}: ${formatError(error)}`,
-        ),
-        { cause: error },
-      );
+      throw vueCompileError(id, error);
     }
     return {
       code: script.content,
       lang: scriptLanguage(script.lang),
+      ...autoImportMetadata,
       mapLocation: createBlockLocationMapper(script),
-      registration,
+      ...registrationMetadata,
       macroCalls,
     };
   }
 
   try {
+    // 自动导入分析必须保留普通 script 的模块作用域与 setup 的函数作用域，
+    // 否则 setup 局部变量会错误遮蔽普通 script 中同名的未绑定 Runtime API。
+    const autoImportCompiled = compiler.compileScript(descriptor, {
+      id,
+    });
     // compiler-sfc 同时保留 setup、模板局部作用域和双 script 的真实语义。
     const compiled = compiler.compileScript(descriptor, {
       id,
       inlineTemplate: true,
       sourceMap: true,
     });
+    const scriptAst = compiled.scriptAst ?? [];
+    const runtimeBinding = registrationTarget.exposesTemplateBindings
+      ? findVueTemplateRuntimeBinding([
+          scriptAst,
+          compiled.scriptSetupAst ?? [],
+        ])
+      : null;
+    const analysis = createInlineTemplateRuntimeAnalysis(
+      compiled.content,
+      runtimeBinding,
+      scriptLanguage(compiled.lang),
+    );
     return {
-      code: compiled.content,
+      code: analysis.code,
       lang: scriptLanguage(compiled.lang),
+      ...autoImportMetadata,
+      autoImportCode: autoImportCompiled.content,
+      autoImportLang: scriptLanguage(autoImportCompiled.lang),
       mapLocation: compiled.map
         ? createSourceMapLocationMapper(compiled.map as unknown as RawSourceMap)
         : identityLocation,
-      registration,
+      ...registrationMetadata,
       macroCalls,
+      ...templateImportMetadata(analysis.runtimeBinding),
     };
   } catch (error) {
-    throw new Error(
-      diagnosticMessage(
-        `[ai-i18n] 编译 ${id} 失败：${formatError(error)}`,
-        `[ai-i18n] Failed to compile ${id}: ${formatError(error)}`,
-      ),
-      { cause: error },
-    );
+    throw vueCompileError(id, error);
   }
 }
 
@@ -259,14 +340,6 @@ function createCombinedLocationMapper(
     }
     return location;
   };
-}
-
-function writableScriptBlock(descriptor: SFCDescriptor): SFCBlock | null {
-  if (descriptor.script && !descriptor.script.src) return descriptor.script;
-  if (descriptor.scriptSetup && !descriptor.scriptSetup.src) {
-    return descriptor.scriptSetup;
-  }
-  return null;
 }
 
 function scriptLanguage(lang: string | undefined): AnalysisLanguage {

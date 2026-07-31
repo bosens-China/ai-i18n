@@ -4,6 +4,10 @@ import {
   type NodeOfType,
   type NodeType,
 } from 'yuku-analyzer';
+import {
+  isDefineI18nMessagesCall,
+  isVueUnrefCall,
+} from './static-call-detection.js';
 
 type Node = NodeOfType<NodeType>;
 type Primitive = string | number | boolean | bigint | null | undefined;
@@ -367,34 +371,6 @@ function exceedsLimit(context: EvaluationContext, count: number): boolean {
 
 function branch(context: EvaluationContext): EvaluationContext {
   return { ...context, seen: new Set(context.seen) };
-}
-
-export function isDefineI18nMessagesCall(
-  node: NodeOfType<'CallExpression'>,
-  module: Module,
-): boolean {
-  return (
-    node.callee.type === 'Identifier' &&
-    node.callee.name === 'defineI18nMessages' &&
-    !module.symbolOf(node.callee)
-  );
-}
-
-export function isVueUnrefCall(
-  node: NodeOfType<'CallExpression'>,
-  module: Module,
-): boolean {
-  if (node.callee.type !== 'Identifier') return false;
-  const symbol = module.symbolOf(node.callee);
-  return Boolean(
-    symbol &&
-    module.imports.some(
-      (item) =>
-        item.local === symbol &&
-        item.name === 'unref' &&
-        item.specifier === 'vue',
-    ),
-  );
 }
 
 function isPrimitive(value: unknown): value is Primitive {

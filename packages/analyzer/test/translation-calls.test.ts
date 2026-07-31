@@ -3,6 +3,7 @@ import {
   AI_I18N_VIRTUAL_MODULE_ID,
   Analyzer,
   analyzeModule,
+  extractMessages,
   findTranslationCalls,
 } from '../src/index';
 
@@ -18,7 +19,7 @@ const hooks = [
 describe('translation call discovery', () => {
   it('distinguishes Runtime and Hook bindings', () => {
     const module = analyzeModule(
-      `import { t as runtimeT, tRef, useI18n as useTranslation } from 'virtual:ai-i18n'
+      `import { t as runtimeT, tRef, tComputed as optionsT, useI18n as useTranslation } from 'virtual:ai-i18n'
 const { t: hookT } = useTranslation()
 const i18n = useTranslation()
 runtimeT('Runtime')
@@ -26,7 +27,9 @@ hookT('Hook')
 i18n.t\`Member \${value}\`
 t('Auto import')
 tRef('Imported Ref')
-function local(t, tRef) { t('Shadowed'); tRef('Shadowed Ref') }`,
+optionsT('Imported Options computed')
+tComputed('Auto Options computed')
+function local(t, tRef, tComputed) { t('Shadowed'); tRef('Shadowed Ref'); tComputed('Shadowed computed') }`,
       'View.tsx',
     );
 
@@ -38,6 +41,8 @@ function local(t, tRef) { t('Shadowed'); tRef('Shadowed Ref') }`,
       { kind: 'tagged-template', origin: 'hook', line: 6 },
       { kind: 'call', origin: 'runtime', line: 7 },
       { kind: 'call', origin: 'vue-ref', line: 8 },
+      { kind: 'call', origin: 'vue-computed', line: 9 },
+      { kind: 'call', origin: 'vue-computed', line: 10 },
     ]);
   });
 
@@ -73,5 +78,35 @@ function local(t, tRef) { t('Shadowed'); tRef('Shadowed Ref') }`,
     expect(
       findTranslationCalls(module, AI_I18N_VIRTUAL_MODULE_ID, [], true),
     ).toMatchObject([{ kind: 'call', origin: 'vue-ref', line: 1 }]);
+  });
+
+  it('recognizes only the selected auto-imported translation APIs', () => {
+    const module = analyzeModule(
+      `t('未开启')
+tRef('未开启')
+tComputed('已开启')
+function render(tComputed) { tComputed('局部') }`,
+      'Options.vue.ts',
+    );
+
+    expect(
+      findTranslationCalls(
+        module,
+        AI_I18N_VIRTUAL_MODULE_ID,
+        [],
+        new Set(['tComputed'] as const),
+      ),
+    ).toMatchObject([{ kind: 'call', origin: 'vue-computed', line: 3 }]);
+    expect(
+      extractMessages(
+        module,
+        AI_I18N_VIRTUAL_MODULE_ID,
+        [],
+        new Set(['tComputed'] as const),
+      ),
+    ).toMatchObject({
+      messages: [{ source: '已开启' }],
+      warnings: [],
+    });
   });
 });

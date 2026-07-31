@@ -3,10 +3,10 @@ import type { Module, NodeOfType, NodeType } from 'yuku-analyzer';
 import { diagnosticMessage } from './diagnostics.js';
 import {
   evaluateStaticValues,
-  isDefineI18nMessagesCall,
   type StaticResult,
   type StaticValue,
 } from './static-evaluator.js';
+import { isDefineI18nMessagesCall } from './static-call-detection.js';
 
 type Node = NodeOfType<NodeType>;
 

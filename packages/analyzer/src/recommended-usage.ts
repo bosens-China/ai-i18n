@@ -113,8 +113,8 @@ export function validateRecommendedUsage(
           node,
           'non-recommended-callee',
           diagnosticMessage(
-            '不要再次赋值 t；如需别名，请在 import 或 useI18n() 解构时直接命名。',
-            'Do not reassign t; create an alias in the import or useI18n() destructuring.',
+            '不要再次赋值翻译函数；如需别名，请在 import 或 useI18n() 解构时直接命名。',
+            'Do not reassign a translation function; create an alias in the import or useI18n() destructuring.',
           ),
         );
       } else if (

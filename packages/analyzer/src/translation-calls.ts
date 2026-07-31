@@ -18,12 +18,17 @@ export interface TranslationContext {
   translateSymbols: Set<YukuSymbol>;
   runtimeTranslateSymbols: Set<YukuSymbol>;
   runtimeRefSymbols: Set<YukuSymbol>;
+  runtimeComputedSymbols: Set<YukuSymbol>;
   hookTranslateSymbols: Set<YukuSymbol>;
   translationObjects: Map<YukuSymbol, Set<string>>;
   valueWrappers: Set<YukuSymbol>;
 }
 
-export type TranslationCalleeOrigin = 'runtime' | 'hook' | 'vue-ref';
+export type TranslationRuntimeApi = 't' | 'tRef' | 'tComputed';
+export type TranslationAutoImports =
+  boolean | ReadonlySet<TranslationRuntimeApi>;
+export type TranslationCalleeOrigin =
+  'runtime' | 'hook' | 'vue-ref' | 'vue-computed';
 
 export function createTranslationContext(
   module: Module,
@@ -33,6 +38,7 @@ export function createTranslationContext(
   const translateSymbols = new Set<YukuSymbol>();
   const runtimeTranslateSymbols = new Set<YukuSymbol>();
   const runtimeRefSymbols = new Set<YukuSymbol>();
+  const runtimeComputedSymbols = new Set<YukuSymbol>();
   const hookTranslateSymbols = new Set<YukuSymbol>();
   const translationObjects = new Map<YukuSymbol, Set<string>>();
   const valueWrappers = new Set<YukuSymbol>();
@@ -40,14 +46,19 @@ export function createTranslationContext(
   for (const item of module.imports) {
     if (
       !item.typeOnly &&
-      (item.name === 't' || item.name === 'tRef') &&
+      isTranslationRuntimeApi(item.name) &&
       item.local &&
       (item.specifier === runtimeModuleId ||
         item.local.definition()?.module.path === runtimeModuleId)
     ) {
       translateSymbols.add(item.local);
-      if (item.name === 'tRef') runtimeRefSymbols.add(item.local);
-      else runtimeTranslateSymbols.add(item.local);
+      if (item.name === 'tRef') {
+        runtimeRefSymbols.add(item.local);
+      } else if (item.name === 'tComputed') {
+        runtimeComputedSymbols.add(item.local);
+      } else {
+        runtimeTranslateSymbols.add(item.local);
+      }
     }
     if (
       !item.typeOnly &&
@@ -70,6 +81,7 @@ export function createTranslationContext(
     translateSymbols,
     runtimeTranslateSymbols,
     runtimeRefSymbols,
+    runtimeComputedSymbols,
     hookTranslateSymbols,
     translationObjects,
     valueWrappers,
@@ -80,7 +92,7 @@ export function isTranslationCallee(
   node: Node,
   module: Module,
   context: TranslationContext,
-  autoImportRuntime: boolean,
+  autoImportRuntime: TranslationAutoImports,
 ): boolean {
   return (
     translationCalleeOrigin(node, module, context, autoImportRuntime) !== null
@@ -91,19 +103,22 @@ export function translationCalleeOrigin(
   node: Node,
   module: Module,
   context: TranslationContext,
-  autoImportRuntime: boolean,
+  autoImportRuntime: TranslationAutoImports,
 ): TranslationCalleeOrigin | null {
   if (
-    autoImportRuntime &&
     node.type === 'Identifier' &&
-    (node.name === 't' || node.name === 'tRef') &&
+    isTranslationRuntimeApi(node.name) &&
+    isAutoImported(node.name, autoImportRuntime) &&
     !module.symbolOf(node)
   ) {
-    return node.name === 'tRef' ? 'vue-ref' : 'runtime';
+    return runtimeOrigin(node.name);
   }
   const symbol = valueSymbol(node, module, context.valueWrappers);
   if (symbol && context.hookTranslateSymbols.has(symbol)) return 'hook';
   if (symbol && context.runtimeRefSymbols.has(symbol)) return 'vue-ref';
+  if (symbol && context.runtimeComputedSymbols.has(symbol)) {
+    return 'vue-computed';
+  }
   if (symbol && context.runtimeTranslateSymbols.has(symbol)) return 'runtime';
   if (node.type !== 'MemberExpression') return null;
   const objectSymbol = valueSymbol(node.object, module, context.valueWrappers);
@@ -120,6 +135,33 @@ export function translationCalleeOrigin(
       ? node.property.name
       : null;
   return property !== null && properties.has(property) ? 'hook' : null;
+}
+
+export function hasTranslationAutoImports(
+  autoImports: TranslationAutoImports,
+): boolean {
+  return typeof autoImports === 'boolean' ? autoImports : autoImports.size > 0;
+}
+
+function isTranslationRuntimeApi(
+  name: string | null,
+): name is TranslationRuntimeApi {
+  return name === 't' || name === 'tRef' || name === 'tComputed';
+}
+
+function isAutoImported(
+  name: TranslationRuntimeApi,
+  autoImports: TranslationAutoImports,
+): boolean {
+  return typeof autoImports === 'boolean' ? autoImports : autoImports.has(name);
+}
+
+function runtimeOrigin(name: TranslationRuntimeApi): TranslationCalleeOrigin {
+  return name === 'tRef'
+    ? 'vue-ref'
+    : name === 'tComputed'
+      ? 'vue-computed'
+      : 'runtime';
 }
 
 export function isTranslationReference(
