@@ -7,7 +7,7 @@ import { afterEach, expect, it } from 'vitest';
 import { writeFrameworkTypes } from '../src/framework';
 
 const execFileAsync = promisify(execFile);
-const workspaceRoot = path.resolve(import.meta.dirname, '../../..');
+const packageRoot = path.resolve(import.meta.dirname, '..');
 const tempDirs: string[] = [];
 
 afterEach(async () => {
@@ -25,7 +25,7 @@ it('lets vue-tsc resolve bare t in script setup, Options, and template-only SFCs
   tempDirs.push(root);
   await fs.mkdir(path.join(root, 'src'), { recursive: true });
   await fs.symlink(
-    path.join(workspaceRoot, 'packages/vite/node_modules'),
+    path.join(packageRoot, 'node_modules'),
     path.join(root, 'node_modules'),
     process.platform === 'win32' ? 'junction' : 'dir',
   );
@@ -91,11 +91,15 @@ export default defineComponent({
     ),
   ]);
 
-  const pnpm = process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm';
   const result = await execFileAsync(
-    pnpm,
-    ['exec', 'vue-tsc', '--noEmit', '-p', path.join(root, 'tsconfig.json')],
-    { cwd: workspaceRoot },
+    process.execPath,
+    [
+      path.join(packageRoot, 'node_modules/vue-tsc/bin/vue-tsc.js'),
+      '--noEmit',
+      '-p',
+      path.join(root, 'tsconfig.json'),
+    ],
+    { cwd: packageRoot },
   );
 
   expect(result.stderr).toBe('');
