@@ -7,6 +7,7 @@ import {
   ProjectState,
   type NormalizedAiI18nOptions,
 } from '../src/project-state';
+import { extractedTestPath } from './extracted-test-path';
 import { options, readJson, setup } from './file-store-test-utils';
 
 describe('FileStore migrations', () => {
@@ -18,7 +19,7 @@ describe('FileStore migrations', () => {
     state.update(code, source);
     await store.sync(state.snapshot());
 
-    const extractedPath = path.join(root, 'i18n/extracted/src_main.ts.json');
+    const extractedPath = extractedTestPath(root, 'src/main.ts');
     const memoryPath = path.join(root, 'i18n/translations.json');
     const edited = (await readJson(memoryPath)) as {
       messages: Record<string, { translations: Record<string, string | null> }>;

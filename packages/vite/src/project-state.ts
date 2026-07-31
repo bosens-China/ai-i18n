@@ -77,12 +77,17 @@ export class ProjectState {
       return null;
     const cleanRoot = normalizePath(this.root.replaceAll('\\', '/'));
     if (WINDOWS_ABSOLUTE_RE.test(cleanId)) {
-      const relative = path.posix.relative(cleanRoot, cleanId);
-      return relative.startsWith('../') ? null : relative;
+      if (
+        !WINDOWS_ABSOLUTE_RE.test(cleanRoot) ||
+        cleanId.slice(0, 2).toLowerCase() !==
+          cleanRoot.slice(0, 2).toLowerCase()
+      ) {
+        return null;
+      }
+      return normalizePath(path.win32.relative(cleanRoot, cleanId));
     }
     if (!path.isAbsolute(cleanId)) return cleanId;
-    const relative = normalizePath(path.relative(cleanRoot, cleanId));
-    return relative.startsWith('../') ? null : relative;
+    return normalizePath(path.relative(cleanRoot, cleanId));
   }
 
   update(

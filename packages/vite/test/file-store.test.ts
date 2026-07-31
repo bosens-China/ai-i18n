@@ -3,6 +3,7 @@ import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { FileStore } from '../src/file-store';
 import { ProjectState } from '../src/project-state';
+import { extractedTestPath } from './extracted-test-path';
 import { options, readJson, setup } from './file-store-test-utils';
 
 describe('FileStore', () => {
@@ -16,9 +17,7 @@ describe('FileStore', () => {
     await store.sync(state.snapshot());
 
     const cache = await readJson(path.join(root, 'i18n/translations.json'));
-    const extracted = await readJson(
-      path.join(root, 'i18n/extracted/src_main.ts.json'),
-    );
+    const extracted = await readJson(extractedTestPath(root, 'src/main.ts'));
     const targetLocale = await readJson(
       path.join(root, 'i18n/locales/en-US.json'),
     );
@@ -154,7 +153,7 @@ describe('FileStore', () => {
     await store.sync(next.snapshot());
 
     expect(
-      await readJson(path.join(root, 'i18n/extracted/src_main.ts.json')),
+      await readJson(extractedTestPath(root, 'src/main.ts')),
     ).toMatchObject({
       messages: [
         {
@@ -188,7 +187,13 @@ describe('FileStore', () => {
 
     expect(
       (await fs.readdir(path.join(root, 'i18n/extracted'))).sort(),
-    ).toEqual(['src_a%5Fb.ts.json', 'src_a_b.ts.json']);
+    ).toEqual([
+      'd84392fab7ca2aff860cb5efb245cfe78ef2f66af8d504dd6dd616ac02836d8d.json',
+      'eb7041468cb32feadbbbcf82b6cf05326b26c717d315fc2a4cef3eaa16b0aaed.json',
+    ]);
+    expect(extractedTestPath(root, 'src\\a_b.ts')).toBe(
+      extractedTestPath(root, 'src/a_b.ts'),
+    );
   });
 
   it('merges memory edits, synchronizes duplicate IDs and preserves history', async () => {
@@ -202,7 +207,7 @@ describe('FileStore', () => {
     state.update(mainCode, main);
     await store.sync(state.snapshot());
 
-    const extractedPath = path.join(root, 'i18n/extracted/src_main.ts.json');
+    const extractedPath = extractedTestPath(root, 'src/main.ts');
     const memoryPath = path.join(root, 'i18n/translations.json');
     const edited = (await readJson(memoryPath)) as {
       messages: Record<string, { translations: Record<string, string | null> }>;
@@ -216,7 +221,7 @@ describe('FileStore', () => {
     await store.sync(state.snapshot());
 
     const otherExtracted = await readJson(
-      path.join(root, 'i18n/extracted/src_other.ts.json'),
+      extractedTestPath(root, 'src/other.ts'),
     );
     const targetLocale = await readJson(
       path.join(root, 'i18n/locales/en-US.json'),
@@ -283,7 +288,7 @@ describe('FileStore', () => {
     locale.messages['保存'] = 'Save';
     await fs.writeFile(localePath, `${JSON.stringify(locale, null, 2)}\n`);
 
-    const loadOptions = store.loadOptions([localePath]);
+    const loadOptions = await store.loadOptions([localePath]);
     state.hydrateCache(await store.load());
     const cache = await store.sync(state.snapshot(), loadOptions);
 
@@ -310,7 +315,7 @@ describe('FileStore', () => {
     await Promise.all([store.sync(firstSnapshot), store.sync(secondSnapshot)]);
 
     expect(
-      await readJson(path.join(root, 'i18n/extracted/src_main.ts.json')),
+      await readJson(extractedTestPath(root, 'src/main.ts')),
     ).toMatchObject({ messages: [{ id: '第二' }] });
     expect(
       await readJson(path.join(root, 'i18n/translations.json')),
@@ -337,7 +342,7 @@ describe('FileStore', () => {
     expect(cache.messages).toHaveProperty('保存');
     expect(cache).not.toHaveProperty('files');
     await expect(
-      fs.access(path.join(root, 'i18n/extracted/src_unvisited.ts.json')),
+      fs.access(extractedTestPath(root, 'src/unvisited.ts')),
     ).resolves.toBeUndefined();
   });
 });

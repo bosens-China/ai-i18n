@@ -7,6 +7,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { build } from 'vite';
 import { aiI18n } from '../src';
 import { buildOutputItems } from './build-output';
+import { extractedTestPath } from './extracted-test-path';
 
 const tempDirs: string[] = [];
 
@@ -103,7 +104,7 @@ export function App() {
     expect(localeChunk?.fileName).toMatch(/^en-US-|^assets\/en-US-/);
     expect(translator).toHaveBeenCalled();
     expect(
-      await readJson(path.join(root, 'i18n/extracted/src_App.tsx.json')),
+      await readJson(extractedTestPath(root, 'src/App.tsx')),
     ).toMatchObject({
       messages: expect.arrayContaining([
         expect.objectContaining({ id: 'React TSX' }),
@@ -113,7 +114,7 @@ export function App() {
       ]),
     });
     expect(
-      await readJson(path.join(root, 'i18n/extracted/src_useLabel.ts.json')),
+      await readJson(extractedTestPath(root, 'src/useLabel.ts')),
     ).toMatchObject({ messages: [{ id: 'React TS' }] });
   });
 });

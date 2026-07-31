@@ -2,6 +2,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import type { TranslationResult, Translator } from '@ai-i18n/core';
 import { describe, expect, it, vi } from 'vitest';
+import { extractedPath } from '../src/file-store-paths';
 import {
   callHook,
   objectHandler,
@@ -57,10 +58,7 @@ describe('@ai-i18n/vite plugin updates', () => {
       messages: { 保存: 'Save' },
     });
 
-    const extractedFile = path.join(
-      directory,
-      'extracted/src_provider.ts.json',
-    );
+    const extractedFile = extractedPath(directory, 'src/provider.ts');
     const hotUpdate = objectHandler<
       (
         this: unknown,

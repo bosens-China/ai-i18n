@@ -54,7 +54,8 @@ export function createBuildWatchState(dependencies: BuildWatchDependencies) {
       if (!deleted.length && !changed.length) return;
 
       const affected = deleted.flatMap((file) => project.remove(file));
-      const loadOptions: FileStoreLoadOptions = store.loadOptions(changed);
+      const loadOptions: FileStoreLoadOptions =
+        await store.loadOptions(changed);
       if (changed.length) {
         affected.push(...project.hydrateCache(await store.load()));
         affected.push(...project.hydrateOverrides(await store.loadOverrides()));

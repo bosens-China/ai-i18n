@@ -12,6 +12,21 @@ const options = {
 };
 
 describe('ProjectState incremental analysis', () => {
+  it('normalizes root-external local sources without exposing absolute paths', () => {
+    const posix = new ProjectState('/repo/apps/web', options);
+    expect(posix.normalizeId('/repo/packages/ui/src/messages.ts')).toBe(
+      '../../packages/ui/src/messages.ts',
+    );
+
+    const windows = new ProjectState('C:\\repo\\apps\\web', options);
+    expect(
+      windows.normalizeId('c:\\repo\\packages\\ui\\src\\messages.ts'),
+    ).toBe('../../packages/ui/src/messages.ts');
+    expect(
+      windows.normalizeId('D:\\repo\\packages\\ui\\src\\messages.ts'),
+    ).toBeNull();
+  });
+
   it('reuses an analyzed module while the source fingerprint is unchanged', () => {
     const state = new ProjectState('/workspace', options);
     const source = '/workspace/src/main.ts';

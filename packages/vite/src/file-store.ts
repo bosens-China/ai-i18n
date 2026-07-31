@@ -19,9 +19,9 @@ import {
   findMissingSources,
   removeOrphanMessages,
 } from './file-store-cleanup.js';
-import { decodeExtractedSource } from './extracted-path.js';
 import {
   extractedPath,
+  legacyExtractedPath,
   localePath,
   translationMemoryPath,
   translationOverridesPath,
@@ -41,7 +41,7 @@ import type {
   FileStoreOptions,
 } from './file-store-types.js';
 import type { ProjectSnapshot } from './project-state.js';
-import { listJsonFiles, readText } from './json-files.js';
+import { listJsonFiles, readJson, readText } from './json-files.js';
 
 export type {
   FileStoreLoadOptions,
@@ -100,7 +100,7 @@ export class FileStore {
     return content !== undefined && this.isOwnWrite(file, content);
   }
 
-  extractedSource(file: string): string | undefined {
+  async extractedSource(file: string): Promise<string | undefined> {
     const base = path.join(this.directory, 'extracted');
     const relative = path.relative(base, path.resolve(file));
     if (
@@ -111,14 +111,14 @@ export class FileStore {
     ) {
       return undefined;
     }
-    const filename = relative.slice(0, -'.json'.length);
-    return decodeExtractedSource(filename);
+    const value = await readJson(file);
+    return value === undefined ? undefined : parseExtractedFile(value).source;
   }
 
-  loadOptions(files: Iterable<string>): FileStoreLoadOptions {
+  async loadOptions(files: Iterable<string>): Promise<FileStoreLoadOptions> {
     const preferredSources = new Set<string>();
     for (const file of files) {
-      const source = this.extractedSource(file);
+      const source = await this.extractedSource(file);
       if (source) preferredSources.add(source);
     }
     return {
@@ -142,6 +142,7 @@ export class FileStore {
     options: FileStoreLoadOptions,
   ): Promise<TranslationMemoryFile> {
     const allDiskExtracted = await this.readExtractedFiles();
+    await this.migrateLegacyExtracted(allDiskExtracted);
     warnExtractedMismatches(
       allDiskExtracted,
       snapshot,
@@ -279,7 +280,32 @@ export class FileStore {
   }
 
   private async removeExtracted(source: string): Promise<void> {
-    await fs.rm(extractedPath(this.directory, source), { force: true });
+    await Promise.all([
+      fs.rm(extractedPath(this.directory, source), { force: true }),
+      fs.rm(legacyExtractedPath(this.directory, source), { force: true }),
+    ]);
+  }
+
+  private async migrateLegacyExtracted(
+    files: readonly ExtractedFile[],
+  ): Promise<void> {
+    const diskPaths = new Set(
+      (await listJsonFiles(path.join(this.directory, 'extracted'))).map(
+        (file) => path.resolve(file),
+      ),
+    );
+    for (const source of new Set(files.map((file) => file.source))) {
+      const legacy = legacyExtractedPath(this.directory, source);
+      if (!diskPaths.has(path.resolve(legacy))) continue;
+      const value = await readJson(legacy);
+      if (value === undefined) continue;
+      const current = extractedPath(this.directory, source);
+      if (!diskPaths.has(path.resolve(current))) {
+        await this.writeJson(current, parseExtractedFile(value));
+      }
+      await fs.rm(legacy, { force: true });
+      this.lastWritten.delete(path.resolve(legacy));
+    }
   }
 
   private async writeJson(file: string, value: unknown): Promise<void> {

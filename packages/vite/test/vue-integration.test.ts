@@ -8,6 +8,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { build } from 'vite';
 import { aiI18n } from '../src';
 import { buildOutputItems } from './build-output';
+import { extractedTestPath } from './extracted-test-path';
 
 const tempDirs: string[] = [];
 
@@ -139,7 +140,7 @@ const label = useLabel()
     expect(localeChunk?.fileName).toMatch(/^assets\/en-US-/);
     expect(translator).toHaveBeenCalled();
     const appExtraction = await readJson(
-      path.join(root, 'i18n/extracted/src_App.vue.json'),
+      extractedTestPath(root, 'src/App.vue'),
     );
     expect(appExtraction.messages).toEqual(
       expect.arrayContaining([
@@ -151,12 +152,10 @@ const label = useLabel()
       ]),
     );
     expect(
-      await readJson(path.join(root, 'i18n/extracted/src_useLabel.ts.json')),
+      await readJson(extractedTestPath(root, 'src/useLabel.ts')),
     ).toMatchObject({ messages: [{ id: 'Vue TS' }] });
     expect(
-      await readJson(
-        path.join(root, 'i18n/extracted/src_VueJsxPanel.tsx.json'),
-      ),
+      await readJson(extractedTestPath(root, 'src/VueJsxPanel.tsx')),
     ).toMatchObject({ messages: [{ id: 'Vue TSX' }] });
   });
 });

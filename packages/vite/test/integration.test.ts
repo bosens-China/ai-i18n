@@ -5,6 +5,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { build, createServer } from 'vite';
 import { aiI18n } from '../src/index';
 import { ProjectState } from '../src/project-state';
+import { extractedTestPath } from './extracted-test-path';
 import { removeTempDir } from './temp-dir';
 
 const tempDirs: string[] = [];
@@ -60,7 +61,7 @@ describe('Vite integration', () => {
     await write(root, 'src/old.ts', translatedModule('可移动文案'));
     await buildFixture(root);
 
-    const oldExtracted = path.join(root, 'i18n/extracted/src_old.ts.json');
+    const oldExtracted = extractedTestPath(root, 'src/old.ts');
     const memoryPath = path.join(root, 'i18n/translations.json');
     const memory = await readJson<CacheFile>(memoryPath);
     memory.messages['可移动文案']!.translations['en-US'] = 'Moved text';
@@ -74,7 +75,7 @@ describe('Vite integration', () => {
     await buildFixture(root);
 
     const moved = await readJson<ExtractedFile>(
-      path.join(root, 'i18n/extracted/src_new.ts.json'),
+      extractedTestPath(root, 'src/new.ts'),
     );
     const cache = await readJson<CacheFile>(
       path.join(root, 'i18n/translations.json'),
@@ -113,6 +114,35 @@ describe('Vite integration', () => {
     );
     expect(cache).not.toHaveProperty('files');
     expect(JSON.stringify(cache)).not.toContain(workspace);
+  });
+
+  it('extracts workspace package source imported outside the Vite root', async () => {
+    const workspace = await fixtureRoot();
+    const root = path.join(workspace, 'apps/web');
+    await write(
+      root,
+      'index.html',
+      '<script type="module" src="/src/main.ts"></script>',
+    );
+    await write(
+      root,
+      'src/main.ts',
+      "import { uiLabel } from '../../../packages/ui/src/messages'; console.log(uiLabel)",
+    );
+    await write(
+      workspace,
+      'packages/ui/src/messages.ts',
+      "import { t } from 'virtual:ai-i18n'; export const uiLabel = t('共享 UI')",
+    );
+
+    await buildFixture(root);
+
+    const extracted = await readJson<ExtractedFile & { source: string }>(
+      extractedTestPath(root, '../../packages/ui/src/messages.ts'),
+    );
+    expect(extracted.source).toBe('../../packages/ui/src/messages.ts');
+    expect(extracted.messages[0]?.id).toBe('共享 UI');
+    expect(JSON.stringify(extracted)).not.toContain(workspace);
   });
 });
 

@@ -5,6 +5,7 @@ import type { Translator } from '@ai-i18n/core';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { build, type Plugin } from 'vite';
 import { aiI18n, Analyzer } from '../src';
+import { extractedTestPath } from './extracted-test-path';
 
 const tempDirs: string[] = [];
 const runtimeEntry = path.resolve('packages/vite/src/runtime.ts');
@@ -88,7 +89,7 @@ console.log(t(LABEL));`;
     try {
       await waitForBuild(watcher, 0);
       addFile.mockClear();
-      const extractedPath = path.join(root, 'i18n/extracted/src_main.ts.json');
+      const extractedPath = extractedTestPath(root, 'src/main.ts');
       const memoryPath = path.join(root, 'i18n/translations.json');
       const localePath = path.join(root, 'i18n/locales/en-US.json');
       const locale = await readJson<LocaleFile>(localePath);
@@ -140,16 +141,14 @@ console.log(t(LABEL));`;
       await rebuild(watcher, () => fs.writeFile(main, "import './new';"));
       expect(translator).toHaveBeenCalledTimes(1);
       expect(
-        await readJson<ExtractedFile>(
-          path.join(root, 'i18n/extracted/src_new.ts.json'),
-        ),
+        await readJson<ExtractedFile>(extractedTestPath(root, 'src/new.ts')),
       ).toMatchObject({
         messages: [{ id: '可移动文案' }],
       });
 
       await rebuild(watcher, () => fs.rm(oldSource));
       await expect(
-        fs.access(path.join(root, 'i18n/extracted/src_old.ts.json')),
+        fs.access(extractedTestPath(root, 'src/old.ts')),
       ).rejects.toMatchObject({ code: 'ENOENT' });
 
       await rebuild(watcher, () => fs.writeFile(main, "console.log('done');"));
@@ -360,15 +359,15 @@ async function protocolModifiedTimes(
   root: string,
 ): Promise<Record<string, bigint>> {
   const files = [
-    'i18n/translations.json',
-    'i18n/extracted/src_main.ts.json',
-    'i18n/locales/en-US.json',
+    path.join(root, 'i18n/translations.json'),
+    extractedTestPath(root, 'src/main.ts'),
+    path.join(root, 'i18n/locales/en-US.json'),
   ];
   return Object.fromEntries(
     await Promise.all(
       files.map(async (file) => [
         file,
-        (await fs.stat(path.join(root, file), { bigint: true })).mtimeNs,
+        (await fs.stat(file, { bigint: true })).mtimeNs,
       ]),
     ),
   );

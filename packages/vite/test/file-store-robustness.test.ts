@@ -8,6 +8,7 @@ import {
   ProjectState,
   type NormalizedAiI18nOptions,
 } from '../src/project-state';
+import { extractedTestPath } from './extracted-test-path';
 import { removeTempDir } from './temp-dir';
 
 const tempDirs: string[] = [];
@@ -47,7 +48,7 @@ describe('FileStore robustness', () => {
     await fs.writeFile(source, code);
     state.update(code, source);
     await store.sync(state.snapshot());
-    const extractedPath = path.join(root, 'i18n/extracted/src_main.ts.json');
+    const extractedPath = extractedTestPath(root, 'src/main.ts');
     const originalReadFile = fs.readFile.bind(fs);
     const readFile = vi
       .spyOn(fs, 'readFile')
@@ -83,18 +84,60 @@ describe('FileStore robustness', () => {
   it('only accepts and scans flat extracted JSON files', async () => {
     const { root, store } = await setup();
     const directory = path.join(root, 'i18n/extracted');
-    const direct = path.join(directory, 'src_a%5Fb.ts.json');
+    const direct = path.join(directory, 'arbitrary-hash.json');
     const nested = path.join(directory, 'src/a_b.ts.json');
     await fs.mkdir(path.dirname(nested), { recursive: true });
     await Promise.all([
-      fs.writeFile(direct, '{}'),
+      fs.writeFile(
+        direct,
+        JSON.stringify({ version: 1, source: 'src/a_b.ts', messages: [] }),
+      ),
       fs.writeFile(nested, '{}'),
       fs.writeFile(path.join(directory, 'ignored.txt'), ''),
     ]);
 
-    expect(store.extractedSource(direct)).toBe('src/a_b.ts');
-    expect(store.extractedSource(nested)).toBeUndefined();
+    await expect(store.extractedSource(direct)).resolves.toBe('src/a_b.ts');
+    await expect(store.extractedSource(nested)).resolves.toBeUndefined();
     expect(await listJsonFiles(directory)).toEqual([direct]);
+  });
+
+  it('migrates legacy filenames and resolves their source from JSON', async () => {
+    const { root, state, store, source } = await setup();
+    const code = "import { t } from 'virtual:ai-i18n'; t('保存')";
+    await fs.writeFile(source, code);
+    const directory = path.join(root, 'i18n/extracted');
+    const legacy = path.join(directory, 'src_main.ts.json');
+    await fs.mkdir(directory, { recursive: true });
+    await fs.writeFile(
+      legacy,
+      JSON.stringify({
+        version: 1,
+        source: 'src/main.ts',
+        messages: [
+          {
+            id: '保存',
+            source: '保存',
+            locations: [{ line: 1, column: 39 }],
+          },
+        ],
+      }),
+    );
+
+    await expect(store.loadOptions([legacy])).resolves.toEqual({
+      preferredSources: ['src/main.ts'],
+    });
+    await store.sync(state.snapshot());
+
+    await expect(fs.access(legacy)).rejects.toMatchObject({ code: 'ENOENT' });
+    await expect(
+      fs.access(extractedTestPath(root, 'src/main.ts')),
+    ).resolves.toBeUndefined();
+    expect(await fs.readdir(directory)).toHaveLength(1);
+    expect(
+      await readJson<{ source: string }>(
+        extractedTestPath(root, 'src/main.ts'),
+      ),
+    ).toMatchObject({ source: 'src/main.ts' });
   });
 
   it('keeps source structure when an externally edited extracted file is stale', async () => {
@@ -106,7 +149,7 @@ t('一'); t('二'); t('三'); t('四'); t('五');`;
     await fs.writeFile(source, code);
     state.update(code, source);
     await store.sync(state.snapshot());
-    const extractedPath = path.join(root, 'i18n/extracted/src_main.ts.json');
+    const extractedPath = extractedTestPath(root, 'src/main.ts');
     const extracted = await readJson<{ messages: unknown[] }>(extractedPath);
     extracted.messages = extracted.messages.slice(0, 1);
     await fs.writeFile(

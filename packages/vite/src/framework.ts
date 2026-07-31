@@ -8,7 +8,8 @@ import { AI_I18N_VIRTUAL_MODULE_ID } from './yuku-analyzer.js';
 
 export type AiI18nFramework = 'vanilla' | 'vue' | 'react';
 
-const PLAIN_SOURCE_RE = /\.[cm]?[jt]s$/;
+export const SOURCE_RE = /\.(?:js|mjs|ts|mts|jsx|tsx|vue)(?:\?.*)?$/;
+const PLAIN_SOURCE_RE = /\.(?:js|mjs|ts|mts)$/;
 const JSX_SOURCE_RE = /\.[jt]sx$/;
 const RUNTIME_AUTO_IMPORTS = [
   't',
@@ -84,8 +85,13 @@ export async function extractFrameworkSource(
   if (!filename.endsWith('.vue')) return undefined;
 
   // Vue 的 Node 入口会注册宿主 TypeScript，支持解析宏中引用的外部类型。
-  const { compileScript, parse } = await import('vue/compiler-sfc');
-  const analysis = analyzeVueSource(source, id, { parse, compileScript });
+  const { compileScript, compileTemplate, parse } =
+    await import('vue/compiler-sfc');
+  const analysis = analyzeVueSource(source, id, {
+    parse,
+    compileScript,
+    compileTemplate,
+  });
   return {
     analysisCode: analysis.code,
     analysisLang: analysis.lang,

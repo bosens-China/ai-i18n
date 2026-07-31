@@ -10,6 +10,7 @@ import { FileStore } from './file-store.js';
 import {
   frameworkTranslationHooks,
   resolveFramework,
+  SOURCE_RE,
   writeFrameworkTypes,
   type AiI18nFramework,
 } from './framework.js';
@@ -35,7 +36,6 @@ import { AI_I18N_VIRTUAL_MODULE_ID } from './yuku-analyzer.js';
 const RESOLVED_RUNTIME_ID = `\0${AI_I18N_VIRTUAL_MODULE_ID}`;
 const REGISTER_PREFIX = `${AI_I18N_VIRTUAL_MODULE_ID}/register?module=`;
 const RESOLVED_REGISTER_PREFIX = `\0${REGISTER_PREFIX}`;
-const SOURCE_RE = /\.(?:[cm]?[jt]sx?|vue)(?:\?.*)?$/;
 const VIRTUAL_RE =
   /^(?:virtual:ai-i18n(?:\/register\?module=.+|\/locale\/[^?]+)?|.*\/@ai-i18n\/locale\/[^?]+\.js(?:\?.*)?)$/;
 const RESOLVED_VIRTUAL_RE =

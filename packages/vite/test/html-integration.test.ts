@@ -6,6 +6,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { build } from 'vite';
 import { aiI18n } from '../src';
 import { buildOutputItems } from './build-output';
+import { extractedTestPath } from './extracted-test-path';
 
 const tempDirs: string[] = [];
 
@@ -89,9 +90,7 @@ describe('HTML extractor integration', () => {
     expect(clientCode).toContain('请输入');
     expect(clientCode).toContain('Type here');
     expect(translator).toHaveBeenCalled();
-    const extracted = await readJson(
-      path.join(root, 'i18n/extracted/index.html.json'),
-    );
+    const extracted = await readJson(extractedTestPath(root, 'index.html'));
     expect(extracted).toMatchObject({
       source: 'index.html',
       messages: [{ id: '示例 {{=0}}' }, { id: '请输入' }, { id: '首页' }],
@@ -160,18 +159,18 @@ describe('HTML extractor integration', () => {
     expect(
       assets.find((item) => item.fileName === 'admin.html')?.source,
     ).toContain('data-ai-i18n-text=');
-    expect(
-      await readJson(path.join(root, 'i18n/extracted/index.html.json')),
-    ).toMatchObject({
-      source: 'index.html',
-      messages: [{ id: '首页' }],
-    });
-    expect(
-      await readJson(path.join(root, 'i18n/extracted/admin.html.json')),
-    ).toMatchObject({
-      source: 'admin.html',
-      messages: [{ id: '管理' }],
-    });
+    expect(await readJson(extractedTestPath(root, 'index.html'))).toMatchObject(
+      {
+        source: 'index.html',
+        messages: [{ id: '首页' }],
+      },
+    );
+    expect(await readJson(extractedTestPath(root, 'admin.html'))).toMatchObject(
+      {
+        source: 'admin.html',
+        messages: [{ id: '管理' }],
+      },
+    );
   });
 });
 

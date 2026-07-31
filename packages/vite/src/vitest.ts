@@ -3,6 +3,7 @@ import {
   extractFrameworkSource,
   frameworkAutoImports,
   resolveFramework,
+  SOURCE_RE,
   type AiI18nFramework,
 } from './framework.js';
 import type { AiI18nOptions } from './options.js';
@@ -21,7 +22,6 @@ import {
 } from './yuku-analyzer.js';
 
 const TEST_RUNTIME_ID = '\0virtual:ai-i18n:vitest';
-const SOURCE_RE = /\.(?:[cm]?[jt]sx?|vue)(?:\?.*)?$/;
 
 export type AiI18nVitestOptions = Pick<
   AiI18nOptions,

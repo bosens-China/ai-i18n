@@ -2,7 +2,12 @@ import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
-import { resolveFramework, writeFrameworkTypes } from '../src/framework';
+import {
+  extractFrameworkSource,
+  resolveFramework,
+  SOURCE_RE,
+  writeFrameworkTypes,
+} from '../src/framework';
 
 const tempDirs: string[] = [];
 
@@ -15,6 +20,25 @@ afterEach(async () => {
 });
 
 describe('framework integration', () => {
+  it('accepts only the documented browser ESM source extensions', async () => {
+    for (const extension of ['js', 'mjs', 'ts', 'mts', 'jsx', 'tsx', 'vue']) {
+      expect(SOURCE_RE.test(`/workspace/src/main.${extension}`)).toBe(true);
+    }
+    for (const extension of ['cjs', 'cts', 'cjsx', 'ctsx', 'mjsx', 'mtsx']) {
+      expect(SOURCE_RE.test(`/workspace/src/main.${extension}`)).toBe(false);
+    }
+    for (const extension of ['js', 'mjs', 'ts', 'mts']) {
+      await expect(
+        extractFrameworkSource('', `/workspace/src/main.${extension}`, 'react'),
+      ).resolves.toBeUndefined();
+    }
+    for (const extension of ['cjs', 'cts']) {
+      await expect(
+        extractFrameworkSource('', `/workspace/src/main.${extension}`, 'react'),
+      ).resolves.toBeNull();
+    }
+  });
+
   it('detects official Vue and React Vite plugins', () => {
     expect(resolveFramework([{ name: 'vite:vue' }])).toBe('vue');
     expect(resolveFramework([{ name: 'vite:vue-jsx' }])).toBe('vue');

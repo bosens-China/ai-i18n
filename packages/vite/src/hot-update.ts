@@ -44,7 +44,7 @@ export function createHotUpdateHandler(dependencies: HotUpdateDependencies) {
     if (fileStore.manages(options.file)) {
       const content = await options.read();
       if (fileStore.isOwnWrite(options.file, content)) return [];
-      const loadOptions = fileStore.loadOptions([options.file]);
+      const loadOptions = await fileStore.loadOptions([options.file]);
       const affected = project.hydrateCache(await fileStore.load());
       affected.push(
         ...project.hydrateOverrides(await fileStore.loadOverrides()),
