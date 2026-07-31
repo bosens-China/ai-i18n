@@ -1,25 +1,21 @@
 import { diagnosticMessage } from '@ai-i18n/analyzer';
 import type { Rule } from 'eslint';
+import {
+  isImmediateConsoleEffect,
+  isVueTemplateEventHandler,
+  nearestFunction,
+  type ParentNode,
+} from './ast-context.js';
+import { isInsideOptionsComputedGetter } from './vue-options.js';
 
 const RUNTIME_MODULE = 'virtual:ai-i18n';
 const STATE_APIS = ['getLang', 'getLangLoadState'] as const;
-const FUNCTION_TYPES = new Set([
-  'ArrowFunctionExpression',
-  'FunctionDeclaration',
-  'FunctionExpression',
-]);
-const IMMEDIATE_CONSOLE_METHODS = new Set([
-  'debug',
-  'error',
-  'info',
-  'log',
-  'warn',
-]);
 
 type RuntimeStateApi = (typeof STATE_APIS)[number];
 
 interface RuleOptions {
   autoImport?: boolean | readonly RuntimeStateApi[];
+  framework?: 'react' | 'vue';
 }
 
 export const noUnsubscribedRuntimeState: Rule.RuleModule = {
@@ -42,6 +38,7 @@ export const noUnsubscribedRuntimeState: Rule.RuleModule = {
               },
             ],
           },
+          framework: { enum: ['react', 'vue'] },
         },
         additionalProperties: false,
       },
@@ -54,6 +51,14 @@ export const noUnsubscribedRuntimeState: Rule.RuleModule = {
       renderSnapshot: diagnosticMessage(
         '组件渲染期间调用 {{api}}() 不会订阅语言状态。请使用 useI18n() 返回的 {{replacement}}。',
         'Calling {{api}}() while rendering a component does not subscribe to language state. Use {{replacement}} from useI18n().',
+      ),
+      vueRenderSnapshot: diagnosticMessage(
+        'Vue 渲染期间调用 {{api}}() 不会订阅语言状态。Composition API 请使用 useI18n() 返回的 {{replacement}}；纯 Options API 请在 computed 中展开 ...i18nComputed() 后使用 {{replacement}}。',
+        'Calling {{api}}() while rendering Vue does not subscribe to language state. With the Composition API, use {{replacement}} from useI18n(); with the pure Options API, spread ...i18nComputed() into computed and use {{replacement}}.',
+      ),
+      optionsComputedSnapshot: diagnosticMessage(
+        '纯 Options API 的 computed 中调用 {{api}}() 仍然只会读取快照。请改为在 computed 中展开 ...i18nComputed()，并直接使用响应式的 {{replacement}}。',
+        'Calling {{api}}() inside a pure Options API computed getter still reads only a snapshot. Spread ...i18nComputed() into computed and use the reactive {{replacement}} instead.',
       ),
     },
   },
@@ -105,7 +110,7 @@ export const noUnsubscribedRuntimeState: Rule.RuleModule = {
           if (!api) continue;
           if (templateCalls.has(node)) {
             if (!isVueTemplateEventHandler(node)) {
-              reportRenderSnapshot(context, node, api);
+              reportRenderSnapshot(context, node, api, true);
             }
             continue;
           }
@@ -118,8 +123,20 @@ export const noUnsubscribedRuntimeState: Rule.RuleModule = {
             });
             continue;
           }
+          if (
+            options.framework === 'vue' &&
+            isInsideOptionsComputedGetter(node, context)
+          ) {
+            reportOptionsComputedSnapshot(context, node, api);
+            continue;
+          }
           if (jsxOwners.has(owner) && !isImmediateConsoleEffect(node)) {
-            reportRenderSnapshot(context, node, api);
+            reportRenderSnapshot(
+              context,
+              node,
+              api,
+              options.framework === 'vue',
+            );
           }
         }
       },
@@ -253,10 +270,11 @@ function reportRenderSnapshot(
   context: Rule.RuleContext,
   node: Rule.Node,
   api: RuntimeStateApi,
+  isVue: boolean,
 ) {
   context.report({
     node,
-    messageId: 'renderSnapshot',
+    messageId: isVue ? 'vueRenderSnapshot' : 'renderSnapshot',
     data: {
       api,
       replacement: api === 'getLang' ? 'currentLang' : 'langLoadState',
@@ -264,51 +282,20 @@ function reportRenderSnapshot(
   });
 }
 
-function nearestFunction(node: Rule.Node): ParentNode | null {
-  let current = node as ParentNode;
-  while (current.parent) {
-    current = current.parent;
-    if (FUNCTION_TYPES.has(current.type)) return current;
-  }
-  return null;
+function reportOptionsComputedSnapshot(
+  context: Rule.RuleContext,
+  node: Rule.Node,
+  api: RuntimeStateApi,
+) {
+  context.report({
+    node,
+    messageId: 'optionsComputedSnapshot',
+    data: {
+      api,
+      replacement: api === 'getLang' ? 'currentLang' : 'langLoadState',
+    },
+  });
 }
-
-function isImmediateConsoleEffect(node: Rule.Node): boolean {
-  const call = (node as ParentNode).parent;
-  if (
-    call?.type !== 'CallExpression' ||
-    call.parent?.type !== 'ExpressionStatement' ||
-    !call.arguments.some((argument) => argument === node) ||
-    call.callee.type !== 'MemberExpression' ||
-    call.callee.object.type !== 'Identifier' ||
-    call.callee.object.name !== 'console'
-  ) {
-    return false;
-  }
-  const property = call.callee.property;
-  const method =
-    !call.callee.computed && property.type === 'Identifier'
-      ? property.name
-      : call.callee.computed &&
-          property.type === 'Literal' &&
-          typeof property.value === 'string'
-        ? property.value
-        : null;
-  return method !== null && IMMEDIATE_CONSOLE_METHODS.has(method);
-}
-
-function isVueTemplateEventHandler(node: Rule.Node): boolean {
-  let current = node as unknown as TemplateParentNode;
-  while (current.parent) {
-    current = current.parent;
-    if (current.type === 'VOnExpression') return true;
-  }
-  return false;
-}
-
-type ParentNode = Rule.Node & {
-  parent: ParentNode | null;
-};
 
 type ImportSpecifierNode = Extract<Rule.Node, { type: 'ImportSpecifier' }> & {
   parent: ParentNode | null;
@@ -327,11 +314,6 @@ interface VariableLike {
 interface ScopeLike {
   variables: readonly VariableLike[];
   upper: ScopeLike | null;
-}
-
-interface TemplateParentNode {
-  type: string;
-  parent: TemplateParentNode | null;
 }
 
 interface TemplateTraversableNode {

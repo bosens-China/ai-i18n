@@ -11,6 +11,8 @@ export const VUE_AUTO_IMPORTS = [
   'useI18n',
   ...RUNTIME_AUTO_IMPORTS,
   'tRef',
+  'i18nComputed',
+  'tComputed',
 ] as const;
 
 export const REACT_AUTO_IMPORTS = ['useI18n', ...RUNTIME_AUTO_IMPORTS] as const;

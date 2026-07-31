@@ -84,6 +84,7 @@ function analyzeRuleContextResult(
       options.tsconfigPath ?? null,
       autoImports.t,
       autoImports.tRef,
+      autoImports.tComputed,
       autoImports.useI18n,
       Object.entries(alias ?? {}),
       limit,

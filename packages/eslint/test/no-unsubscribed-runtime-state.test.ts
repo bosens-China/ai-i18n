@@ -151,7 +151,7 @@ describe('ai-i18n/no-unsubscribed-runtime-state', () => {
             '<template>{{ getLang() }}</template>',
           ].join('\n'),
           filename: path.join(fixtureRoot, 'runtime.vue'),
-          errors: [{ messageId: 'renderSnapshot', line: 4, column: 14 }],
+          errors: [{ messageId: 'vueRenderSnapshot', line: 4, column: 14 }],
         },
         {
           code: [
@@ -161,7 +161,7 @@ describe('ai-i18n/no-unsubscribed-runtime-state', () => {
           ].join('\n'),
           filename: path.join(fixtureRoot, 'auto-import.vue'),
           options: [{ autoImport: ['getLangLoadState'] }],
-          errors: [{ messageId: 'renderSnapshot', line: 3, column: 14 }],
+          errors: [{ messageId: 'vueRenderSnapshot', line: 3, column: 14 }],
         },
       ],
     },

@@ -14,6 +14,7 @@ import {
   type AnalysisLanguage,
   type TranslationCall,
   type TranslationHookBinding,
+  type TranslationRuntimeApi,
 } from '@ai-i18n/analyzer';
 import { createImportResolver, type ImportAlias } from './resolve-import.js';
 
@@ -29,17 +30,18 @@ export interface StaticAnalysisResult {
   translationCalls: TranslationCall[];
 }
 
-export type AutoImportApi = 't' | 'tRef' | 'useI18n';
+export type AutoImportApi = 't' | 'tRef' | 'tComputed' | 'useI18n';
 export type AutoImportOption = boolean | readonly AutoImportApi[];
 
 interface AutoImportBindings {
   t: boolean;
   tRef: boolean;
+  tComputed: boolean;
   useI18n: boolean;
 }
 
 const POTENTIAL_TRANSLATION_RE =
-  /virtual:ai-i18n|\b(?:t|tRef|useI18n|defineI18nMessages)\b/;
+  /virtual:ai-i18n|\b(?:t|tRef|tComputed|useI18n|defineI18nMessages)\b/;
 
 export function analyzeStaticArgs(
   code: string,
@@ -74,11 +76,12 @@ export function analyzeStaticSource(
     return { warnings: [], translationCalls: [] };
   }
   const autoImports = normalizeAutoImports(autoImport);
+  const translationAutoImports = runtimeAutoImports(autoImports);
   const resolve = createImportResolver(tsconfigPath, alias);
   const analyzer = new Analyzer({ resolve });
   analyzer.addFile(
     AI_I18N_VIRTUAL_MODULE_ID,
-    'export function t(source) { return source } export function tRef(source) { return source }',
+    'export function t(source) { return source } export function tRef(source) { return source } export function tComputed(source) { return source }',
   );
   const entryPath = normalizeFilename(filename);
   const entry = analyzer.addFile(entryPath, code, lang ? { lang } : undefined);
@@ -92,14 +95,14 @@ export function analyzeStaticSource(
     entry,
     AI_I18N_VIRTUAL_MODULE_ID,
     hooks,
-    autoImports.t || autoImports.tRef,
+    translationAutoImports,
     maxStaticCandidates,
   ).warnings;
   const recommended = validateRecommendedUsage(
     entry,
     AI_I18N_VIRTUAL_MODULE_ID,
     hooks,
-    autoImports.t || autoImports.tRef,
+    translationAutoImports,
   );
   const warnings = recommended.length
     ? [
@@ -121,7 +124,7 @@ export function analyzeStaticSource(
       entry,
       AI_I18N_VIRTUAL_MODULE_ID,
       hooks,
-      autoImports.t || autoImports.tRef,
+      translationAutoImports,
     ),
   };
 }
@@ -134,12 +137,18 @@ export function normalizeAutoImports(
   autoImport: AutoImportOption | undefined,
 ): AutoImportBindings {
   if (typeof autoImport === 'boolean') {
-    // boolean 保留跨框架的历史语义；Vue-only tRef 由 Vue preset 显式声明。
-    return { t: autoImport, tRef: false, useI18n: autoImport };
+    // boolean 保留跨框架语义；Vue-only API 由 Vue preset 显式声明。
+    return {
+      t: autoImport,
+      tRef: false,
+      tComputed: false,
+      useI18n: autoImport,
+    };
   }
   return {
     t: autoImport?.includes('t') ?? false,
     tRef: autoImport?.includes('tRef') ?? false,
+    tComputed: autoImport?.includes('tComputed') ?? false,
     useI18n: autoImport?.includes('useI18n') ?? false,
   };
 }
@@ -151,6 +160,7 @@ function hasTranslationCandidate(
   const unbound = ['defineI18nMessages'];
   if (autoImports.t) unbound.push('t');
   if (autoImports.tRef) unbound.push('tRef');
+  if (autoImports.tComputed) unbound.push('tComputed');
   if (autoImports.useI18n) unbound.push('useI18n');
   return (
     module.imports.some(
@@ -159,6 +169,7 @@ function hasTranslationCandidate(
         (item.specifier === AI_I18N_VIRTUAL_MODULE_ID ||
           item.name === 't' ||
           item.name === 'tRef' ||
+          item.name === 'tComputed' ||
           item.name === 'useI18n'),
     ) ||
     findInvalidDefineI18nMessagesReferences(module).length > 0 ||
@@ -177,6 +188,16 @@ function translationHooks(
       autoImport: autoImports.useI18n,
     },
   ];
+}
+
+function runtimeAutoImports(
+  autoImports: AutoImportBindings,
+): ReadonlySet<TranslationRuntimeApi> {
+  const names = new Set<TranslationRuntimeApi>();
+  if (autoImports.t) names.add('t');
+  if (autoImports.tRef) names.add('tRef');
+  if (autoImports.tComputed) names.add('tComputed');
+  return names;
 }
 
 function loadDependencies(

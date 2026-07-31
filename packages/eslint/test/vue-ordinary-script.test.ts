@@ -101,6 +101,19 @@ describe('Vue ordinary script rules', () => {
       },
       {
         code: [
+          '<script lang="ts">',
+          "import { t } from 'virtual:ai-i18n'",
+          'export default {',
+          "  computed: { label() { return t('计算属性') } },",
+          "  methods: { notify() { return t('方法') } },",
+          '}',
+          '</script>',
+          "<template>{{ t('模板') }} {{ label }}</template>",
+        ].join('\n'),
+        filename: path.join(sourceRoot, 'options-runtime.vue'),
+      },
+      {
+        code: [
           ...optionsMethodComponent,
           "<template>{{ t('Options method') }}</template>",
         ].join('\n'),

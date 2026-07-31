@@ -6,12 +6,8 @@ import {
   type TranslationCandidate,
   type TranslationRuleOptions,
 } from './translation-call.js';
-
-const FUNCTION_TYPES = new Set([
-  'ArrowFunctionExpression',
-  'FunctionDeclaration',
-  'FunctionExpression',
-]);
+import { isFunctionNode } from './ast-context.js';
+import { isImportedVueDefineComponent, propertyName } from './vue-options.js';
 
 export const noEagerTranslation: Rule.RuleModule = {
   meta: {
@@ -29,7 +25,7 @@ export const noEagerTranslation: Rule.RuleModule = {
               { type: 'boolean' },
               {
                 type: 'array',
-                items: { enum: ['t', 'tRef', 'useI18n'] },
+                items: { enum: ['t', 'tRef', 'tComputed', 'useI18n'] },
                 uniqueItems: true,
               },
             ],
@@ -65,7 +61,9 @@ export const noEagerTranslation: Rule.RuleModule = {
           return;
         }
         for (const { call, node } of matches) {
-          if (call.origin === 'vue-ref') continue;
+          if (call.origin === 'vue-ref' || call.origin === 'vue-computed') {
+            continue;
+          }
           if (!storesOutsideFunction(node, context, isVueSfc)) continue;
           context.report({ node, messageId: 'eagerTranslation' });
         }
@@ -83,7 +81,7 @@ function storesOutsideFunction(
   let storesResult = false;
   while (current.parent) {
     const parent = current.parent;
-    if (FUNCTION_TYPES.has(parent.type)) {
+    if (isFunctionNode(parent)) {
       // 普通 setup() 与 <script setup> 一样只执行一次；其他函数仍视为延迟求值。
       const returnsExpression =
         parent.type === 'ArrowFunctionExpression' && parent.body === current;
@@ -109,7 +107,7 @@ function isVueComponentSetup(
     directOwner?.type === 'CallExpression' &&
     directOwner.arguments?.[0] === node
   ) {
-    return isImportedDefineComponent(directOwner.callee, context);
+    return isImportedVueDefineComponent(directOwner.callee, context);
   }
 
   const property = node.parent;
@@ -135,71 +133,8 @@ function isVueComponentSetup(
   return (
     owner?.type === 'CallExpression' &&
     owner.arguments?.[0] === options &&
-    isImportedDefineComponent(owner.callee, context)
+    isImportedVueDefineComponent(owner.callee, context)
   );
-}
-
-function propertyName(node: unknown): string | undefined {
-  const key = node as { name?: string; type?: string; value?: unknown };
-  if (key?.type === 'Identifier') return key.name;
-  return key?.type === 'Literal' && typeof key.value === 'string'
-    ? key.value
-    : undefined;
-}
-
-function isImportedDefineComponent(
-  node: unknown,
-  context: Rule.RuleContext,
-): boolean {
-  const callee = node as {
-    computed?: boolean;
-    name?: string;
-    object?: unknown;
-    property?: unknown;
-    type?: string;
-  };
-  if (callee?.type === 'Identifier') {
-    return isVueImport(callee, context, 'ImportSpecifier');
-  }
-  return (
-    callee?.type === 'MemberExpression' &&
-    !callee.computed &&
-    propertyName(callee.property) === 'defineComponent' &&
-    isVueImport(callee.object, context, 'ImportNamespaceSpecifier')
-  );
-}
-
-function isVueImport(
-  node: unknown,
-  context: Rule.RuleContext,
-  specifierType: 'ImportNamespaceSpecifier' | 'ImportSpecifier',
-): boolean {
-  const identifier = node as Rule.Node & { name?: string };
-  if (identifier?.type !== 'Identifier' || !identifier.name) return false;
-
-  let scope = context.sourceCode.getScope(identifier);
-  while (true) {
-    const variable = scope.set.get(identifier.name);
-    if (!variable) {
-      if (!scope.upper) return false;
-      scope = scope.upper;
-      continue;
-    }
-    return variable.defs.some((definition) => {
-      if (
-        definition.type !== 'ImportBinding' ||
-        definition.node.type !== specifierType ||
-        definition.parent.source.value !== 'vue'
-      ) {
-        return false;
-      }
-      return (
-        specifierType === 'ImportNamespaceSpecifier' ||
-        propertyName((definition.node as { imported?: unknown }).imported) ===
-          'defineComponent'
-      );
-    });
-  }
 }
 
 function storesTranslationResult(

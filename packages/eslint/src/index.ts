@@ -61,8 +61,8 @@ plugin.configs!.vue = [
     rules: {
       'ai-i18n/t-static-args': 'error',
       'ai-i18n/no-eager-translation': 'warn',
-      'ai-i18n/no-unsubscribed-runtime-state': 'warn',
-      'ai-i18n/no-unsubscribed-t': 'warn',
+      'ai-i18n/no-unsubscribed-runtime-state': ['warn', { framework: 'vue' }],
+      'ai-i18n/no-unsubscribed-t': ['warn', { framework: 'vue' }],
       'ai-i18n/static-candidate-limit': 'warn',
     },
   },
@@ -108,23 +108,29 @@ plugin.configs!['vue-auto-import'] = [
     rules: {
       'ai-i18n/t-static-args': [
         'error',
-        { autoImport: ['t', 'tRef', 'useI18n'] },
+        { autoImport: ['t', 'tRef', 'tComputed', 'useI18n'] },
       ],
       'ai-i18n/no-eager-translation': [
         'warn',
-        { autoImport: ['t', 'tRef', 'useI18n'] },
+        { autoImport: ['t', 'tRef', 'tComputed', 'useI18n'] },
       ],
       'ai-i18n/no-unsubscribed-runtime-state': [
         'warn',
-        { autoImport: ['getLang', 'getLangLoadState'] },
+        {
+          autoImport: ['getLang', 'getLangLoadState'],
+          framework: 'vue',
+        },
       ],
       'ai-i18n/no-unsubscribed-t': [
         'warn',
-        { autoImport: ['t', 'tRef', 'useI18n'] },
+        {
+          autoImport: ['t', 'tRef', 'tComputed', 'useI18n'],
+          framework: 'vue',
+        },
       ],
       'ai-i18n/static-candidate-limit': [
         'warn',
-        { autoImport: ['t', 'tRef', 'useI18n'] },
+        { autoImport: ['t', 'tRef', 'tComputed', 'useI18n'] },
       ],
     },
   },

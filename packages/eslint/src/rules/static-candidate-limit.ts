@@ -15,7 +15,7 @@ export const staticCandidateLimit: Rule.RuleModule = {
   meta: {
     type: 'suggestion',
     docs: {
-      description: '警告单个 t() 展开的静态候选数量过多',
+      description: '警告单个翻译调用展开的静态候选数量过多',
     },
     schema: [
       {
@@ -27,7 +27,7 @@ export const staticCandidateLimit: Rule.RuleModule = {
               { type: 'boolean' },
               {
                 type: 'array',
-                items: { enum: ['t', 'tRef', 'useI18n'] },
+                items: { enum: ['t', 'tRef', 'tComputed', 'useI18n'] },
                 uniqueItems: true,
               },
             ],

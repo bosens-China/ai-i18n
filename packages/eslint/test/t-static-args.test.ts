@@ -1,68 +1,13 @@
-import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
-import { RuleTester } from 'eslint';
-import tseslint from 'typescript-eslint';
-import vueParser from 'vue-eslint-parser';
 import { describe } from 'vitest';
-import { diagnosticMessage } from '@ai-i18n/analyzer';
 import { tStaticArgs } from '../src/index';
-
-const fixtureRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'ai-i18n-eslint-'));
-const sourceRoot = path.join(fixtureRoot, 'src');
-fs.mkdirSync(sourceRoot, { recursive: true });
-const tsconfigPath = path.join(fixtureRoot, 'tsconfig.json');
-fs.writeFileSync(
+import {
+  dynamicArgumentMessage,
+  sourceRoot,
+  tester,
   tsconfigPath,
-  JSON.stringify({
-    compilerOptions: { baseUrl: '.', paths: { '@/*': ['src/*'] } },
-    include: ['src/**/*.ts', 'src/**/*.vue'],
-  }),
-);
-fs.writeFileSync(
-  path.join(sourceRoot, 'texts.ts'),
-  [
-    "export const SAVE = '保存'",
-    "export const MESSAGES = { save: '保存', states: ['等待', '完成'] }",
-    "export const MARKED = defineI18nMessages({ save: '保存', states: ['等待', '完成'] })",
-    'export const DYNAMIC = getText()',
-  ].join('\n'),
-);
-fs.writeFileSync(
-  path.join(sourceRoot, 'bridge.ts'),
-  "export { t } from 'virtual:ai-i18n'",
-);
-fs.writeFileSync(
-  path.join(sourceRoot, 'vue-types.ts'),
-  [
-    'export interface ImportedProps { label: string }',
-    'export interface ImportedEmits { save: [value: string] }',
-  ].join('\n'),
-);
-
-const tester = new RuleTester({
-  languageOptions: {
-    parser: tseslint.parser,
-    ecmaVersion: 2022,
-    sourceType: 'module',
-  },
-});
-
-const vueTester = new RuleTester({
-  languageOptions: {
-    parser: vueParser,
-    parserOptions: {
-      parser: tseslint.parser,
-      ecmaVersion: 2022,
-      sourceType: 'module',
-    },
-  },
-});
-
-const dynamicArgumentMessage = diagnosticMessage(
-  't() 的参数无法静态提取。source 请使用静态字符串，options 请使用只包含 comment 的静态对象。',
-  'The t() arguments cannot be statically extracted. Use a static string for source and a static object containing only comment for options.',
-);
+  vueTester,
+} from './t-static-args-test-fixture';
 describe('ai-i18n/t-static-args', () => {
   tester.run('t-static-args', tStaticArgs, {
     valid: [

@@ -19,7 +19,7 @@ const tester = new RuleTester({
 const autoImport = [{ autoImport: ['t', 'useI18n'] }];
 
 describe('ai-i18n/t-static-args template auto import', () => {
-  tester.run('requires a subscribed t in Vue templates', tStaticArgs, {
+  tester.run('supports direct t in Vue templates', tStaticArgs, {
     valid: [
       {
         code: [
@@ -51,19 +51,15 @@ describe('ai-i18n/t-static-args template auto import', () => {
         filename: path.resolve('OptionsOnly.vue'),
         options: autoImport,
       },
-    ],
-    invalid: [
       {
         code: "<template>{{ t('不会订阅') }}</template>",
         filename: path.resolve('TemplateOnly.vue'),
         options: autoImport,
-        errors: [{ messageId: 'templateNeedsI18n' }],
       },
       {
         code: '<template>{{ t`不会订阅` }}</template>',
         filename: path.resolve('TemplateOnlyTagged.vue'),
         options: autoImport,
-        errors: [{ messageId: 'templateNeedsI18n' }],
       },
       {
         code: [
@@ -77,7 +73,6 @@ describe('ai-i18n/t-static-args template auto import', () => {
         ].join('\n'),
         filename: path.resolve('NestedBinding.vue'),
         options: autoImport,
-        errors: [{ messageId: 'templateNeedsI18n' }],
       },
       {
         code: [
@@ -88,8 +83,8 @@ describe('ai-i18n/t-static-args template auto import', () => {
         ].join('\n'),
         filename: path.resolve('TypeOnlyBinding.vue'),
         options: autoImport,
-        errors: [{ messageId: 'templateNeedsI18n' }],
       },
     ],
+    invalid: [],
   });
 });

@@ -29,6 +29,11 @@ describe('ai-i18n/static-candidate-limit', () => {
         filename: path.resolve('custom-limit-valid.ts'),
         options: [{ maxStaticCandidates: 2 }],
       },
+      {
+        code: "import { tComputed } from 'virtual:ai-i18n'; export default { computed: { label: tComputed({ first: 'a', second: 'b' }) } }",
+        filename: path.resolve('options-limit-valid.ts'),
+        options: [{ maxStaticCandidates: 2 }],
+      },
     ],
     invalid: [
       {
@@ -41,6 +46,23 @@ describe('ai-i18n/static-candidate-limit', () => {
         code: "import { tRef } from 'virtual:ai-i18n'; tRef({ first: 'a', second: ['b', 'c'] })",
         filename: path.resolve('custom-limit-invalid.ts'),
         options: [{ maxStaticCandidates: 2 }],
+        errors: [{ messageId: 'candidateLimit' }],
+      },
+      {
+        code: "import { tComputed } from 'virtual:ai-i18n'; export default { computed: { label: tComputed({ first: 'a', second: ['b', 'c'] }) } }",
+        filename: path.resolve('options-limit-invalid.ts'),
+        options: [{ maxStaticCandidates: 2 }],
+        errors: [{ messageId: 'candidateLimit' }],
+      },
+      {
+        code: "export default { computed: { label: tComputed({ first: 'a', second: ['b', 'c'] }) } }",
+        filename: path.resolve('options-auto-limit-invalid.ts'),
+        options: [
+          {
+            autoImport: ['tComputed'],
+            maxStaticCandidates: 2,
+          },
+        ],
         errors: [{ messageId: 'candidateLimit' }],
       },
     ],

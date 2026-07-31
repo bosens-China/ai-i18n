@@ -82,6 +82,11 @@ describe('ai-i18n/no-unsubscribed-t', () => {
         filename: path.join(fixtureRoot, 'other-library.tsx'),
       },
       {
+        code: "import { t } from 'virtual:ai-i18n'; export function VueButton() { return <button>{t('Vue JSX')}</button> }",
+        filename: path.join(fixtureRoot, 'vue-runtime.tsx'),
+        options: [{ framework: 'vue' }],
+      },
+      {
         code: "export function App(t) { return <button>{t('局部')}</button> }",
         filename: path.join(fixtureRoot, 'shadowed.tsx'),
         options: [{ autoImport: ['t', 'useI18n'] }],
@@ -191,6 +196,25 @@ describe('ai-i18n/no-unsubscribed-t', () => {
       {
         code: [
           '<script setup lang="ts">',
+          "import { t } from 'virtual:ai-i18n'",
+          '</script>',
+          "<template>{{ t('Runtime') }}</template>",
+        ].join('\n'),
+        filename: path.join(fixtureRoot, 'runtime.vue'),
+      },
+      {
+        code: [
+          '<script setup lang="ts">',
+          "import { t as translate } from 'virtual:ai-i18n'",
+          'const name = "Ada"',
+          '</script>',
+          '<template>{{ translate`你好 ${name}` }}</template>',
+        ].join('\n'),
+        filename: path.join(fixtureRoot, 'runtime-tagged.vue'),
+      },
+      {
+        code: [
+          '<script setup lang="ts">',
           'defineProps<{ translators: Array<(value: string) => string> }>()',
           '</script>',
           '<template><span v-for="t in translators">{{ t(\'局部\') }}</span></template>',
@@ -219,27 +243,6 @@ describe('ai-i18n/no-unsubscribed-t', () => {
         ].join('\n'),
         filename: path.join(fixtureRoot, 'render-ref.vue'),
         errors: [{ messageId: 'renderTRef', line: 4, column: 14 }],
-      },
-      {
-        code: [
-          '<script setup lang="ts">',
-          "import { t } from 'virtual:ai-i18n'",
-          '</script>',
-          "<template>{{ t('Runtime') }}</template>",
-        ].join('\n'),
-        filename: path.join(fixtureRoot, 'runtime.vue'),
-        errors: [{ messageId: 'unsubscribedT', line: 4, column: 14 }],
-      },
-      {
-        code: [
-          '<script setup lang="ts">',
-          "import { t as translate } from 'virtual:ai-i18n'",
-          'const name = "Ada"',
-          '</script>',
-          '<template>{{ translate`你好 ${name}` }}</template>',
-        ].join('\n'),
-        filename: path.join(fixtureRoot, 'runtime-tagged.vue'),
-        errors: [{ messageId: 'unsubscribedT', line: 5, column: 14 }],
       },
     ],
   });
