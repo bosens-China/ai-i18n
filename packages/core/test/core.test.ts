@@ -8,11 +8,7 @@ import {
   parseTranslationOverridesFile,
   parseTranslationMemoryFile,
 } from '../src/index';
-
-const locales = [
-  { value: 'zh-CN', label: '中文' },
-  { value: 'en-US', label: 'English' },
-];
+import { locales } from './runtime-test-fixtures';
 
 describe('@ai-i18n/core message IDs', () => {
   it('includes normalized comments in collision-free readable IDs', () => {

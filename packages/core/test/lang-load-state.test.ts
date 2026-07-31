@@ -1,11 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { createI18nRuntime } from '../src/index';
-
-const locales = [
-  { value: 'zh-CN', label: '中文' },
-  { value: 'en-US', label: 'English' },
-  { value: 'ja-JP', label: '日本語' },
-];
+import { lazyLocales as locales } from './runtime-test-fixtures';
 
 describe('@ai-i18n/core language load state', () => {
   it('exposes the initial lazy default load', async () => {
