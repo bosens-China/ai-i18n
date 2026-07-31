@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { diagnosticMessage } from '@ai-i18n/analyzer';
 import { createTsconfigResolver } from './tsconfig-projects.js';
 
 const SOURCE_EXTENSIONS = [
@@ -9,9 +10,7 @@ const SOURCE_EXTENSIONS = [
   '.js',
   '.jsx',
   '.mts',
-  '.cts',
   '.mjs',
-  '.cjs',
 ] as const;
 const DIRECTORY_STAMP_TTL_MS = 250;
 const MAX_PROBE_CACHE_ENTRIES = 10_000;
@@ -30,11 +29,24 @@ interface CachedProbe {
 const directoryStampCache = new Map<string, CachedDirectoryStamp>();
 const probeCache = new Map<string, CachedProbe>();
 
-export function createImportResolver(tsconfigPath?: string) {
+export type ImportAlias = Readonly<Record<string, string>>;
+
+interface AliasEntry {
+  find: string;
+  replacement: string;
+}
+
+export function createImportResolver(
+  tsconfigPath?: string,
+  alias?: ImportAlias,
+) {
+  const aliases = normalizeAliases(alias);
   const resolveTsconfig = createTsconfigResolver(tsconfigPath);
 
   return (specifier: string, importer: string): string | null => {
     if (specifier === 'virtual:ai-i18n') return specifier;
+    const aliasCandidate = resolveAlias(specifier, aliases);
+    if (aliasCandidate) return probeSource(aliasCandidate);
     if (specifier.startsWith('.')) {
       return probeSource(path.resolve(path.dirname(importer), specifier));
     }
@@ -46,8 +58,45 @@ export function createImportResolver(tsconfigPath?: string) {
   };
 }
 
+function normalizeAliases(
+  alias: ImportAlias | undefined,
+): readonly AliasEntry[] {
+  return Object.entries(alias ?? {}).map(([find, replacement]) => {
+    if (!find) {
+      throw new TypeError(
+        diagnosticMessage(
+          'ai-i18n alias 的匹配键不能为空。',
+          'The ai-i18n alias match key must not be empty.',
+        ),
+      );
+    }
+    if (typeof replacement !== 'string' || !path.isAbsolute(replacement)) {
+      throw new TypeError(
+        diagnosticMessage(
+          `ai-i18n alias "${find}" 的 replacement 必须是绝对路径。`,
+          `The replacement for ai-i18n alias "${find}" must be an absolute path.`,
+        ),
+      );
+    }
+    return { find, replacement };
+  });
+}
+
+function resolveAlias(
+  specifier: string,
+  aliases: readonly AliasEntry[],
+): string | null {
+  for (const { find, replacement } of aliases) {
+    if (specifier === find || specifier.startsWith(`${find}/`)) {
+      return path.normalize(`${replacement}${specifier.slice(find.length)}`);
+    }
+  }
+  return null;
+}
+
 function probeSource(candidate: string): string | null {
   candidate = path.normalize(candidate);
+  if (/\.(?:cjs|cts)$/i.test(candidate)) return null;
   const cached = probeCache.get(candidate);
   if (
     cached &&

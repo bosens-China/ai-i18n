@@ -36,7 +36,7 @@ const plugin: ESLint.Plugin = {
 // 规则集必须由使用者显式引入，不会修改宿主项目的 ESLint 配置。
 plugin.configs!.recommended = [
   {
-    ignores: ['**/*.vue'],
+    ignores: ['**/*.{vue,cjs,cts}'],
     plugins: { 'ai-i18n': plugin },
     languageOptions: {
       globals: { defineI18nMessages: 'readonly' },
@@ -53,7 +53,7 @@ plugin.configs!.recommended = [
 
 plugin.configs!.vue = [
   {
-    files: ['**/*.{js,mjs,cjs,ts,mts,cts,jsx,tsx,vue}'],
+    files: ['**/*.{js,mjs,ts,mts,jsx,tsx,vue}'],
     plugins: { 'ai-i18n': plugin },
     languageOptions: {
       globals: { defineI18nMessages: 'readonly' },
@@ -71,7 +71,7 @@ plugin.configs!.vue = [
 // 自动导入 preset 必须与 Vite 各模式实际注入的 API 一一对应。
 plugin.configs!['vanilla-auto-import'] = [
   {
-    files: ['**/*.{js,mjs,cjs,ts,mts,cts}'],
+    files: ['**/*.{js,mjs,ts,mts}'],
     plugins: { 'ai-i18n': plugin },
     languageOptions: {
       globals: {
@@ -95,7 +95,7 @@ plugin.configs!['vanilla-auto-import'] = [
 
 plugin.configs!['vue-auto-import'] = [
   {
-    files: ['**/*.{js,mjs,cjs,ts,mts,cts,jsx,tsx,vue}'],
+    files: ['**/*.{js,mjs,ts,mts,jsx,tsx,vue}'],
     plugins: { 'ai-i18n': plugin },
     languageOptions: {
       globals: {
@@ -132,7 +132,7 @@ plugin.configs!['vue-auto-import'] = [
 
 plugin.configs!['react-auto-import'] = [
   {
-    files: ['**/*.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'],
+    files: ['**/*.{js,mjs,ts,mts,jsx,tsx}'],
     plugins: { 'ai-i18n': plugin },
     languageOptions: {
       globals: {

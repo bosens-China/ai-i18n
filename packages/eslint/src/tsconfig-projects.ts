@@ -29,7 +29,7 @@ interface CachedProjectGraph {
 
 interface CachedDiscovery {
   expiresAt: number;
-  tsconfigPath: string | null;
+  configPath: string | null;
 }
 
 const projectGraphCache = new Map<string, CachedProjectGraph>();
@@ -41,26 +41,28 @@ export function createTsconfigResolver(tsconfigPath?: string) {
     : undefined;
 
   return (specifier: string, importer: string): readonly string[] => {
-    const rootConfig = explicitRoot ?? findNearestTsconfig(importer);
+    const rootConfig = explicitRoot ?? findNearestProjectConfig(importer);
     if (!rootConfig) return [];
     const project = selectProject(loadProjectGraph(rootConfig), importer);
     return project?.pathsMatcher?.(specifier) ?? [];
   };
 }
 
-function findNearestTsconfig(importer: string): string | null {
+function findNearestProjectConfig(importer: string): string | null {
   let directory = path.dirname(path.resolve(importer));
   const now = Date.now();
   const cached = discoveryCache.get(directory);
-  if (cached && cached.expiresAt > now) return cached.tsconfigPath;
+  if (cached && cached.expiresAt > now) return cached.configPath;
   const visited: string[] = [];
 
   for (;;) {
     visited.push(directory);
-    const candidate = path.join(directory, 'tsconfig.json');
-    if (isFile(candidate)) {
-      cacheDiscovery(visited, candidate, now);
-      return candidate;
+    for (const filename of ['tsconfig.json', 'jsconfig.json']) {
+      const candidate = path.join(directory, filename);
+      if (isFile(candidate)) {
+        cacheDiscovery(visited, candidate, now);
+        return candidate;
+      }
     }
     const parent = path.dirname(directory);
     if (parent === directory) {
@@ -73,7 +75,7 @@ function findNearestTsconfig(importer: string): string | null {
 
 function cacheDiscovery(
   directories: readonly string[],
-  tsconfigPath: string | null,
+  configPath: string | null,
   now: number,
 ) {
   if (discoveryCache.size >= MAX_PROJECT_CACHE_ENTRIES) {
@@ -82,7 +84,7 @@ function cacheDiscovery(
   for (const directory of directories) {
     discoveryCache.set(directory, {
       expiresAt: now + PROJECT_CACHE_TTL_MS,
-      tsconfigPath,
+      configPath,
     });
   }
 }
@@ -142,12 +144,31 @@ function visitProject(
   try {
     projects.push({
       config,
-      filesMatcher: createFilesMatcher(config),
+      filesMatcher: createProjectFilesMatcher(config),
       pathsMatcher: createCompatiblePathsMatcher(config),
     });
   } catch {
     // 无效的 include、exclude 或 paths 与当前项目不提供 alias 等价。
   }
+}
+
+function createProjectFilesMatcher(config: TsConfigResult): FileMatcher {
+  if (
+    path.basename(config.path).toLowerCase() !== 'jsconfig.json' ||
+    config.config.compilerOptions?.allowJs !== undefined
+  ) {
+    return createFilesMatcher(config);
+  }
+  return createFilesMatcher({
+    ...config,
+    config: {
+      ...config.config,
+      compilerOptions: {
+        ...config.config.compilerOptions,
+        allowJs: true,
+      },
+    },
+  });
 }
 
 function captureParsedConfigStamps(

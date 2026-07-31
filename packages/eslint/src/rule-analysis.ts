@@ -9,6 +9,7 @@ import {
 } from './analyze.js';
 import { diagnosticMessage, type TranslationCall } from '@ai-i18n/analyzer';
 import { createVueAnalysisSource } from './vue-sfc.js';
+import type { ImportAlias } from './resolve-import.js';
 
 interface RuleAnalysisOptions {
   tsconfigPath?: string;
@@ -75,6 +76,7 @@ function analyzeRuleContextResult(
     analyses: new Map<string, StaticAnalysisResult>(),
   };
   cache.set(context.sourceCode, cached);
+  const alias = readImportAlias(context);
 
   const analyze = (limit: number) => {
     const autoImports = normalizeAutoImports(options.autoImport);
@@ -83,6 +85,7 @@ function analyzeRuleContextResult(
       autoImports.t,
       autoImports.tRef,
       autoImports.useI18n,
+      Object.entries(alias ?? {}),
       limit,
     ]);
     const existing = cached.analyses.get(key);
@@ -94,6 +97,7 @@ function analyzeRuleContextResult(
       cached.source.lang,
       options.autoImport,
       limit,
+      alias,
     );
     const analysis = {
       warnings: result.warnings.map((warning) => ({
@@ -118,6 +122,24 @@ function analyzeRuleContextResult(
   )
     ? analyze(Number.POSITIVE_INFINITY)
     : preflight;
+}
+
+function readImportAlias(context: Rule.RuleContext): ImportAlias | undefined {
+  const settings = context.settings['ai-i18n'];
+  if (!settings || typeof settings !== 'object' || Array.isArray(settings)) {
+    return undefined;
+  }
+  const alias = (settings as { alias?: unknown }).alias;
+  if (alias === undefined) return undefined;
+  if (!alias || typeof alias !== 'object' || Array.isArray(alias)) {
+    throw new TypeError(
+      diagnosticMessage(
+        'ai-i18n settings.alias 必须是字符串到绝对路径的对象。',
+        'ai-i18n settings.alias must be an object mapping strings to absolute paths.',
+      ),
+    );
+  }
+  return alias as ImportAlias;
 }
 
 function createAnalysisSource(context: Rule.RuleContext) {

@@ -33,7 +33,7 @@ describe('@ai-i18n/eslint config', () => {
     );
     expect(plugin.configs?.recommended).toEqual([
       expect.objectContaining({
-        ignores: ['**/*.vue'],
+        ignores: ['**/*.{vue,cjs,cts}'],
         rules: {
           'ai-i18n/no-eager-translation': 'warn',
           'ai-i18n/no-unsubscribed-runtime-state': 'warn',
@@ -45,7 +45,7 @@ describe('@ai-i18n/eslint config', () => {
     ]);
     expect(plugin.configs?.vue).toEqual([
       expect.objectContaining({
-        files: ['**/*.{js,mjs,cjs,ts,mts,cts,jsx,tsx,vue}'],
+        files: ['**/*.{js,mjs,ts,mts,jsx,tsx,vue}'],
         languageOptions: {
           globals: { defineI18nMessages: 'readonly' },
         },
@@ -60,6 +60,7 @@ describe('@ai-i18n/eslint config', () => {
     ]);
     expect(plugin.configs?.['react-auto-import']).toEqual([
       expect.objectContaining({
+        files: ['**/*.{js,mjs,ts,mts,jsx,tsx}'],
         languageOptions: {
           globals: {
             t: 'readonly',
@@ -95,6 +96,7 @@ describe('@ai-i18n/eslint config', () => {
     ]);
     expect(plugin.configs?.['vue-auto-import']).toEqual([
       expect.objectContaining({
+        files: ['**/*.{js,mjs,ts,mts,jsx,tsx,vue}'],
         languageOptions: {
           globals: {
             t: 'readonly',
@@ -134,6 +136,7 @@ describe('@ai-i18n/eslint config', () => {
     ]);
     expect(plugin.configs?.['vanilla-auto-import']).toEqual([
       expect.objectContaining({
+        files: ['**/*.{js,mjs,ts,mts}'],
         languageOptions: {
           globals: expect.objectContaining({
             t: 'readonly',

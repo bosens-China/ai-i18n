@@ -15,7 +15,7 @@ import {
   type TranslationCall,
   type TranslationHookBinding,
 } from '@ai-i18n/analyzer';
-import { createImportResolver } from './resolve-import.js';
+import { createImportResolver, type ImportAlias } from './resolve-import.js';
 
 export interface StaticArgsWarning {
   code: ExtractWarningCode | RecommendedUsageCode;
@@ -48,6 +48,7 @@ export function analyzeStaticArgs(
   lang?: AnalysisLanguage,
   autoImport: AutoImportOption = false,
   maxStaticCandidates = Number.POSITIVE_INFINITY,
+  alias?: ImportAlias,
 ): StaticArgsWarning[] {
   return analyzeStaticSource(
     code,
@@ -56,6 +57,7 @@ export function analyzeStaticArgs(
     lang,
     autoImport,
     maxStaticCandidates,
+    alias,
   ).warnings;
 }
 
@@ -66,12 +68,13 @@ export function analyzeStaticSource(
   lang?: AnalysisLanguage,
   autoImport: AutoImportOption = false,
   maxStaticCandidates = Number.POSITIVE_INFINITY,
+  alias?: ImportAlias,
 ): StaticAnalysisResult {
   if (!hasPotentialTranslationCandidate(code)) {
     return { warnings: [], translationCalls: [] };
   }
   const autoImports = normalizeAutoImports(autoImport);
-  const resolve = createImportResolver(tsconfigPath);
+  const resolve = createImportResolver(tsconfigPath, alias);
   const analyzer = new Analyzer({ resolve });
   analyzer.addFile(
     AI_I18N_VIRTUAL_MODULE_ID,

@@ -23,6 +23,18 @@ function createFixture() {
 }
 
 describe('ESLint import resolver cache', () => {
+  it.each(['cjs', 'cts'])(
+    'does not resolve unsupported CommonJS .%s source',
+    (extension) => {
+      const { importer, root } = createFixture();
+      fs.writeFileSync(path.join(root, `legacy.${extension}`), '');
+      const resolver = createImportResolver();
+
+      expect(resolver('./legacy', importer)).toBeNull();
+      expect(resolver(`./legacy.${extension}`, importer)).toBeNull();
+    },
+  );
+
   it('reuses positive and negative source probes', () => {
     const { importer, root } = createFixture();
     const target = path.join(root, 'target.ts');
