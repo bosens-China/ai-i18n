@@ -3,103 +3,271 @@ title: ESLint 规则参考
 description: 按需调整 ai-i18n ESLint 规则、自动导入和项目路径解析
 ---
 
+import { Tab, Tabs } from '@rspress/core/theme';
+
 本页面向需要自定义 ESLint 行为的项目。常规接入请先阅读 [ESLint](/guide/quality/eslint)。
 
-## 手动启用规则
+## 规则总览
 
-只有需要覆盖预设默认值时，才手动注册规则：
+官方预设已经注册适用规则。需要调整默认值时，先引入对应预设，再覆盖目标规则。下面以
+`recommended` 为例：
 
 ```js
 import aiI18n from '@ai-i18n/eslint-plugin';
 import { defineConfig } from 'eslint/config';
 
 export default defineConfig([
+  ...aiI18n.configs.recommended,
   {
-    languageOptions: {
-      globals: { defineI18nMessages: 'readonly' },
-    },
-    plugins: { 'ai-i18n': aiI18n },
     rules: {
-      'ai-i18n/t-static-args': 'error',
-      'ai-i18n/no-eager-translation': 'warn',
-      'ai-i18n/no-unsubscribed-runtime-state': 'warn',
-      'ai-i18n/no-unsubscribed-t': 'warn',
-      'ai-i18n/static-candidate-limit': 'warn',
+      'ai-i18n/static-candidate-limit': ['warn', { maxStaticCandidates: 2000 }],
     },
   },
 ]);
 ```
 
-| 规则                            | 解决的问题                                 |
-| ------------------------------- | ------------------------------------------ |
-| `t-static-args`                 | 拒绝构建时无法确定或不推荐的 `t()` 参数。  |
-| `no-eager-translation`          | 避免过早计算并长期保存译后字符串。         |
-| `no-unsubscribed-runtime-state` | 避免缓存或渲染非响应式语言状态快照。       |
-| `no-unsubscribed-t`             | 检查框架渲染路径和 Vue getter 的生命周期。 |
-| `static-candidate-limit`        | 文案候选数量过大时发出警告。               |
-| `no-redundant-auto-import`      | 可选地删除自动导入已提供的显式导入。       |
+| 规则                            | 默认级别 | 范围           | 用途                                           |
+| ------------------------------- | -------- | -------------- | ---------------------------------------------- |
+| `t-static-args`                 | error    | 通用           | 拒绝无法静态提取或不推荐的翻译调用参数。       |
+| `no-eager-translation`          | warning  | 通用，Vue 扩展 | 避免在初始化阶段长期保存译后字符串。           |
+| `no-unsubscribed-runtime-state` | warning  | 通用，框架扩展 | 避免缓存或渲染非响应式语言状态快照。           |
+| `no-unsubscribed-t`             | warning  | Vue、React     | 检查组件渲染和 Vue 响应式翻译 API 的生命周期。 |
+| `static-candidate-limit`        | warning  | 通用           | 文案候选数量过大时发出警告。                   |
+| `no-redundant-auto-import`      | 默认关闭 | 自动导入项目   | 删除已经由自动导入提供的同名显式导入。         |
 
-## 自动导入选项
+## 通用规则
 
-手动配置自动导入项目时，使用数组准确列出当前框架注入的 API：
+### `t-static-args`
+
+检查 `t()`、Vue `tRef()`、`tComputed()`，以及 `useI18n()` 返回的 `t`。source 必须能在构建
+阶段确定；options 必须是仅包含 `comment` 的静态对象。动态字符串、不支持的调用形式和不推荐的
+集合成员引用会报错。
+
+### `no-eager-translation`
+
+检查模块初始化或组件初始化期间保存的 `t()` 结果。长期保存的译文不会随语言切换更新。普通
+函数和 getter 在执行时重新调用 `t()`，因此可以使用。Vue `setup()` 与 Options `data()` 的
+额外检查见下方 Vue Tab。
+
+### `no-unsubscribed-runtime-state`
+
+检查 `getLang()` 与 `getLangLoadState()` 返回的快照。模块顶层不能缓存这些值，组件渲染也应
+改用框架提供的响应式状态。事件处理器、action、普通工具函数和即时日志可以按需读取。
+
+### `static-candidate-limit`
+
+检查单个翻译调用展开后的 source 与 options 组合。默认超过 1000 个静态候选时发出 warning。
+确实存在大型有限集合时，可以提高阈值：
 
 ```js
-'ai-i18n/t-static-args': [
-  'error',
-  { autoImport: ['t', 'tRef', 'tComputed', 'useI18n'] }, // Vue
+'ai-i18n/static-candidate-limit': [
+  'warn',
+  { maxStaticCandidates: 2000 },
 ],
 ```
 
-翻译静态分析规则只需要列出 `t`、`tRef`、`tComputed` 和 `useI18n`；
-`i18nComputed` 不接收待提取文案。框架自动导入的完整集合见
-[自动导入](/guide/basic/auto-import)；新项目优先使用对应的预设。规则会允许
-`tComputed()` 直接作为纯 Options `computed` 属性值，并拒绝把它放入 `data()`、template、
-render 或模块级缓存。自动导入模式下，纯 Options template 可以直接使用未绑定的 `t()`；
-本地同名值仍然遮挡。关闭自动导入时，`methods: { t }`、`methods: { t: translate }` 只有
-在值能解析到 ai-i18n Runtime `t` 时才作为 template binding。两种模式都不把 `this.t()`、
-`this.$t()` 视为翻译调用。
+这项设置只影响 ESLint 警告，不改变 Vite 的翻译结果。
 
-`no-unsubscribed-runtime-state` 的 Vue 自动导入选项列出状态快照 API 与 Options 状态工厂：
+### `no-redundant-auto-import`
+
+自动导入预设默认不启用该规则。启用后，它会报告 `virtual:ai-i18n` 中已经由当前框架自动注入的
+同名值导入，并支持 `eslint --fix`。改名导入、命名空间导入和类型导入会保留；import 内有注释
+时只报告，不自动修改。
+
+## 框架规则
+
+新项目优先使用与 Vite 框架模式一致的预设。下面按框架说明额外检查，并列出自动导入预设的
+完整规则配置。框架自动导入 API 见 [自动导入](/guide/basic/auto-import)。
+
+<Tabs groupId="eslint-framework">
+<Tab label="Vanilla">
+
+自动导入项目使用 `vanilla-auto-import`。该预设的规则配置如下：
 
 ```js
-'ai-i18n/no-unsubscribed-runtime-state': [
-  'warn',
-  {
-    autoImport: ['getLang', 'getLangLoadState', 'i18nComputed'],
-    framework: 'vue',
+{
+  rules: {
+    'ai-i18n/t-static-args': ['error', { autoImport: ['t'] }],
+    'ai-i18n/no-eager-translation': ['warn', { autoImport: ['t'] }],
+    'ai-i18n/no-unsubscribed-runtime-state': [
+      'warn',
+      { autoImport: ['getLang', 'getLangLoadState'] },
+    ],
+    'ai-i18n/static-candidate-limit': ['warn', { autoImport: ['t'] }],
   },
-],
+}
 ```
 
-它会提示模块顶层、普通 Vue `setup()`、Options `data()` 以及 Vue template / JSX
-渲染路径中的确定性快照，并要求 `i18nComputed()` 直接展开到纯 Options 根 `computed`。
-React 或 Vanilla 手动配置不列出 `i18nComputed`。事件处理器、普通函数和即时日志允许按需
-读取；规则不追踪跨文件 store 数据流。
+Vanilla 只使用通用规则。它没有组件渲染生命周期，因此 `vanilla-auto-import` 不启用
+`no-unsubscribed-t`。
 
-`no-redundant-auto-import` 默认不包含在预设中。希望统一为自动导入风格时：
+启用可选的 `no-redundant-auto-import` 时，传入 Vanilla 注入的完整 Runtime API：
 
 ```js
-'ai-i18n/no-redundant-auto-import': [
-  'warn',
-  {
-    autoImport: [
-      'useI18n',
-      't',
-      'setLang',
-      'getLang',
-      'getLangs',
-      'getLangLoadState',
-      'subscribe',
-      'tRef',
-      'i18nComputed',
-      'tComputed',
+{
+  autoImport: [
+    't',
+    'setLang',
+    'getLang',
+    'getLangs',
+    'getLangLoadState',
+    'subscribe',
+  ],
+}
+```
+
+</Tab>
+<Tab label="Vue">
+
+自动导入项目使用 `vue-auto-import`。该预设的规则配置如下：
+
+```js
+{
+  rules: {
+    'ai-i18n/t-static-args': [
+      'error',
+      { autoImport: ['t', 'tRef', 'tComputed', 'useI18n'] },
+    ],
+    'ai-i18n/no-eager-translation': [
+      'warn',
+      {
+        autoImport: ['t', 'tRef', 'tComputed', 'useI18n'],
+        framework: 'vue',
+      },
+    ],
+    'ai-i18n/no-unsubscribed-runtime-state': [
+      'warn',
+      {
+        autoImport: ['getLang', 'getLangLoadState', 'i18nComputed'],
+        framework: 'vue',
+      },
+    ],
+    'ai-i18n/no-unsubscribed-t': [
+      'warn',
+      {
+        autoImport: ['t', 'tRef', 'tComputed', 'useI18n'],
+        framework: 'vue',
+      },
+    ],
+    'ai-i18n/static-candidate-limit': [
+      'warn',
+      { autoImport: ['t', 'tRef', 'tComputed', 'useI18n'] },
     ],
   },
-],
+}
 ```
 
-它只会修复可安全删除的 `virtual:ai-i18n` 导入。改名导入、命名空间导入、类型导入和带注释的导入
-不会被自动修改。
+Vue template、render 和 computed 可以直接调用词法作用域中的顶层 `t()`。规则还会检查以下
+Composition API 与 Options API 生命周期问题：
+
+| 写法或位置                                              | 触发规则                        | 推荐写法                                                                                  |
+| ------------------------------------------------------- | ------------------------------- | ----------------------------------------------------------------------------------------- |
+| `setup()` 保存 `t()` 结果                               | `no-eager-translation`          | 使用 `tRef()`，或在函数执行时调用 `t()`。                                                 |
+| Options `data()` 保存 `t()` 结果                        | `no-eager-translation`          | 使用根 `computed` 中的 `tComputed()`。                                                    |
+| Options `computed/data/methods` 或渲染期间调用 `tRef()` | `no-unsubscribed-t`             | setup 使用 `tRef()`；computed/data 改为根 computed 的 `tComputed()`；其余位置调用 `t()`。 |
+| `tComputed()` 未直接作为根 `computed` 属性值            | `no-unsubscribed-t`             | 写成 `computed: { label: tComputed('保存') }`。                                           |
+| setup、Options 或渲染路径保存 Runtime 状态快照          | `no-unsubscribed-runtime-state` | 使用 `useI18n()` 或 `i18nComputed()`。                                                    |
+| `i18nComputed()` 未直接展开到根 `computed`              | `no-unsubscribed-runtime-state` | 写成 `computed: { ...i18nComputed() }`。                                                  |
+| 使用组件实例成员 `this.t()` 或 `this.$t()`              | `no-unsubscribed-t`             | 调用词法作用域中的 `t()`。                                                                |
+
+自动导入模式下，纯 Options template 可以直接使用未绑定的 `t()`；本地同名值仍然遮挡。关闭
+自动导入时，`methods: { t }` 或 `methods: { t: translate }` 必须解析到 ai-i18n Runtime
+`t`，才能作为 template binding。
+
+启用可选的 `no-redundant-auto-import` 时，传入 Vue 注入的完整 API：
+
+```js
+{
+  autoImport: [
+    'useI18n',
+    't',
+    'setLang',
+    'getLang',
+    'getLangs',
+    'getLangLoadState',
+    'subscribe',
+    'tRef',
+    'i18nComputed',
+    'tComputed',
+  ],
+}
+```
+
+</Tab>
+<Tab label="React">
+
+自动导入项目使用 `react-auto-import`。该预设的规则配置如下：
+
+```js
+{
+  rules: {
+    'ai-i18n/t-static-args': [
+      'error',
+      { autoImport: ['t', 'useI18n'] },
+    ],
+    'ai-i18n/no-eager-translation': [
+      'warn',
+      { autoImport: ['t', 'useI18n'] },
+    ],
+    'ai-i18n/no-unsubscribed-runtime-state': [
+      'warn',
+      { autoImport: ['getLang', 'getLangLoadState'] },
+    ],
+    'ai-i18n/no-unsubscribed-t': [
+      'warn',
+      { autoImport: ['t', 'useI18n'] },
+    ],
+    'ai-i18n/static-candidate-limit': [
+      'warn',
+      { autoImport: ['t', 'useI18n'] },
+    ],
+  },
+}
+```
+
+React 在通用规则之外增加组件订阅检查：
+
+| 写法或位置                             | 触发规则                        | 推荐写法                            |
+| -------------------------------------- | ------------------------------- | ----------------------------------- |
+| JSX / TSX 渲染路径直接调用顶层 `t()`   | `no-unsubscribed-t`             | 使用 `useI18n()` 返回的 `t`。       |
+| 渲染路径读取 Runtime 状态快照          | `no-unsubscribed-runtime-state` | 使用 `useI18n()` 返回的响应式状态。 |
+| 事件处理器或普通延迟函数调用顶层 `t()` | 不触发                          | 保持按需读取。                      |
+
+启用可选的 `no-redundant-auto-import` 时，传入 React 注入的完整 API：
+
+```js
+{
+  autoImport: [
+    'useI18n',
+    't',
+    'setLang',
+    'getLang',
+    'getLangs',
+    'getLangLoadState',
+    'subscribe',
+  ],
+}
+```
+
+</Tab>
+</Tabs>
+
+## 规则选项
+
+| 选项                  | 适用规则与行为                                                                                                    |
+| --------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| `autoImport`          | 五条检查规则接受布尔值或各自支持的 API 数组；`no-redundant-auto-import` 只接受非空 API 数组。                     |
+| `framework`           | `no-eager-translation` 接受 `vue`；`no-unsubscribed-t` 与 `no-unsubscribed-runtime-state` 接受 `vue` 或 `react`。 |
+| `tsconfigPath`        | 仅适用于 `t-static-args`、`no-eager-translation`、`no-unsubscribed-t` 和 `static-candidate-limit`。               |
+| `maxStaticCandidates` | 仅适用于 `static-candidate-limit`，必须是正整数。                                                                 |
+
+翻译调用规则中的 `autoImport: true` 是兼容性简写，只启用 `t` 与 `useI18n`，不包含 Vue 专属的
+`tRef` 和 `tComputed`。状态快照规则中的 `autoImport: true` 会启用 `getLang`、
+`getLangLoadState` 与 `i18nComputed`。框架项目应优先使用预设；手动配置时使用 Tabs 中的明确
+API 数组。
+
+`no-eager-translation`、`no-unsubscribed-t` 和 `no-unsubscribed-runtime-state` 只判断当前
+文件内可以确定的生命周期问题，不追踪跨文件 store 数据流。
 
 ## 路径别名与项目配置
 
@@ -154,24 +322,10 @@ export default [
 `tsconfig.json` 还是 `jsconfig.json`，插件都会解析 `extends`、项目 references 以及
 `files`、`include`、`exclude`。该选项沿用现有名称，也可以直接指向 `jsconfig.json`。
 
-Vue SFC 必须被所选项目配置的 `include` 覆盖，例如：
+Vue SFC 必须被所选项目配置的 `files` 或 `include` 显式覆盖。例如：
 
 ```json
 {
   "include": ["src/**/*.ts", "src/**/*.vue"]
 }
 ```
-
-## 候选数量阈值
-
-`static-candidate-limit` 默认在单个表达式超过 1000 个候选时提示。确实存在大型有限文案集合时，
-可以提高阈值：
-
-```js
-'ai-i18n/static-candidate-limit': [
-  'warn',
-  { maxStaticCandidates: 2000 },
-],
-```
-
-这项设置只影响 ESLint 警告，不改变 Vite 的翻译结果。
