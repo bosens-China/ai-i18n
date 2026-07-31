@@ -1,63 +1,119 @@
 <script setup lang="ts">
-import { DEMO_MESSAGES } from '@/messages';
-import { computed } from 'vue';
+import { shallowRef } from 'vue';
+import CompositionPanel from './components/CompositionPanel.vue';
+import OptionsPanel from './components/OptionsPanel.vue';
 
-const { t, setLang, currentLang, langs } = useI18n();
-const translatedMessage = tRef('响应式文案会随语言立即更新');
-const aliasStepIndex = computed(() => (currentLang.value === 'zh-CN' ? 0 : 1));
-const currentLanguageLabel = computed(
-  () =>
-    langs.value.find(({ value }) => value === currentLang.value)?.label ??
-    currentLang.value,
-);
+const tabs = [
+  {
+    id: 'setup',
+    label: 'Setup + lang="ts"',
+    hint: 'Composition API',
+  },
+  {
+    id: 'options',
+    label: 'Pure Options',
+    hint: 'Options API',
+  },
+] as const;
+type DemoTab = (typeof tabs)[number]['id'];
+
+const activeTab = shallowRef<DemoTab>('setup');
+
+function selectTab(tab: DemoTab): void {
+  activeTab.value = tab;
+}
+
+function handleTabKeydown(event: KeyboardEvent, currentIndex: number): void {
+  const lastIndex = tabs.length - 1;
+  let nextIndex: number | undefined;
+
+  if (event.key === 'ArrowLeft') {
+    nextIndex = currentIndex === 0 ? lastIndex : currentIndex - 1;
+  } else if (event.key === 'ArrowRight') {
+    nextIndex = currentIndex === lastIndex ? 0 : currentIndex + 1;
+  } else if (event.key === 'Home') {
+    nextIndex = 0;
+  } else if (event.key === 'End') {
+    nextIndex = lastIndex;
+  }
+
+  if (nextIndex === undefined) return;
+
+  event.preventDefault();
+  selectTab(tabs[nextIndex].id);
+  const tabList = (event.currentTarget as HTMLElement).parentElement;
+  tabList
+    ?.querySelectorAll<HTMLButtonElement>('[role="tab"]')
+    .item(nextIndex)
+    .focus();
+}
 </script>
 
 <template>
   <main class="demo-app">
-    <header class="demo-header">
-      <div class="header-titles">
-        <p class="demo-eyebrow">useI18n · Vue 3</p>
-        <h1>{{ t('Vue 示例') }}</h1>
-      </div>
-      <div class="header-controls">
-        <label class="language-control">
-          <span class="sr-only">{{ t('语言') }}</span>
-          <select
-            :value="currentLang"
-            @change="setLang(($event.target as HTMLSelectElement).value)"
-          >
-            <option v-for="lang in langs" :key="lang.value" :value="lang.value">
-              {{ lang.label }}
-            </option>
-          </select>
-        </label>
+    <header class="demo-hero">
+      <div class="brand-mark" aria-hidden="true">AI</div>
+      <div>
+        <p class="demo-eyebrow">ai-i18n · Vue 3</p>
+        <h1>{{ t('同一个 Runtime，两种 Vue 写法') }}</h1>
+        <p class="demo-intro">
+          {{
+            t('在同一页面对照 Composition API 与纯 Options API 的响应式能力。')
+          }}
+        </p>
       </div>
     </header>
 
-    <section class="demo-panel" :aria-label="t('交互式语言切换演示')">
-      <article class="demo-card">
-        <span class="demo-label">{{ t('当前语言') }}</span>
-        <div class="locale-readout" aria-live="polite">
-          <span class="status-dot" aria-hidden="true"></span>
-          <strong>{{ currentLanguageLabel }}</strong>
-          <code>{{ currentLang }}</code>
-        </div>
-      </article>
+    <aside class="runtime-bridge">
+      <span class="runtime-bridge__pulse" aria-hidden="true"></span>
+      <strong data-testid="shared-runtime-label">{{
+        t('共享 Runtime')
+      }}</strong>
+      <span>{{ t('切换任一面板，另一侧同步更新。') }}</span>
+    </aside>
 
-      <article class="demo-card demo-card--highlight">
-        <span class="demo-label">{{ t('文案变化') }}</span>
-        <div class="translation-output" aria-live="polite">
-          <p>{{ translatedMessage }}</p>
-          <span>{{ t('模板会自动响应 Runtime 状态。') }}</span>
-        </div>
-      </article>
+    <section class="api-workbench" aria-label="Vue API examples">
+      <div class="demo-tabs" role="tablist" aria-label="Vue component styles">
+        <button
+          v-for="(tab, index) in tabs"
+          :id="`demo-tab-${tab.id}`"
+          :key="tab.id"
+          class="demo-tab"
+          :data-mode="tab.id"
+          :aria-controls="`demo-panel-${tab.id}`"
+          :aria-selected="activeTab === tab.id"
+          role="tab"
+          type="button"
+          :tabindex="activeTab === tab.id ? 0 : -1"
+          @click="selectTab(tab.id)"
+          @keydown="handleTabKeydown($event, index)"
+        >
+          <span>{{ tab.label }}</span>
+          <small>{{ tab.hint }}</small>
+        </button>
+      </div>
 
-      <article class="demo-card">
-        <span class="demo-label">{{ t(DEMO_MESSAGES.aliasStatus) }}</span>
-        <div class="translation-output">
-          <p>{{ t(DEMO_MESSAGES.steps[aliasStepIndex]) }}</p>
-        </div>
-      </article>
+      <section
+        id="demo-panel-setup"
+        class="demo-tab-panel"
+        aria-labelledby="demo-tab-setup"
+        role="tabpanel"
+        tabindex="0"
+        v-show="activeTab === 'setup'"
+      >
+        <CompositionPanel />
+      </section>
+
+      <section
+        id="demo-panel-options"
+        class="demo-tab-panel"
+        aria-labelledby="demo-tab-options"
+        role="tabpanel"
+        tabindex="0"
+        v-show="activeTab === 'options'"
+      >
+        <OptionsPanel />
+      </section>
     </section>
   </main>
 </template>
