@@ -27,9 +27,28 @@ export interface TranslateRef {
   <T extends MessageTree>(messages: T): ComputedRef<TranslatedMessageTree<T>>;
 }
 
+export interface I18nComputedState {
+  currentLang: () => string;
+  langs: () => readonly LangOption[];
+  langLoadState: () => LangLoadState;
+  isLangLoading: () => boolean;
+  langLoadError: () => unknown | null;
+}
+
+export type I18nComputed = () => I18nComputedState;
+
+export interface TranslateComputed {
+  (source: string, options?: TranslationOptions): () => string;
+  (strings: TemplateStringsArray, ...values: unknown[]): () => string;
+  <T extends MessageTree>(messages: T): () => TranslatedMessageTree<T>;
+}
+
 export interface VueI18nAdapter {
+  t: I18nRuntime['t'];
   useI18n: UseI18n;
   tRef: TranslateRef;
+  i18nComputed: I18nComputed;
+  tComputed: TranslateComputed;
 }
 
 export function createVueI18nAdapter(runtime: I18nRuntime): VueI18nAdapter {
@@ -48,6 +67,19 @@ export function createVueI18nAdapter(runtime: I18nRuntime): VueI18nAdapter {
     return revision.value;
   }
 
+  const currentLang = computed(() => {
+    trackRevision();
+    return runtime.getLang();
+  });
+  const langLoadState = computed(() => {
+    trackRevision();
+    return runtime.getLangLoadState();
+  });
+  const isLangLoading = computed(
+    () => langLoadState.value.status === 'loading',
+  );
+  const langLoadError = computed(() => langLoadState.value.error);
+
   const t = ((source: unknown, ...values: unknown[]) => {
     trackRevision();
     return translate(source, ...values);
@@ -60,19 +92,22 @@ export function createVueI18nAdapter(runtime: I18nRuntime): VueI18nAdapter {
       return translate(source, ...values.map(unref));
     })) as TranslateRef;
 
+  // Options API 由 Vue 为每个组件实例创建 computed，这里只返回纯 getter。
+  const tComputed = ((source: unknown, ...values: unknown[]) =>
+    () => {
+      trackRevision();
+      return translate(source, ...values.map(unref));
+    }) as TranslateComputed;
+
+  const i18nComputed: I18nComputed = () => ({
+    currentLang: () => currentLang.value,
+    langs: () => langs.value,
+    langLoadState: () => langLoadState.value,
+    isLangLoading: () => isLangLoading.value,
+    langLoadError: () => langLoadError.value,
+  });
+
   const useI18n: UseI18n = () => {
-    const currentLang = computed(() => {
-      trackRevision();
-      return runtime.getLang();
-    });
-    const langLoadState = computed(() => {
-      trackRevision();
-      return runtime.getLangLoadState();
-    });
-    const isLangLoading = computed(
-      () => langLoadState.value.status === 'loading',
-    );
-    const langLoadError = computed(() => langLoadState.value.error);
     return {
       t,
       setLang: runtime.setLang,
@@ -84,7 +119,7 @@ export function createVueI18nAdapter(runtime: I18nRuntime): VueI18nAdapter {
     };
   };
 
-  return { useI18n, tRef };
+  return { t, useI18n, tRef, i18nComputed, tComputed };
 }
 
 export function createVueI18n(runtime: I18nRuntime): UseI18n {

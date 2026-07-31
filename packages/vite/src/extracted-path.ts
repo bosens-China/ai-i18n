@@ -5,11 +5,3 @@ export function hashExtractedSource(source: string): string {
     .update(source.replaceAll('\\', '/'))
     .digest('hex');
 }
-
-export function encodeLegacyExtractedSource(source: string): string {
-  return source
-    .replaceAll('\\', '/')
-    .split('/')
-    .map((segment) => encodeURIComponent(segment).replaceAll('_', '%5F'))
-    .join('_');
-}

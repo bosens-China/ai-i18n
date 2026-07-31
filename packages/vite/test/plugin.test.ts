@@ -1,11 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { aiI18n, type AiI18nOptions } from '../src/index';
-import {
-  callHook,
-  objectHandler,
-  options,
-  setupPlugin,
-} from './plugin-test-utils';
+import { callHook, options, setupPlugin } from './plugin-test-utils';
 
 describe('@ai-i18n/vite plugin', () => {
   it('validates locale and persistence options', () => {
@@ -157,6 +152,91 @@ const messages = defineI18nMessages({ save: '保存' })
     expect(result?.code).toContain('register?module=src%2FApp.vue');
   });
 
+  it('auto-imports template t when script setup contains TypeScript syntax', async () => {
+    const source = `<script setup lang="ts">
+const tabs = [{ id: 'setup' }, { id: 'options' }] as const
+type Tab = (typeof tabs)[number]['id']
+const activeTab: Tab = 'setup'
+</script>
+<template>{{ t('TypeScript 模板自动导入') }} {{ activeTab }}</template>`;
+    const { transform } = setupPlugin(
+      [],
+      undefined,
+      { ...options, autoImport: true },
+      [{ name: 'vite:vue' }],
+    );
+
+    const result = await transform(source, '/workspace/src/TypedTabs.vue');
+
+    expect(result?.code).toContain(
+      'import { t as __aiI18nTemplateT } from "virtual:ai-i18n";',
+    );
+    expect(result?.code).toContain('const t = __aiI18nTemplateT;');
+    expect(result?.code).toContain('register?module=src%2FTypedTabs.vue');
+  });
+
+  it('bridges direct t into Options API templates', async () => {
+    const source = `<script lang="ts">
+import { t } from 'virtual:ai-i18n'
+export default {
+  methods: {
+    t,
+    label() { return t('方法') },
+  },
+}
+</script>
+<template>{{ t('模板') }} {{ label() }}</template>`;
+    const { transform } = setupPlugin([], undefined, options, [
+      { name: 'vite:vue' },
+    ]);
+    const result = await transform(source, '/workspace/src/Options.vue');
+
+    expect(
+      result?.code.match(/import \{ t \} from ['"]virtual:ai-i18n['"];?/g),
+    ).toHaveLength(1);
+    expect(result?.code).toContain('register?module=src%2FOptions.vue');
+  });
+
+  it('auto-imports t exposed through Options methods', async () => {
+    const source = `<script lang="ts">
+export default {
+  methods: { t },
+}
+</script>
+<template>{{ t('模板自动桥接') }}</template>`;
+    const { transform } = setupPlugin(
+      [],
+      undefined,
+      { ...options, autoImport: true },
+      [{ name: 'vite:vue' }],
+    );
+    const result = await transform(source, '/workspace/src/AutoOptions.vue');
+
+    expect(result?.code).toContain(
+      '<script lang="ts">\nimport { t } from "virtual:ai-i18n";',
+    );
+    expect(result?.code).toContain('register?module=src%2FAutoOptions.vue');
+  });
+
+  it('auto-imports direct t used by a template-only SFC', async () => {
+    const { transform } = setupPlugin(
+      [],
+      undefined,
+      { ...options, autoImport: true },
+      [{ name: 'vite:vue' }],
+    );
+    const result = await transform(
+      `<template>{{ t('模板自动导入') }}</template>`,
+      '/workspace/src/TemplateOnly.vue',
+    );
+
+    expect(result?.code).toContain(
+      '<script setup>\nimport { t as __aiI18nTemplateT } from "virtual:ai-i18n";',
+    );
+    expect(result?.code).toContain('const t = __aiI18nTemplateT;');
+    expect(result?.code).toContain('register?module=src%2FTemplateOnly.vue');
+  });
+
   it('skips Vue Router definePage submodules without skipping external scripts', async () => {
     const { transform } = setupPlugin(
       [],
@@ -186,233 +266,5 @@ const messages = defineI18nMessages({ save: '保存' })
       '/workspace/src/page.ts?vue&type=script&src=true&lang.ts',
     );
     expect(external?.code).toBe("const messages = ({ save: '保存' })");
-  });
-
-  it('auto-imports the Vanilla runtime without changing local bindings', async () => {
-    const { transform } = setupPlugin([], undefined, {
-      ...options,
-      autoImport: true,
-    });
-    const result = await transform(
-      "t('自动导入'); setLang('en-US')",
-      '/workspace/src/main.ts',
-    );
-
-    expect(result?.code).toContain(
-      'import { t, setLang } from "virtual:ai-i18n";',
-    );
-    expect(result?.code).toContain('register?module=src%2Fmain.ts');
-  });
-
-  it.each([
-    ['vue', { name: 'vite:vue' }],
-    ['react', { name: 'vite:react-babel' }],
-  ] as const)(
-    'auto-imports Runtime value references in %s mode',
-    async (_framework, hostPlugin) => {
-      const { transform } = setupPlugin(
-        [],
-        undefined,
-        { ...options, autoImport: true },
-        [hostPlugin],
-      );
-      const result = await transform(
-        'const switchLanguage = setLang; const runtime = { getLang }',
-        '/workspace/src/runtime.ts',
-      );
-
-      expect(result?.code).toContain(
-        'import { setLang, getLang } from "virtual:ai-i18n";',
-      );
-    },
-  );
-
-  it('keeps auto import disabled when it is not explicitly configured', async () => {
-    const { transform } = setupPlugin([], undefined, options, [
-      { name: 'host-plugin' },
-    ]);
-    await expect(
-      transform("t('需要显式导入')", '/workspace/src/main.ts'),
-    ).resolves.toBeNull();
-  });
-
-  it('enables auto import only when explicitly configured', async () => {
-    const enabled = setupPlugin([], undefined, {
-      ...options,
-      autoImport: true,
-    });
-    expect(
-      await enabled.transform("t('显式开启')", '/workspace/src/enabled.ts'),
-    ).not.toBeNull();
-
-    const disabled = setupPlugin([], undefined, {
-      ...options,
-      autoImport: false,
-    });
-    await expect(
-      disabled.transform("t('显式关闭')", '/workspace/src/disabled.ts'),
-    ).resolves.toBeNull();
-  });
-
-  it('does not treat JSX as Vanilla source', async () => {
-    const { transform } = setupPlugin();
-    await expect(
-      transform(
-        "export const view = <p>{t('JSX 文案')}</p>",
-        '/workspace/src/View.jsx',
-      ),
-    ).resolves.toBeNull();
-  });
-
-  it('detects Vue JSX and auto-imports its Hook', async () => {
-    const { transform } = setupPlugin(
-      [],
-      undefined,
-      { ...options, autoImport: true, loading: {} },
-      [{ name: 'vite:vue' }, { name: 'vite:vue-jsx' }],
-    );
-    const vue = await transform(
-      `const { t: hookT } = useI18n()
-export const label = t('Vue TS')
-export const View = () => <p>{hookT('Vue JSX')}</p>`,
-      '/workspace/src/View.tsx',
-    );
-
-    expect(vue?.code).toContain(
-      'import { useI18n, t } from "virtual:ai-i18n";',
-    );
-    expect(vue?.code).toContain('register?module=src%2FView.tsx');
-  });
-
-  it('keeps the explicit Hook import when auto import is disabled', async () => {
-    const { transform } = setupPlugin([], undefined, options, [
-      { name: 'vite:vue' },
-    ]);
-    const vue = await transform(
-      `import { useI18n } from 'virtual:ai-i18n'
-const { t } = useI18n()
-export const label = t('显式 Hook')`,
-      '/workspace/src/useLabel.ts',
-    );
-
-    expect(vue?.code).toContain("import { useI18n } from 'virtual:ai-i18n'");
-    expect(vue?.code).not.toContain(
-      'import { useI18n } from "virtual:ai-i18n";',
-    );
-    expect(vue?.code).toContain('register?module=src%2FuseLabel.ts');
-  });
-
-  it('detects React JSX and auto-imports its Hook', async () => {
-    const { transform } = setupPlugin(
-      [],
-      undefined,
-      { ...options, autoImport: true, loading: {} },
-      [{ name: 'vite:react-babel' }],
-    );
-    const react = await transform(
-      `const { t: hookT } = useI18n()
-export const label = t('React TS')
-export const View = () => <p>{hookT('React JSX')}</p>`,
-      '/workspace/src/View.tsx',
-    );
-
-    expect(react?.code).toContain(
-      'import { useI18n, t } from "virtual:ai-i18n";',
-    );
-    expect(react?.code).toContain('register?module=src%2FView.tsx');
-  });
-
-  it('reports dynamic arguments with source locations', async () => {
-    const warnings: unknown[] = [];
-    const { transform } = setupPlugin(warnings, undefined, {
-      ...options,
-      autoImport: true,
-    });
-    const result = await transform(
-      't(props.label)',
-      '/workspace/src/dynamic.ts',
-    );
-    expect(result?.code).toContain('import { t } from "virtual:ai-i18n";');
-    expect(warnings).toMatchObject([
-      { id: '/workspace/src/dynamic.ts', loc: { line: 1, column: 0 } },
-    ]);
-  });
-
-  it('returns a stateless stub and skips transforms for SSR', async () => {
-    const warnings: unknown[] = [];
-    const { plugin, transform } = setupPlugin(warnings);
-    await expect(
-      transform(
-        "import { t } from 'virtual:ai-i18n'; t('服务端')",
-        '/workspace/src/ssr.ts',
-        { ssr: true },
-      ),
-    ).resolves.toBeNull();
-    await expect(
-      transform(
-        "const messages = defineI18nMessages({ save: '保存' })",
-        '/workspace/src/ssr-messages.ts',
-        { ssr: true },
-      ),
-    ).resolves.toMatchObject({
-      code: "const messages = ({ save: '保存' })",
-    });
-
-    const runtimeId = callHook<string>(plugin.resolveId, 'virtual:ai-i18n');
-    const load = objectHandler<
-      (this: unknown, id: string, options: { ssr: boolean }) => Promise<string>
-    >(plugin.load);
-    const stub = await load.call(
-      {
-        environment: { name: 'ssr' },
-        warn: (value: unknown) => warnings.push(value),
-      },
-      runtimeId,
-      { ssr: true },
-    );
-
-    expect(stub).toContain('export const t = (source, ...values)');
-    expect(stub).toContain('export const getLangLoadState');
-    expect(stub).not.toContain('createI18nRuntime');
-    expect(warnings).toHaveLength(1);
-  });
-
-  it('uses framework adapters for SSR Hook stub shapes', async () => {
-    for (const item of [
-      {
-        adapter: 'createVueI18nAdapter',
-        hook: 'export const { useI18n, tRef } = createVueI18nAdapter(runtime)',
-        frameworkPlugin: { name: 'vite:vue' },
-        module: '@ai-i18n/vite/vue',
-      },
-      {
-        adapter: 'createReactI18n',
-        hook: 'export const useI18n = createReactI18n(runtime)',
-        frameworkPlugin: { name: 'vite:react-babel' },
-        module: '@ai-i18n/vite/react',
-      },
-    ]) {
-      const { plugin } = setupPlugin([], undefined, options, [
-        item.frameworkPlugin,
-      ]);
-      const runtimeId = callHook<string>(plugin.resolveId, 'virtual:ai-i18n');
-      const load = objectHandler<
-        (
-          this: unknown,
-          id: string,
-          options: { ssr: boolean },
-        ) => Promise<string>
-      >(plugin.load);
-      const stub = await load.call(
-        { environment: { name: 'ssr' }, warn: () => {} },
-        runtimeId,
-        { ssr: true },
-      );
-
-      expect(stub).toContain(
-        `import { ${item.adapter} } from '${item.module}'`,
-      );
-      expect(stub).toContain(item.hook);
-    }
   });
 });

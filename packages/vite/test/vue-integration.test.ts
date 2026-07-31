@@ -61,8 +61,26 @@ export default defineComponent({
 })`,
     );
     await fs.writeFile(
+      path.join(root, 'src/OptionsPanel.vue'),
+      `<script lang="ts">
+import { defineComponent } from 'vue'
+export default defineComponent({
+  computed: {
+    label() { return t('Options computed') },
+  },
+  methods: {
+    notify() { return t('Options method') },
+  },
+})
+</script>
+<template>
+  <button :title="label" @click="notify">{{ t('Options template') }}</button>
+</template>`,
+    );
+    await fs.writeFile(
       path.join(root, 'src/App.vue'),
       `<script setup lang="ts">
+import OptionsPanel from './OptionsPanel.vue'
 import VueJsxPanel from './VueJsxPanel'
 import { useLabel } from './useLabel'
 import type { AppEmits, AppProps } from './component-types'
@@ -81,6 +99,7 @@ const label = useLabel()
   <p>{{ label }}</p>
   <button>{{ actionLabel }}</button>
   <button>{{ labels.save }}</button>
+  <OptionsPanel />
   <VueJsxPanel />
 </template>`,
     );
@@ -135,6 +154,9 @@ const label = useLabel()
     expect(code).toContain('EN:Vue TS');
     expect(code).toContain('EN:Vue TSX');
     expect(code).toContain('EN:Vue Ref');
+    expect(code).toContain('EN:Options computed');
+    expect(code).toContain('EN:Options method');
+    expect(code).toContain('EN:Options template');
     expect(code).toContain('EN:保存');
     expect(localeChunk?.isEntry).toBe(false);
     expect(localeChunk?.fileName).toMatch(/^assets\/en-US-/);
@@ -157,6 +179,15 @@ const label = useLabel()
     expect(
       await readJson(extractedTestPath(root, 'src/VueJsxPanel.tsx')),
     ).toMatchObject({ messages: [{ id: 'Vue TSX' }] });
+    expect(
+      await readJson(extractedTestPath(root, 'src/OptionsPanel.vue')),
+    ).toMatchObject({
+      messages: [
+        { id: 'Options computed' },
+        { id: 'Options method' },
+        { id: 'Options template' },
+      ],
+    });
   });
 });
 

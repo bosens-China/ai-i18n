@@ -22,8 +22,9 @@ export function runtimeCode(
     framework === 'vanilla'
       ? ''
       : framework === 'vue'
-        ? `export const { useI18n, tRef } = createVueI18nAdapter(runtime);`
+        ? `export const { t, useI18n, tRef, i18nComputed, tComputed } = createVueI18nAdapter(runtime);`
         : `export const useI18n = createReactI18n(runtime);`;
+  const runtimeT = framework === 'vue' ? '' : 'export const t = runtime.t;';
   const localeHotUpdate = options.loading
     ? `
   import.meta.hot.on(${JSON.stringify(localeUpdateEvent)}, ({ locale, messages }) => {
@@ -38,7 +39,7 @@ const runtime = createI18nRuntime({
   localeLoaders: ${localeLoadersCode(options, build, base)},
 });
 const activeModules = new Set();
-export const t = runtime.t;
+${runtimeT}
 export const setLang = runtime.setLang;
 export const getLang = runtime.getLang;
 export const getLangs = runtime.getLangs;
@@ -75,17 +76,19 @@ export function runtimeStubCode(framework: AiI18nFramework): string {
     framework === 'vanilla'
       ? ''
       : framework === 'vue'
-        ? `const runtime = { t, setLang, getLang, getLangs, getLangLoadState, subscribe };
-export const { useI18n, tRef } = createVueI18nAdapter(runtime);`
-        : `const runtime = { t, setLang, getLang, getLangs, getLangLoadState, subscribe };
+        ? `const runtime = { t: runtimeT, setLang, getLang, getLangs, getLangLoadState, subscribe };
+export const { t, useI18n, tRef, i18nComputed, tComputed } = createVueI18nAdapter(runtime);`
+        : `const runtime = { t: runtimeT, setLang, getLang, getLangs, getLangLoadState, subscribe };
 export const useI18n = createReactI18n(runtime);`;
+  const exportedT = framework === 'vue' ? '' : 'export const t = runtimeT;';
   return `
 import { formatTemplateMessage } from '@ai-i18n/vite/runtime';
 ${adapter}
-export const t = (source, ...values) =>
+const runtimeT = (source, ...values) =>
   typeof source === 'string'
     ? source
     : source.reduce((message, part, index) => message + part + (index < values.length ? String(values[index]) : ''), '');
+${exportedT}
 export const setLang = async () => {};
 export const getLang = () => '';
 export const getLangs = () => [];

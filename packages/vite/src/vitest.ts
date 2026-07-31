@@ -68,15 +68,34 @@ export function aiI18nVitest(options: AiI18nVitestOptions): Plugin {
       assertDirectDefineI18nMessagesCalls(module);
       const calls =
         extraction?.macroCalls ?? findDefineI18nMessagesCalls(module);
-      if (!options.autoImport) {
+      const supported = frameworkAutoImports(framework);
+      const autoImportModule =
+        extraction?.autoImportCode === undefined
+          ? module
+          : analyzeModule(
+              extraction.autoImportCode,
+              `${id.split('?')[0] ?? id}?auto-import`,
+              undefined,
+              extraction.autoImportLang,
+            );
+      const unbound = options.autoImport
+        ? new Set(findUnboundReferences(autoImportModule, new Set(supported)))
+        : new Set<string>();
+      const autoImports = options.autoImport
+        ? supported.filter((name) => unbound.has(name))
+        : [];
+      const templateImports = [
+        ...(extraction?.templateImports ?? []),
+        ...(options.autoImport
+          ? (extraction?.templateAutoImportCandidates ?? [])
+          : []),
+      ];
+      if (!options.autoImport && !templateImports.length) {
         return transformDefineI18nMessages(code, id, calls);
       }
-      const supported = frameworkAutoImports(framework);
-      const unbound = new Set(
-        findUnboundReferences(module, new Set(supported)),
-      );
-      const autoImports = supported.filter((name) => unbound.has(name));
-      if (!autoImports.length && !calls.length) return null;
+      if (!autoImports.length && !templateImports.length && !calls.length) {
+        return null;
+      }
       return sourceRegistration({
         code,
         id,
@@ -86,7 +105,11 @@ export function aiI18nVitest(options: AiI18nVitestOptions): Plugin {
         ...(extraction?.registration
           ? { registration: extraction.registration }
           : {}),
+        ...(extraction?.templateRegistration
+          ? { templateRegistration: extraction.templateRegistration }
+          : {}),
         autoImports,
+        templateImports,
         needsRegistration: false,
         macroCalls: calls,
       });

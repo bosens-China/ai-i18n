@@ -21,7 +21,6 @@ import {
 } from './file-store-cleanup.js';
 import {
   extractedPath,
-  legacyExtractedPath,
   localePath,
   translationMemoryPath,
   translationOverridesPath,
@@ -142,7 +141,6 @@ export class FileStore {
     options: FileStoreLoadOptions,
   ): Promise<TranslationMemoryFile> {
     const allDiskExtracted = await this.readExtractedFiles();
-    await this.migrateLegacyExtracted(allDiskExtracted);
     warnExtractedMismatches(
       allDiskExtracted,
       snapshot,
@@ -280,32 +278,7 @@ export class FileStore {
   }
 
   private async removeExtracted(source: string): Promise<void> {
-    await Promise.all([
-      fs.rm(extractedPath(this.directory, source), { force: true }),
-      fs.rm(legacyExtractedPath(this.directory, source), { force: true }),
-    ]);
-  }
-
-  private async migrateLegacyExtracted(
-    files: readonly ExtractedFile[],
-  ): Promise<void> {
-    const diskPaths = new Set(
-      (await listJsonFiles(path.join(this.directory, 'extracted'))).map(
-        (file) => path.resolve(file),
-      ),
-    );
-    for (const source of new Set(files.map((file) => file.source))) {
-      const legacy = legacyExtractedPath(this.directory, source);
-      if (!diskPaths.has(path.resolve(legacy))) continue;
-      const value = await readJson(legacy);
-      if (value === undefined) continue;
-      const current = extractedPath(this.directory, source);
-      if (!diskPaths.has(path.resolve(current))) {
-        await this.writeJson(current, parseExtractedFile(value));
-      }
-      await fs.rm(legacy, { force: true });
-      this.lastWritten.delete(path.resolve(legacy));
-    }
+    await fs.rm(extractedPath(this.directory, source), { force: true });
   }
 
   private async writeJson(file: string, value: unknown): Promise<void> {

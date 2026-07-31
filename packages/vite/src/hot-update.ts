@@ -7,7 +7,11 @@ import type {
 import type { TranslationHookBinding } from './extractor.js';
 import type { DevStateTaskRunner } from './dev-state-queue.js';
 import type { FileStore } from './file-store.js';
-import { extractFrameworkSource, type AiI18nFramework } from './framework.js';
+import {
+  extractFrameworkSource,
+  frameworkTranslationAutoImports,
+  type AiI18nFramework,
+} from './framework.js';
 import { sourceUpdateOptions } from './plugin-utils.js';
 import type { ProjectState } from './project-state.js';
 
@@ -76,6 +80,9 @@ export function createHotUpdateHandler(dependencies: HotUpdateDependencies) {
 
       const code = options.type === 'delete' ? undefined : await options.read();
       const framework = dependencies.framework();
+      const translationAutoImports = dependencies.autoImport()
+        ? frameworkTranslationAutoImports(framework)
+        : false;
       const extraction =
         code === undefined
           ? undefined
@@ -91,7 +98,7 @@ export function createHotUpdateHandler(dependencies: HotUpdateDependencies) {
                 extraction,
                 code!,
                 dependencies.translationHooks(),
-                dependencies.autoImport(),
+                translationAutoImports,
               ),
             )?.affectedModuleIds ?? []);
       const cache = await fileStore.sync(project.snapshot());

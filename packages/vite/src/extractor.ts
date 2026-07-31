@@ -19,7 +19,12 @@ export interface RegistrationInsertion {
 export interface SourceExtraction {
   analysisCode: string;
   analysisLang?: AnalysisLanguage;
+  autoImportCode?: string;
+  autoImportLang?: AnalysisLanguage;
   mapLocation(location: SourceLocation): SourceLocation;
   registration?: RegistrationInsertion;
+  templateRegistration?: RegistrationInsertion;
   macroCalls?: DefineI18nMessagesCall[];
+  templateAutoImportCandidates?: readonly string[];
+  templateImports?: readonly string[];
 }

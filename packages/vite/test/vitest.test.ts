@@ -1,4 +1,5 @@
 import type { Plugin, ResolvedConfig } from 'vite';
+import { parse } from '@vue/compiler-sfc';
 import { expect, test } from 'vitest';
 import { aiI18nVitest } from '../src/vitest';
 
@@ -52,10 +53,10 @@ test.each([
   },
   {
     expected:
-      'import { useI18n, t, setLang, getLang, getLangs, getLangLoadState, subscribe, tRef } from "virtual:ai-i18n";',
+      'import { useI18n, t, setLang, getLang, getLangs, getLangLoadState, subscribe, tRef, i18nComputed, tComputed } from "virtual:ai-i18n";',
     framework: 'vue' as const,
     source:
-      "useI18n(); t('Vue'); setLang('en-US'); getLang(); getLangs(); getLangLoadState(); subscribe(listener); tRef('Vue Ref')",
+      "useI18n(); t('Vue'); setLang('en-US'); getLang(); getLangs(); getLangLoadState(); subscribe(listener); tRef('Vue Ref'); i18nComputed(); tComputed('Options')",
   },
   {
     expected:
@@ -141,7 +142,68 @@ test('Vitest plugin injects Vue auto imports inside script setup', async () => {
   );
 });
 
-test('Vitest plugin exposes tRef only in the Vue runtime', () => {
+test('Vitest plugin injects Options API helpers into ordinary Vue scripts', async () => {
+  const plugin = aiI18nVitest({
+    sourceLang: 'zh-CN',
+    locales: [{ value: 'zh-CN', label: '中文' }],
+    framework: 'vue',
+    autoImport: true,
+  });
+  const result = await callHook<Promise<{ code: string; map: unknown } | null>>(
+    plugin.transform,
+    [
+      '<script lang="ts">',
+      'export default {',
+      '  computed: {',
+      '    ...i18nComputed(),',
+      "    label: tComputed('保存'),",
+      '  },',
+      '}',
+      '</script>',
+      '<template>{{ label }} · {{ currentLang }}</template>',
+    ].join('\n'),
+    '/workspace/src/OptionsPanel.vue',
+  );
+
+  expect(result?.code).toContain(
+    'import { i18nComputed, tComputed } from "virtual:ai-i18n";',
+  );
+});
+
+test('Vitest plugin preserves dual-script scopes for auto imports', async () => {
+  const plugin = aiI18nVitest({
+    sourceLang: 'zh-CN',
+    locales: [{ value: 'zh-CN', label: '中文' }],
+    framework: 'vue',
+    autoImport: true,
+  });
+  const result = await callHook<Promise<{ code: string; map: unknown } | null>>(
+    plugin.transform,
+    [
+      '<script>',
+      "const result = setLang('en-US')",
+      'export default { data: () => ({ result }) }',
+      '</script>',
+      '<script setup>',
+      'const setLang = (value) => value',
+      '</script>',
+      "<template>{{ result }} {{ setLang('local') }}</template>",
+    ].join('\n'),
+    '/workspace/src/DualShadow.vue',
+  );
+  const descriptor = parse(result!.code, {
+    filename: 'DualShadow.vue',
+  }).descriptor;
+
+  expect(descriptor.script?.content).toContain(
+    'import { setLang } from "virtual:ai-i18n";',
+  );
+  expect(descriptor.scriptSetup?.content).not.toContain(
+    'import { setLang } from "virtual:ai-i18n";',
+  );
+});
+
+test('Vitest plugin exposes Vue-only reactive helpers in the Vue runtime', () => {
   const plugin = aiI18nVitest({
     sourceLang: 'zh-CN',
     locales: [{ value: 'zh-CN', label: '中文' }],
@@ -152,7 +214,7 @@ test('Vitest plugin exposes tRef only in the Vue runtime', () => {
 
   expect(code).toContain("from '@ai-i18n/vite/vue'");
   expect(code).toContain(
-    'export const { useI18n, tRef } = createVueI18nAdapter(runtime)',
+    'export const { t, useI18n, tRef, i18nComputed, tComputed } = createVueI18nAdapter(runtime)',
   );
 });
 

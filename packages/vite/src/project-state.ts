@@ -1,4 +1,3 @@
-import path from 'node:path';
 import {
   type ModuleMessages,
   type TranslationMemoryFile,
@@ -6,8 +5,10 @@ import {
   type TranslationValue,
   resolveTranslationOverride,
 } from '@ai-i18n/core';
-import { diagnosticMessage } from '@ai-i18n/analyzer';
-import { normalizePath } from 'vite';
+import {
+  diagnosticMessage,
+  type TranslationAutoImports,
+} from '@ai-i18n/analyzer';
 import { Analyzer, analyzeModule, extractMessages } from './yuku-analyzer.js';
 import type { ExtractResult, ExtractedMessage } from './yuku-analyzer.js';
 import type {
@@ -30,6 +31,11 @@ import type {
   ProviderRequest,
   ProviderResult,
 } from './provider-coordinator.js';
+import { normalizeProjectId, resolutionKey } from './project-paths.js';
+import {
+  registrationLoadFiles,
+  registrationWatchFiles,
+} from './project-registration-files.js';
 
 export type { ProjectSnapshot } from './project-snapshot.js';
 export type {
@@ -59,7 +65,10 @@ export class ProjectState {
     string,
     readonly TranslationHookBinding[]
   >();
-  private readonly autoImportRuntime = new Set<string>();
+  private readonly autoImportRuntime = new Map<
+    string,
+    TranslationAutoImports
+  >();
 
   constructor(
     readonly root: string,
@@ -72,22 +81,7 @@ export class ProjectState {
   }
 
   normalizeId(id: string): string | null {
-    const cleanId = normalizePath(id.split('?')[0]!.replaceAll('\\', '/'));
-    if (cleanId.includes('/node_modules/') || cleanId.startsWith('\0'))
-      return null;
-    const cleanRoot = normalizePath(this.root.replaceAll('\\', '/'));
-    if (WINDOWS_ABSOLUTE_RE.test(cleanId)) {
-      if (
-        !WINDOWS_ABSOLUTE_RE.test(cleanRoot) ||
-        cleanId.slice(0, 2).toLowerCase() !==
-          cleanRoot.slice(0, 2).toLowerCase()
-      ) {
-        return null;
-      }
-      return normalizePath(path.win32.relative(cleanRoot, cleanId));
-    }
-    if (!path.isAbsolute(cleanId)) return cleanId;
-    return normalizePath(path.relative(cleanRoot, cleanId));
+    return normalizeProjectId(this.root, id);
   }
 
   update(
@@ -98,7 +92,7 @@ export class ProjectState {
       analysisLang?: AnalysisLanguage;
       mapLocation?: (location: SourceLocation) => SourceLocation;
       translationHooks?: readonly TranslationHookBinding[];
-      autoImportRuntime?: boolean;
+      autoImportRuntime?: TranslationAutoImports;
       force?: boolean;
     } = {},
   ): ProjectUpdate | null {
@@ -130,8 +124,11 @@ export class ProjectState {
     } else {
       this.translationHooks.delete(moduleId);
     }
-    if (options.autoImportRuntime) this.autoImportRuntime.add(moduleId);
-    else this.autoImportRuntime.delete(moduleId);
+    if (options.autoImportRuntime) {
+      this.autoImportRuntime.set(moduleId, options.autoImportRuntime);
+    } else {
+      this.autoImportRuntime.delete(moduleId);
+    }
     const affectedModuleIds = this.refresh(moduleId);
     return {
       moduleId,
@@ -190,27 +187,11 @@ export class ProjectState {
   }
 
   registrationWatchFiles(moduleId: string): string[] {
-    this.analyzer.link();
-    const queue = [moduleId];
-    const watched = new Set<string>();
-    while (queue.length) {
-      const currentId = queue.shift()!;
-      if (watched.has(currentId)) continue;
-      watched.add(currentId);
-      const current = this.analyzer.module(currentId);
-      if (current) {
-        queue.push(
-          ...current.dependencies.map((dependency) => dependency.path),
-        );
-      }
-    }
-    return [...watched].map((source) => path.resolve(this.root, source));
+    return registrationWatchFiles(this.analyzer, this.root, moduleId);
   }
 
   registrationLoadFiles(moduleId: string): string[] {
-    return (this.modules.get(moduleId)?.dependencies ?? []).map((source) =>
-      path.resolve(this.root, source),
-    );
+    return registrationLoadFiles(this.modules, this.root, moduleId);
   }
 
   setResolution(
@@ -397,7 +378,7 @@ export class ProjectState {
         module,
         undefined,
         this.translationHooks.get(moduleId),
-        this.autoImportRuntime.has(moduleId),
+        this.autoImportRuntime.get(moduleId) ?? false,
       );
       const mapLocation = this.locationMappers.get(moduleId);
       this.modules.set(
@@ -409,10 +390,4 @@ export class ProjectState {
     }
     return affected;
   }
-}
-
-const WINDOWS_ABSOLUTE_RE = /^[A-Za-z]:\//;
-
-function resolutionKey(importer: string, specifier: string) {
-  return `${importer}\0${specifier}`;
 }

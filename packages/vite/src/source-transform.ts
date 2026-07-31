@@ -12,6 +12,7 @@ import type { FileStore } from './file-store.js';
 import {
   extractFrameworkSource,
   frameworkAutoImports,
+  frameworkTranslationAutoImports,
   type AiI18nFramework,
 } from './framework.js';
 import { shouldIgnoreSource, sourceUpdateOptions } from './plugin-utils.js';
@@ -79,13 +80,21 @@ export function createSourceTransformHandler(
     await dependencies.ready();
 
     const autoImport = dependencies.autoImport();
+    const translationAutoImports = autoImport
+      ? frameworkTranslationAutoImports(framework)
+      : false;
     const translationHooks = dependencies.translationHooks();
     const project = dependencies.state();
     const initialUpdate = await dependencies.runStateTask(() =>
       project.update(
         extraction?.analysisCode ?? code,
         id,
-        sourceUpdateOptions(extraction, code, translationHooks, autoImport),
+        sourceUpdateOptions(
+          extraction,
+          code,
+          translationHooks,
+          translationAutoImports,
+        ),
       ),
     );
     if (!initialUpdate) return null;
@@ -106,7 +115,7 @@ export function createSourceTransformHandler(
             extraction,
             code,
             translationHooks,
-            autoImport,
+            translationAutoImports,
           ),
           force: true,
         })!;
@@ -129,10 +138,19 @@ export function createSourceTransformHandler(
       }
       dependencies.requestMissingTranslations(update.affectedModuleIds);
       // 只注入没有本地 symbol 的值引用，避免覆盖用户自己的同名函数或变量。
+      const autoImportModule =
+        extraction?.autoImportCode === undefined
+          ? currentModule
+          : analyzeModule(
+              extraction.autoImportCode,
+              `${id.split('?')[0] ?? id}?auto-import`,
+              undefined,
+              extraction.autoImportLang,
+            );
       const unboundReferences = autoImport
         ? new Set(
             findUnboundReferences(
-              currentModule,
+              autoImportModule,
               new Set(frameworkAutoImports(framework)),
             ),
           )
@@ -140,12 +158,21 @@ export function createSourceTransformHandler(
       const autoImports = frameworkAutoImports(framework).filter((name) =>
         unboundReferences.has(name),
       );
+      const templateImports = [
+        ...(extraction?.templateImports ?? []),
+        ...(autoImport ? (extraction?.templateAutoImportCandidates ?? []) : []),
+      ];
       const needsRegistration = Boolean(
         result.messages.length || result.pending,
       );
       const macroCalls =
         extraction?.macroCalls ?? findDefineI18nMessagesCalls(currentModule);
-      if (!needsRegistration && !autoImports.length && !macroCalls.length) {
+      if (
+        !needsRegistration &&
+        !autoImports.length &&
+        !templateImports.length &&
+        !macroCalls.length
+      ) {
         return null;
       }
 
@@ -158,7 +185,11 @@ export function createSourceTransformHandler(
         ...(extraction?.registration
           ? { registration: extraction.registration }
           : {}),
+        ...(extraction?.templateRegistration
+          ? { templateRegistration: extraction.templateRegistration }
+          : {}),
         autoImports,
+        templateImports,
         needsRegistration,
         macroCalls,
       });

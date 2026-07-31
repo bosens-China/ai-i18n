@@ -101,45 +101,6 @@ describe('FileStore robustness', () => {
     expect(await listJsonFiles(directory)).toEqual([direct]);
   });
 
-  it('migrates legacy filenames and resolves their source from JSON', async () => {
-    const { root, state, store, source } = await setup();
-    const code = "import { t } from 'virtual:ai-i18n'; t('保存')";
-    await fs.writeFile(source, code);
-    const directory = path.join(root, 'i18n/extracted');
-    const legacy = path.join(directory, 'src_main.ts.json');
-    await fs.mkdir(directory, { recursive: true });
-    await fs.writeFile(
-      legacy,
-      JSON.stringify({
-        version: 1,
-        source: 'src/main.ts',
-        messages: [
-          {
-            id: '保存',
-            source: '保存',
-            locations: [{ line: 1, column: 39 }],
-          },
-        ],
-      }),
-    );
-
-    await expect(store.loadOptions([legacy])).resolves.toEqual({
-      preferredSources: ['src/main.ts'],
-    });
-    await store.sync(state.snapshot());
-
-    await expect(fs.access(legacy)).rejects.toMatchObject({ code: 'ENOENT' });
-    await expect(
-      fs.access(extractedTestPath(root, 'src/main.ts')),
-    ).resolves.toBeUndefined();
-    expect(await fs.readdir(directory)).toHaveLength(1);
-    expect(
-      await readJson<{ source: string }>(
-        extractedTestPath(root, 'src/main.ts'),
-      ),
-    ).toMatchObject({ source: 'src/main.ts' });
-  });
-
   it('keeps source structure when an externally edited extracted file is stale', async () => {
     const warnings: string[] = [];
     const { root, state, source } = await setup();

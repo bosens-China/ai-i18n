@@ -1,6 +1,9 @@
 import fs from 'node:fs';
 import type { LangOption } from '@ai-i18n/core';
-import { diagnosticMessage } from '@ai-i18n/analyzer';
+import {
+  diagnosticMessage,
+  type TranslationAutoImports,
+} from '@ai-i18n/analyzer';
 import { normalizePath } from 'vite';
 import type {
   AiI18nCacheOptions,
@@ -201,7 +204,7 @@ export function sourceUpdateOptions(
   extraction: SourceExtraction | undefined,
   sourceCode: string,
   translationHooks: readonly TranslationHookBinding[] = [],
-  autoImportRuntime = false,
+  autoImportRuntime: TranslationAutoImports = false,
 ) {
   if (!extraction && !translationHooks.length && !autoImportRuntime) {
     return undefined;

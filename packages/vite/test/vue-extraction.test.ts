@@ -1,12 +1,10 @@
-import fs from 'node:fs/promises';
-import os from 'node:os';
-import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { analyzeModule, extractMessages } from '../src';
 import {
   extractFrameworkSource,
   frameworkTranslationHooks,
 } from '../src/framework';
+import { locationOf } from './vue-extraction-test-utils';
 
 describe('Vue source extraction', () => {
   it('extracts script and template calls with original SFC locations', async () => {
@@ -57,7 +55,281 @@ const hookText = translate('Hook 文案')
       locationOf(source, "translate(LABEL, { comment: '标题上下文' })"),
       locationOf(source, "i18n.t('提示')"),
     ]);
-    expect(extraction.registration?.offset).toBe(source.indexOf('\n'));
+    expect(extraction.registration?.offset).toBe(
+      source.indexOf('\n', source.indexOf('<script lang="ts">')),
+    );
+    expect(extraction.templateRegistration?.offset).toBe(
+      source.indexOf('\n', source.indexOf('<script setup')),
+    );
+  });
+
+  it('extracts direct t calls from Options API scripts and templates', async () => {
+    const source = `<script lang="ts">
+import { defineComponent } from 'vue'
+import { t } from 'virtual:ai-i18n'
+export default defineComponent({
+  computed: {
+    label() { return t('计算属性') },
+  },
+  methods: {
+    t,
+    notify() { return t('方法') },
+  },
+})
+</script>
+<template>
+  <button :title="label" @click="notify">{{ t('模板') }}</button>
+</template>`;
+    const extraction = (await extractFrameworkSource(
+      source,
+      '/workspace/src/Options.vue',
+      'vue',
+    ))!;
+    const result = extractMessages(
+      analyzeModule(
+        extraction.analysisCode,
+        'src/Options.vue',
+        undefined,
+        extraction.analysisLang,
+      ),
+      undefined,
+      frameworkTranslationHooks('vue', false),
+    );
+
+    expect(result.messages.map((message) => message.source)).toEqual([
+      '计算属性',
+      '方法',
+      '模板',
+    ]);
+    expect(extraction.templateImports).toBeUndefined();
+    expect(
+      result.messages.map((message) =>
+        extraction.mapLocation(message.locations[0]!),
+      ),
+    ).toEqual([
+      locationOf(source, "t('计算属性')"),
+      locationOf(source, "t('方法')"),
+      locationOf(source, "t('模板')"),
+    ]);
+  });
+
+  it('extracts an aliased runtime t exposed as an Options method', async () => {
+    const source = `<script lang="ts">
+import { defineComponent } from 'vue'
+import { t as translateWithLongName } from 'virtual:ai-i18n'
+export default defineComponent({
+  methods: {
+    t: translateWithLongName,
+  },
+})
+</script>
+<template>{{ t('模板别名桥接') }} · {{ t('别名后的定位') }}</template>`;
+    const extraction = (await extractFrameworkSource(
+      source,
+      '/workspace/src/AliasedOptions.vue',
+      'vue',
+    ))!;
+    const result = extractMessages(
+      analyzeModule(
+        extraction.analysisCode,
+        'src/AliasedOptions.vue',
+        undefined,
+        extraction.analysisLang,
+      ),
+      undefined,
+      frameworkTranslationHooks('vue', false),
+    );
+
+    expect(result.messages.map((message) => message.source)).toEqual([
+      '模板别名桥接',
+      '别名后的定位',
+    ]);
+    expect(extraction.templateImports).toBeUndefined();
+    expect(
+      result.messages.map((message) =>
+        extraction.mapLocation(message.locations[0]!),
+      ),
+    ).toEqual([
+      locationOf(source, "t('模板别名桥接')"),
+      locationOf(source, "t('别名后的定位')"),
+    ]);
+  });
+
+  it('extracts an auto-imported t exposed as an Options method', async () => {
+    const source = `<script lang="ts">
+export default {
+  methods: {
+    t,
+  },
+}
+</script>
+<template>{{ t('模板自动桥接') }}</template>`;
+    const extraction = (await extractFrameworkSource(
+      source,
+      '/workspace/src/AutoOptions.vue',
+      'vue',
+    ))!;
+    const result = extractMessages(
+      analyzeModule(
+        extraction.analysisCode,
+        'src/AutoOptions.vue',
+        undefined,
+        extraction.analysisLang,
+      ),
+      undefined,
+      frameworkTranslationHooks('vue', true),
+      true,
+    );
+
+    expect(result.messages.map((message) => message.source)).toEqual([
+      '模板自动桥接',
+    ]);
+    expect(extraction.templateAutoImportCandidates).toBeUndefined();
+    expect(extraction.mapLocation(result.messages[0]!.locations[0]!)).toEqual(
+      locationOf(source, "t('模板自动桥接')"),
+    );
+  });
+
+  it('keeps a local Options method shorthand shadowed', async () => {
+    const source = `<script>
+const t = (value) => value
+export default {
+  methods: {
+    t,
+  },
+}
+</script>
+<template>{{ t('本地方法不提取') }}</template>`;
+    const extraction = (await extractFrameworkSource(
+      source,
+      '/workspace/src/LocalOptions.vue',
+      'vue',
+    ))!;
+    const result = extractMessages(
+      analyzeModule(
+        extraction.analysisCode,
+        'src/LocalOptions.vue',
+        undefined,
+        extraction.analysisLang,
+      ),
+      undefined,
+      frameworkTranslationHooks('vue', true),
+      true,
+    );
+
+    expect(result.messages).toEqual([]);
+  });
+
+  it.each([
+    ['before', '...extra,\n  methods: { t },'],
+    ['after', 'methods: { t },\n  ...extra,'],
+  ])(
+    'keeps dynamic template arguments local with a root spread %s methods',
+    async (_, options) => {
+      const source = `<script>
+const extra = {}
+export default {
+  ${options}
+}
+</script>
+<template>{{ t(props.label) }}</template>`;
+      const extraction = (await extractFrameworkSource(
+        source,
+        '/workspace/src/SpreadOptions.vue',
+        'vue',
+      ))!;
+      const result = extractMessages(
+        analyzeModule(
+          extraction.analysisCode,
+          'src/SpreadOptions.vue',
+          undefined,
+          extraction.analysisLang,
+        ),
+        undefined,
+        frameworkTranslationHooks('vue', true),
+        true,
+      );
+
+      expect(result).toMatchObject({ messages: [], warnings: [] });
+      expect(extraction.templateAutoImportCandidates).toBeUndefined();
+      expect(extraction.templateImports).toBeUndefined();
+    },
+  );
+
+  it('extracts tComputed calls from pure Options API computed entries', async () => {
+    const source = `<script lang="ts">
+import { defineComponent } from 'vue'
+import { i18nComputed, tComputed as translated } from 'virtual:ai-i18n'
+export default defineComponent({
+  computed: {
+    ...i18nComputed(),
+    label: translated('保存'),
+    greeting: translated\`你好 \${name}\`,
+    labels: translated({ cancel: '取消', states: ['等待中'] }),
+  },
+})
+</script>
+<template>{{ label }} · {{ currentLang }}</template>`;
+    const extraction = (await extractFrameworkSource(
+      source,
+      '/workspace/src/OptionsComputed.vue',
+      'vue',
+    ))!;
+    const result = extractMessages(
+      analyzeModule(
+        extraction.analysisCode,
+        'src/OptionsComputed.vue',
+        undefined,
+        extraction.analysisLang,
+      ),
+      undefined,
+      frameworkTranslationHooks('vue', false),
+    );
+
+    expect(result.messages.map((message) => message.source)).toEqual([
+      '保存',
+      '你好 {{0}}',
+      '取消',
+      '等待中',
+    ]);
+    expect(
+      result.messages.map((message) =>
+        extraction.mapLocation(message.locations[0]!),
+      ),
+    ).toEqual([
+      locationOf(source, "translated('保存')"),
+      locationOf(source, 'translated`你好 ${name}`'),
+      locationOf(source, "translated({ cancel: '取消'"),
+      locationOf(source, "translated({ cancel: '取消'"),
+    ]);
+  });
+
+  it('extracts a template-only t through Vue auto import', async () => {
+    const source = `<template>{{ t('模板自动导入') }}</template>`;
+    const extraction = (await extractFrameworkSource(
+      source,
+      '/workspace/src/TemplateOnly.vue',
+      'vue',
+    ))!;
+    const result = extractMessages(
+      analyzeModule(
+        extraction.analysisCode,
+        'src/TemplateOnly.vue',
+        undefined,
+        extraction.analysisLang,
+      ),
+      undefined,
+      frameworkTranslationHooks('vue', true),
+      true,
+    );
+
+    expect(result.messages.map((message) => message.source)).toEqual([
+      '模板自动导入',
+    ]);
+    expect(extraction.templateAutoImportCandidates).toEqual(['t']);
+    expect(extraction.mapLocation(result.messages[0]!.locations[0]!)).toEqual(
+      locationOf(source, "t('模板自动导入')"),
+    );
   });
 
   it('respects template aliases and local shadowing', async () => {
@@ -92,283 +364,4 @@ const items = [() => 'local']
       '提取别名',
     ]);
   });
-
-  it('keeps script and script-setup bindings in their actual scopes', async () => {
-    const source = `<script lang="ts">
-const LABEL = '普通脚本'
-</script>
-<script setup lang="ts">
-const { t } = useI18n()
-const LABEL = 'setup 脚本'
-</script>
-<template>{{ t(LABEL) }}</template>`;
-    const extraction = (await extractFrameworkSource(
-      source,
-      '/workspace/src/Dual.vue',
-      'vue',
-    ))!;
-    const result = extractMessages(
-      analyzeModule(
-        extraction.analysisCode,
-        'src/Dual.vue',
-        undefined,
-        extraction.analysisLang,
-      ),
-      undefined,
-      frameworkTranslationHooks('vue', true),
-    );
-
-    expect(result.warnings).toEqual([]);
-    expect(result.messages).toMatchObject([{ source: 'setup 脚本' }]);
-  });
-
-  it('extracts translations returned from an ordinary setup function', async () => {
-    const source = `<script lang="ts">
-export default {
-  setup() {
-    const { t: localT } = useI18n()
-    const translate = localT
-    const i18n = useI18n()
-    const translator = i18n
-    return { translate, api: translator }
-  },
-}
-</script>
-<template>
-  <p>{{ translate('普通 setup') }}</p>
-  <p>{{ api.t('对象返回') }}</p>
-</template>`;
-    const extraction = (await extractFrameworkSource(
-      source,
-      '/workspace/src/Options.vue',
-      'vue',
-    ))!;
-    const result = extractMessages(
-      analyzeModule(
-        extraction.analysisCode,
-        'src/Options.vue',
-        undefined,
-        extraction.analysisLang,
-      ),
-      undefined,
-      frameworkTranslationHooks('vue', true),
-    );
-
-    expect(result.messages.map((message) => message.source)).toEqual([
-      '普通 setup',
-      '对象返回',
-    ]);
-    expect(
-      result.messages.map((message) =>
-        extraction.mapLocation(message.locations[0]!),
-      ),
-    ).toEqual([
-      locationOf(source, "translate('普通 setup')"),
-      locationOf(source, "api.t('对象返回')"),
-    ]);
-  });
-
-  it('supports defineComponent setup without treating Options methods as t', async () => {
-    const source = `<script lang="ts">
-import { defineComponent } from 'vue'
-import { useI18n } from 'virtual:ai-i18n'
-export default defineComponent({
-  setup() {
-    const { t: translate } = useI18n()
-    return { translate }
-  },
-  methods: {
-    t(value: string) { return value },
-    label() { return this.t('this 不提取') },
-  },
-})
-</script>
-<template>
-  <p>{{ translate('defineComponent setup') }}</p>
-  <p>{{ t('Options method 不提取') }}</p>
-</template>`;
-    const extraction = (await extractFrameworkSource(
-      source,
-      '/workspace/src/Defined.vue',
-      'vue',
-    ))!;
-    const result = extractMessages(
-      analyzeModule(
-        extraction.analysisCode,
-        'src/Defined.vue',
-        undefined,
-        extraction.analysisLang,
-      ),
-      undefined,
-      frameworkTranslationHooks('vue', false),
-    );
-
-    expect(result.messages.map((message) => message.source)).toEqual([
-      'defineComponent setup',
-    ]);
-  });
-
-  it('ignores local, runtime, and ambiguous method bindings returned as t', async () => {
-    const source = `<script>
-import { t as runtimeT, useI18n } from 'virtual:ai-i18n'
-export default {
-  setup() {
-    const localT = (value) => value
-    const { t } = useI18n()
-    return { localT, runtimeT, t }
-  },
-  methods: {
-    t(value) { return value },
-  },
-}
-</script>
-<template>
-  {{ localT('局部不提取') }}
-  {{ runtimeT('顶层 runtime 不提取') }}
-  {{ t('同名 method 不提取') }}
-</template>`;
-    const extraction = (await extractFrameworkSource(
-      source,
-      '/workspace/src/Unsupported.vue',
-      'vue',
-    ))!;
-    const result = extractMessages(
-      analyzeModule(
-        extraction.analysisCode,
-        'src/Unsupported.vue',
-        undefined,
-        extraction.analysisLang,
-      ),
-      undefined,
-      frameworkTranslationHooks('vue', false),
-    );
-
-    expect(result.messages).toEqual([]);
-  });
-
-  it('rejects setup bindings with conditional return shapes', async () => {
-    const source = `<script>
-export default {
-  setup(useLocal) {
-    const localT = (value) => value
-    const { t } = useI18n()
-    if (useLocal) return { t: localT }
-    return { t }
-  },
-}
-</script>
-<template>{{ t('条件返回不提取') }}</template>`;
-    const extraction = (await extractFrameworkSource(
-      source,
-      '/workspace/src/Conditional.vue',
-      'vue',
-    ))!;
-    const result = extractMessages(
-      analyzeModule(
-        extraction.analysisCode,
-        'src/Conditional.vue',
-        undefined,
-        extraction.analysisLang,
-      ),
-      undefined,
-      frameworkTranslationHooks('vue', true),
-    );
-
-    expect(result.messages).toEqual([]);
-  });
-
-  it('maps an ordinary setup template on the same line as its tags', async () => {
-    const source =
-      "<script>export default { setup() { const { t } = useI18n(); return { t } } }</script><template>{{ t('同行模板') }}</template>";
-    const extraction = (await extractFrameworkSource(
-      source,
-      '/workspace/src/Inline.vue',
-      'vue',
-    ))!;
-    const result = extractMessages(
-      analyzeModule(
-        extraction.analysisCode,
-        'src/Inline.vue',
-        undefined,
-        extraction.analysisLang,
-      ),
-      undefined,
-      frameworkTranslationHooks('vue', true),
-    );
-
-    expect(result.messages).toHaveLength(1);
-    expect(extraction.mapLocation(result.messages[0]!.locations[0]!)).toEqual(
-      locationOf(source, "t('同行模板')"),
-    );
-  });
-
-  it('keeps non-HTML ordinary templates on the script-only path', async () => {
-    const source = `<script>
-import { t } from 'virtual:ai-i18n'
-export const label = t('脚本文案')
-</script>
-<template lang="pug">p {{ t('Pug 模板不分析') }}</template>`;
-    const extraction = (await extractFrameworkSource(
-      source,
-      '/workspace/src/Pug.vue',
-      'vue',
-    ))!;
-    const result = extractMessages(
-      analyzeModule(
-        extraction.analysisCode,
-        'src/Pug.vue',
-        undefined,
-        extraction.analysisLang,
-      ),
-    );
-
-    expect(result.messages.map((message) => message.source)).toEqual([
-      '脚本文案',
-    ]);
-  });
-
-  it('creates a script setup block when an SFC has no writable script', async () => {
-    const extraction = await extractFrameworkSource(
-      `<template>{{ t('空脚本') }}</template>`,
-      '/workspace/src/Empty.vue',
-      'vue',
-    );
-
-    expect(extraction?.registration).toEqual({
-      offset: 0,
-      prefix: '<script setup>\n',
-      suffix: '</script>\n',
-    });
-  });
-
-  it('resolves imported props and emits types through the host Vue compiler', async () => {
-    const root = await fs.mkdtemp(path.join(os.tmpdir(), 'ai-i18n-vue-types-'));
-    await fs.writeFile(
-      path.join(root, 'contracts.ts'),
-      `export interface PanelProps {
-  label: string
-}
-export interface PanelEmits {
-  save: [value: string]
-}`,
-    );
-    const source = `<script setup lang="ts">
-import type { PanelEmits, PanelProps } from './contracts'
-defineProps<PanelProps>()
-defineEmits<PanelEmits>()
-</script>`;
-
-    try {
-      await expect(
-        extractFrameworkSource(source, path.join(root, 'Panel.vue'), 'vue'),
-      ).resolves.toMatchObject({ analysisLang: 'ts' });
-    } finally {
-      await fs.rm(root, { recursive: true, force: true });
-    }
-  });
 });
-
-function locationOf(source: string, value: string) {
-  const lines = source.slice(0, source.indexOf(value)).split('\n');
-  return { line: lines.length, column: lines.at(-1)?.length ?? 0 };
-}

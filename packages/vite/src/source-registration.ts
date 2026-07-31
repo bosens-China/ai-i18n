@@ -16,7 +16,9 @@ interface SourceRegistrationOptions {
   registerPrefix: string;
   module: Module;
   registration?: RegistrationInsertion;
+  templateRegistration?: RegistrationInsertion;
   autoImports: readonly string[];
+  templateImports: readonly string[];
   needsRegistration: boolean;
   macroCalls: readonly DefineI18nMessagesCall[];
 }
@@ -33,28 +35,105 @@ export function assertDirectDefineI18nMessagesCalls(module: Module): void {
 }
 
 export function sourceRegistration(options: SourceRegistrationOptions) {
-  const imports = [
-    ...(options.autoImports.length
-      ? [
-          `import { ${options.autoImports.join(', ')} } from ${JSON.stringify(AI_I18N_VIRTUAL_MODULE_ID)};`,
-        ]
+  const fallbackOffset = registrationImportOffset(
+    options.code,
+    options.module.ast.body,
+  );
+  const registration = options.registration ?? { offset: fallbackOffset };
+  const templateRegistration = options.templateRegistration ?? registration;
+  const sharesTarget = sameInsertion(registration, templateRegistration);
+  const templateBindings = createTemplateBindings(
+    options.templateImports,
+    options.code,
+  );
+  const templateNames = new Set(templateBindings.map(({ name }) => name));
+  const primarySpecifiers = [
+    ...new Set(
+      options.autoImports.filter(
+        (name) => !sharesTarget || !templateNames.has(name),
+      ),
+    ),
+    ...(sharesTarget
+      ? templateBindings.map(({ alias, name }) => `${name} as ${alias}`)
       : []),
+  ];
+  const primaryLines = [
+    ...runtimeImportLines(primarySpecifiers),
     ...(options.needsRegistration
       ? [
           `import ${JSON.stringify(`${options.registerPrefix}${encodeURIComponent(options.moduleId)}`)};`,
         ]
       : []),
+    ...(sharesTarget
+      ? templateBindings.map(({ alias, name }) => `const ${name} = ${alias};`)
+      : []),
   ];
-  const offset =
-    options.registration?.offset ??
-    registrationImportOffset(options.code, options.module.ast.body);
-  const injected = options.registration
-    ? `${options.registration.prefix ?? ''}${imports.join('\n')}\n${options.registration.suffix ?? ''}`
-    : `${offset ? '\n' : ''}${imports.join('\n')}\n`;
+  const templateLines = sharesTarget
+    ? []
+    : [
+        ...runtimeImportLines(
+          templateBindings.map(({ alias, name }) => `${name} as ${alias}`),
+        ),
+        ...templateBindings.map(
+          ({ alias, name }) => `const ${name} = ${alias};`,
+        ),
+      ];
   const transformed = new MagicString(options.code, { filename: options.id });
-  if (imports.length) transformed.appendLeft(offset, injected);
+  insertLines(
+    transformed,
+    registration,
+    primaryLines,
+    !options.registration && fallbackOffset > 0,
+  );
+  insertLines(transformed, templateRegistration, templateLines, false);
   eraseDefineI18nMessages(transformed, options.code, options.macroCalls);
   return transformedResult(transformed, options.id);
+}
+
+function createTemplateBindings(names: readonly string[], code: string) {
+  const used = new Set<string>();
+  return [...new Set(names)].map((name) => {
+    const base = `__aiI18nTemplate${name[0]!.toUpperCase()}${name.slice(1)}`;
+    let alias = base;
+    let index = 0;
+    while (code.includes(alias) || used.has(alias)) {
+      alias = `${base}${++index}`;
+    }
+    used.add(alias);
+    return { alias, name };
+  });
+}
+
+function runtimeImportLines(specifiers: readonly string[]): string[] {
+  return specifiers.length
+    ? [
+        `import { ${specifiers.join(', ')} } from ${JSON.stringify(AI_I18N_VIRTUAL_MODULE_ID)};`,
+      ]
+    : [];
+}
+
+function sameInsertion(
+  left: RegistrationInsertion,
+  right: RegistrationInsertion,
+): boolean {
+  return (
+    left.offset === right.offset &&
+    left.prefix === right.prefix &&
+    left.suffix === right.suffix
+  );
+}
+
+function insertLines(
+  transformed: MagicString,
+  insertion: RegistrationInsertion,
+  lines: readonly string[],
+  leadingNewline: boolean,
+): void {
+  if (!lines.length) return;
+  transformed.appendLeft(
+    insertion.offset,
+    `${insertion.prefix ?? (leadingNewline ? '\n' : '')}${lines.join('\n')}\n${insertion.suffix ?? ''}`,
+  );
 }
 
 export function transformDefineI18nMessages(
