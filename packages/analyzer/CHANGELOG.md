@@ -1,5 +1,13 @@
 # @ai-i18n/analyzer
 
+## [1.0.0-alpha.10](https://github.com/bosens-China/ai-i18n/compare/analyzer-v1.0.0-alpha.9...analyzer-v1.0.0-alpha.10) (2026-07-31)
+
+
+### Features
+
+* **analyzer:** 完善 Vue 模板与运行时绑定分析 ([7995473](https://github.com/bosens-China/ai-i18n/commit/799547390f6eecc4293ddbe04cc31feee7834bdc))
+* **analyzer:** 支持 Vue 普通脚本模板绑定 ([6f30456](https://github.com/bosens-China/ai-i18n/commit/6f304562f9946647dc86b76ebfe7265801c6f115))
+
 ## [1.0.0-alpha.9](https://github.com/bosens-China/ai-i18n/compare/analyzer-v1.0.0-alpha.8...analyzer-v1.0.0-alpha.9) (2026-07-30)
 
 
