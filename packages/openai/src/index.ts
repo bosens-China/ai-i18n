@@ -8,6 +8,7 @@ import type {
   Translator,
 } from '@ai-i18n/core';
 import { hasSameTemplateTokens } from '@ai-i18n/core';
+import { diagnosticMessage } from '@ai-i18n/core/diagnostics';
 
 export interface LangSmithOptions {
   apiKey: string;
@@ -232,24 +233,6 @@ function safeProviderError(error: unknown): Error {
     );
   }
   return new Error('[ai-i18n/openai] translation request failed');
-}
-
-function diagnosticMessage(chinese: string, english: string): string {
-  const value = process.env.AI_I18N_DIAGNOSTIC_LOCALE;
-  const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-  const automaticLocale =
-    timeZone === 'Asia/Shanghai' || timeZone === 'Asia/Urumqi'
-      ? 'zh-CN'
-      : 'en-US';
-  if (!value || value === 'auto')
-    return automaticLocale === 'zh-CN' ? chinese : english;
-  if (value === 'zh-CN') return chinese;
-  if (value === 'en-US') return english;
-  throw new Error(
-    automaticLocale === 'zh-CN'
-      ? `[ai-i18n] 不支持 AI_I18N_DIAGNOSTIC_LOCALE“${value}”；应为“auto”“zh-CN”或“en-US”。`
-      : `[ai-i18n] Unsupported AI_I18N_DIAGNOSTIC_LOCALE "${value}"; expected "auto", "zh-CN", or "en-US".`,
-  );
 }
 
 function requiredOption(value: string, name: string): string {

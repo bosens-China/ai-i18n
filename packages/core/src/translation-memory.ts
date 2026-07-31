@@ -152,7 +152,7 @@ async function readJson(file: string): Promise<unknown | undefined> {
   }
 }
 
-function stableJson(value: unknown): string {
+export function stableJson(value: unknown): string {
   return `${JSON.stringify(sortValue(value), null, 2)}\n`;
 }
 

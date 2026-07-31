@@ -1,6 +1,9 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { diagnosticMessage } from '@ai-i18n/analyzer';
+import { stableJson } from '@ai-i18n/core/translation-memory';
+
+export { stableJson };
 
 export async function readJson(file: string): Promise<unknown | undefined> {
   const content = await readText(file);
@@ -49,26 +52,11 @@ export async function fileExists(file: string): Promise<boolean> {
   }
 }
 
-export function stableJson(value: unknown): string {
-  return `${JSON.stringify(sortValue(value), null, 2)}\n`;
-}
-
 function isNotFound(error: unknown): boolean {
   return (
     typeof error === 'object' &&
     error !== null &&
     'code' in error &&
     error.code === 'ENOENT'
-  );
-}
-
-function sortValue(value: unknown): unknown {
-  if (Array.isArray(value)) return value.map(sortValue);
-  if (!value || typeof value !== 'object') return value;
-  // 使用固定码元顺序，避免生成文件随系统 locale 改变。
-  return Object.fromEntries(
-    Object.entries(value)
-      .sort(([left], [right]) => (left < right ? -1 : left > right ? 1 : 0))
-      .map(([key, entry]) => [key, sortValue(entry)]),
   );
 }
