@@ -6,6 +6,10 @@ import {
 import { diagnosticMessage } from '@ai-i18n/analyzer';
 import { createBuildWatchState } from './build-watch.js';
 import { createDevUpdateSender } from './dev-updates.js';
+import {
+  createDevStateQueue,
+  type DevStateTaskRunner,
+} from './dev-state-queue.js';
 import { FileStore } from './file-store.js';
 import {
   frameworkTranslationHooks,
@@ -58,6 +62,12 @@ export function aiI18n(options: AiI18nOptions): Plugin {
   let coordinator: ProviderCoordinator | undefined;
   let devHot: NormalizedHotChannel | undefined;
   let warnedSsr = false;
+  const queueDevStateTask = createDevStateQueue();
+
+  const runStateTask: DevStateTaskRunner = (task) =>
+    config?.command === 'build'
+      ? Promise.resolve().then(task)
+      : queueDevStateTask(task);
 
   function currentState() {
     if (!state) {
@@ -121,6 +131,7 @@ export function aiI18n(options: AiI18nOptions): Plugin {
     sendTranslationUpdates,
     sendLocaleUpdates,
     requestMissingTranslations,
+    runStateTask,
   });
 
   const transformSource = createSourceTransformHandler({
@@ -141,6 +152,7 @@ export function aiI18n(options: AiI18nOptions): Plugin {
       warnedSsr = true;
       warn();
     },
+    runStateTask,
   });
 
   const transformIndexHtml = createHtmlTransformHandler({
@@ -155,6 +167,7 @@ export function aiI18n(options: AiI18nOptions): Plugin {
     setDevHot(hot) {
       devHot = hot;
     },
+    runStateTask,
   });
 
   return {
@@ -208,20 +221,22 @@ export function aiI18n(options: AiI18nOptions): Plugin {
         coordinator = new ProviderCoordinator(translator, {
           ...providerOptions,
           async onResults(results) {
-            const project = currentState();
-            const affected = project.applyTranslations(results);
-            if (config?.command !== 'build') {
-              const cache = await currentStore().sync(project.snapshot());
-              project.hydrateCache(cache);
-              project.hydrateOverrides(await currentStore().loadOverrides());
-            }
-            if (normalized.loading) {
-              if (affected.length) {
-                sendLocaleUpdates(results.map((result) => result.locale));
+            await runStateTask(async () => {
+              const project = currentState();
+              const affected = project.applyTranslations(results);
+              if (config?.command !== 'build') {
+                const cache = await currentStore().sync(project.snapshot());
+                project.hydrateCache(cache);
+                project.hydrateOverrides(await currentStore().loadOverrides());
               }
-            } else {
-              sendTranslationUpdates(affected);
-            }
+              if (normalized.loading) {
+                if (affected.length) {
+                  sendLocaleUpdates(results.map((result) => result.locale));
+                }
+              } else {
+                sendTranslationUpdates(affected);
+              }
+            });
           },
           onWarning(message) {
             const warning = `[ai-i18n] ${message}`;
@@ -299,6 +314,7 @@ export function aiI18n(options: AiI18nOptions): Plugin {
           flush: () => coordinator?.flush() ?? Promise.resolve(),
           reconcile: (moduleIds, complete) =>
             buildWatch.reconcile(moduleIds, complete),
+          runStateTask,
         });
         if (localeModule !== undefined) return localeModule;
         const moduleId = decodeURIComponent(
@@ -311,6 +327,7 @@ export function aiI18n(options: AiI18nOptions): Plugin {
           store: currentStore(),
           flush: () => coordinator?.flush() ?? Promise.resolve(),
           ...(normalized.loading ? { locale: normalized.sourceLang } : {}),
+          runStateTask,
         });
       },
     },

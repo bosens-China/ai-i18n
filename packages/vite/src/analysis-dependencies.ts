@@ -1,4 +1,5 @@
 import { normalizePath } from 'vite';
+import type { DevStateTaskRunner } from './dev-state-queue.js';
 import type { ProjectState } from './project-state.js';
 
 interface AnalysisPluginContext {
@@ -17,9 +18,10 @@ export async function resolveAnalysisDependencies(
   importer: string,
   moduleId: string,
   pending: boolean,
+  runStateTask: DevStateTaskRunner,
 ): Promise<boolean> {
   let changed = false;
-  const analyzed = project.analyzer.module(moduleId);
+  const analyzed = await runStateTask(() => project.analyzer.module(moduleId));
   if (!analyzed) return changed;
 
   for (const imported of analyzed.imports) {
@@ -33,10 +35,14 @@ export async function resolveAnalysisDependencies(
     const resolvedId = normalizePath(resolved.id.replaceAll('\\', '/'));
     context.addWatchFile(resolvedId);
     changed =
-      project.setResolution(importer, imported.specifier, resolvedId) ||
-      changed;
+      (await runStateTask(() =>
+        project.setResolution(importer, imported.specifier, resolvedId),
+      )) || changed;
     const targetId = project.normalizeId(resolvedId);
-    if (pending && targetId && !project.analyzer.module(targetId)) {
+    const shouldLoad = await runStateTask(
+      () => pending && Boolean(targetId && !project.analyzer.module(targetId)),
+    );
+    if (shouldLoad) {
       await context.load({ id: resolvedId });
       changed = true;
     }

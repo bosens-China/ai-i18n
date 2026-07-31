@@ -6,6 +6,7 @@ import type {
   ResolvedConfig,
 } from 'vite';
 import { resolveAnalysisDependencies } from './analysis-dependencies.js';
+import type { DevStateTaskRunner } from './dev-state-queue.js';
 import type { TranslationHookBinding } from './extractor.js';
 import type { FileStore } from './file-store.js';
 import {
@@ -36,6 +37,7 @@ interface SourceTransformDependencies {
   autoImport(): boolean;
   translationHooks(): readonly TranslationHookBinding[];
   requestMissingTranslations(moduleIds: readonly string[]): void;
+  runStateTask: DevStateTaskRunner;
   setDevHot(hot: NormalizedHotChannel): void;
   warnSsrOnce(warn: () => void): void;
 }
@@ -76,15 +78,18 @@ export function createSourceTransformHandler(
     }
     await dependencies.ready();
 
-    const project = dependencies.state();
     const autoImport = dependencies.autoImport();
     const translationHooks = dependencies.translationHooks();
-    let update = project.update(
-      extraction?.analysisCode ?? code,
-      id,
-      sourceUpdateOptions(extraction, code, translationHooks, autoImport),
+    const project = dependencies.state();
+    const initialUpdate = await dependencies.runStateTask(() =>
+      project.update(
+        extraction?.analysisCode ?? code,
+        id,
+        sourceUpdateOptions(extraction, code, translationHooks, autoImport),
+      ),
     );
-    if (!update) return null;
+    if (!initialUpdate) return null;
+    let update = initialUpdate;
     const { moduleId } = update;
     const analysisChanged = await resolveAnalysisDependencies(
       this,
@@ -92,61 +97,71 @@ export function createSourceTransformHandler(
       id,
       moduleId,
       update.result.pending,
+      dependencies.runStateTask,
     );
-    if (analysisChanged) {
-      update = project.update(extraction?.analysisCode ?? code, id, {
-        ...sourceUpdateOptions(extraction, code, translationHooks, autoImport),
-        force: true,
-      })!;
-    }
-    const currentModule = project.analyzer.module(moduleId)!;
-    assertDirectDefineI18nMessagesCalls(currentModule);
-    const { result } = update;
-    for (const warning of result.warnings) {
-      this.warn({
-        message: warning.message,
-        id,
-        loc: { line: warning.line, column: warning.column },
-      });
-    }
-    if (config?.command !== 'build') {
-      const store = dependencies.store();
-      const cache = await store.sync(project.snapshot());
-      project.hydrateCache(cache);
-      project.hydrateOverrides(await store.loadOverrides());
-    }
-    dependencies.requestMissingTranslations(update.affectedModuleIds);
-    // 只注入没有本地 symbol 的值引用，避免覆盖用户自己的同名函数或变量。
-    const unboundReferences = autoImport
-      ? new Set(
-          findUnboundReferences(
-            currentModule,
-            new Set(frameworkAutoImports(framework)),
+    return dependencies.runStateTask(async () => {
+      if (analysisChanged) {
+        update = project.update(extraction?.analysisCode ?? code, id, {
+          ...sourceUpdateOptions(
+            extraction,
+            code,
+            translationHooks,
+            autoImport,
           ),
-        )
-      : new Set<string>();
-    const autoImports = frameworkAutoImports(framework).filter((name) =>
-      unboundReferences.has(name),
-    );
-    const needsRegistration = Boolean(result.messages.length || result.pending);
-    const macroCalls =
-      extraction?.macroCalls ?? findDefineI18nMessagesCalls(currentModule);
-    if (!needsRegistration && !autoImports.length && !macroCalls.length) {
-      return null;
-    }
+          force: true,
+        })!;
+      }
+      const currentModule = project.analyzer.module(moduleId)!;
+      assertDirectDefineI18nMessagesCalls(currentModule);
+      const { result } = update;
+      for (const warning of result.warnings) {
+        this.warn({
+          message: warning.message,
+          id,
+          loc: { line: warning.line, column: warning.column },
+        });
+      }
+      if (config?.command !== 'build') {
+        const store = dependencies.store();
+        const cache = await store.sync(project.snapshot());
+        project.hydrateCache(cache);
+        project.hydrateOverrides(await store.loadOverrides());
+      }
+      dependencies.requestMissingTranslations(update.affectedModuleIds);
+      // 只注入没有本地 symbol 的值引用，避免覆盖用户自己的同名函数或变量。
+      const unboundReferences = autoImport
+        ? new Set(
+            findUnboundReferences(
+              currentModule,
+              new Set(frameworkAutoImports(framework)),
+            ),
+          )
+        : new Set<string>();
+      const autoImports = frameworkAutoImports(framework).filter((name) =>
+        unboundReferences.has(name),
+      );
+      const needsRegistration = Boolean(
+        result.messages.length || result.pending,
+      );
+      const macroCalls =
+        extraction?.macroCalls ?? findDefineI18nMessagesCalls(currentModule);
+      if (!needsRegistration && !autoImports.length && !macroCalls.length) {
+        return null;
+      }
 
-    return sourceRegistration({
-      code,
-      id,
-      moduleId,
-      registerPrefix: dependencies.registerPrefix,
-      module: currentModule,
-      ...(extraction?.registration
-        ? { registration: extraction.registration }
-        : {}),
-      autoImports,
-      needsRegistration,
-      macroCalls,
+      return sourceRegistration({
+        code,
+        id,
+        moduleId,
+        registerPrefix: dependencies.registerPrefix,
+        module: currentModule,
+        ...(extraction?.registration
+          ? { registration: extraction.registration }
+          : {}),
+        autoImports,
+        needsRegistration,
+        macroCalls,
+      });
     });
   };
 }

@@ -1,4 +1,5 @@
 import { normalizePath } from 'vite';
+import type { DevStateTaskRunner } from './dev-state-queue.js';
 import type { FileStore } from './file-store.js';
 import type { ProjectState } from './project-state.js';
 import { registerCode } from './virtual-modules.js';
@@ -14,6 +15,7 @@ interface RegistrationLoadOptions {
   project: ProjectState;
   store: FileStore;
   flush: () => Promise<void>;
+  runStateTask?: DevStateTaskRunner;
   locale?: string;
 }
 
@@ -22,10 +24,19 @@ export async function loadRegistration(
   options: RegistrationLoadOptions,
 ): Promise<string> {
   const { moduleId, project, store } = options;
-  for (const file of project.registrationWatchFiles(moduleId)) {
+  const runStateTask: DevStateTaskRunner =
+    options.runStateTask ??
+    ((task) => {
+      return Promise.resolve().then(task);
+    });
+  const projectFiles = await runStateTask(() => ({
+    load: project.registrationLoadFiles(moduleId),
+    watch: project.registrationWatchFiles(moduleId),
+  }));
+  for (const file of projectFiles.watch) {
     context.addWatchFile(file);
   }
-  for (const file of project.registrationLoadFiles(moduleId)) {
+  for (const file of projectFiles.load) {
     await context.load({ id: normalizePath(file) });
   }
   for (const file of store.watchFiles(moduleId)) {
@@ -35,6 +46,8 @@ export async function loadRegistration(
     await options.flush();
     project.hydrateOverrides(await store.loadOverrides());
   }
-  const messages = project.registration(moduleId, options.locale);
+  const messages = await runStateTask(() =>
+    project.registration(moduleId, options.locale),
+  );
   return messages ? registerCode(moduleId, messages) : 'export {}';
 }

@@ -1,4 +1,5 @@
 import path from 'node:path';
+import type { DevStateTaskRunner } from './dev-state-queue.js';
 import type { FileStore } from './file-store.js';
 import {
   fillLocaleModule,
@@ -22,6 +23,7 @@ interface LocaleModuleLoadOptions {
   store: FileStore;
   flush: () => Promise<void>;
   reconcile: (moduleIds: Iterable<string>, complete?: boolean) => Promise<void>;
+  runStateTask: DevStateTaskRunner;
 }
 
 export async function loadLocaleModule(
@@ -34,15 +36,17 @@ export async function loadLocaleModule(
   if (!locale) return;
   const { project, store } = options;
   if (options.build) return localeModulePlaceholderCode(locale);
-  addLocaleWatchFiles(context, project, store);
-  return localeModuleCode(project.localeMessages(locale));
+  return options.runStateTask(() => {
+    addLocaleWatchFiles(context, project, store);
+    return localeModuleCode(project.localeMessages(locale));
+  });
 }
 
 export async function renderLocaleChunk(
   context: LocaleModuleLoadContext,
   code: string,
   facadeModuleId: string | null,
-  options: Omit<LocaleModuleLoadOptions, 'id' | 'build'>,
+  options: Omit<LocaleModuleLoadOptions, 'id' | 'build' | 'runStateTask'>,
 ): Promise<string | null> {
   const locale = facadeModuleId
     ? localeFromResolvedId(facadeModuleId)

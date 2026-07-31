@@ -5,6 +5,7 @@ import type {
   MinimalPluginContextWithoutEnvironment,
 } from 'vite';
 import type { TranslationHookBinding } from './extractor.js';
+import type { DevStateTaskRunner } from './dev-state-queue.js';
 import type { FileStore } from './file-store.js';
 import { extractFrameworkSource, type AiI18nFramework } from './framework.js';
 import { sourceUpdateOptions } from './plugin-utils.js';
@@ -23,6 +24,7 @@ interface HotUpdateDependencies {
   sendTranslationUpdates(moduleIds: readonly string[]): void;
   sendLocaleUpdates(locales: readonly string[]): void;
   requestMissingTranslations(moduleIds: readonly string[]): void;
+  runStateTask: DevStateTaskRunner;
 }
 
 type HotUpdateContext = MinimalPluginContextWithoutEnvironment & {
@@ -35,80 +37,87 @@ export function createHotUpdateHandler(dependencies: HotUpdateDependencies) {
     options: HotUpdateOptions,
   ): Promise<EnvironmentModuleNode[] | undefined> {
     if (this.environment.name !== 'client') return;
-    const project = dependencies.state();
     await dependencies.ready();
-    const fileStore = dependencies.store();
-    const localeSnapshot = dependencies.localeLoading
-      ? snapshotLocales(project)
-      : undefined;
-    if (fileStore.manages(options.file)) {
-      const content = await options.read();
-      if (fileStore.isOwnWrite(options.file, content)) return [];
-      const loadOptions = await fileStore.loadOptions([options.file]);
-      const affected = project.hydrateCache(await fileStore.load());
-      affected.push(
-        ...project.hydrateOverrides(await fileStore.loadOverrides()),
-      );
-      const reconciled = await fileStore.sync(project.snapshot(), loadOptions);
-      const updated = [...affected, ...project.hydrateCache(reconciled)];
-      updated.push(
-        ...project.hydrateOverrides(await fileStore.loadOverrides()),
-      );
+    return dependencies.runStateTask(async () => {
+      const project = dependencies.state();
+      const fileStore = dependencies.store();
+      const localeSnapshot = dependencies.localeLoading
+        ? snapshotLocales(project)
+        : undefined;
+      if (fileStore.manages(options.file)) {
+        const content = await options.read();
+        if (fileStore.isOwnWrite(options.file, content)) return [];
+        const loadOptions = await fileStore.loadOptions([options.file]);
+        const affected = project.hydrateCache(await fileStore.load());
+        affected.push(
+          ...project.hydrateOverrides(await fileStore.loadOverrides()),
+        );
+        const reconciled = await fileStore.sync(
+          project.snapshot(),
+          loadOptions,
+        );
+        const updated = [...affected, ...project.hydrateCache(reconciled)];
+        updated.push(
+          ...project.hydrateOverrides(await fileStore.loadOverrides()),
+        );
+        if (localeSnapshot) {
+          dependencies.sendLocaleUpdates(
+            changedLocales(project, localeSnapshot),
+          );
+        } else {
+          dependencies.sendTranslationUpdates(updated);
+        }
+        dependencies.requestMissingTranslations(updated);
+        return [];
+      }
+      if (!dependencies.sourcePattern.test(options.file)) return;
+      const moduleId = project.normalizeId(options.file);
+      if (!moduleId) return;
+
+      const code = options.type === 'delete' ? undefined : await options.read();
+      const framework = dependencies.framework();
+      const extraction =
+        code === undefined
+          ? undefined
+          : await extractFrameworkSource(code, options.file, framework);
+      if (extraction === null) return;
+      const affected =
+        options.type === 'delete'
+          ? project.remove(options.file)
+          : (project.update(
+              extraction?.analysisCode ?? code!,
+              options.file,
+              sourceUpdateOptions(
+                extraction,
+                code!,
+                dependencies.translationHooks(),
+                dependencies.autoImport(),
+              ),
+            )?.affectedModuleIds ?? []);
+      const cache = await fileStore.sync(project.snapshot());
+      project.hydrateCache(cache);
+      project.hydrateOverrides(await fileStore.loadOverrides());
+      dependencies.requestMissingTranslations(affected);
       if (localeSnapshot) {
         dependencies.sendLocaleUpdates(changedLocales(project, localeSnapshot));
-      } else {
-        dependencies.sendTranslationUpdates(updated);
       }
-      dependencies.requestMissingTranslations(updated);
-      return [];
-    }
-    if (!dependencies.sourcePattern.test(options.file)) return;
-    const moduleId = project.normalizeId(options.file);
-    if (!moduleId) return;
-
-    const code = options.type === 'delete' ? undefined : await options.read();
-    const framework = dependencies.framework();
-    const extraction =
-      code === undefined
-        ? undefined
-        : await extractFrameworkSource(code, options.file, framework);
-    if (extraction === null) return;
-    const affected =
-      options.type === 'delete'
-        ? project.remove(options.file)
-        : (project.update(
-            extraction?.analysisCode ?? code!,
-            options.file,
-            sourceUpdateOptions(
-              extraction,
-              code!,
-              dependencies.translationHooks(),
-              dependencies.autoImport(),
-            ),
-          )?.affectedModuleIds ?? []);
-    const cache = await fileStore.sync(project.snapshot());
-    project.hydrateCache(cache);
-    project.hydrateOverrides(await fileStore.loadOverrides());
-    dependencies.requestMissingTranslations(affected);
-    if (localeSnapshot) {
-      dependencies.sendLocaleUpdates(changedLocales(project, localeSnapshot));
-    }
-    const registers = affected
-      .map((affectedId) =>
-        this.environment.moduleGraph.getModuleById(
-          `${dependencies.resolvedRegisterPrefix}${encodeURIComponent(affectedId)}`,
-        ),
-      )
-      .filter((module) => module !== undefined);
-    for (const register of registers) {
-      this.environment.moduleGraph.invalidateModule(
-        register,
-        new Set(),
-        options.timestamp,
-        true,
-      );
-    }
-    return registers.length ? [...options.modules, ...registers] : undefined;
+      const registers = affected
+        .map((affectedId) =>
+          this.environment.moduleGraph.getModuleById(
+            `${dependencies.resolvedRegisterPrefix}${encodeURIComponent(affectedId)}`,
+          ),
+        )
+        .filter((module) => module !== undefined);
+      for (const register of registers) {
+        this.environment.moduleGraph.invalidateModule(
+          register,
+          new Set(),
+          options.timestamp,
+          true,
+        );
+      }
+      return registers.length ? [...options.modules, ...registers] : undefined;
+    });
   };
 }
 

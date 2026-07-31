@@ -6,6 +6,7 @@ import type {
   NormalizedHotChannel,
   ResolvedConfig,
 } from 'vite';
+import type { DevStateTaskRunner } from './dev-state-queue.js';
 import type { FileStore } from './file-store.js';
 import {
   htmlBridgeCode,
@@ -24,6 +25,7 @@ interface HtmlTransformDependencies {
   state(): ProjectState;
   store(): FileStore;
   requestMissingTranslations(moduleIds: readonly string[]): void;
+  runStateTask: DevStateTaskRunner;
   flush(): Promise<void>;
   setDevHot(hot: NormalizedHotChannel): void;
 }
@@ -59,28 +61,35 @@ export function createHtmlTransformHandler(
       });
     }
 
-    const project = dependencies.state();
-    const update = project.updateExtracted(
-      source,
-      context.filename,
-      result.messages,
-    );
-    if (!update) return withTags(result.code, hintTags);
-    if (config?.command !== 'build') {
-      const cache = await dependencies.store().sync(project.snapshot());
-      project.hydrateCache(cache);
-      project.hydrateOverrides(await dependencies.store().loadOverrides());
-    }
-    dependencies.requestMissingTranslations([update.moduleId]);
-    if (config?.command === 'build') {
-      await dependencies.flush();
-      project.hydrateOverrides(await dependencies.store().loadOverrides());
-    }
+    const committed = await dependencies.runStateTask(async () => {
+      const project = dependencies.state();
+      const update = project.updateExtracted(
+        source,
+        context.filename,
+        result.messages,
+      );
+      if (!update) return null;
+      if (config?.command !== 'build') {
+        const cache = await dependencies.store().sync(project.snapshot());
+        project.hydrateCache(cache);
+        project.hydrateOverrides(await dependencies.store().loadOverrides());
+      }
+      dependencies.requestMissingTranslations([update.moduleId]);
+      if (config?.command === 'build') {
+        await dependencies.flush();
+        project.hydrateOverrides(await dependencies.store().loadOverrides());
+      }
 
-    const registrationLocale = dependencies.options.loading
-      ? dependencies.options.sourceLang
-      : undefined;
-    const messages = project.registration(update.moduleId, registrationLocale);
+      const registrationLocale = dependencies.options.loading
+        ? dependencies.options.sourceLang
+        : undefined;
+      return {
+        moduleId: update.moduleId,
+        messages: project.registration(update.moduleId, registrationLocale),
+      };
+    });
+    if (!committed) return withTags(result.code, hintTags);
+    const { messages, moduleId } = committed;
     if (!messages) return withTags(result.code, hintTags);
     if (config?.command === 'build') {
       const initialLocale = dependencies.options.loading
@@ -101,7 +110,7 @@ export function createHtmlTransformHandler(
         {
           tag: 'script',
           attrs: { type: 'module' },
-          children: htmlBridgeCode(update.moduleId, messages, result.bindings),
+          children: htmlBridgeCode(moduleId, messages, result.bindings),
           injectTo: 'body',
         },
       ],
