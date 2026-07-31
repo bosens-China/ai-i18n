@@ -12,6 +12,12 @@ import plugin, {
 
 const fixtureRoot = path.resolve('packages/eslint/test/options-fixtures');
 const autoImport = [{ autoImport: ['t', 'tRef', 'tComputed', 'useI18n'] }];
+const autoRuntimeState = [
+  {
+    autoImport: ['getLang', 'getLangLoadState', 'i18nComputed'],
+    framework: 'vue',
+  },
+];
 
 const tester = new RuleTester({
   languageOptions: {
@@ -247,6 +253,81 @@ describe('Vue Options API reactive translation rules', () => {
             },
           ],
           errors: [{ messageId: 'optionsComputedSnapshot' }],
+        },
+      ],
+    },
+  );
+
+  tester.run(
+    'no-unsubscribed-runtime-state validates i18nComputed placement',
+    noUnsubscribedRuntimeState,
+    {
+      valid: [
+        {
+          code: "import { i18nComputed } from 'virtual:ai-i18n'; export default { computed: { ...i18nComputed() } }",
+          filename: path.join(fixtureRoot, 'computed-state.ts'),
+          options: [{ framework: 'vue' }],
+        },
+        {
+          code: 'export default { computed: { ...i18nComputed() } }',
+          filename: path.join(fixtureRoot, 'computed-state-auto.ts'),
+          options: autoRuntimeState,
+        },
+        {
+          code: 'const i18nComputed = () => ({ currentLang: () => "local" }); export default { data() { return { state: i18nComputed() } } }',
+          filename: path.join(fixtureRoot, 'computed-state-shadow.ts'),
+          options: autoRuntimeState,
+        },
+      ],
+      invalid: [
+        {
+          code: "import { i18nComputed } from 'virtual:ai-i18n'; export default { data() { return { state: i18nComputed() } } }",
+          filename: path.join(fixtureRoot, 'computed-state-data.ts'),
+          options: [{ framework: 'vue' }],
+          errors: [{ messageId: 'misplacedI18nComputed' }],
+        },
+        {
+          code: "import { i18nComputed } from 'virtual:ai-i18n'; export default { setup() { return { state: i18nComputed() } } }",
+          filename: path.join(fixtureRoot, 'computed-state-setup.ts'),
+          options: [{ framework: 'vue' }],
+          errors: [{ messageId: 'misplacedI18nComputed' }],
+        },
+        {
+          code: 'export default { computed: { state: i18nComputed() } }',
+          filename: path.join(fixtureRoot, 'computed-state-value.ts'),
+          options: autoRuntimeState,
+          errors: [{ messageId: 'misplacedI18nComputed' }],
+        },
+      ],
+    },
+  );
+
+  vueTester.run(
+    'no-unsubscribed-runtime-state rejects i18nComputed in Vue setup and templates',
+    noUnsubscribedRuntimeState,
+    {
+      valid: [],
+      invalid: [
+        {
+          code: [
+            '<script setup lang="ts">',
+            "import { i18nComputed } from 'virtual:ai-i18n'",
+            'const state = i18nComputed()',
+            '</script>',
+            '<template>{{ state.currentLang }}</template>',
+          ].join('\n'),
+          filename: path.join(fixtureRoot, 'ComputedStateSetup.vue'),
+          options: [{ framework: 'vue' }],
+          errors: [{ messageId: 'misplacedI18nComputed', line: 3, column: 15 }],
+        },
+        {
+          code: [
+            '<script setup lang="ts"></script>',
+            '<template>{{ i18nComputed().currentLang }}</template>',
+          ].join('\n'),
+          filename: path.join(fixtureRoot, 'ComputedStateTemplate.vue'),
+          options: autoRuntimeState,
+          errors: [{ messageId: 'misplacedI18nComputed', line: 2, column: 14 }],
         },
       ],
     },

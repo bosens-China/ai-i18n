@@ -25,6 +25,8 @@ TypeScript project so Vue language-tools can type template `t`; do not add an Op
 When ESLint is also requested, use `configs.vue` for explicit Vue imports and `configs.recommended` for
 explicit React or Vanilla imports. With automatic imports, use `configs['vue-auto-import']`,
 `configs['react-auto-import']`, or `configs['vanilla-auto-import']` for the resolved framework mode.
+Do not recreate their API lists manually: the Vue preset also tracks `i18nComputed()` placement and
+Vue setup / Options data snapshot boundaries.
 
 When enabling ESLint, inspect the target build's `resolve.alias`. Do not load or execute
 `vite.config.*`. If a local-source alias exists only in Vite, prefer moving its string-to-string

@@ -50,7 +50,7 @@ describe('@ai-i18n/eslint config', () => {
           globals: { defineI18nMessages: 'readonly' },
         },
         rules: {
-          'ai-i18n/no-eager-translation': 'warn',
+          'ai-i18n/no-eager-translation': ['warn', { framework: 'vue' }],
           'ai-i18n/no-unsubscribed-runtime-state': [
             'warn',
             { framework: 'vue' },
@@ -120,12 +120,13 @@ describe('@ai-i18n/eslint config', () => {
             'warn',
             {
               autoImport: ['t', 'tRef', 'tComputed', 'useI18n'],
+              framework: 'vue',
             },
           ],
           'ai-i18n/no-unsubscribed-runtime-state': [
             'warn',
             {
-              autoImport: ['getLang', 'getLangLoadState'],
+              autoImport: ['getLang', 'getLangLoadState', 'i18nComputed'],
               framework: 'vue',
             },
           ],

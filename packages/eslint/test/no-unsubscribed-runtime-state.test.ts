@@ -65,6 +65,16 @@ describe('ai-i18n/no-unsubscribed-runtime-state', () => {
         filename: path.join(fixtureRoot, 'shadowed.ts'),
         options: [{ autoImport: true }],
       },
+      {
+        code: "import { getLang } from 'virtual:ai-i18n'; export default { methods: { read() { return getLang() } } }",
+        filename: path.join(fixtureRoot, 'options-method.ts'),
+        options: [{ framework: 'vue' }],
+      },
+      {
+        code: "import { getLangLoadState } from 'virtual:ai-i18n'; export default { data() { return { readState: () => getLangLoadState() } } }",
+        filename: path.join(fixtureRoot, 'options-data-lazy.ts'),
+        options: [{ framework: 'vue' }],
+      },
     ],
     invalid: [
       {
@@ -93,6 +103,24 @@ describe('ai-i18n/no-unsubscribed-runtime-state', () => {
         filename: path.join(fixtureRoot, 'auto-import-module.ts'),
         options: [{ autoImport: true }],
         errors: [{ messageId: 'moduleSnapshot' }],
+      },
+      {
+        code: "import { getLang } from 'virtual:ai-i18n'; import { defineComponent } from 'vue'; export default defineComponent({ setup() { const lang = getLang(); return { lang } } })",
+        filename: path.join(fixtureRoot, 'vue-setup.ts'),
+        options: [{ framework: 'vue' }],
+        errors: [{ messageId: 'vueSetupSnapshot' }],
+      },
+      {
+        code: "import { getLangLoadState } from 'virtual:ai-i18n'; export default { data() { return { state: getLangLoadState() } } }",
+        filename: path.join(fixtureRoot, 'vue-options-data.ts'),
+        options: [{ framework: 'vue' }],
+        errors: [{ messageId: 'optionsDataSnapshot' }],
+      },
+      {
+        code: "import { defineComponent } from 'vue'; export default defineComponent({ setup: () => ({ lang: getLang() }) })",
+        filename: path.join(fixtureRoot, 'vue-setup-auto.ts'),
+        options: [{ autoImport: ['getLang'], framework: 'vue' }],
+        errors: [{ messageId: 'vueSetupSnapshot' }],
       },
     ],
   });
@@ -162,6 +190,20 @@ describe('ai-i18n/no-unsubscribed-runtime-state', () => {
           filename: path.join(fixtureRoot, 'auto-import.vue'),
           options: [{ autoImport: ['getLangLoadState'] }],
           errors: [{ messageId: 'vueRenderSnapshot', line: 3, column: 14 }],
+        },
+        {
+          code: [
+            '<script lang="ts">',
+            "import { getLang } from 'virtual:ai-i18n'",
+            'export default {',
+            '  data() { return { lang: getLang() } },',
+            '}',
+            '</script>',
+            '<template>{{ lang }}</template>',
+          ].join('\n'),
+          filename: path.join(fixtureRoot, 'options-data.vue'),
+          options: [{ framework: 'vue' }],
+          errors: [{ messageId: 'optionsDataSnapshot', line: 4, column: 27 }],
         },
       ],
     },

@@ -32,7 +32,8 @@ storing a translated snapshot.
 `getLang()` and `getLangLoadState()` are call-time snapshots. Rendered Vue Composition and React
 state must use `currentLang` and `langLoadState` from `useI18n()`. Pure Vue Options uses
 `i18nComputed()` as described below. Long-lived non-component listeners must keep and invoke the
-cleanup returned by `subscribe()`.
+cleanup returned by `subscribe()`. Do not store those snapshots in ordinary Vue `setup()` or Options
+`data()` when the value must update with the language; the ESLint preset reports these direct stores.
 
 Vue setup and composables may use the standalone `tRef()` export for a predeclared reactive label or
 message tree. Pure Options API components use `tComputed()` in their `computed` option for the same
@@ -40,8 +41,9 @@ display-value behavior. Do not call either factory in templates or render functi
 
 Pure Options components spread `i18nComputed()` into `computed` to receive unwrapped reactive
 `currentLang`, `langs`, `langLoadState`, `isLangLoading`, and `langLoadError` values. Use the native
-Options `watch` field for component-scoped language effects. Keep `getLang()` and
-`getLangLoadState()` documented as call-time snapshots.
+Options `watch` field for component-scoped language effects. Do not call `i18nComputed()` from setup,
+data, methods, render, or templates. Keep `getLang()` and `getLangLoadState()` documented as call-time
+snapshots.
 
 Vanilla applications must subscribe and render again after language changes.
 

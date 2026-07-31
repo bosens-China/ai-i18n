@@ -59,17 +59,22 @@ render 或模块级缓存。自动导入模式下，纯 Options template 可以�
 在值能解析到 ai-i18n Runtime `t` 时才作为 template binding。两种模式都不把 `this.t()`、
 `this.$t()` 视为翻译调用。
 
-`no-unsubscribed-runtime-state` 的自动导入选项只列出状态快照 API：
+`no-unsubscribed-runtime-state` 的 Vue 自动导入选项列出状态快照 API 与 Options 状态工厂：
 
 ```js
 'ai-i18n/no-unsubscribed-runtime-state': [
   'warn',
-  { autoImport: ['getLang', 'getLangLoadState'] },
+  {
+    autoImport: ['getLang', 'getLangLoadState', 'i18nComputed'],
+    framework: 'vue',
+  },
 ],
 ```
 
-它会提示模块顶层以及 Vue template / JSX 渲染路径中的直接快照读取。事件处理器、普通函数和
-即时日志允许按需读取；规则不追踪跨文件 store 数据流。
+它会提示模块顶层、普通 Vue `setup()`、Options `data()` 以及 Vue template / JSX
+渲染路径中的确定性快照，并要求 `i18nComputed()` 直接展开到纯 Options 根 `computed`。
+React 或 Vanilla 手动配置不列出 `i18nComputed`。事件处理器、普通函数和即时日志允许按需
+读取；规则不追踪跨文件 store 数据流。
 
 `no-redundant-auto-import` 默认不包含在预设中。希望统一为自动导入风格时：
 

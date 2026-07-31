@@ -40,12 +40,12 @@
 - 自动导入按未绑定的值引用注入，覆盖直接调用、函数传递和对象简写；局部 binding、属性名、类型位置与赋值目标不能触发注入。
 - Vue template 类型桥与主 dts 相邻生成；同名文件没有 ai-i18n 生成标记时拒绝覆盖。修改 dts 路径或关闭生成后无法可靠推断旧自定义路径，旧声明由用户显式删除，不扫描目录猜测。
 - Vue 模式的顶层 t() 会读取 adapter revision，在 template、render 或 computed 的响应式执行路径中建立依赖；Options API 与 Composition API 均可直接使用。React 组件仍必须通过 useI18n() 订阅。普通模块中的 t() 不会自行创建响应式执行路径，应在实际需要文案时调用。
-- getLang() 与 getLangLoadState() 返回调用时快照。ESLint 提示模块顶层缓存和可确定的组件渲染读取；action、事件与普通函数可以按需读取，跨文件 store 数据流不做不可靠推断。
+- getLang() 与 getLangLoadState() 返回调用时快照。ESLint 提示模块顶层缓存、Vue setup / Options data 保存和可确定的组件渲染读取；action、事件与普通函数可以按需读取，跨文件 store 数据流不做不可靠推断。
 
 ### 响应式翻译
 
 - Vue 的 tRef() 是独立导出，不属于 useI18n() 返回值。它在 setup 或 composable 中创建只读 ComputedRef，支持字符串、tagged template 和静态文案树。
-- 纯 Options 组件把 i18nComputed() 展开到 computed，获得已解包的 currentLang、langs、langLoadState、isLangLoading 与 langLoadError；组件级语言副作用使用原生 watch。
+- 纯 Options 组件把 i18nComputed() 直接展开到根 computed，获得已解包的 currentLang、langs、langLoadState、isLangLoading 与 langLoadError；Vue setup、Options data / methods / render 与 template 不调用该配置工厂。组件级语言副作用使用原生 watch。
 - tComputed() 直接作为 Options computed 属性值，输入能力与 tRef() 一致。t(messages) 返回当前语言的同形快照；tRef(messages) 和 tComputed(messages) 返回随 Runtime revision 更新的同形计算值。
 - 不在模板、JSX 或渲染函数中调用 tRef() 或 tComputed()，避免重复创建 computed 或把 getter 当成译文；Options data 和模块变量也不保存 tComputed()。
 - defineComponent() 与 strict/noImplicitThis 是纯 Options TypeScript 的推荐配置。Vue 自身不会按 watch key 推断回调参数，因此 TypeScript 示例显式标注 currentLang 的 next/previous 为 string，不新增组件包装器。
@@ -87,7 +87,7 @@
 ### 推荐语法与 ESLint
 
 - 静态可提取与推荐写法是两个独立维度。Analyzer 尽量提取有限静态值；ESLint 负责报告动态参数、超出候选上限和不推荐的调用来源。
-- ESLint 提供译文初始化快照、Runtime 状态快照和未订阅渲染诊断，识别 tComputed() 的合法 computed 位置、错误生命周期、自动导入的裸 `t` 与关闭自动导入时纯 Options 的显式 `methods: { t }` bridge，并报告把 `this.t` / `this.$t` 当作 ai-i18n API 的写法；这些规则只分析可可靠判断的当前文件直接调用，不承诺覆盖所有数据流。
+- ESLint 提供译文初始化快照、Runtime 状态快照和未订阅渲染诊断，识别 Options data 与 setup 的初始化边界、tComputed() / i18nComputed() 的合法 computed 位置、自动导入的裸 `t` 与关闭自动导入时纯 Options 的显式 `methods: { t }` bridge，并报告把 `this.t` / `this.$t` 当作 ai-i18n API 的写法；这些规则只分析可可靠判断的当前文件直接调用，不承诺覆盖所有数据流。
 - 可选的冗余自动导入规则只依据显式配置的当前自动导入集合判断，不读取或猜测 Vite 配置。
 - Analyzer、ESLint 与 Vite 的开发者诊断使用同一语言策略。AI_I18N_DIAGNOSTIC_LOCALE 可固定为 zh-CN 或 en-US；auto 与未设置时按 Node 时区选择。
 

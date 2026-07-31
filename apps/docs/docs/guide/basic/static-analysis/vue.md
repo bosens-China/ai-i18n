@@ -148,6 +148,7 @@ export default defineComponent({
 | ------------------------------------------------ | ---- | --------------------------------------- |
 | `<script setup>` 中 `const label = t('保存')`    | 是   | setup 快照，不会自动更新                |
 | `setup()` 中 `const label = t('保存')`           | 是   | setup 快照，不会自动更新                |
+| Options `data()` 中保存 `t('保存')`              | 是   | data 快照，不会自动更新                 |
 | setup 中 `const label = tRef('保存')`            | 是   | 返回 Ref，语言切换时自动更新            |
 | setup 中 `const labels = tRef(messages)`         | 是   | 整棵文案树随语言切换更新                |
 | Options `label: tComputed('保存')`               | 是   | 组件 computed 随语言切换更新            |
@@ -160,10 +161,13 @@ export default defineComponent({
 | `this.t`、`this.$t`、mixin 或 `globalProperties` | 否   | 不属于 ai-i18n binding                  |
 | 模板或 render 中直接调用 `tRef()`                | 是   | 每次渲染创建 computed，不支持该用法     |
 | data、template 或 render 中调用 `tComputed()`    | 是   | 返回 getter，不支持该用法               |
+| setup、data 或 template 中调用 `i18nComputed()`  | 否   | 配置工厂位置错误，不支持该用法          |
 | 仅有 template 的裸 `t`，且开启自动导入           | 是   | Runtime、Volar 与 `vue-tsc` 均支持      |
 
 `ai-i18n/no-eager-translation` 检查初始化快照。
-`ai-i18n/no-unsubscribed-t` 仍会检查 `tRef()` 与 `tComputed()` 的错误使用位置。
+`ai-i18n/no-unsubscribed-t` 仍会检查 `tRef()` 与 `tComputed()` 的错误使用位置；
+`ai-i18n/no-unsubscribed-runtime-state` 检查 setup / Options data 状态快照与
+`i18nComputed()` 的错误位置。
 
 事件回调和普通延迟函数可以继续使用顶层 `t`，因为它们会在调用时读取当前语言。完整规则见
 [ESLint](/guide/quality/eslint)。

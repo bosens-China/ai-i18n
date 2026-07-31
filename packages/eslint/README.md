@@ -148,13 +148,16 @@ Vue preset 同时覆盖 Vue JSX/TSX，但宿主仍需用 `@vitejs/plugin-vue-jsx
 `ai-i18n/no-eager-translation`：在模块或 `<script setup>` 初始化期间保存 `t()` 结果会
 收到 warning。Vue SFC 的 `export default { setup() {} }`，以及 `.vue` / `.ts` / `.tsx`
 中从 `vue` 导入的 `defineComponent({ setup() {} })` 和函数签名也按一次性 setup
-初始化检查。
+初始化检查。纯 Options `data()` 保存的译文同样只是初始化快照，规则会提示改用
+`tComputed()` 或在 getter / method 执行时调用 `t()`。
 
 ```ts
+// 以下各行是相互独立的示例
 export const label = t('保存'); // warning：只保存初始化时的译文
 export const getLabel = () => t('保存'); // 允许：每次调用重新读取当前语言
 export const label = tRef('保存'); // Vue：允许，返回响应式 ComputedRef
 export default { computed: { label: tComputed('保存') } }; // 纯 Options：允许
+export default { data: () => ({ label: t('保存') }) }; // warning：Options data 快照
 ```
 
 `recommended`、`vue`、`vue-auto-import` 与 `react-auto-import` 还启用
@@ -181,10 +184,11 @@ function SaveButton() {
 不代表覆盖所有译文生命周期错误。
 
 所有 preset 还启用 `ai-i18n/no-unsubscribed-runtime-state`。模块顶层不能缓存
-`getLang()` 或 `getLangLoadState()` 的初始化快照；Vue Composition API 使用
-`useI18n()` 返回的状态，纯 Options API 在 `computed` 中展开 `...i18nComputed()`。
-事件处理器、action、普通工具函数和即时 console 调用允许按需读取。规则只分析当前文件，
-不追踪跨文件 store 数据流。
+`getLang()` 或 `getLangLoadState()` 的初始化快照；普通 Vue `setup()` 与纯 Options
+`data()` 也不能保存这些快照。Vue Composition API 使用 `useI18n()` 返回的状态，纯 Options
+API 把 `...i18nComputed()` 直接展开到根 `computed`；setup、data、methods、render 与
+template 中直接调用该工厂会提示错误位置。事件处理器、action、普通工具函数和即时 console
+调用允许按需读取。规则只分析当前文件，不追踪跨文件 store 数据流。
 
 六条规则可独立启用。四条静态分析规则无法启动时，同一文件只报告一次双语错误；官方 preset 由
 `t-static-args` 优先报告，避免次级规则重复提示。
@@ -304,6 +308,7 @@ export default [
         'warn',
         {
           autoImport: ['t', 'tRef', 'tComputed', 'useI18n'],
+          framework: 'vue',
           tsconfigPath: './tsconfig.json', // 可选：覆盖自动发现入口
         },
       ],
@@ -318,7 +323,7 @@ export default [
       'ai-i18n/no-unsubscribed-runtime-state': [
         'warn',
         {
-          autoImport: ['getLang', 'getLangLoadState'],
+          autoImport: ['getLang', 'getLangLoadState', 'i18nComputed'],
           framework: 'vue',
         },
       ],

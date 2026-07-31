@@ -6,15 +6,26 @@ import {
   nearestFunction,
   type ParentNode,
 } from './ast-context.js';
-import { isInsideOptionsComputedGetter } from './vue-options.js';
+import {
+  isInsideOptionsComputedGetter,
+  isOptionsComputedSpread,
+} from './vue-options.js';
+import {
+  misplacedI18nComputed,
+  reportVueInitializationSnapshot,
+  vueInitializationSnapshotKind,
+} from './vue-runtime-state.js';
 
 const RUNTIME_MODULE = 'virtual:ai-i18n';
 const STATE_APIS = ['getLang', 'getLangLoadState'] as const;
+const VUE_COMPUTED_API = 'i18nComputed';
+const TRACKED_APIS = [...STATE_APIS, VUE_COMPUTED_API] as const;
 
 type RuntimeStateApi = (typeof STATE_APIS)[number];
+type TrackedApi = (typeof TRACKED_APIS)[number];
 
 interface RuleOptions {
-  autoImport?: boolean | readonly RuntimeStateApi[];
+  autoImport?: boolean | readonly TrackedApi[];
   framework?: 'react' | 'vue';
 }
 
@@ -22,7 +33,7 @@ export const noUnsubscribedRuntimeState: Rule.RuleModule = {
   meta: {
     type: 'problem',
     docs: {
-      description: '检查模块和组件渲染路径中的 Runtime 状态快照',
+      description: '检查初始化、模块和组件渲染路径中的 Runtime 状态快照',
     },
     schema: [
       {
@@ -33,7 +44,7 @@ export const noUnsubscribedRuntimeState: Rule.RuleModule = {
               { type: 'boolean' },
               {
                 type: 'array',
-                items: { enum: STATE_APIS },
+                items: { enum: TRACKED_APIS },
                 uniqueItems: true,
               },
             ],
@@ -60,15 +71,28 @@ export const noUnsubscribedRuntimeState: Rule.RuleModule = {
         '纯 Options API 的 computed 中调用 {{api}}() 仍然只会读取快照。请改为在 computed 中展开 ...i18nComputed()，并直接使用响应式的 {{replacement}}。',
         'Calling {{api}}() inside a pure Options API computed getter still reads only a snapshot. Spread ...i18nComputed() into computed and use the reactive {{replacement}} instead.',
       ),
+      vueSetupSnapshot: diagnosticMessage(
+        'Vue setup 中保存 {{api}}() 只会保留初始化快照。请使用 useI18n() 返回的响应式 {{replacement}}。',
+        'Storing {{api}}() in Vue setup keeps only the initialization snapshot. Use the reactive {{replacement}} returned by useI18n().',
+      ),
+      optionsDataSnapshot: diagnosticMessage(
+        '纯 Options API 的 data 中保存 {{api}}() 只会保留初始化快照。请在 computed 中展开 ...i18nComputed()，并使用响应式的 {{replacement}}。',
+        'Storing {{api}}() in pure Options API data keeps only the initialization snapshot. Spread ...i18nComputed() into computed and use the reactive {{replacement}}.',
+      ),
+      misplacedI18nComputed: diagnosticMessage(
+        'i18nComputed() 只应直接展开到纯 Options API 的 computed，例如 computed: { ...i18nComputed() }。',
+        'Spread i18nComputed() directly into pure Options API computed, for example computed: { ...i18nComputed() }.',
+      ),
     },
   },
   create(context) {
     const options = (context.options[0] ?? {}) as RuleOptions;
     const autoImports = normalizeAutoImports(options.autoImport);
-    const importedBindings = new Map<string, RuntimeStateApi>();
+    const importedBindings = new Map<string, TrackedApi>();
     const jsxOwners = new Set<ParentNode>();
     const templateCalls = new Set<Rule.Node>();
     const candidates: Rule.Node[] = [];
+    const isVueSfc = context.filename.toLowerCase().endsWith('.vue');
     const collectJsxOwner = (node: Rule.Node) => {
       const owner = nearestFunction(node);
       if (owner) jsxOwners.add(owner);
@@ -88,11 +112,8 @@ export const noUnsubscribedRuntimeState: Rule.RuleModule = {
               : typeof specifier.imported.value === 'string'
                 ? specifier.imported.value
                 : null;
-          if (STATE_APIS.includes(imported as RuntimeStateApi)) {
-            importedBindings.set(
-              specifier.local.name,
-              imported as RuntimeStateApi,
-            );
+          if (TRACKED_APIS.includes(imported as TrackedApi)) {
+            importedBindings.set(specifier.local.name, imported as TrackedApi);
           }
         }
       },
@@ -108,6 +129,21 @@ export const noUnsubscribedRuntimeState: Rule.RuleModule = {
             templateCalls.has(node),
           );
           if (!api) continue;
+          if (api === VUE_COMPUTED_API) {
+            if (
+              options.framework === 'vue' &&
+              !isOptionsComputedSpread(node, context) &&
+              misplacedI18nComputed(
+                node,
+                context,
+                templateCalls.has(node),
+                isVueSfc,
+              )
+            ) {
+              context.report({ node, messageId: 'misplacedI18nComputed' });
+            }
+            continue;
+          }
           if (templateCalls.has(node)) {
             if (!isVueTemplateEventHandler(node)) {
               reportRenderSnapshot(context, node, api, true);
@@ -128,6 +164,19 @@ export const noUnsubscribedRuntimeState: Rule.RuleModule = {
             isInsideOptionsComputedGetter(node, context)
           ) {
             reportOptionsComputedSnapshot(context, node, api);
+            continue;
+          }
+          const initializationKind =
+            options.framework === 'vue'
+              ? vueInitializationSnapshotKind(node, owner, context, isVueSfc)
+              : null;
+          if (initializationKind) {
+            reportVueInitializationSnapshot(
+              context,
+              node,
+              api,
+              initializationKind,
+            );
             continue;
           }
           if (jsxOwners.has(owner) && !isImmediateConsoleEffect(node)) {
@@ -159,8 +208,8 @@ export const noUnsubscribedRuntimeState: Rule.RuleModule = {
 
 function normalizeAutoImports(
   option: RuleOptions['autoImport'],
-): ReadonlySet<RuntimeStateApi> {
-  if (option === true) return new Set(STATE_APIS);
+): ReadonlySet<TrackedApi> {
+  if (option === true) return new Set(TRACKED_APIS);
   if (!option) return new Set();
   return new Set(option);
 }
@@ -168,10 +217,10 @@ function normalizeAutoImports(
 function runtimeStateApi(
   context: Rule.RuleContext,
   rawNode: Rule.Node,
-  autoImports: ReadonlySet<RuntimeStateApi>,
-  importedBindings: ReadonlyMap<string, RuntimeStateApi>,
+  autoImports: ReadonlySet<TrackedApi>,
+  importedBindings: ReadonlyMap<string, TrackedApi>,
   inTemplate: boolean,
-): RuntimeStateApi | null {
+): TrackedApi | null {
   if (rawNode.type !== 'CallExpression') return null;
   const callee = rawNode.callee;
   if (callee.type !== 'Identifier') return null;
@@ -180,8 +229,8 @@ function runtimeStateApi(
     const imported = importedBindings.get(callee.name);
     if (imported) return imported;
     if (hasTopLevelScriptBinding(context, callee.name)) return null;
-    return autoImports.has(callee.name as RuntimeStateApi)
-      ? (callee.name as RuntimeStateApi)
+    return autoImports.has(callee.name as TrackedApi)
+      ? (callee.name as TrackedApi)
       : null;
   }
   const variable = findVariable(
@@ -194,14 +243,12 @@ function runtimeStateApi(
     const imported = importedRuntimeStateApi(variable);
     return imported;
   }
-  return autoImports.has(callee.name as RuntimeStateApi)
-    ? (callee.name as RuntimeStateApi)
+  return autoImports.has(callee.name as TrackedApi)
+    ? (callee.name as TrackedApi)
     : null;
 }
 
-function importedRuntimeStateApi(
-  variable: VariableLike,
-): RuntimeStateApi | null {
+function importedRuntimeStateApi(variable: VariableLike): TrackedApi | null {
   for (const definition of variable.defs) {
     if (definition.type !== 'ImportBinding') continue;
     const specifier = definition.node as ImportSpecifierNode;
@@ -219,8 +266,8 @@ function importedRuntimeStateApi(
         : typeof specifier.imported.value === 'string'
           ? specifier.imported.value
           : null;
-    return STATE_APIS.includes(imported as RuntimeStateApi)
-      ? (imported as RuntimeStateApi)
+    return TRACKED_APIS.includes(imported as TrackedApi)
+      ? (imported as TrackedApi)
       : null;
   }
   // ESLint globals 没有 definition；只有显式开启 autoImport 时才由调用方接纳。

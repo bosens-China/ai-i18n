@@ -31,6 +31,27 @@ export function isOptionsComputedValue(
   );
 }
 
+export function isOptionsComputedSpread(
+  node: Rule.Node,
+  context: Rule.RuleContext,
+): boolean {
+  const value = unwrapTransparentParent(node as unknown as ParentNode);
+  const spread = value.parent as SpreadNode | null;
+  if (spread?.type !== 'SpreadElement' || spread.argument !== value) {
+    return false;
+  }
+  const entries = spread.parent;
+  if (entries?.type !== 'ObjectExpression') return false;
+  const computed = entries.parent as PropertyNode | null;
+  return (
+    computed?.type === 'Property' &&
+    computed.value === entries &&
+    propertyName(computed.key) === 'computed' &&
+    computed.parent?.type === 'ObjectExpression' &&
+    isVueComponentOptionsObject(computed.parent, context)
+  );
+}
+
 export function isInsideOptionsComputedGetter(
   node: Rule.Node,
   context: Rule.RuleContext,
@@ -78,6 +99,85 @@ export function vueOptionsSection(
   return null;
 }
 
+export function isDirectOptionsFunction(
+  node: ParentNode,
+  context: Rule.RuleContext,
+  name: string,
+  allowBareExportDefault = true,
+): boolean {
+  const value = unwrapTransparentParent(node);
+  const property = value.parent as PropertyNode | null;
+  if (
+    property?.type !== 'Property' ||
+    property.value !== value ||
+    propertyName(property.key) !== name
+  ) {
+    return false;
+  }
+  const options = property.parent;
+  return (
+    options?.type === 'ObjectExpression' &&
+    isVueComponentOptionsObject(options, context, allowBareExportDefault)
+  );
+}
+
+export function isVueComponentSetup(
+  node: ParentNode,
+  context: Rule.RuleContext,
+  isVueSfc: boolean,
+): boolean {
+  const value = unwrapTransparentParent(node);
+  const directOwner = value.parent as OwnerNode | null;
+  if (
+    directOwner?.type === 'CallExpression' &&
+    directOwner.arguments?.[0] === value
+  ) {
+    return isImportedVueDefineComponent(directOwner.callee, context);
+  }
+
+  const property = value.parent as PropertyNode | null;
+  if (
+    property?.type !== 'Property' ||
+    property.value !== value ||
+    property.computed ||
+    propertyName(property.key) !== 'setup'
+  ) {
+    return false;
+  }
+
+  const options = property.parent;
+  if (options?.type !== 'ObjectExpression') return false;
+  const owner = options.parent as OwnerNode | null;
+  if (
+    isVueSfc &&
+    owner?.type === 'ExportDefaultDeclaration' &&
+    owner.declaration === options
+  ) {
+    return true;
+  }
+  return (
+    owner?.type === 'CallExpression' &&
+    owner.arguments?.[0] === options &&
+    isImportedVueDefineComponent(owner.callee, context)
+  );
+}
+
+export function isVueScriptSetupNode(
+  node: Rule.Node,
+  context: Rule.RuleContext,
+): boolean {
+  if (!context.filename.toLowerCase().endsWith('.vue') || !node.range) {
+    return false;
+  }
+  const source = context.sourceCode.text;
+  const before = source.slice(0, node.range[0]);
+  const opening = before.lastIndexOf('<script');
+  if (opening <= before.lastIndexOf('</script>')) return false;
+  const closing = source.indexOf('>', opening);
+  if (closing < 0 || closing >= node.range[0]) return false;
+  return /\bsetup(?:\s|=|>)/u.test(source.slice(opening, closing + 1));
+}
+
 export function isImportedVueDefineComponent(
   node: unknown,
   context: Rule.RuleContext,
@@ -110,10 +210,12 @@ export function propertyName(node: unknown): string | undefined {
 function isVueComponentOptionsObject(
   options: ParentNode,
   context: Rule.RuleContext,
+  allowBareExportDefault = true,
 ): boolean {
   const value = unwrapTransparentParent(options);
   const owner = value.parent as OwnerNode | null;
   if (
+    allowBareExportDefault &&
     owner?.type === 'ExportDefaultDeclaration' &&
     owner.declaration === value
   ) {
@@ -185,6 +287,7 @@ function expressionChild(node: ParentNode): unknown {
 }
 
 interface PropertyNode extends ParentNode {
+  computed?: boolean;
   key?: unknown;
   value?: unknown;
 }
@@ -193,4 +296,8 @@ interface OwnerNode extends ParentNode {
   arguments?: unknown[];
   callee?: unknown;
   declaration?: unknown;
+}
+
+interface SpreadNode extends ParentNode {
+  argument?: unknown;
 }

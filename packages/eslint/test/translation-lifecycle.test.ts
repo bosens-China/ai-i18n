@@ -78,6 +78,15 @@ describe('ai-i18n/no-eager-translation', () => {
         code: "import { tRef } from 'virtual:ai-i18n'; export const label = tRef('响应式')",
         filename: path.join(fixtureRoot, 'translated-ref.ts'),
       },
+      {
+        code: "import { t } from 'virtual:ai-i18n'; export default { data() { return { getLabel: () => t('延迟读取') } } }",
+        filename: path.join(fixtureRoot, 'options-data-lazy.ts'),
+        options: [{ framework: 'vue' }],
+      },
+      {
+        code: "import { t } from 'virtual:ai-i18n'; export default { data() { return { label: t('非 Vue 的同名 data') } } }",
+        filename: path.join(fixtureRoot, 'non-vue-data.ts'),
+      },
     ],
     invalid: [
       {
@@ -136,6 +145,17 @@ describe('ai-i18n/no-eager-translation', () => {
           { messageId: 'eagerTranslation' },
           { messageId: 'eagerTranslation' },
         ],
+      },
+      {
+        code: "import { t } from 'virtual:ai-i18n'; export default { data() { return { label: t('Options data 快照') } } }",
+        filename: path.join(fixtureRoot, 'options-data.ts'),
+        options: [{ framework: 'vue' }],
+        errors: [{ messageId: 'eagerTranslation' }],
+      },
+      {
+        code: "import { defineComponent } from 'vue'; import { t } from 'virtual:ai-i18n'; export default defineComponent({ data: () => ({ label: t('Options data 箭头函数') }) })",
+        filename: path.join(fixtureRoot, 'options-data-arrow.ts'),
+        errors: [{ messageId: 'eagerTranslation' }],
       },
     ],
   });
