@@ -28,11 +28,18 @@ Skills 会引导 Agent 选择正确的 Vite 应用，并区分自动译文与人
 
 ## 注册 MCP 服务器
 
-在所使用的 AI 编码工具中注册 `@ai-i18n/mcp`。以下配置以当前 alpha 版本为例：
+ai-i18n 支持 Codex、Cursor、Claude Code 和 Antigravity。请在所使用的 AI 编码工具中注册
+`@ai-i18n/mcp`。以下命令和配置以当前 alpha 版本为例。
 
 ### Codex
 
-在 `~/.codex/config.toml` 或项目的 `.codex/config.toml` 中加入：
+在本机终端运行以下命令即可注册：
+
+```sh
+codex mcp add ai-i18n -- npx -y @ai-i18n/mcp@alpha
+```
+
+也可以在 `~/.codex/config.toml` 或项目的 `.codex/config.toml` 中加入：
 
 ```toml
 [mcp_servers.ai_i18n]
@@ -64,7 +71,27 @@ args = ["-y", "@ai-i18n/mcp@alpha"]
 claude mcp add --transport stdio --scope local ai-i18n -- npx -y @ai-i18n/mcp@alpha
 ```
 
-其他支持 MCP 的工具也可使用同样的 `npx -y @ai-i18n/mcp@alpha` 命令注册 STDIO 服务器。
+### Antigravity
+
+在项目的 `.agents/mcp_config.json` 中加入以下内容。若希望所有项目共用，可改为全局
+`~/.gemini/config/mcp_config.json`：
+
+```json
+{
+  "mcpServers": {
+    "ai-i18n": {
+      "command": "npx",
+      "args": ["-y", "@ai-i18n/mcp@alpha"]
+    }
+  }
+}
+```
+
+在 Antigravity IDE 中，也可以从 Agent 面板的 **MCP Servers → Manage MCP Servers → View raw config**
+打开同一份配置。当前 ai-i18n 未收录在 Antigravity MCP Store，因此需要添加自定义服务器配置。
+
+Cursor 和 Antigravity 对自定义本地 STDIO 服务器均使用配置文件。它们的 MCP Store 一键安装仅适用于
+已收录的服务器；ai-i18n 收录前，请使用本页配置。
 
 ## 推荐提示词
 
