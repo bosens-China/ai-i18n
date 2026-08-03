@@ -1,5 +1,14 @@
 # @ai-i18n/eslint-plugin
 
+## [1.0.0-alpha.12](https://github.com/bosens-China/ai-i18n/compare/eslint-plugin-v1.0.0-alpha.11...eslint-plugin-v1.0.0-alpha.12) (2026-08-03)
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @ai-i18n/analyzer bumped to 1.0.0-alpha.11
+
 ## [1.0.0-alpha.11](https://github.com/bosens-China/ai-i18n/compare/eslint-plugin-v1.0.0-alpha.10...eslint-plugin-v1.0.0-alpha.11) (2026-07-31)
 
 

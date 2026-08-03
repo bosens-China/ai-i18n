@@ -1,5 +1,19 @@
 # @ai-i18n/vite
 
+## [1.0.0-alpha.13](https://github.com/bosens-China/ai-i18n/compare/vite-v1.0.0-alpha.12...vite-v1.0.0-alpha.13) (2026-08-03)
+
+
+### Bug Fixes
+
+* **deps:** 升级发布包依赖 ([f5526a2](https://github.com/bosens-China/ai-i18n/commit/f5526a2bfd5875929ad8f109c4afcd3129cf0765))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @ai-i18n/analyzer bumped to 1.0.0-alpha.11
+
 ## [1.0.0-alpha.12](https://github.com/bosens-China/ai-i18n/compare/vite-v1.0.0-alpha.11...vite-v1.0.0-alpha.12) (2026-07-31)
 
 
