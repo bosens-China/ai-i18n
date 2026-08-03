@@ -1,5 +1,19 @@
 # @ai-i18n/openai
 
+## [1.0.0-alpha.8](https://github.com/bosens-China/ai-i18n/compare/openai-v1.0.0-alpha.7...openai-v1.0.0-alpha.8) (2026-08-03)
+
+
+### Bug Fixes
+
+* **release:** 稳定内部包发布依赖 ([1734156](https://github.com/bosens-China/ai-i18n/commit/1734156fd4cf0926aa2480676f60861da59fd9c1))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @ai-i18n/core bumped to 1.0.0-alpha.7
+
 ## [1.0.0-alpha.7](https://github.com/bosens-China/ai-i18n/compare/openai-v1.0.0-alpha.6...openai-v1.0.0-alpha.7) (2026-08-03)
 
 

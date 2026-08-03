@@ -1,6 +1,6 @@
 {
   "name": "@ai-i18n/eslint-plugin",
-  "version": "1.0.0-alpha.12",
+  "version": "1.0.0-alpha.13",
   "description": "ESLint static-argument checks aligned with ai-i18n extraction semantics.",
   "keywords": [
     "eslint",
