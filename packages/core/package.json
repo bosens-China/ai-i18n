@@ -40,6 +40,7 @@
     }
   },
   "scripts": {
+    "build": "pnpm --dir ../.. exec tsdown --filter @ai-i18n/core",
     "lint": "eslint .",
     "check": "tsc -p tsconfig.json --noEmit && pnpm lint",
     "test": "pnpm --dir ../.. exec vitest run packages/core/test --config vitest.config.ts"

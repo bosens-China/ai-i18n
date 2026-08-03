@@ -1,5 +1,12 @@
 {
   "$schema": "https://turbo.build/schema.json",
+  "globalDependencies": [
+    "eslint.config.js",
+    "pnpm-lock.yaml",
+    "tsconfig.base.json",
+    "tsdown.config.ts",
+    "vitest.config.ts"
+  ],
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
@@ -23,14 +30,11 @@
       "dependsOn": ["build"]
     },
     "check": {
-      "dependsOn": ["^build"],
-      "cache": false
+      "dependsOn": ["build", "^build"]
     },
-    "lint": {
-      "cache": false
-    },
+    "lint": {},
     "test": {
-      "cache": false
+      "dependsOn": ["build", "^build"]
     }
   }
 }

@@ -26,3 +26,5 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm check
       - run: pnpm test
+      # Release Please PR 中会出现 npm 尚未发布的新版本；仅验证这些候选 tarball。
+      - run: pnpm release:verify

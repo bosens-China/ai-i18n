@@ -23,7 +23,10 @@ export default defineConfig({
         extends: true,
         test: {
           name: 'unit',
-          include: ['packages/**/test/**/*.test.ts'],
+          include: [
+            'packages/**/test/**/*.test.ts',
+            'scripts/test/**/*.test.ts',
+          ],
           // 保留 node_modules 等默认排除项，避免 pnpm workspace 软链接重复收集测试。
           exclude: [...configDefaults.exclude, ...viteIntegrationTests],
           maxWorkers: '50%',

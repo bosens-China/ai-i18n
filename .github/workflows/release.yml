@@ -11,7 +11,9 @@ on:
       - 'package.json'
       - 'pnpm-lock.yaml'
       - 'pnpm-workspace.yaml'
+      - 'turbo.json'
       - 'tsdown.config.ts'
+      - 'scripts/release-packages.mjs'
       - '.github/workflows/release.yml'
   workflow_dispatch:
     inputs:
@@ -97,6 +99,7 @@ jobs:
       # 必须在创建 GitHub Release/tag 之前验证，避免测挂后留下孤儿 release。
       - run: pnpm check
       - run: pnpm test
+      - run: pnpm release:verify
 
   release:
     needs: verify
@@ -142,10 +145,14 @@ jobs:
             while IFS= read -r package_path; do
               pnpm --dir "$package_path" pack --pack-destination "$RUNNER_TEMP/npm-pack"
             done
+      - name: Verify packed packages and publish order
+        run: |
+          node scripts/release-packages.mjs verify-dir "$RUNNER_TEMP/npm-pack"
+          node scripts/release-packages.mjs order "$RUNNER_TEMP/npm-pack" > "$RUNNER_TEMP/npm-pack/publish-order.txt"
       - uses: actions/upload-artifact@v7
         with:
           name: npm-packages
-          path: ${{ runner.temp }}/npm-pack/*.tgz
+          path: ${{ runner.temp }}/npm-pack
           if-no-files-found: error
           retention-days: 1
 
@@ -168,9 +175,10 @@ jobs:
       - name: Publish packages
         shell: bash
         run: |
-          for tarball in "$RUNNER_TEMP"/npm-pack/*.tgz; do
+          while IFS= read -r tarball_name; do
+            tarball="$RUNNER_TEMP/npm-pack/$tarball_name"
             version=$(tar -xOf "$tarball" package/package.json |
               node -e "let input=''; process.stdin.on('data', chunk => input += chunk).on('end', () => process.stdout.write(JSON.parse(input).version))")
             dist_tag=$([[ "$version" == *-* ]] && printf '%s' "${version#*-}" | cut -d. -f1 || printf 'latest')
             npm publish "$tarball" --access public --tag "$dist_tag"
-          done
+          done < "$RUNNER_TEMP/npm-pack/publish-order.txt"

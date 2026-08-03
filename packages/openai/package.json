@@ -32,12 +32,13 @@
     }
   },
   "scripts": {
+    "build": "pnpm --dir ../.. exec tsdown --filter @ai-i18n/openai",
     "lint": "eslint .",
     "check": "tsc -p tsconfig.json --noEmit && pnpm lint",
     "test": "pnpm --dir ../.. exec vitest run packages/openai/test --config vitest.config.ts"
   },
   "dependencies": {
-    "@ai-i18n/core": "workspace:^",
+    "@ai-i18n/core": "workspace:*",
     "@langchain/core": "^1.2.4",
     "@langchain/openai": "^1.5.5",
     "langsmith": "^0.8.9"

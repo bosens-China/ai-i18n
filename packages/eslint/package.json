@@ -33,12 +33,13 @@
     }
   },
   "scripts": {
+    "build": "pnpm --dir ../.. exec tsdown --filter @ai-i18n/eslint-plugin",
     "lint": "eslint .",
     "check": "tsc -p tsconfig.json --noEmit && pnpm lint",
     "test": "pnpm --dir ../.. exec vitest run packages/eslint/test --config vitest.config.ts"
   },
   "dependencies": {
-    "@ai-i18n/analyzer": "workspace:^",
+    "@ai-i18n/analyzer": "workspace:*",
     "get-tsconfig": "^4.14.0",
     "picomatch": "^4.0.5"
   },

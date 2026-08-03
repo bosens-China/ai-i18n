@@ -171,7 +171,7 @@ importers:
   packages/analyzer:
     dependencies:
       '@ai-i18n/core':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../core
       source-map-js:
         specifier: 1.2.1
@@ -196,7 +196,7 @@ importers:
   packages/eslint:
     dependencies:
       '@ai-i18n/analyzer':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../analyzer
       eslint:
         specifier: '>=9.0.0'
@@ -227,7 +227,7 @@ importers:
   packages/mcp:
     dependencies:
       '@ai-i18n/core':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../core
       '@modelcontextprotocol/sdk':
         specifier: ^1.30.0
@@ -239,7 +239,7 @@ importers:
   packages/openai:
     dependencies:
       '@ai-i18n/core':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../core
       '@langchain/core':
         specifier: ^1.2.4
@@ -254,10 +254,10 @@ importers:
   packages/vite:
     dependencies:
       '@ai-i18n/analyzer':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../analyzer
       '@ai-i18n/core':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../core
       atomically:
         specifier: 2.1.1

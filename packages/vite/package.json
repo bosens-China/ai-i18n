@@ -52,13 +52,14 @@
     }
   },
   "scripts": {
+    "build": "pnpm --dir ../.. exec tsdown --filter @ai-i18n/vite",
     "lint": "eslint .",
     "check": "tsc -p tsconfig.json --noEmit && pnpm lint",
     "test": "pnpm --dir ../.. exec vitest run packages/vite/test --config vitest.config.ts"
   },
   "dependencies": {
-    "@ai-i18n/analyzer": "workspace:^",
-    "@ai-i18n/core": "workspace:^",
+    "@ai-i18n/analyzer": "workspace:*",
+    "@ai-i18n/core": "workspace:*",
     "atomically": "2.1.1",
     "magic-string": "1.1.0",
     "parse5": "8.0.1",

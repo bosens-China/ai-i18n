@@ -34,12 +34,13 @@
     }
   },
   "scripts": {
+    "build": "pnpm --dir ../.. exec tsdown --filter @ai-i18n/mcp",
     "lint": "eslint .",
     "check": "tsc -p tsconfig.json --noEmit && pnpm lint",
     "test": "pnpm --dir ../.. exec vitest run packages/mcp/test --config vitest.config.ts"
   },
   "dependencies": {
-    "@ai-i18n/core": "workspace:^",
+    "@ai-i18n/core": "workspace:*",
     "@modelcontextprotocol/sdk": "^1.30.0",
     "zod": "^4.0.0"
   },

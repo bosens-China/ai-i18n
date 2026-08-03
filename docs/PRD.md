@@ -15,6 +15,9 @@
 ### 平台与包边界
 
 - ai-i18n 面向 Vite 8 项目，采用 pnpm monorepo 发布 Core、Analyzer、Vite、ESLint、OpenAI 和 MCP 包。
+- Alpha 阶段的内部发布依赖使用 `workspace:*` 并打包为精确版本，避免旧消费包自动漂移到
+  新内部包。底层包变化通过 Release Please 生成配套消费包版本；正式稳定版只有在建立
+  SemVer 向后兼容和最低依赖版本验证后才能恢复浮动范围。
 - 基础 Vite 包保持框架中立。Vue 与 React 适配器按最终框架模式按需启用，不把框架运行时带入 Vanilla 项目。
 - 浏览器源码提取仅支持 ESM。Vanilla 支持 `.js`、`.mjs`、`.ts`、`.mts`；Vue 与 React 额外支持 `.jsx`、`.tsx`，Vue 额外支持 `.vue`。`.cjs`、`.cts`、`require()` 与 `module.exports` 不在支持范围内；Vite 对配置文件和 CommonJS 依赖的兼容不会扩大插件的源码提取范围。
 - 每个 Vite build 处理其入口可达的本地源码，包括 Vite root 外由 Vite 解析的 workspace 源码；协议中的 source 始终是相对当前 Vite root 的 POSIX 路径，不保存机器绝对路径。`node_modules` 中的预构建依赖不属于该范围。
@@ -122,6 +125,17 @@
 - 总 PRD 与进行中需求 PRD 均不得超过 400 个物理行。达到 400 行时使用 file-line-audit Skill 审查；超过上限时按主题拆分，不得使用按序号切分的 part 文件。
 - 总 PRD 的主题文件放在 `docs/prd/<topic>.md`，根 `docs/PRD.md` 保持索引与跨主题决策；进行中需求使用各自的 `prd/` 子目录。
 - 产品行为、MCP 契约、Vite 配置方式或框架接入流程变化时，同时更新 apps/docs、相关包 README 与两份 Agent Skill。
+
+## 发布可靠性
+
+- Turbo 只负责 workspace 构建、检查与测试的依赖顺序和缓存；Release Please 继续负责版本、
+  变更日志与 GitHub Release，npm Trusted Publishing 继续负责最终上传。
+- 发布候选验证只处理 npm 上尚不存在的当前包版本，在空 workspace 中安装同批 tarball，
+  其余内部依赖从真实 registry 解析，并实际导入公开入口。这样本地 workspace 不能掩盖已发布
+  依赖缺少 exports 或产物的错误。
+- 最终 tarball 必须使用精确内部版本、包含 package.json 声明的全部文件入口，并按内部依赖
+  拓扑上传。发布包的公共入口、运行行为或依赖契约变化使用 `fix` / `feat` 提交；`refactor`
+  不承载需要发版的变化。
 
 ## 非目标
 
