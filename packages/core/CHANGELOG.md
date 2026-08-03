@@ -1,5 +1,12 @@
 # @ai-i18n/core
 
+## [1.0.0-alpha.7](https://github.com/bosens-China/ai-i18n/compare/core-v1.0.0-alpha.6...core-v1.0.0-alpha.7) (2026-08-03)
+
+
+### Bug Fixes
+
+* **release:** 稳定内部包发布依赖 ([1734156](https://github.com/bosens-China/ai-i18n/commit/1734156fd4cf0926aa2480676f60861da59fd9c1))
+
 ## [1.0.0-alpha.6](https://github.com/bosens-China/ai-i18n/compare/core-v1.0.0-alpha.5...core-v1.0.0-alpha.6) (2026-07-29)
 
 

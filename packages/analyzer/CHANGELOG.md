@@ -1,5 +1,19 @@
 # @ai-i18n/analyzer
 
+## [1.0.0-alpha.12](https://github.com/bosens-China/ai-i18n/compare/analyzer-v1.0.0-alpha.11...analyzer-v1.0.0-alpha.12) (2026-08-03)
+
+
+### Bug Fixes
+
+* **release:** 稳定内部包发布依赖 ([1734156](https://github.com/bosens-China/ai-i18n/commit/1734156fd4cf0926aa2480676f60861da59fd9c1))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @ai-i18n/core bumped to 1.0.0-alpha.7
+
 ## [1.0.0-alpha.11](https://github.com/bosens-China/ai-i18n/compare/analyzer-v1.0.0-alpha.10...analyzer-v1.0.0-alpha.11) (2026-08-03)
 
 
