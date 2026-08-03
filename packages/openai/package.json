@@ -38,9 +38,9 @@
   },
   "dependencies": {
     "@ai-i18n/core": "workspace:^",
-    "@langchain/core": "^1.2.3",
+    "@langchain/core": "^1.2.4",
     "@langchain/openai": "^1.5.5",
-    "langsmith": "^0.8.4"
+    "langsmith": "^0.8.9"
   },
   "publishConfig": {
     "access": "public"
