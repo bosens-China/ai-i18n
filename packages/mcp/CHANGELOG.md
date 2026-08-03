@@ -1,5 +1,12 @@
 # @ai-i18n/mcp
 
+## [1.0.0-alpha.10](https://github.com/bosens-China/ai-i18n/compare/mcp-v1.0.0-alpha.9...mcp-v1.0.0-alpha.10) (2026-08-03)
+
+
+### Bug Fixes
+
+* **deps:** 升级发布包依赖 ([f5526a2](https://github.com/bosens-China/ai-i18n/commit/f5526a2bfd5875929ad8f109c4afcd3129cf0765))
+
 ## [1.0.0-alpha.9](https://github.com/bosens-China/ai-i18n/compare/mcp-v1.0.0-alpha.8...mcp-v1.0.0-alpha.9) (2026-07-30)
 
 
