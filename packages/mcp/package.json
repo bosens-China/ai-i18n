@@ -1,6 +1,6 @@
 {
   "name": "@ai-i18n/mcp",
-  "version": "1.0.0-alpha.11",
+  "version": "1.0.0-alpha.12",
   "description": "Local MCP tools for managing ai-i18n translations and human review.",
   "keywords": [
     "i18n",

@@ -1,5 +1,12 @@
 # @ai-i18n/eslint-plugin
 
+## [1.0.0-alpha.14](https://github.com/bosens-China/ai-i18n/compare/eslint-plugin-v1.0.0-alpha.13...eslint-plugin-v1.0.0-alpha.14) (2026-08-05)
+
+
+### Features
+
+* **mcp:** 优化 Agent 翻译与孤立消息管理 ([d147d3a](https://github.com/bosens-China/ai-i18n/commit/d147d3adc6b3a37319f59be5c1b20a8dbaabbad6))
+
 ## [1.0.0-alpha.13](https://github.com/bosens-China/ai-i18n/compare/eslint-plugin-v1.0.0-alpha.12...eslint-plugin-v1.0.0-alpha.13) (2026-08-03)
 
 

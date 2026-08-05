@@ -1,5 +1,12 @@
 # @ai-i18n/mcp
 
+## [1.0.0-alpha.12](https://github.com/bosens-China/ai-i18n/compare/mcp-v1.0.0-alpha.11...mcp-v1.0.0-alpha.12) (2026-08-05)
+
+
+### Features
+
+* **mcp:** 优化 Agent 翻译与孤立消息管理 ([d147d3a](https://github.com/bosens-China/ai-i18n/commit/d147d3adc6b3a37319f59be5c1b20a8dbaabbad6))
+
 ## [1.0.0-alpha.11](https://github.com/bosens-China/ai-i18n/compare/mcp-v1.0.0-alpha.10...mcp-v1.0.0-alpha.11) (2026-08-03)
 
 
