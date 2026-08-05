@@ -29,7 +29,13 @@
       "source": "bosens-China/my-skills",
       "sourceType": "github",
       "skillPath": "skills/git-step-commit/SKILL.md",
-      "computedHash": "018408e51254dddcab7aa5af3ceea1a3ec4fff2b36dbb9d55963c33368f2f766"
+      "computedHash": "185818ea40c06e929cb11e1e530afd736428131759ee0c82bbc1155bf008496b"
+    },
+    "manage-prd-docs": {
+      "source": "bosens-China/my-skills",
+      "sourceType": "github",
+      "skillPath": "skills/manage-prd-docs/SKILL.md",
+      "computedHash": "44f36df488557580b3958fc10cfe1b1859018e9759364033c5da58cc52a6cc85"
     },
     "mcp-builder": {
       "source": "anthropics/skills",
