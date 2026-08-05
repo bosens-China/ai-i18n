@@ -49,6 +49,64 @@ export default defineConfig([
 函数和 getter 在执行时重新调用 `t()`，因此可以使用。Vue `setup()` 与 Options `data()` 的
 额外检查见下方 Vue Tab。
 
+这条规则不代表文案无法提取，而是提醒“提取成功”和“切换语言后刷新”是两件事。例如图表配置、
+路由标题等长生命周期对象，不要在模块加载时保存译文快照：
+
+```ts
+// warning：模块加载时只翻译一次
+export const chartOptions = {
+  title: { text: t('销量') },
+};
+
+// 允许：在创建或重建图表时读取当前语言
+export function createChartOptions() {
+  return {
+    title: { text: t('销量') },
+  };
+}
+```
+
+工厂函数需要在首次渲染和语言变化后重新调用；如果调用方仍只在初始化时执行一次，结果仍然不会
+刷新。有限的集中式标题集合可以先声明文案，再在实际取值时翻译：
+
+```ts
+const ROUTE_TITLES = defineI18nMessages({
+  detail: '详情',
+  edit: '编辑',
+});
+
+export function getRouteTitle(name: keyof typeof ROUTE_TITLES) {
+  return t(ROUTE_TITLES[name]);
+}
+```
+
+Vue setup 中需要长期持有单个译文时使用 `tRef()`；纯 Options API 在根 `computed` 中使用
+`tComputed()`。模板、render、computed getter、事件处理器和普通延迟函数可以在执行时直接
+调用 `t()`。
+
+部分第三方配置允许把文案写成函数，例如表单校验规则。此时优先使用第三方 API 提供的延迟
+回调，不要为了消除 warning 改回固定的源语言字面量：
+
+```ts
+const passwordRules = {
+  userPassword: {
+    required: true,
+    // warning：初始化时保存译文快照
+    message: t('请输入旧密码'),
+  },
+};
+
+const lazyPasswordRules = {
+  userPassword: {
+    required: true,
+    // 允许：校验产生错误时读取当前语言
+    message: () => t('请输入旧密码'),
+  },
+};
+```
+
+只有第三方 API 明确支持函数值时才能使用这种写法；否则使用工厂函数或框架提供的响应式 API。
+
 ### `no-unsubscribed-runtime-state`
 
 检查 `getLang()` 与 `getLangLoadState()` 返回的快照。模块顶层不能缓存这些值，组件渲染也应

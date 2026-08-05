@@ -1,4 +1,5 @@
 import type { Page } from './pagination.js';
+import { deleteOrphanMessages, listOrphanMessages } from './project-orphans.js';
 import { listOverrides, listTranslations } from './project-read.js';
 import {
   clearTranslations,
@@ -20,6 +21,7 @@ export interface ListTranslationsInput {
   source_files?: readonly string[];
   view?: TranslationView;
   locales?: readonly string[];
+  include_source_files?: boolean;
   cursor?: string;
   limit: number;
 }
@@ -33,7 +35,7 @@ export interface TranslationFileItem {
 }
 
 export interface TranslationItem {
-  source_files: string[];
+  source_files?: string[];
   message: MessageReference;
   translations: Record<string, string | null>;
   missing_locales: string[];
@@ -52,10 +54,26 @@ export interface TranslationListResult<T> extends Page<T> {
   missing_translation_count: number;
 }
 
+export interface ListOrphanMessagesInput {
+  i18n_directory: string;
+  locales?: readonly string[];
+  cursor?: string;
+  limit: number;
+}
+
+export interface OrphanMessageItem {
+  orphan_id: string;
+  message: MessageReference;
+  translations: Record<string, string | null>;
+}
+
+export type OrphanMessageListResult = Page<OrphanMessageItem>;
+
 export interface ListOverridesInput {
   i18n_directory: string;
   source_files?: readonly string[];
   locales?: readonly string[];
+  include_source_files?: boolean;
   cursor?: string;
   limit: number;
 }
@@ -66,7 +84,7 @@ export interface OverrideItem {
   message: MessageReference;
   locale: string;
   value: string;
-  source_files: string[];
+  source_files?: string[];
   orphaned: boolean;
 }
 
@@ -107,6 +125,11 @@ export interface DeleteOverridesInput {
   override_ids: readonly string[];
 }
 
+export interface DeleteOrphanMessagesInput {
+  i18n_directory: string;
+  orphan_ids: readonly string[];
+}
+
 export interface SetResult {
   added_count: number;
   overwritten_count: number;
@@ -138,6 +161,12 @@ export class AiI18nProjectService {
     return listOverrides(input);
   }
 
+  listOrphanMessages(
+    input: ListOrphanMessagesInput,
+  ): Promise<OrphanMessageListResult> {
+    return listOrphanMessages(input);
+  }
+
   setTranslations(input: SetTranslationsInput): Promise<SetResult> {
     return setTranslations(input);
   }
@@ -152,5 +181,11 @@ export class AiI18nProjectService {
 
   deleteOverrides(input: DeleteOverridesInput): Promise<DeleteResult> {
     return deleteOverrides(input);
+  }
+
+  deleteOrphanMessages(
+    input: DeleteOrphanMessagesInput,
+  ): Promise<DeleteResult> {
+    return deleteOrphanMessages(input);
   }
 }

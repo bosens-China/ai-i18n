@@ -160,6 +160,36 @@ export default { computed: { label: tComputed('保存') } }; // 纯 Options：�
 export default { data: () => ({ label: t('保存') }) }; // warning：Options data 快照
 ```
 
+配置对象也要按生命周期选择写法。模块顶层直接保存图表或菜单配置会得到初始化快照；改成工厂函数，
+并在首次渲染和语言变化后重新创建配置：
+
+```ts
+// warning
+export const chartOptions = { title: { text: t('销量') } };
+
+// 允许：调用时读取当前语言
+export const createChartOptions = () => ({
+  title: { text: t('销量') },
+});
+```
+
+集中管理有限标题时，使用 `defineI18nMessages()` 声明静态集合，并在 getter 或普通函数执行时
+调用 `t(ROUTE_TITLES[name])`。这样既能完整提取，也不会长期保存初始化译文。
+
+第三方配置明确支持函数值时，可以把翻译放进该回调。例如 async-validator 的校验消息：
+
+```ts
+const rules = {
+  password: {
+    required: true,
+    message: () => t('请输入旧密码'),
+  },
+};
+```
+
+规则只判断 `t()` 的执行位置，不会推断某个第三方字段是否接受函数。API 不支持延迟回调时，
+使用工厂函数或框架提供的响应式 API；不要改回固定的源语言字面量。
+
 `recommended`、`vue`、`vue-auto-import` 与 `react-auto-import` 还启用
 `ai-i18n/no-unsubscribed-t`。Vue template、render 与 JSX / TSX 中的 Runtime `t` 会追踪
 adapter revision，可以直接使用。React JSX / TSX 的组件渲染函数仍应从 `useI18n()` 获取

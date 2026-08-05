@@ -47,7 +47,6 @@ export async function readJsonRequired(file: string): Promise<unknown> {
     if (isNotFound(error)) {
       fail('REQUIRED_PROTOCOL_FILE_MISSING', {
         file: path.basename(file),
-        next_action: 'RUN_VITE_DEV_OR_BUILD',
       });
     }
     throw error;
@@ -81,7 +80,6 @@ async function requireDirectory(directory: string): Promise<void> {
     if (isNotFound(error)) {
       fail('REQUIRED_PROTOCOL_DIRECTORY_MISSING', {
         directory: path.basename(directory),
-        next_action: 'RUN_VITE_DEV_OR_BUILD',
       });
     }
     throw error;
@@ -231,13 +229,11 @@ export function cacheMessage(
   if (!cached) {
     fail('MESSAGE_MISSING_FROM_TRANSLATIONS', {
       message_id: message.id,
-      next_action: 'RUN_VITE_DEV_OR_BUILD',
     });
   }
   if (cached.source !== message.source || cached.comment !== message.comment) {
     fail('MESSAGE_METADATA_MISMATCH', {
       message_id: message.id,
-      next_action: 'RUN_VITE_DEV_OR_BUILD',
     });
   }
   return cached;
@@ -253,7 +249,6 @@ async function readProtocolFile<T>(
   } catch {
     fail('INVALID_PROTOCOL_FILE', {
       file: path.basename(file),
-      next_action: 'RUN_VITE_DEV_OR_BUILD',
     });
   }
 }

@@ -8,11 +8,17 @@ sibling apps.
 
 ## MCP errors
 
+First follow the returned `next_action`. Use this table only when more context is needed or an older
+server does not return that field.
+
 | Error | Recovery |
 | --- | --- |
 | `I18N_DIRECTORY_NOT_FOUND` or `I18N_DIRECTORY_NOT_ABSOLUTE` | Recompute Vite root plus `aiI18n.directory`, then use an absolute path. |
 | `REQUIRED_PROTOCOL_FILE_MISSING` or `REQUIRED_PROTOCOL_DIRECTORY_MISSING` | Run one full Build for the same app and retry once. |
-| `SOURCE_FILE_NOT_FOUND` | Correct the exact `source_files` filter using paths returned by the list tool. |
+| `INVALID_PROTOCOL_JSON`, `INVALID_PROTOCOL_FILE`, or `PROTOCOL_PATH_NOT_DIRECTORY` | Restore or repair the reported protocol path, run one full Build, then retry. |
+| `DUPLICATE_EXTRACTED_SOURCE` | Remove the duplicate extracted JSON files for the reported source, run one full Build, then retry. |
+| `MESSAGE_ID_SOURCE_CONFLICT`, `MESSAGE_MISSING_FROM_TRANSLATIONS`, or `MESSAGE_METADATA_MISMATCH` | Rebuild with a clean extracted directory, then list again. Report the returned details if the error persists. |
+| `SOURCE_FILE_NOT_FOUND` | List with `view: "summary"` and without the filter, then copy an exact returned `source_file`. |
 | `MESSAGE_NOT_FOUND` | List again and copy the exact returned `message` object. |
 | `DUPLICATE_TARGET_CONFLICT` | Choose one value for the repeated message and locale, then retry the batch. |
 | `TRANSLATION_CONFLICT` | Re-list current values. Set `overwrite_existing: true` only with explicit user approval. |
@@ -21,6 +27,10 @@ sibling apps.
 | `UNKNOWN_LOCALE` | Use locale values from `aiI18n({ locales })`, not display labels. |
 | `INVALID_CURSOR` | Restart the corresponding list without the cursor. |
 | `INVALID_OVERRIDE_ID` | List overrides again and copy the returned ID exactly. |
+| `INVALID_ORPHAN_ID` | Run a full Build, list orphan messages again, and copy the returned ID exactly. |
+| `ORPHAN_MESSAGE_REACTIVATED` | Do not retry deletion from the stale list. Run a full Build, re-list, show the changed result, and request approval again. |
+| `ORPHAN_ID_CONFLICT` | Stop cleanup and report the returned error details; do not retry deletion. |
+| `DUPLICATE_TARGET` | Remove repeated targets and retry. |
 
 ## Tool unavailable
 

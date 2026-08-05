@@ -34,14 +34,21 @@ server 使用 stdio 通信，标准输出专用于 MCP 协议。
 ## 工具
 
 - `ai_i18n_list_translations`：默认直接列出 `translations.json` 中仍缺失的消息，也可返回
-  文件汇总或全部消息。首次调用省略 `source_files` 即可发现路径。相同 `source + comment`
-  无论出现在哪些文件都只返回一条，并在 `source_files` 中列出完整共享范围。
+  文件汇总或全部消息。首次调用省略 `source_files` 以扫描整个应用。相同 `source + comment`
+  无论出现在哪些文件都只返回一条。响应默认省略出现文件；需要检查完整共享范围时显式传
+  `include_source_files: true`。
 - `ai_i18n_set_translations`：默认只填充 `null`；显式传
   `overwrite_existing: true` 时允许覆盖非空译文。写入目标使用列表返回的
   `message: { source, comment? }`，调用方不接触内部 message ID。
 - `ai_i18n_clear_translations`：把指定译文重置为 `null`，不删除消息或 locale。
+- `ai_i18n_list_orphan_messages`：只在用户明确要求审查或清理时调用。完整 Build 后，列出
+  `translations.json` 中已不再被 `extracted/` 引用的消息，并返回删除所需的 opaque
+  `orphan_id`。
+- `ai_i18n_delete_orphan_messages`：用户审查列表并明确批准后，按 `orphan_id` 原子删除孤立
+  Translation Memory。删除前会整批复验；任一消息重新被源码引用时，整批失败且不修改文件。
 - `ai_i18n_list_overrides`：逐 locale 列出 `overrides.json` 中的人工值，包括 orphan，并
-  返回删除所需的 opaque `override_id`。
+  返回删除所需的 opaque `override_id`。响应同样默认省略出现文件，可用
+  `include_source_files: true` 显式请求。
 - `ai_i18n_set_overrides`：添加或覆盖人工值；`default` scope 影响同一原文的全部调用，
   `message` scope 只接受带 comment 的消息；两种 scope 都使用公开 `message` 对象定位。
 - `ai_i18n_delete_overrides`：使用列表返回的 `override_id` 删除具体人工值。
@@ -51,6 +58,10 @@ server 使用 stdio 通信，标准输出专用于 MCP 协议。
 即可无遗漏翻页。所有工具只返回一份紧凑 JSON
 `TextContent`，不重复返回 `structuredContent`。工具名、字段名、描述和错误码使用英文，
 由 Agent 按用户语言解释。
+
+批量 `updates` 或 `targets` 中重复出现同一个未知字段时，参数校验只返回一条合并错误，包含
+出现次数、首次位置、合法字段和下一步修改方式。业务错误返回稳定 `error_code` 的同时也会返回
+可直接执行的 `next_action`；Agent 应优先按该动作恢复，再使用错误码文档兜底。
 
 普通翻译更新示例：
 
@@ -78,9 +89,25 @@ server 使用 stdio 通信，标准输出专用于 MCP 协议。
 - 每批最多 500 个输入。相同目标与相同值重复出现时只写一次并返回
   `deduplicated_count`；同一目标出现不同值时整批以 `DUPLICATE_TARGET_CONFLICT` 失败。
 - `affected_file_count` 统计目标消息在应用中实际出现的源文件数量。写入一次即可影响
-  `source_files` 中的全部 occurrence。
+  全部 occurrence；需要逐文件检查时，在列表调用中请求 `include_source_files: true`。
 - 模板占位符必须保持一致，空字符串是合法译文。
 - Vite Dev 运行时会自动重建 locales；否则在下一次 `vite dev` 或 `vite build` 时同步。
 
 写入时若 `message` 不再存在，请重新调用 `ai_i18n_list_translations`，并原样复制返回的
-`message` 对象。`source_files` 只用于展示共享范围和精确文件过滤，不是写入身份的一部分。
+`message` 对象。`source_files` 过滤器只用于缩小列表范围；响应中的同名字段仅在显式请求时返回，
+两者都不是写入身份的一部分。
+
+## 孤立消息清理
+
+普通补译、审校或验证任务不得自动检查或删除孤立消息。只有用户明确要求审查或清理时，Agent
+才执行以下流程：
+
+1. 运行目标应用的一次完整 Vite Build。Dev 只处理已访问模块，不能作为安全清理依据。
+2. 完整翻页读取 `ai_i18n_list_orphan_messages`，向用户展示数量、消息和仍保存的译文。
+3. 用户明确批准具体清理范围后，原样复制 `orphan_id` 到
+   `ai_i18n_delete_orphan_messages`；不得自行构造 ID。
+4. 再次列出孤立消息，验证删除结果。
+
+孤立消息工具只读写 `translations.json`。`overrides.json` 中的孤立人工值继续通过 override
+列表与删除工具独立审查，不能随 Translation Memory 联动删除。运行清理期间不要并行执行 Build
+或手工修改协议文件。

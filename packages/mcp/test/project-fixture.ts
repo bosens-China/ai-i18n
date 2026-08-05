@@ -109,6 +109,31 @@ export async function addFixtureMessage(
   await fs.writeFile(memoryPath, JSON.stringify(memory));
 }
 
+export async function addFixtureOrphanMessage(
+  directory: string,
+  message: {
+    id: string;
+    source: string;
+    comment?: string;
+    translations?: Record<string, string | null>;
+  },
+): Promise<void> {
+  const memoryPath = path.join(directory, 'translations.json');
+  const memory = JSON.parse(await fs.readFile(memoryPath, 'utf8')) as {
+    messages: Record<string, unknown>;
+  };
+  memory.messages[message.id] = {
+    source: message.source,
+    sourceLang: 'zh-CN',
+    ...(message.comment ? { comment: message.comment } : {}),
+    translations: message.translations ?? {
+      'en-US': null,
+      'ja-JP': null,
+    },
+  };
+  await fs.writeFile(memoryPath, JSON.stringify(memory));
+}
+
 export async function addFixtureSourceFile(
   directory: string,
   sourceFile: string,

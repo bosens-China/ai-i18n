@@ -91,3 +91,20 @@ full Build processes the target entry's reachable module graph. The Build create
 - the rebuildable `extracted/` and `locales/` output.
 
 Do not edit `extracted/` or `locales/` manually.
+
+## Diagnose transforms that hide translation calls
+
+ai-i18n already runs in Vite's `pre` plugin tier so it can analyze browser source before normal
+framework transforms. If a valid `t()` call is present in the checked-in source but missing after a
+full Build, first confirm that the module is reachable from the target entry. Then inspect earlier
+`pre` plugins that replace macros or rewrite the same source. Plugins in the same tier can pass their
+transformed result to ai-i18n before extraction.
+
+Temporarily disable the suspected transform or place `aiI18n()` before a same-tier plugin and rebuild.
+If extraction returns, preserve the ordering only when the removed call is genuinely owned by
+ai-i18n. Also inspect per-hook ordering when array order has no effect.
+
+Do not reorder plugins to extract text from a compile-time macro field that another plugin already
+translates. Keep that field as the macro's documented static literal and remove the redundant `t()`.
+For example, a permission macro that owns page-title translation should receive `title: '详情'`, not
+`title: t('详情')`.

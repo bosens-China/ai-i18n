@@ -12,10 +12,15 @@ discovers source files and returns writable missing entries.
 - Use `message.source` as translation input and `message.comment` as author context.
 - Use `missing_locales` as the default target locale set.
 - Copy the complete `message` object into write tools. Internal message IDs are not public inputs.
-- Treat `source_files` as the complete shared occurrence range. It can filter list operations but is
-  not part of write identity.
+- List items omit `source_files` by default. Set `include_source_files: true` only when the task needs
+  the complete shared occurrence range or per-file impact reporting. The `source_files` input can
+  still filter list operations and is not part of write identity.
 
-One message update affects every listed source file.
+One message update affects every source file where that message occurs.
+
+Batch schemas merge the same unknown top-level item key into one validation error with its occurrence
+count, first index, valid keys, and a retry action. Remove the invalid key from every item before
+retrying; do not fix only the first reported index.
 
 Physical files under `extracted/` use the normalized source's SHA-256 as their filename. The JSON
 `source` field is authoritative, and MCP list filters read that value; never derive `source_files`
@@ -34,6 +39,27 @@ Use `ai_i18n_set_translations` for ordinary translation work. Each update contai
 
 Use `ai_i18n_clear_translations` only when the user asks to reset specific automatic translations.
 It sets the selected fields to `null` without removing messages, locales, or human reviews.
+
+## Orphan Translation Memory
+
+Use orphan tools only when the user explicitly requests an orphan audit or cleanup. They are not part
+of ordinary translation, human review, or completion verification.
+
+1. Run one full Vite Build for the selected app. Dev extraction is incomplete until every module is
+   requested and is not safe evidence for deletion.
+2. Call `ai_i18n_list_orphan_messages`, follow every page in the requested scope, and show the user the
+   messages and retained translations.
+3. After the user explicitly approves deletion, copy the returned opaque `orphan_id` values into
+   `ai_i18n_delete_orphan_messages`. Never construct an orphan ID.
+4. Repeat the list to verify the remaining orphan set.
+
+The delete tool removes complete messages from `translations.json`, not individual locale values. It
+revalidates the whole batch against the current extracted set before writing; if any target is active,
+the whole batch fails. Rebuild, re-list, show the changed result, and obtain approval again. Do not run
+Build or edit protocol files concurrently with cleanup.
+
+Orphan translation deletion never removes `overrides.json` values. Inspect and delete orphaned human
+review values separately through the override tools and only with explicit approval.
 
 ## Human review
 
@@ -56,4 +82,5 @@ To remove a human value, list it first and pass the returned opaque `override_id
 - MCP does not modify `extracted/` or `locales/`.
 - Preserve every template token before writing.
 - After automatic translation changes, repeat `ai_i18n_list_translations` with the same scope.
+- After orphan deletion, repeat `ai_i18n_list_orphan_messages` after the same complete Build.
 - After human review changes, repeat `ai_i18n_list_overrides` with the same scope.

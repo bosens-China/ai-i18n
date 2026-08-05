@@ -33,7 +33,12 @@ export async function listTranslations(
   const fileItems = files.map((file) =>
     summarizeFile(project, file, input.locales),
   );
-  const messageItems = collectMessages(project, files, input.locales);
+  const messageItems = collectMessages(
+    project,
+    files,
+    input.locales,
+    input.include_source_files,
+  );
   const view = input.view ?? 'missing';
   const items =
     view === 'summary'
@@ -100,7 +105,7 @@ export async function listOverrides(
       filesBySource.set(message.source, files);
     }
   }
-  const items: OverrideItem[] = [];
+  const items: OverrideItemWithSourceFiles[] = [];
   for (const [source, override] of Object.entries(project.overrides.messages)) {
     const defaultFiles = [...(filesBySource.get(source) ?? [])].sort();
     for (const [locale, value] of Object.entries(override.default ?? {})) {
@@ -160,8 +165,11 @@ export async function listOverrides(
           ? 1
           : 0,
     );
+  const visibleItems = input.include_source_files
+    ? filtered
+    : filtered.map(withoutSourceFiles);
   const page = paginate(
-    filtered,
+    visibleItems,
     overrideItemKey,
     input.limit,
     input.cursor,
@@ -224,12 +232,13 @@ function collectMessages(
   project: LoadedProject,
   files: readonly ExtractedFile[],
   locales?: readonly string[],
+  includeSourceFiles = false,
 ): TranslationItem[] {
   const selectedFiles = new Set(files.map((file) => file.source));
   const selectedMessageIds = new Set(
     files.flatMap((file) => file.messages.map((message) => message.id)),
   );
-  // 文件过滤只缩小消息集合；source_files 始终展示该消息在整个应用中的真实共享范围。
+  // 文件过滤只缩小消息集合；显式请求时返回的 source_files 仍覆盖整个应用的共享范围。
   const occurrences = collectOccurrences(project.extracted);
   return [...occurrences.entries()]
     .filter(([messageId]) => selectedMessageIds.has(messageId))
@@ -240,7 +249,7 @@ function collectMessages(
       const translations = filterTranslations(message.translations, locales);
       const sourceFiles = [...new Set(matching.map((item) => item.file))];
       return {
-        source_files: sourceFiles,
+        ...(includeSourceFiles ? { source_files: sourceFiles } : {}),
         message: messageReference(selected),
         translations,
         missing_locales: Object.entries(translations)
@@ -261,10 +270,10 @@ function collectMessages(
 }
 
 function appendOverride(
-  items: OverrideItem[],
+  items: OverrideItemWithSourceFiles[],
   input: {
     target: Parameters<typeof encodeOverrideId>[0];
-    item: Omit<OverrideItem, 'override_id' | 'orphaned'>;
+    item: Omit<OverrideItemWithSourceFiles, 'override_id' | 'orphaned'>;
   },
 ): void {
   items.push({
@@ -272,6 +281,19 @@ function appendOverride(
     ...input.item,
     orphaned: input.item.source_files.length === 0,
   });
+}
+
+type OverrideItemWithSourceFiles = OverrideItem & { source_files: string[] };
+
+function withoutSourceFiles(item: OverrideItemWithSourceFiles): OverrideItem {
+  return {
+    override_id: item.override_id,
+    scope: item.scope,
+    message: item.message,
+    locale: item.locale,
+    value: item.value,
+    orphaned: item.orphaned,
+  };
 }
 
 function overrideItemKey(item: OverrideItem): string {

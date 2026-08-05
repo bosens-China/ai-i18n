@@ -99,6 +99,7 @@
 - ESLint 的显式 `settings['ai-i18n'].alias` 拥有最高优先级。未命中显式 alias 时，从被检查文件向上查找最近的 `tsconfig.json` 或 `jsconfig.json`；同一目录同时存在两者时优先使用 `tsconfig.json`。项目配置继续解析 `extends` 与 references，并按 `files`、`include`、`exclude` 选择实际项目。
 - 显式 alias 面向 Vite 与 ESLint 共享的本地源码别名，replacement 必须是绝对路径。第一版只承诺字符串到字符串的对象形式，不模拟正则 alias、`customResolver` 或 resolver plugin。
 - Vite 继续使用自身的 resolve()，因此遵从最终 Vite alias、tsconfigPaths 与已注册 resolver plugin；ESLint 不加载或执行 Vite 配置。
+- ai-i18n 在 Vite `pre` 阶段分析源码；同阶段更早的插件仍可能先改写合法的 `t()`。排障先确认模块可达和翻译归属，再临时禁用或调整同阶段插件顺序。由其他构建期宏自行翻译的字段保持宏要求的静态字面量，不为重复的 `t()` 新增宏白名单、ESLint 豁免或强制排序。
 
 ## MCP 与 Agent 协作
 
@@ -109,8 +110,13 @@
 - MCP 读取目标 build 的完整 extracted 集合，因此同一目录同时包含应用源码和它实际消费的本地 workspace 源码；纯源码子包不是独立 MCP 目标。
 - MCP 的公开消息身份是 source 与可选静态 comment 组成的对象；内部编码后的 message ID
   不暴露给调用方，source_file 也不参与写入身份。
-- 相同消息跨文件共享一份翻译。列表按消息聚合并返回完整 source_files；相同目标和值的批量
-  重复输入只执行一次，同一目标的不同值必须失败，不能由工具猜测。
+- 相同消息跨文件共享一份翻译。列表按消息聚合，默认省略 source_files；只有显式请求时才返回
+  完整共享范围。相同目标和值的批量重复输入只执行一次，同一目标的不同值必须失败，不能由工具猜测。
+- 批量参数中重复出现的同一个未知字段合并为一条校验错误，并返回出现次数、首次位置、合法字段和
+  修改动作。MCP 业务错误除稳定错误码和上下文外，始终返回 Agent 可直接执行的 next_action。
+- 孤立 Translation Memory 使用独立的只读列表与破坏性删除工具。普通补译、审校和验证不得自动
+  进入该流程；用户明确要求后，Agent 先完成完整 Build 和全量审查，再取得删除授权。删除只接受
+  列表返回的 opaque ID，在写入前整批复验消息仍未被源码引用，并且不联动删除人工 overrides。
 - 列表默认请求 100 条并允许提高到 500 条；响应大小保护只能减少完整记录数量，不能截断单条
   或破坏游标推进。
 - MCP 只读取 extracted/ 以校验消息归属；翻译工具只修改 translations.json，人工工具只修改 overrides.json，不修改 extracted/ 或 locales/。

@@ -65,11 +65,11 @@ test('lists missing messages by default and file summaries on request', async ()
     has_more: true,
   });
   expect(missing.items[0]).toMatchObject({
-    source_files: ['src/home.ts'],
     message: { source: '保存' },
     translations: { 'en-US': null, 'ja-JP': '保存する' },
     missing_locales: ['en-US'],
   });
+  expect(missing.items[0]).not.toHaveProperty('source_files');
 
   const remaining = await service.listTranslations({
     i18n_directory: directory,
@@ -128,6 +128,7 @@ test('lists missing messages by default and file summaries on request', async ()
   });
   const shared = await service.listTranslations({
     i18n_directory: directory,
+    include_source_files: true,
     limit: 100,
   });
   expect(
@@ -143,6 +144,7 @@ test('lists missing messages by default and file summaries on request', async ()
   const sharedFromOneFile = await service.listTranslations({
     i18n_directory: directory,
     source_files: ['src/shared.ts'],
+    include_source_files: true,
     limit: 100,
   });
   expect(sharedFromOneFile.items).toEqual([
@@ -187,7 +189,6 @@ test('lists default, message-scoped, and orphaned human overrides', async () => 
         message: { source: '保存' },
         locale: 'en-US',
         value: 'Keep',
-        source_files: ['src/home.ts'],
         orphaned: false,
         override_id: expect.any(String),
       }),
@@ -200,8 +201,26 @@ test('lists default, message-scoped, and orphaned human overrides', async () => 
       expect.objectContaining({
         message: { source: '旧文案' },
         value: 'Legacy',
-        source_files: [],
         orphaned: true,
+      }),
+    ]),
+  );
+  expect(result.items.every((item) => !('source_files' in item))).toBe(true);
+
+  const withSourceFiles = await new AiI18nProjectService().listOverrides({
+    i18n_directory: directory,
+    include_source_files: true,
+    limit: 50,
+  });
+  expect(withSourceFiles.items).toEqual(
+    expect.arrayContaining([
+      expect.objectContaining({
+        message: { source: '保存' },
+        source_files: ['src/home.ts'],
+      }),
+      expect.objectContaining({
+        message: { source: '旧文案' },
+        source_files: [],
       }),
     ]),
   );
@@ -281,7 +300,6 @@ test('rejects invalid project paths, filters, and protocol files with codes', as
     code: 'REQUIRED_PROTOCOL_FILE_MISSING',
     details: {
       file: 'overrides.json',
-      next_action: 'RUN_VITE_DEV_OR_BUILD',
     },
   });
 });
