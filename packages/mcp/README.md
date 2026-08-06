@@ -14,11 +14,11 @@ MCP 不扫描 workspace，也不执行 Vite 配置。Agent 必须先确认目标
 `extracted/` 使用 source 的 SHA-256 作为物理文件名。MCP 扫描 JSON 内容并使用其中的
 标准化 `source`，不会从 hash 文件名推断源码路径。
 
-MCP 会校验绝对路径、目录是否存在，以及 `storage.json` 所选的分片 JSON 或 SQLite
-Translation Memory、`overrides.json` 和 `extracted/` 是否符合当前协议。MCP 不读取或执行
-Vite 配置；SQLite 的数据库路径由 core 按用户目录解析。`extracted/` 是不提交 Git 的本地 Build 产物。首次使用、
-目录缺失或为空，或者切换分支和修改提取相关配置后，先运行目标应用的一次完整 Vite Build。
-Dev 只包含浏览器实际请求过的模块。
+MCP 会校验绝对路径、目录是否存在，以及 Translation Memory、`overrides.json` 和 `extracted/`
+是否符合当前协议。缺少 `storage.json` 时读取分片 JSON；存在 SQLite 标记时由 Core 打开用户级
+全局数据库，不要求项目内存在 SQLite 文件。MCP 不读取或执行 Vite 配置。`extracted/` 是不提交 Git
+的本地 Build 产物。首次使用、目录或本机 SQLite 缓存缺失，或者切换分支和修改提取相关配置后，
+先运行目标应用的一次完整 Vite Build。Dev 只包含浏览器实际请求过的模块。
 
 MCP 宿主可以直接执行 npm 包：
 
@@ -85,7 +85,7 @@ server 使用 stdio 通信，标准输出专用于 MCP 协议。
 
 ## 写入边界
 
-- 翻译工具只修改 `storage.json` 所选的 Translation Memory；人工审校工具只修改 `overrides.json`。
+- 翻译工具在缺少 `storage.json` 时修改分片 JSON，存在 SQLite 标记时修改全局数据库；人工审校工具只修改 `overrides.json`。
 - MCP 不读取 Vite 的 `provider.cache`；Provider 是否刷新进程缓存，不改变 Agent 的列表、写入或清除行为。
 - MCP 不修改 `extracted/` 或 `locales/`。
 - 每批写入都取得跨进程锁，在锁内重读并校验最新文件，然后按字段原子更新。

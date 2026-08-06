@@ -1,7 +1,7 @@
 # @ai-i18n/vite
 
 Vite 的 ai-i18n 主插件。它在 Dev/Build 中提取显式 `t()`，默认维护可提交 Git 的分片
-`translations/*.json`、`storage.json`、`overrides.json` 与 `src/ai-i18n.d.ts`，并生成可通过
+`translations/*.json`、`overrides.json` 与 `src/ai-i18n.d.ts`，并生成可通过
 Build 重建的 `extracted/*.json`、`locales/**`，同时提供浏览器虚拟 Runtime。
 
 alpha 阶段请安装 `@ai-i18n/vite@alpha`，避免无标签安装命中较旧的 `latest`。
@@ -43,7 +43,7 @@ aiI18n({
 
 默认 `translationMemory.storage: 'json'`，消息按稳定 SHA-256 前缀写入
 `i18n/translations/<xx>.json`，并由 `manifest.json` 记录 revision 和有效分片。旧版单文件
-`translations.json` 会自动迁移；`storage.json` 记录当前驱动，供 Vite 与 MCP 共同发现。
+`translations.json` 会自动迁移。JSON 不生成 `storage.json`；缺少标记时 Vite 与 MCP 都选择 JSON。
 
 需要在同一台电脑的项目间共享自动译文时，可改用用户级全局 SQLite：
 
@@ -56,6 +56,7 @@ aiI18n({
 ```
 
 数据库默认位于系统用户数据目录，可用 `AI_I18N_DATA_DIR` 覆盖，不写入项目也不提交 Git。
+项目内的 `storage.json` 只声明 SQLite，应与 `overrides.json` 一起提交。
 数据库物理全局、逻辑按规范化项目路径绑定；只有同一语义身份的候选唯一时才跨项目自动复用，
 候选冲突时保持缺失。`overrides.json` 始终位于项目内且优先级最高。
 

@@ -7,19 +7,19 @@ ai-i18n 默认在 Vite root 下创建 `i18n/` 目录，用来保存译文和本�
 
 ```text
 i18n/
-├── storage.json
-├── translations/
+├── translations/          # 默认 JSON 存储
 │   ├── manifest.json
 │   └── 00.json ... ff.json
 ├── overrides.json
 ├── extracted/
-└── locales/
+├── locales/
+└── storage.json           # 仅 SQLite 存储
 ```
 
 你通常只需要关注两类文件：
 
 - `translations/`：默认的分片 JSON Translation Memory，保存自动翻译或 Agent 补齐的译文。
-- `storage.json`：记录当前项目选择 JSON 还是 SQLite，不包含本机数据库路径。
+- `storage.json`：仅在选择 SQLite 时生成。缺少该文件表示使用默认 JSON；文件不包含本机数据库路径。
 - `overrides.json`：人工确认过的最终译文。它优先于自动翻译结果。
 
 `extracted/` 和 `locales/` 都是构建产物。插件会根据源码和上述译文重新生成它们，不要直接编辑。
@@ -30,8 +30,8 @@ i18n/
 
 - `src/ai-i18n.d.ts`，或通过 `dts` 配置的声明文件；
 - Vue 自动导入模式生成的相邻 `.vue.d.ts` 声明文件；
-- `i18n/storage.json`；
 - `i18n/translations/**/*.json`（使用默认 JSON 存储时）；
+- `i18n/storage.json`（使用 SQLite 存储时）；
 - `i18n/overrides.json`。
 
 将以下目录加入 `.gitignore`：
@@ -39,6 +39,7 @@ i18n/
 ```text
 i18n/extracted/
 i18n/locales/
+i18n/storage.json
 ```
 
 :::important

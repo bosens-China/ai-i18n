@@ -71,16 +71,17 @@
 
 ### 文件职责与最终值
 
-- storage.json 声明当前 Translation Memory 驱动；默认的 translations/ 保存可审查分片 JSON，可选 SQLite 保存到用户级全局数据库；overrides.json 保存项目人工审校；extracted/ 保存插件生成的源码结构；locales/ 是派生运行时产物。
+- 缺少 storage.json 表示使用默认分片 JSON；该文件只声明 SQLite。默认的 translations/ 保存可审查分片 JSON，可选 SQLite 保存到用户级全局数据库；overrides.json 保存项目人工审校；extracted/ 保存插件生成的源码结构；locales/ 是派生运行时产物。
 - 最终译文优先级固定为：comment 对应的人工值、同 source 的人工默认值、AI 翻译、source fallback。
 - 人工审校必须写入 overrides.json，不污染 AI Translation Memory。空字符串是有效人工译文。
-- JSON 模式提交源码、生成的类型声明、storage.json、translations/ 和 overrides.json；SQLite 模式只提交 storage.json 与 overrides.json，用户级数据库不提交。extracted/ 与 locales/ 可由 Build 重建，不提交。
+- JSON 模式提交源码、生成的类型声明、translations/ 和 overrides.json；SQLite 模式只提交 storage.json 与 overrides.json，用户级数据库不提交。extracted/ 与 locales/ 可由 Build 重建，不提交。
 - 一个 Vite build 独占一个协议目录。共享源码分别进入每个消费 build 的目录；多个 build 不能共用 directory，但 SQLite 可通过一个物理数据库中的逻辑项目绑定复用全局候选。
 
 ### Translation Memory 存储
 
 - JSON 是默认驱动。消息按 message ID 的 SHA-256 前缀稳定分片，manifest 保存 revision 与有效分片；单次事务先写完整 journal，再提交分片与 manifest，进程中断后由 journal 恢复。
 - Alpha 阶段将单文件 translations.json 自动迁移为分片 JSON，迁移后删除旧权威来源；首个非 prerelease 稳定版本不再保留该兼容层，也不保留其他未发布旧协议的长期兼容层。
+- Alpha 阶段会接受并删除旧的 JSON 模式 storage.json；稳定版只接受 SQLite 标记，缺少标记直接表示 JSON。
 - SQLite 使用平台用户数据目录中的单个全局数据库，并允许 AI_I18N_DATA_DIR 覆盖；项目目录只记录驱动，不记录数据库路径、源码绝对路径、Provider 配置或密钥。
 - SQLite 项目身份由 realpath 后的 i18n 目录 hash 派生。候选身份包含 sourceLang、targetLang、source 与 comment；项目已有绑定优先，无绑定时只自动复用唯一候选，多个不同候选保持缺失。
 - SQLite 是本机可丢弃缓存，不提供跨机器或团队同步。数据库丢失后由 Provider 重新生成，项目人工 overrides 不受影响。
@@ -141,7 +142,7 @@
   列表返回的 opaque ID，在写入前整批复验消息仍未被源码引用，并且不联动删除人工 overrides。
 - 列表默认请求 100 条并允许提高到 500 条；响应大小保护只能减少完整记录数量，不能截断单条
   或破坏游标推进。
-- MCP 只读取 extracted/ 以校验消息归属；翻译工具按 storage.json 修改分片 JSON 或 SQLite Translation Memory，人工工具只修改 overrides.json，不修改 extracted/ 或 locales/，也不执行 Vite 配置。
+- MCP 只读取 extracted/ 以校验消息归属；翻译工具在缺少 storage.json 时修改分片 JSON，存在 SQLite 标记时修改全局数据库。人工工具只修改 overrides.json，不修改 extracted/ 或 locales/，也不执行 Vite 配置。
 - MCP 不读取 `provider.cache`。Vite 的进程级 Provider 刷新不能过滤、阻止或覆盖在途 Agent 写入。
 - 工具名、字段和稳定错误码使用英文；Agent 按用户语言解释结果。每次调用只返回一份紧凑 JSON 文本。
 - Agent 的安全操作流程以 use-ai-i18n-mcp Skill 为准；Vite 接入流程以 integrate-ai-i18n Skill 为准。

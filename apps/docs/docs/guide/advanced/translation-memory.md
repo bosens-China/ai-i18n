@@ -22,8 +22,8 @@ aiI18n({
 });
 ```
 
-分片文件、`storage.json` 与 `overrides.json` 应随源码提交。不要按行数手工移动消息；插件会稳定决定
-每条消息所在的分片。
+分片文件与 `overrides.json` 应随源码提交。JSON 是默认存储，因此项目内不会生成 `storage.json`。
+不要按行数手工移动消息；插件会稳定决定每条消息所在的分片。
 
 ## 可选：用户级全局 SQLite
 
@@ -39,8 +39,8 @@ aiI18n({
 });
 ```
 
-数据库位于当前用户的数据目录，不会写入项目，也不需要提交 Git。项目内仍会保留一个小型
-`storage.json`，让 Vite 与 MCP 使用同一种存储。SQLite 只在同一原文、源语言、目标语言和
+数据库位于当前用户的数据目录，不会写入项目，也不需要提交 Git。项目内会保留一个小型
+`storage.json`，让 Vite 与 MCP 选择 SQLite。SQLite 只在同一原文、源语言、目标语言和
 `comment` 只有一个候选时自动跨项目复用；存在多个不同译法时保持缺失，交给 Provider 或人工审校。
 
 默认数据库文件为 `translation-memory.sqlite`：macOS 位于
@@ -72,14 +72,16 @@ aiI18n({
 Runtime 使用；本进程新生成的结果会持久化并立即复用，普通 HMR 和重复模块访问不会持续调用模型。
 重新启动时，如果仍保留 `fresh`，会再刷新一次；完成重译后通常改回默认的 `reuse`。
 
-`provider.cache` 不属于 Translation Memory 存储配置，也不会传给 Translator。MCP 与 AI Agent 始终按
-`storage.json` 正常读取和写入；在途 Agent 写入不会被旧 Provider 请求覆盖。`fresh` 也不会删除或覆盖
-人工 `overrides`。若只想重置少量自动译文，使用 MCP 的清除工具更合适。
+`provider.cache` 不属于 Translation Memory 存储配置，也不会传给 Translator。MCP 与 AI Agent 在
+`storage.json` 缺失时读写分片 JSON，存在 SQLite 标记时读写全局数据库；在途 Agent 写入不会被旧
+Provider 请求覆盖。`fresh` 也不会删除或覆盖人工 `overrides`。若只想重置少量自动译文，使用 MCP
+的清除工具更合适。
 
 ## 切换存储
 
-修改 `storage` 后，插件会迁移当前项目的 Translation Memory 并更新 `storage.json`。切换前请停止
-其他正在写入该项目的 Vite 或 MCP 进程，完成后检查生成文件和关键页面。
+修改 `storage` 后，插件会迁移当前项目的 Translation Memory。切换到 SQLite 时创建
+`storage.json`，切回 JSON 时删除该文件。切换前请停止其他正在写入该项目的 Vite 或 MCP 进程，
+完成后检查生成文件和关键页面。
 
 全局数据库目录可以通过 `AI_I18N_DATA_DIR` 覆盖，主要用于隔离 CI、容器或测试环境。不要把该目录
 放进仓库。

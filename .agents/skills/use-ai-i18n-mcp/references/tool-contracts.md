@@ -81,8 +81,10 @@ To remove a human value, list it first and pass the returned opaque `override_id
 
 ## Write and verification boundaries
 
-- Translation tools modify only the Translation Memory selected by `storage.json`; never edit JSON
-  shards or the user-level SQLite database directly while the tools are available.
+- Translation tools use sharded JSON when `storage.json` is absent and the user-level SQLite database
+  when its SQLite marker exists. Never edit either storage directly while the tools are available.
+- A missing local SQLite database is not a project-path error. Follow the returned full-Build recovery
+  action when the selected cache lacks current message metadata.
 - Human review tools modify only `overrides.json`.
 - MCP does not modify `extracted/` or `locales/`.
 - Preserve every template token before writing.
