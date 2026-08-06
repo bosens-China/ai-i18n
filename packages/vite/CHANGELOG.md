@@ -1,5 +1,29 @@
 # @ai-i18n/vite
 
+## [1.0.0-alpha.15](https://github.com/bosens-China/ai-i18n/compare/vite-v1.0.0-alpha.14...vite-v1.0.0-alpha.15) (2026-08-06)
+
+
+### Features
+
+* **core:** 默认 JSON 省略存储标记 ([d09dad7](https://github.com/bosens-China/ai-i18n/commit/d09dad722b62304c9914ebb64a98163bb88b68eb))
+* **vite:** 支持 Translation Memory 配置与 Provider 缓存刷新 ([70e9d59](https://github.com/bosens-China/ai-i18n/commit/70e9d5978d90308659c3159667238e9ad01abfd2))
+* **vite:** 收紧配置与 Provider 事件契约 ([b8c3661](https://github.com/bosens-China/ai-i18n/commit/b8c36610e50275759888af07c6eaafe0c7a91652))
+* 支持可审查的 LLM 日志 ([395d778](https://github.com/bosens-China/ai-i18n/commit/395d778cc256acda757a42e2d954bb0c625a5acb))
+
+
+### Bug Fixes
+
+* **vite:** 提示 Vitest 使用专用适配器 ([8cefe17](https://github.com/bosens-China/ai-i18n/commit/8cefe1756994c13778508f2f1c551f3b6c6e14d4))
+* **vite:** 统一生成声明文件头 ([f11d6f2](https://github.com/bosens-China/ai-i18n/commit/f11d6f208572445b422c153712c1d310cd6a5216))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @ai-i18n/analyzer bumped to 1.0.0-alpha.13
+    * @ai-i18n/core bumped to 1.0.0-alpha.8
+
 ## [1.0.0-alpha.14](https://github.com/bosens-China/ai-i18n/compare/vite-v1.0.0-alpha.13...vite-v1.0.0-alpha.14) (2026-08-03)
 
 

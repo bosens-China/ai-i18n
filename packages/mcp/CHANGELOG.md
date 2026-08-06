@@ -1,5 +1,21 @@
 # @ai-i18n/mcp
 
+## [1.0.0-alpha.13](https://github.com/bosens-China/ai-i18n/compare/mcp-v1.0.0-alpha.12...mcp-v1.0.0-alpha.13) (2026-08-06)
+
+
+### Features
+
+* **core:** 默认 JSON 省略存储标记 ([d09dad7](https://github.com/bosens-China/ai-i18n/commit/d09dad722b62304c9914ebb64a98163bb88b68eb))
+* **mcp:** 支持读写 JSON 与 SQLite Translation Memory ([387a6b1](https://github.com/bosens-China/ai-i18n/commit/387a6b1069b4ef2faaa3f3148194a9333cdfa8ed))
+* **mcp:** 补充翻译上下文与模板校验详情 ([81b0a21](https://github.com/bosens-China/ai-i18n/commit/81b0a210249c9c940c5726319a45095802f96931))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @ai-i18n/core bumped to 1.0.0-alpha.8
+
 ## [1.0.0-alpha.12](https://github.com/bosens-China/ai-i18n/compare/mcp-v1.0.0-alpha.11...mcp-v1.0.0-alpha.12) (2026-08-05)
 
 
