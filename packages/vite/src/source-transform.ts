@@ -1,4 +1,3 @@
-import { diagnosticMessage } from '@ai-i18n/analyzer';
 import type {
   HookHandler,
   NormalizedHotChannel,
@@ -17,6 +16,7 @@ import {
 } from './framework.js';
 import { shouldIgnoreSource, sourceUpdateOptions } from './plugin-utils.js';
 import type { ProjectState } from './project-state.js';
+import { ssrWarningMessage } from './ssr-warning.js';
 import {
   assertDirectDefineI18nMessagesCalls,
   sourceRegistration,
@@ -55,12 +55,7 @@ export function createSourceTransformHandler(
     if (extraction === null) return null;
     if (transformOptions?.ssr || this.environment.name !== 'client') {
       dependencies.warnSsrOnce(() => {
-        this.warn(
-          diagnosticMessage(
-            '[ai-i18n] 仅支持浏览器 Runtime；已跳过 SSR 转换。',
-            '[ai-i18n] Browser runtime only; skipped SSR transformation.',
-          ),
-        );
+        this.warn(ssrWarningMessage('transformation'));
       });
       const macroModule = analyzeModule(
         extraction?.analysisCode ?? code,

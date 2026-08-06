@@ -8,6 +8,10 @@ import { Tab, Tabs } from '@rspress/core/theme';
 在 `vitest.config.ts` 中使用 `aiI18nVitest()`，即可测试导入 `virtual:ai-i18n` 的业务模块，无需
 手写 alias 或 mock。测试环境不执行自动翻译，也不会修改项目中的翻译文件。
 
+如果 Vitest 输出“仅支持浏览器 Runtime，已跳过 SSR 转换/注入”，说明测试配置加载了生产用的
+`aiI18n()`。不要忽略或静默过滤该提示；从 `@ai-i18n/vite/vitest` 改用
+`aiI18nVitest()`，并确保同一测试配置只注册其中一个插件。
+
 它支持 `t()`、`useI18n()`、Vue `tRef()`、纯 Options 的 `i18nComputed()` /
 `tComputed()`、消息集合宏和自动导入。测试配置的 `autoImport` 应与正式 Vite 配置保持一致。
 Jest 或直接 Node.js 执行不会处理消息集合宏，请改用 Vitest 配置或避免执行包含宏的源码。

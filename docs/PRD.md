@@ -45,6 +45,7 @@
 - 主 dts 与 Vue template 类型桥使用统一的生成文件头，标记所有权并抑制宿主 TypeScript、ESLint、Prettier 与 Biome 对生成内容的检查或改写；声明正确性由生成器测试与框架类型检查保证。
 - Vue 模式的顶层 t() 会读取 adapter revision，在 template、render 或 computed 的响应式执行路径中建立依赖；Options API 与 Composition API 均可直接使用。React 组件仍必须通过 useI18n() 订阅。普通模块中的 t() 不会自行创建响应式执行路径，应在实际需要文案时调用。
 - getLang() 与 getLangLoadState() 返回调用时快照。ESLint 提示模块顶层缓存、Vue setup / Options data 保存和可确定的组件渲染读取；action、事件与普通函数可以按需读取，跨文件 store 数据流不做不可靠推断。
+- Vitest 使用独立的内存 Runtime 与转换插件，不读取或修改项目翻译文件。测试环境误用生产插件而进入 SSR 降级时，双语 warning 必须指向专用 Vitest 入口，不能静默掩盖配置错误。
 
 ### 响应式翻译
 

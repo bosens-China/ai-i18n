@@ -39,6 +39,7 @@ import {
   normalizeTranslationMemory,
 } from './plugin-utils.js';
 import { createSourceTransformHandler } from './source-transform.js';
+import { ssrWarningMessage } from './ssr-warning.js';
 import { runtimeCode, runtimeStubCode } from './virtual-modules.js';
 import { AI_I18N_VIRTUAL_MODULE_ID } from './yuku-analyzer.js';
 
@@ -302,12 +303,7 @@ export function aiI18n(options: AiI18nOptions): Plugin {
         if (loadOptions?.ssr || this.environment.name !== 'client') {
           if (!warnedSsr) {
             warnedSsr = true;
-            this.warn(
-              diagnosticMessage(
-                '[ai-i18n] 仅支持浏览器 Runtime；已跳过 SSR 注入。',
-                '[ai-i18n] Browser runtime only; skipped SSR injection.',
-              ),
-            );
+            this.warn(ssrWarningMessage('injection'));
           }
           if (id === RESOLVED_RUNTIME_ID) return runtimeStubCode(framework);
           return id.startsWith(RESOLVED_LOCALE_PREFIX)

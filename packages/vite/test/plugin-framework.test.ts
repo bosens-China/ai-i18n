@@ -195,6 +195,7 @@ export const View = () => <p>{hookT('React JSX')}</p>`,
     expect(stub).toContain('export const getLangLoadState');
     expect(stub).not.toContain('createI18nRuntime');
     expect(warnings).toHaveLength(1);
+    expect(String(warnings[0])).toContain('aiI18nVitest()');
   });
 
   it('uses framework adapters for SSR Hook stub shapes', async () => {
