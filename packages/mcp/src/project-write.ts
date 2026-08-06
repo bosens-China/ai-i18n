@@ -1,9 +1,6 @@
 import path from 'node:path';
 import { hasSameTemplateTokens, type ExtractedMessage } from '@ai-i18n/core';
-import {
-  transactTranslationMemory,
-  transactTranslationOverrides,
-} from '@ai-i18n/core/translation-memory';
+import { transactTranslationOverrides } from '@ai-i18n/core/translation-memory';
 import { fail } from './errors.js';
 import {
   decodeOverrideId,
@@ -49,54 +46,43 @@ export async function setTranslations(
   let overwrittenCount = 0;
   let unchangedCount = 0;
   // 事务回调在共享锁内拿到最新文件，整批复验通过后才修改字段。
-  await transactTranslationMemory(
-    path.join(project.directory, 'translations.json'),
-    (memory) => {
-      const conflicts = targets.flatMap(({ input: update, message }) => {
-        const translations = lockedTranslations(
-          memory.messages,
-          message,
-          update,
-        );
-        const current = translations[update.locale] ?? null;
-        return !input.overwrite_existing &&
-          current !== null &&
-          current !== update.value
-          ? [
-              {
-                ...targetDetails(update),
-                current_value: current,
-                requested_value: update.value,
-              },
-            ]
-          : [];
+  await project.memoryStore.transact((memory) => {
+    const conflicts = targets.flatMap(({ input: update, message }) => {
+      const translations = lockedTranslations(memory.messages, message, update);
+      const current = translations[update.locale] ?? null;
+      return !input.overwrite_existing &&
+        current !== null &&
+        current !== update.value
+        ? [
+            {
+              ...targetDetails(update),
+              current_value: current,
+              requested_value: update.value,
+            },
+          ]
+        : [];
+    });
+    if (conflicts.length) {
+      fail('TRANSLATION_CONFLICT', {
+        conflict_count: conflicts.length,
+        conflicts,
+        retry: { overwrite_existing: true },
       });
-      if (conflicts.length) {
-        fail('TRANSLATION_CONFLICT', {
-          conflict_count: conflicts.length,
-          conflicts,
-          retry: { overwrite_existing: true },
-        });
+    }
+    for (const { input: update, message } of targets) {
+      const translations = lockedTranslations(memory.messages, message, update);
+      const current = translations[update.locale] ?? null;
+      if (current === update.value) {
+        unchangedCount += 1;
+      } else if (current === null) {
+        translations[update.locale] = update.value;
+        addedCount += 1;
+      } else {
+        translations[update.locale] = update.value;
+        overwrittenCount += 1;
       }
-      for (const { input: update, message } of targets) {
-        const translations = lockedTranslations(
-          memory.messages,
-          message,
-          update,
-        );
-        const current = translations[update.locale] ?? null;
-        if (current === update.value) {
-          unchangedCount += 1;
-        } else if (current === null) {
-          translations[update.locale] = update.value;
-          addedCount += 1;
-        } else {
-          translations[update.locale] = update.value;
-          overwrittenCount += 1;
-        }
-      }
-    },
-  );
+    }
+  });
   return setResult(
     targets,
     addedCount,
@@ -116,24 +102,17 @@ export async function clearTranslations(
   );
   let clearedCount = 0;
   let unchangedCount = 0;
-  await transactTranslationMemory(
-    path.join(project.directory, 'translations.json'),
-    (memory) => {
-      for (const { input: target, message } of targets) {
-        const translations = lockedTranslations(
-          memory.messages,
-          message,
-          target,
-        );
-        if ((translations[target.locale] ?? null) === null) {
-          unchangedCount += 1;
-        } else {
-          translations[target.locale] = null;
-          clearedCount += 1;
-        }
+  await project.memoryStore.transact((memory) => {
+    for (const { input: target, message } of targets) {
+      const translations = lockedTranslations(memory.messages, message, target);
+      if ((translations[target.locale] ?? null) === null) {
+        unchangedCount += 1;
+      } else {
+        translations[target.locale] = null;
+        clearedCount += 1;
       }
-    },
-  );
+    }
+  });
   return {
     cleared_count: clearedCount,
     unchanged_count: unchangedCount,

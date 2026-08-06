@@ -1,10 +1,13 @@
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
+import { openTranslationMemoryStore } from '@ai-i18n/core/translation-memory';
+import { closeProjectMemoryStores } from '../src/project-files';
 
 const tempDirectories: string[] = [];
 
 export async function cleanupFixtures(): Promise<void> {
+  await closeProjectMemoryStores();
   await Promise.all(
     tempDirectories
       .splice(0)
@@ -12,7 +15,9 @@ export async function cleanupFixtures(): Promise<void> {
   );
 }
 
-export async function fixture(): Promise<string> {
+export async function fixture(
+  storage: 'json' | 'sqlite' = 'json',
+): Promise<string> {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'ai-i18n-mcp-'));
   tempDirectories.push(root);
   const directory = path.join(root, 'apps/web/i18n');
@@ -36,6 +41,10 @@ export async function fixture(): Promise<string> {
       },
     }),
   );
+  if (storage === 'sqlite') {
+    const store = await openTranslationMemoryStore({ directory, storage });
+    store.close();
+  }
   await fs.writeFile(
     path.join(directory, 'overrides.json'),
     JSON.stringify({ version: 1, messages: {} }),
@@ -69,9 +78,12 @@ export interface MemoryDocument {
 export async function readFixtureMemory(
   directory: string,
 ): Promise<MemoryDocument> {
-  return JSON.parse(
-    await fs.readFile(path.join(directory, 'translations.json'), 'utf8'),
-  ) as MemoryDocument;
+  const store = await openTranslationMemoryStore({ directory });
+  try {
+    return (await store.load()) as MemoryDocument;
+  } finally {
+    store.close();
+  }
 }
 
 export async function readFixtureOverrides(
@@ -96,17 +108,14 @@ export async function addFixtureMessage(
   });
   await fs.writeFile(extractedPath, JSON.stringify(extracted));
 
-  const memoryPath = path.join(directory, 'translations.json');
-  const memory = JSON.parse(await fs.readFile(memoryPath, 'utf8')) as {
-    messages: Record<string, unknown>;
-  };
-  memory.messages[message.id] = {
-    source: message.source,
-    sourceLang: 'zh-CN',
-    ...(message.comment ? { comment: message.comment } : {}),
-    translations: { 'en-US': null, 'ja-JP': null },
-  };
-  await fs.writeFile(memoryPath, JSON.stringify(memory));
+  await updateMemory(directory, (messages) => {
+    messages[message.id] = {
+      source: message.source,
+      sourceLang: 'zh-CN',
+      ...(message.comment ? { comment: message.comment } : {}),
+      translations: { 'en-US': null, 'ja-JP': null },
+    };
+  });
 }
 
 export async function addFixtureOrphanMessage(
@@ -118,20 +127,17 @@ export async function addFixtureOrphanMessage(
     translations?: Record<string, string | null>;
   },
 ): Promise<void> {
-  const memoryPath = path.join(directory, 'translations.json');
-  const memory = JSON.parse(await fs.readFile(memoryPath, 'utf8')) as {
-    messages: Record<string, unknown>;
-  };
-  memory.messages[message.id] = {
-    source: message.source,
-    sourceLang: 'zh-CN',
-    ...(message.comment ? { comment: message.comment } : {}),
-    translations: message.translations ?? {
-      'en-US': null,
-      'ja-JP': null,
-    },
-  };
-  await fs.writeFile(memoryPath, JSON.stringify(memory));
+  await updateMemory(directory, (messages) => {
+    messages[message.id] = {
+      source: message.source,
+      sourceLang: 'zh-CN',
+      ...(message.comment ? { comment: message.comment } : {}),
+      translations: message.translations ?? {
+        'en-US': null,
+        'ja-JP': null,
+      },
+    };
+  });
 }
 
 export async function addFixtureSourceFile(
@@ -152,15 +158,24 @@ export async function addFixtureSourceFile(
     }),
   );
 
-  const memoryPath = path.join(directory, 'translations.json');
-  const memory = JSON.parse(await fs.readFile(memoryPath, 'utf8')) as {
-    messages: Record<string, unknown>;
-  };
-  memory.messages[message.id] = {
-    source: message.source,
-    sourceLang: 'zh-CN',
-    ...(message.comment ? { comment: message.comment } : {}),
-    translations: { 'en-US': null, 'ja-JP': null },
-  };
-  await fs.writeFile(memoryPath, JSON.stringify(memory));
+  await updateMemory(directory, (messages) => {
+    messages[message.id] = {
+      source: message.source,
+      sourceLang: 'zh-CN',
+      ...(message.comment ? { comment: message.comment } : {}),
+      translations: { 'en-US': null, 'ja-JP': null },
+    };
+  });
+}
+
+async function updateMemory(
+  directory: string,
+  update: (messages: Record<string, unknown>) => void,
+): Promise<void> {
+  const store = await openTranslationMemoryStore({ directory });
+  try {
+    await store.transact((memory) => update(memory.messages));
+  } finally {
+    store.close();
+  }
 }

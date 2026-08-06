@@ -1,15 +1,21 @@
+import fs from 'node:fs/promises';
+import os from 'node:os';
 import path from 'node:path';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
-import { afterEach, expect, test } from 'vitest';
+import { afterEach, expect, test, vi } from 'vitest';
 import { createAiI18nMcpServer } from '../src/server';
+import { closeProjectMemoryStores } from '../src/project-files';
 import {
   addFixtureOrphanMessage,
   cleanupFixtures,
   fixture,
 } from './project-fixture';
 
-afterEach(cleanupFixtures);
+afterEach(async () => {
+  vi.unstubAllEnvs();
+  await cleanupFixtures();
+});
 
 test('registers eight focused tools without legacy mode or output schemas', async () => {
   const server = createAiI18nMcpServer();
@@ -181,6 +187,60 @@ test('returns one compact JSON TextContent and no structuredContent', async () =
   } finally {
     await clientTransport.close();
     await server.close();
+  }
+});
+
+test('reads and writes the user-level SQLite Translation Memory through the same tools', async () => {
+  const dataRoot = await fs.mkdtemp(
+    path.join(os.tmpdir(), 'ai-i18n-mcp-data-'),
+  );
+  vi.stubEnv('AI_I18N_DATA_DIR', dataRoot);
+  const root = await fixture('sqlite');
+  const directory = path.join(root, 'apps/web/i18n');
+  const server = createAiI18nMcpServer();
+  const client = new Client({ name: 'ai-i18n-mcp-test', version: '0.0.0' });
+  const [clientTransport, serverTransport] =
+    InMemoryTransport.createLinkedPair();
+  await Promise.all([
+    client.connect(clientTransport),
+    server.connect(serverTransport),
+  ]);
+
+  try {
+    const set = await client.callTool({
+      name: 'ai_i18n_set_translations',
+      arguments: {
+        i18n_directory: directory,
+        updates: [
+          { message: { source: '保存' }, locale: 'en-US', value: 'Save' },
+        ],
+      },
+    });
+    expect(set.isError, toolText(set.content)).not.toBe(true);
+
+    const list = await client.callTool({
+      name: 'ai_i18n_list_translations',
+      arguments: { i18n_directory: directory, view: 'all' },
+    });
+    expect(JSON.parse(toolText(list.content)).items).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          message: { source: '保存' },
+          translations: expect.objectContaining({ 'en-US': 'Save' }),
+        }),
+      ]),
+    );
+    await expect(
+      fs.access(path.join(directory, 'translations.json')),
+    ).rejects.toMatchObject({ code: 'ENOENT' });
+    await expect(
+      fs.access(path.join(dataRoot, 'translation-memory.sqlite')),
+    ).resolves.toBeUndefined();
+  } finally {
+    await clientTransport.close();
+    await server.close();
+    await closeProjectMemoryStores();
+    await fs.rm(dataRoot, { recursive: true, force: true });
   }
 });
 

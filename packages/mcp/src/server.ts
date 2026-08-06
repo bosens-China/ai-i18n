@@ -87,7 +87,7 @@ export function createAiI18nMcpServer(): McpServer {
     {
       title: 'List translations',
       description:
-        'Inspect extracted source files and raw translations.json values. Omit source_files on the first call. view defaults to missing and returns one writable message object per shared source and comment; summary returns per-file counts; all returns every message. source_files is omitted from items unless include_source_files is true. Follow next_cursor until has_more is false.',
+        'Inspect extracted source files and raw Translation Memory values from the configured JSON or SQLite storage. Omit source_files on the first call. view defaults to missing and returns one writable message object per shared source and comment; summary returns per-file counts; all returns every message. source_files is omitted from items unless include_source_files is true. Follow next_cursor until has_more is false.',
       inputSchema: z
         .object({
           i18n_directory: DirectorySchema,
@@ -111,7 +111,7 @@ export function createAiI18nMcpServer(): McpServer {
     {
       title: 'Set translation values',
       description:
-        'Atomically update raw translations.json values by message source and optional comment. The same message is shared across every source file. Identical duplicate updates are applied once; different values for one target fail the batch. Existing non-null values are protected unless overwrite_existing is true.',
+        'Atomically update raw Translation Memory values in the configured JSON or SQLite storage by message source and optional comment. The same message is shared across every source file. Identical duplicate updates are applied once; different values for one target fail the batch. Existing non-null values are protected unless overwrite_existing is true.',
       inputSchema: z
         .object({
           i18n_directory: DirectorySchema,
@@ -129,7 +129,7 @@ export function createAiI18nMcpServer(): McpServer {
     {
       title: 'Clear translation values',
       description:
-        'Atomically reset selected translations.json values to null by message source and optional comment. Duplicate targets are cleared once. It does not remove messages, locales, extracted files, or overrides.',
+        'Atomically reset selected Translation Memory values to null by message source and optional comment. Duplicate targets are cleared once. It does not remove messages, locales, extracted files, or overrides.',
       inputSchema: z
         .object({
           i18n_directory: DirectorySchema,
@@ -146,7 +146,7 @@ export function createAiI18nMcpServer(): McpServer {
     {
       title: 'List orphan translation messages',
       description:
-        'Only use after the user explicitly requests an orphan audit or cleanup and after one full Vite Build. Read messages that remain in translations.json but are absent from the complete extracted set. Copy orphan_id exactly into the delete tool. Follow next_cursor until has_more is false.',
+        'Only use after the user explicitly requests an orphan audit or cleanup and after one full Vite Build. Read messages that remain in Translation Memory but are absent from the complete extracted set. Copy orphan_id exactly into the delete tool. Follow next_cursor until has_more is false.',
       inputSchema: z
         .object({
           i18n_directory: DirectorySchema,
@@ -165,7 +165,7 @@ export function createAiI18nMcpServer(): McpServer {
     {
       title: 'Delete orphan translation messages',
       description:
-        'Only use after listing every requested orphan and receiving explicit user approval to delete them. Atomically delete selected translations.json messages by opaque orphan_id. The whole batch fails if any selected message is referenced by the current extracted set. It does not modify extracted files, locales, or overrides.',
+        'Only use after listing every requested orphan and receiving explicit user approval to delete them. Atomically delete selected Translation Memory messages by opaque orphan_id. The whole batch fails if any selected message is referenced by the current extracted set. It does not modify extracted files, locales, or overrides.',
       inputSchema: z
         .object({
           i18n_directory: DirectorySchema,

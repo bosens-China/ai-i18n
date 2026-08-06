@@ -2,13 +2,17 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import {
   parseExtractedFile,
-  parseTranslationMemoryFile,
   parseTranslationOverridesFile,
   type CacheMessage,
   type ExtractedFile,
   type ExtractedMessage,
   type TranslationOverridesFile,
 } from '@ai-i18n/core';
+import {
+  openTranslationMemoryStore,
+  readTranslationMemoryStorage,
+  type TranslationMemoryStore,
+} from '@ai-i18n/core/translation-memory';
 import { fail } from './errors.js';
 
 export interface LoadedProject {
@@ -17,6 +21,15 @@ export interface LoadedProject {
   messages: Record<string, CacheMessage>;
   overrides: TranslationOverridesFile;
   locales: Set<string>;
+  memoryStore: TranslationMemoryStore;
+}
+
+const memoryStores = new Map<string, Promise<TranslationMemoryStore>>();
+
+export async function closeProjectMemoryStores(): Promise<void> {
+  const stores = [...memoryStores.values()];
+  memoryStores.clear();
+  for (const store of await Promise.all(stores)) store.close();
 }
 
 export async function resolveI18nDirectory(input: string): Promise<string> {
@@ -96,11 +109,9 @@ export async function loadProject(
 ): Promise<LoadedProject> {
   const directory = await resolveI18nDirectory(i18nDirectory);
   const extractedDirectory = path.join(directory, 'extracted');
+  const memoryStore = await projectMemoryStore(directory);
   const [memory, overrides] = await Promise.all([
-    readProtocolFile(
-      path.join(directory, 'translations.json'),
-      parseTranslationMemoryFile,
-    ),
+    memoryStore.load(),
     readProtocolFile(
       path.join(directory, 'overrides.json'),
       parseTranslationOverridesFile,
@@ -133,6 +144,7 @@ export async function loadProject(
   const messages = memory.messages;
   return {
     directory,
+    memoryStore,
     extracted,
     messages,
     overrides,
@@ -142,6 +154,27 @@ export async function loadProject(
       ),
     ),
   };
+}
+
+async function projectMemoryStore(
+  directory: string,
+): Promise<TranslationMemoryStore> {
+  const storage = await readTranslationMemoryStorage(directory);
+  const existing = memoryStores.get(directory);
+  if (existing) {
+    const store = await existing;
+    if (store.storage === storage) return store;
+    store.close();
+    memoryStores.delete(directory);
+  }
+  const opened = openTranslationMemoryStore({ directory });
+  memoryStores.set(directory, opened);
+  try {
+    return await opened;
+  } catch (error) {
+    memoryStores.delete(directory);
+    throw error;
+  }
 }
 
 export function filterTranslations(

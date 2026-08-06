@@ -1,5 +1,3 @@
-import path from 'node:path';
-import { transactTranslationMemory } from '@ai-i18n/core/translation-memory';
 import { fail } from './errors.js';
 import { createOrphanId, validateOrphanId } from './orphan-id.js';
 import { paginate } from './pagination.js';
@@ -59,31 +57,28 @@ export async function deleteOrphanMessages(
   const active = activeMessageIds(project);
   let deletedCount = 0;
   let unchangedCount = 0;
-  await transactTranslationMemory(
-    path.join(project.directory, 'translations.json'),
-    (memory) => {
-      const messagesByOrphanId = indexMessagesByOrphanId(memory.messages);
-      const reactivated = orphanIds.filter((orphanId) => {
-        const messageId = messagesByOrphanId.get(orphanId);
-        return messageId !== undefined && active.has(messageId);
+  await project.memoryStore.transact((memory) => {
+    const messagesByOrphanId = indexMessagesByOrphanId(memory.messages);
+    const reactivated = orphanIds.filter((orphanId) => {
+      const messageId = messagesByOrphanId.get(orphanId);
+      return messageId !== undefined && active.has(messageId);
+    });
+    // 整批先复验，避免一部分消息删除后才发现另一部分已重新被源码引用。
+    if (reactivated.length) {
+      fail('ORPHAN_MESSAGE_REACTIVATED', {
+        orphan_ids: reactivated,
       });
-      // 整批先复验，避免一部分消息删除后才发现另一部分已重新被源码引用。
-      if (reactivated.length) {
-        fail('ORPHAN_MESSAGE_REACTIVATED', {
-          orphan_ids: reactivated,
-        });
+    }
+    for (const orphanId of orphanIds) {
+      const messageId = messagesByOrphanId.get(orphanId);
+      if (messageId === undefined) {
+        unchangedCount += 1;
+        continue;
       }
-      for (const orphanId of orphanIds) {
-        const messageId = messagesByOrphanId.get(orphanId);
-        if (messageId === undefined) {
-          unchangedCount += 1;
-          continue;
-        }
-        delete memory.messages[messageId];
-        deletedCount += 1;
-      }
-    },
-  );
+      delete memory.messages[messageId];
+      deletedCount += 1;
+    }
+  });
   return {
     deleted_count: deletedCount,
     unchanged_count: unchangedCount,
