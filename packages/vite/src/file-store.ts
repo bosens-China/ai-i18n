@@ -10,9 +10,10 @@ import {
 } from '@ai-i18n/core';
 import { diagnosticMessage } from '@ai-i18n/analyzer';
 import {
+  openTranslationMemoryStore,
   readTranslationOverrides,
-  transactTranslationMemory,
   transactTranslationOverrides,
+  type TranslationMemoryStore,
 } from '@ai-i18n/core/translation-memory';
 import { enforceCacheCapacity } from './cache-capacity.js';
 import {
@@ -22,7 +23,6 @@ import {
 import {
   extractedPath,
   localePath,
-  translationMemoryPath,
   translationOverridesPath,
 } from './file-store-paths.js';
 import {
@@ -34,6 +34,7 @@ import {
   hydrateExtracted,
   hydrateLocale,
   mergeProjectMessages,
+  translationFieldKey,
 } from './file-store-merge.js';
 import type {
   FileStoreLoadOptions,
@@ -51,6 +52,9 @@ export class FileStore {
   readonly directory: string;
   private queue = Promise.resolve();
   private readonly lastWritten = new Map<string, string>();
+  private memoryStore: Promise<TranslationMemoryStore> | undefined;
+  private readonly providerFields = new Set<string>();
+  private readonly translationManagedFiles = new Set<string>();
 
   constructor(private readonly options: FileStoreOptions) {
     this.directory = path.resolve(options.root, options.directory ?? 'i18n');
@@ -81,7 +85,9 @@ export class FileStore {
   }
 
   manages(file: string): boolean {
-    const relative = path.relative(this.directory, path.resolve(file));
+    const resolved = path.resolve(file);
+    if (this.translationManagedFiles.has(resolved)) return true;
+    const relative = path.relative(this.directory, resolved);
     return (
       relative !== '' &&
       !relative.startsWith(`..${path.sep}`) &&
@@ -127,13 +133,36 @@ export class FileStore {
 
   watchFiles(moduleId: string): string[] {
     return [
-      translationMemoryPath(this.directory),
+      ...this.translationManagedFiles,
       translationOverridesPath(this.directory),
       extractedPath(this.directory, moduleId),
       ...this.options.locales
         .filter((locale) => locale.value !== this.options.sourceLang)
         .map((locale) => localePath(this.directory, locale.value)),
     ];
+  }
+
+  markProviderTranslations(
+    results: readonly {
+      messageId: string;
+      locale: string;
+      value: string | null;
+    }[],
+  ): void {
+    for (const result of results) {
+      if (result.value !== null) {
+        this.providerFields.add(
+          translationFieldKey(result.messageId, result.locale),
+        );
+      }
+    }
+  }
+
+  async close(): Promise<void> {
+    await this.memoryStore?.then(
+      (store) => store.close(),
+      () => undefined,
+    );
   }
 
   private async writeSnapshot(
@@ -206,31 +235,48 @@ export class FileStore {
     snapshot?: ProjectSnapshot,
     activeMessageIds?: readonly string[],
   ): Promise<TranslationMemoryFile> {
-    return transactTranslationMemory(
-      translationMemoryPath(this.directory),
-      (memory) => {
-        if (snapshot) {
-          memory.messages = mergeProjectMessages(
-            memory.messages,
-            snapshot.cache.messages,
-          );
-        }
-        this.ensureCurrentLocales(memory.messages);
-        if (activeMessageIds) {
-          removeOrphanMessages(
-            memory,
-            activeMessageIds,
-            Boolean(this.options.cleanupOrphanMessages),
-          );
-          enforceCacheCapacity(
-            memory,
-            activeMessageIds,
-            this.options.cache,
-            this.options.onWarning,
-          );
-        }
-      },
-    );
+    const store = await this.getMemoryStore();
+    const persistent = await store.transact((memory) => {
+      if (snapshot) {
+        memory.messages = mergeProjectMessages(
+          memory.messages,
+          snapshot.cache.messages,
+          this.providerFields,
+        );
+      }
+      this.ensureCurrentLocales(memory.messages);
+      if (activeMessageIds) {
+        removeOrphanMessages(
+          memory,
+          activeMessageIds,
+          Boolean(this.options.cleanupOrphanMessages),
+        );
+        enforceCacheCapacity(
+          memory,
+          activeMessageIds,
+          this.options.cache,
+          this.options.onWarning,
+        );
+      }
+    });
+    await this.refreshManagedFiles(store);
+    return persistent;
+  }
+
+  private async refreshManagedFiles(
+    store: TranslationMemoryStore,
+  ): Promise<void> {
+    this.translationManagedFiles.clear();
+    for (const file of await store.watchFiles()) {
+      this.translationManagedFiles.add(path.resolve(file));
+    }
+  }
+
+  private getMemoryStore(): Promise<TranslationMemoryStore> {
+    return (this.memoryStore ??= openTranslationMemoryStore({
+      directory: this.directory,
+      storage: this.options.translationMemory?.storage ?? 'json',
+    }));
   }
 
   private ensureCurrentLocales(messages: Record<string, CacheMessage>): void {

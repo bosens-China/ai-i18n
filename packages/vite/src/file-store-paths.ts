@@ -1,10 +1,6 @@
 import path from 'node:path';
 import { hashExtractedSource } from './extracted-path.js';
 
-export function translationMemoryPath(directory: string): string {
-  return path.join(directory, 'translations.json');
-}
-
 export function translationOverridesPath(directory: string): string {
   return path.join(directory, 'overrides.json');
 }

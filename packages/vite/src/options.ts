@@ -1,4 +1,5 @@
 import type { LangOption, Translator } from '@ai-i18n/core';
+import type { TranslationMemoryStorage } from '@ai-i18n/core/translation-memory';
 import type { AiI18nFramework } from './framework.js';
 import type { HtmlExtractorOptions } from './html.js';
 import type { ProviderCoordinatorOptions } from './provider-coordinator.js';
@@ -8,6 +9,8 @@ export type AiI18nProviderOptions = Pick<
   'debounceMs' | 'batchLength' | 'maxConcurrency' | 'strict'
 > & {
   translator: Translator;
+  /** 是否在当前 Vite 进程中刷新一次 Provider 自动翻译；默认 reuse。 */
+  cache?: 'reuse' | 'fresh';
 };
 
 export interface AiI18nLocaleLoadingOptions {
@@ -18,6 +21,11 @@ export interface AiI18nLocaleLoadingOptions {
 export interface AiI18nCacheOptions {
   maxMessages?: number;
   maxBytes?: number;
+}
+
+export interface AiI18nTranslationMemoryOptions {
+  /** 持久化驱动；默认使用项目内可提交的分片 JSON。 */
+  storage?: TranslationMemoryStorage;
 }
 
 export interface AiI18nPersistOptions {
@@ -39,6 +47,7 @@ export interface AiI18nOptions {
   persist?: boolean | AiI18nPersistOptions;
   loading?: AiI18nLocaleLoadingOptions;
   cache?: AiI18nCacheOptions;
+  translationMemory?: AiI18nTranslationMemoryOptions;
   provider?: AiI18nProviderOptions;
   directory?: string;
   cleanup?: {

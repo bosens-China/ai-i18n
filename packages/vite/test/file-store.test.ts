@@ -5,6 +5,7 @@ import { FileStore } from '../src/file-store';
 import { ProjectState } from '../src/project-state';
 import { extractedTestPath } from './extracted-test-path';
 import { options, readJson, setup } from './file-store-test-utils';
+import { updateTestTranslationMemory } from './translation-memory-test-utils';
 
 describe('FileStore', () => {
   it('writes deterministic memory, extracted and locale files', async () => {
@@ -136,14 +137,9 @@ describe('FileStore', () => {
     await store.sync(state.snapshot());
 
     const cachePath = path.join(root, 'i18n/translations.json');
-    const cache = (await readJson(cachePath)) as {
-      messages: Record<string, unknown>;
-    };
-    const message = cache.messages['保存#旧注释'] as {
-      translations: Record<string, string | null>;
-    };
-    message.translations['en-US'] = 'Save';
-    await fs.writeFile(cachePath, `${JSON.stringify(cache, null, 2)}\n`);
+    await updateTestTranslationMemory(cachePath, (cache) => {
+      cache.messages['保存#旧注释']!.translations['en-US'] = 'Save';
+    });
 
     const next = new ProjectState(root, options);
     const newCode =
@@ -209,11 +205,9 @@ describe('FileStore', () => {
 
     const extractedPath = extractedTestPath(root, 'src/main.ts');
     const memoryPath = path.join(root, 'i18n/translations.json');
-    const edited = (await readJson(memoryPath)) as {
-      messages: Record<string, { translations: Record<string, string | null> }>;
-    };
-    edited.messages['保存']!.translations['en-US'] = 'Save';
-    await fs.writeFile(memoryPath, `${JSON.stringify(edited, null, 2)}\n`);
+    await updateTestTranslationMemory(memoryPath, (memory) => {
+      memory.messages['保存']!.translations['en-US'] = 'Save';
+    });
 
     state.update(otherCode, other);
     const cache = await store.sync(state.snapshot());
@@ -232,11 +226,9 @@ describe('FileStore', () => {
     expect(JSON.stringify(otherExtracted)).not.toContain('translations');
     expect(targetLocale).toMatchObject({ messages: { 保存: 'Save' } });
 
-    const changed = (await readJson(memoryPath)) as {
-      messages: Record<string, { translations: Record<string, string | null> }>;
-    };
-    changed.messages['保存']!.translations['en-US'] = 'Store';
-    await fs.writeFile(memoryPath, `${JSON.stringify(changed, null, 2)}\n`);
+    await updateTestTranslationMemory(memoryPath, (memory) => {
+      memory.messages['保存']!.translations['en-US'] = 'Store';
+    });
     // 人工审校值即使遇到旧的 Vite 内存快照也必须优先。
     await store.sync(state.snapshot());
     expect(

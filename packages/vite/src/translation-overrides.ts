@@ -41,3 +41,12 @@ export function snapshotEffectiveModules(
     ]),
   );
 }
+
+export function changedEffectiveModules(
+  previous: ReadonlyMap<string, string>,
+  current: ReadonlyMap<string, string>,
+): string[] {
+  return [...new Set([...previous.keys(), ...current.keys()])].filter(
+    (moduleId) => previous.get(moduleId) !== current.get(moduleId),
+  );
+}

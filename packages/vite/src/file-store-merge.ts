@@ -48,13 +48,19 @@ export function hydrateLocale(
 export function mergeProjectMessages(
   current: Record<string, CacheMessage>,
   incoming: Record<string, CacheMessage>,
+  preferIncoming: ReadonlySet<string> = new Set(),
 ): Record<string, CacheMessage> {
   // 磁盘上的 Agent 编辑优先；ProjectState 只补充新消息和缺失翻译。
   const reused = structuredClone(incoming);
   for (const [messageId, next] of Object.entries(reused)) {
     const currentMessage = current[messageId];
     if (currentMessage && currentMessage.sourceLang === next.sourceLang) {
-      keepCommittedTranslations(next, currentMessage);
+      keepCommittedTranslations(
+        next,
+        currentMessage,
+        messageId,
+        preferIncoming,
+      );
       continue;
     }
     const candidates = currentMessage
@@ -67,7 +73,7 @@ export function mergeProjectMessages(
         );
     if (candidates.length !== 1) continue;
     const historic = candidates[0]!;
-    keepCommittedTranslations(next, historic);
+    keepCommittedTranslations(next, historic, messageId, preferIncoming);
     delete next.translations[next.sourceLang];
     if (historic.sourceLang) {
       next.translations[historic.sourceLang] = historic.source;
@@ -119,10 +125,22 @@ export function overlayMessages(
 function keepCommittedTranslations(
   target: CacheMessage,
   current: CacheMessage,
+  messageId: string,
+  preferIncoming: ReadonlySet<string>,
 ): void {
   for (const [locale, value] of Object.entries(current.translations)) {
+    if (
+      preferIncoming.has(translationFieldKey(messageId, locale)) &&
+      target.translations[locale] !== null
+    ) {
+      continue;
+    }
     if (value !== null || !(locale in target.translations)) {
       target.translations[locale] = value;
     }
   }
+}
+
+export function translationFieldKey(messageId: string, locale: string): string {
+  return `${messageId}\0${locale}`;
 }

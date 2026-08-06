@@ -7,6 +7,10 @@ import { aiI18n } from '../src/index';
 import { ProjectState } from '../src/project-state';
 import { extractedTestPath } from './extracted-test-path';
 import { removeTempDir } from './temp-dir';
+import {
+  readTestTranslationMemory,
+  updateTestTranslationMemory,
+} from './translation-memory-test-utils';
 
 const tempDirs: string[] = [];
 const locales = [
@@ -63,9 +67,9 @@ describe('Vite integration', () => {
 
     const oldExtracted = extractedTestPath(root, 'src/old.ts');
     const memoryPath = path.join(root, 'i18n/translations.json');
-    const memory = await readJson<CacheFile>(memoryPath);
-    memory.messages['可移动文案']!.translations['en-US'] = 'Moved text';
-    await fs.writeFile(memoryPath, `${JSON.stringify(memory, null, 2)}\n`);
+    await updateTestTranslationMemory(memoryPath, (memory) => {
+      memory.messages['可移动文案']!.translations['en-US'] = 'Moved text';
+    });
     await fs.rename(
       path.join(root, 'src/old.ts'),
       path.join(root, 'src/new.ts'),
@@ -202,5 +206,8 @@ async function extractedSources(root: string) {
 }
 
 async function readJson<T>(filename: string): Promise<T> {
+  if (filename.endsWith('translations.json')) {
+    return (await readTestTranslationMemory(filename)) as T;
+  }
   return JSON.parse(await fs.readFile(filename, 'utf8')) as T;
 }

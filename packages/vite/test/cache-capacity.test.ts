@@ -11,6 +11,10 @@ import {
   ProjectState,
   type NormalizedAiI18nOptions,
 } from '../src/project-state';
+import {
+  readTestTranslationMemory,
+  updateTestTranslationMemory,
+} from './translation-memory-test-utils';
 
 const tempDirs: string[] = [];
 const options: NormalizedAiI18nOptions = {
@@ -57,15 +61,14 @@ describe('Cache capacity', () => {
     );
     const store = capacityStore(root, { maxMessages: 3 });
     const result = await store.sync(state.snapshot());
-    const content = await fs.readFile(
-      path.join(root, 'i18n/translations.json'),
-      'utf8',
+    const content = stableJson(
+      await readTestTranslationMemory(path.join(root, 'i18n')),
     );
 
     expect(messageIds(result)).toEqual(['active', '请输入', '首页']);
     await store.sync(state.snapshot());
     expect(
-      await fs.readFile(path.join(root, 'i18n/translations.json'), 'utf8'),
+      stableJson(await readTestTranslationMemory(path.join(root, 'i18n'))),
     ).toBe(content);
   });
 
@@ -167,7 +170,9 @@ describe('Cache capacity', () => {
     const cachePath = path.join(root, 'i18n/translations.json');
     cache.messages['history-b']!.translations['en-US'] = 'Git history';
     cache.messages['active']!.translations['en-US'] = 'Agent active';
-    await fs.writeFile(cachePath, stableJson(cache));
+    await updateTestTranslationMemory(cachePath, (memory) => {
+      memory.messages = structuredClone(cache.messages);
+    });
 
     const result = await capacityStore(root, { maxMessages: 2 }).sync(
       state.snapshot(),

@@ -38,7 +38,8 @@ describe('FileStore robustness', () => {
       'extracted',
       'locales',
       'overrides.json',
-      'translations.json',
+      'storage.json',
+      'translations',
     ]);
   });
 

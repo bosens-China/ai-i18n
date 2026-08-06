@@ -10,6 +10,7 @@ import {
   readJson,
   setupPlugin,
 } from './plugin-test-utils';
+import { updateTestTranslationMemory } from './translation-memory-test-utils';
 
 describe('@ai-i18n/vite plugin updates', () => {
   it('translates in the background and sends a targeted runtime update', async () => {
@@ -87,13 +88,11 @@ describe('@ai-i18n/vite plugin updates', () => {
     ).resolves.toEqual([]);
     expect(hotSend).not.toHaveBeenCalled();
 
-    const memoryFile = path.join(directory, 'translations.json');
-    const edited = (await readJson(memoryFile)) as {
-      messages: Record<string, { translations: Record<string, string | null> }>;
-    };
-    edited.messages['保存']!.translations['en-US'] = 'Store';
-    const editedContent = `${JSON.stringify(edited, null, 2)}\n`;
-    await fs.writeFile(memoryFile, editedContent);
+    await updateTestTranslationMemory(directory, (memory) => {
+      memory.messages['保存']!.translations['en-US'] = 'Store';
+    });
+    const memoryFile = await firstTranslationShard(directory);
+    const editedContent = await fs.readFile(memoryFile, 'utf8');
     await hotUpdate.call(
       { environment: { name: 'client' } },
       {
@@ -323,13 +322,11 @@ describe('@ai-i18n/vite plugin updates', () => {
       "import { t } from 'virtual:ai-i18n'; t('保存')",
       '/workspace/src/lazy-hot.ts',
     );
-    const memoryFile = path.join(directory, 'translations.json');
-    const edited = (await readJson(memoryFile)) as {
-      messages: Record<string, { translations: Record<string, string | null> }>;
-    };
-    edited.messages['保存']!.translations['en-US'] = 'Save';
-    const editedContent = `${JSON.stringify(edited, null, 2)}\n`;
-    await fs.writeFile(memoryFile, editedContent);
+    await updateTestTranslationMemory(directory, (memory) => {
+      memory.messages['保存']!.translations['en-US'] = 'Save';
+    });
+    const memoryFile = await firstTranslationShard(directory);
+    const editedContent = await fs.readFile(memoryFile, 'utf8');
     hotSend.mockClear();
 
     const hotUpdate = objectHandler<
@@ -381,3 +378,12 @@ describe('@ai-i18n/vite plugin updates', () => {
     expect(code).toContain('runtime.replaceLocale(locale, messages)');
   });
 });
+
+async function firstTranslationShard(directory: string): Promise<string> {
+  const translations = path.join(directory, 'translations');
+  const shard = (await fs.readdir(translations)).find((file) =>
+    /^[0-9a-f]{2}\.json$/.test(file),
+  );
+  if (!shard) throw new Error('translation shard not found');
+  return path.join(translations, shard);
+}

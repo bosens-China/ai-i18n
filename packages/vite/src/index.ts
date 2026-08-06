@@ -16,6 +16,7 @@ export type {
   AiI18nOptions,
   AiI18nPersistOptions,
   AiI18nProviderOptions,
+  AiI18nTranslationMemoryOptions,
 } from './options.js';
 export type { AiI18nFramework } from './framework.js';
 export type { HtmlExtractorOptions } from './html.js';

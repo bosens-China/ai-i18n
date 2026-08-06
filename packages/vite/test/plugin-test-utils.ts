@@ -5,6 +5,7 @@ import path from 'node:path';
 import { afterEach, vi } from 'vitest';
 import type { Plugin, ResolvedConfig } from 'vite';
 import { aiI18n, type AiI18nOptions } from '../src/index';
+import { readTestTranslationMemory } from './translation-memory-test-utils';
 
 const tempDirs: string[] = [];
 
@@ -82,6 +83,12 @@ export function setupPlugin(
 }
 
 export async function readJson(file: string): Promise<Record<string, unknown>> {
+  if (file.endsWith('translations.json')) {
+    return (await readTestTranslationMemory(file)) as unknown as Record<
+      string,
+      unknown
+    >;
+  }
   return JSON.parse(await fs.readFile(file, 'utf8')) as Record<string, unknown>;
 }
 

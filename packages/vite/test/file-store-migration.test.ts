@@ -9,6 +9,7 @@ import {
 } from '../src/project-state';
 import { extractedTestPath } from './extracted-test-path';
 import { options, readJson, setup } from './file-store-test-utils';
+import { updateTestTranslationMemory } from './translation-memory-test-utils';
 
 describe('FileStore migrations', () => {
   it('adds and removes configured locales without dropping cache history', async () => {
@@ -21,11 +22,9 @@ describe('FileStore migrations', () => {
 
     const extractedPath = extractedTestPath(root, 'src/main.ts');
     const memoryPath = path.join(root, 'i18n/translations.json');
-    const edited = (await readJson(memoryPath)) as {
-      messages: Record<string, { translations: Record<string, string | null> }>;
-    };
-    edited.messages['保存']!.translations['en-US'] = 'Save';
-    await fs.writeFile(memoryPath, `${JSON.stringify(edited, null, 2)}\n`);
+    await updateTestTranslationMemory(memoryPath, (memory) => {
+      memory.messages['保存']!.translations['en-US'] = 'Save';
+    });
 
     const addedOptions: NormalizedAiI18nOptions = {
       ...options,
@@ -89,11 +88,9 @@ describe('FileStore migrations', () => {
     await store.sync(state.snapshot());
 
     const memoryPath = path.join(root, 'i18n/translations.json');
-    const memory = (await readJson(memoryPath)) as {
-      messages: Record<string, { translations: Record<string, string | null> }>;
-    };
-    memory.messages['保存']!.translations['en-US'] = 'Save';
-    await fs.writeFile(memoryPath, `${JSON.stringify(memory, null, 2)}\n`);
+    await updateTestTranslationMemory(memoryPath, (memory) => {
+      memory.messages['保存']!.translations['en-US'] = 'Save';
+    });
     state.hydrateCache(await store.load());
     await store.sync(state.snapshot());
 

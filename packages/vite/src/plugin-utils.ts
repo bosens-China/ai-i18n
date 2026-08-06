@@ -8,6 +8,7 @@ import { normalizePath } from 'vite';
 import type {
   AiI18nCacheOptions,
   AiI18nLocaleLoadingOptions,
+  AiI18nTranslationMemoryOptions,
 } from './options.js';
 import type { NormalizedAiI18nOptions } from './project-state.js';
 import type { SourceExtraction, TranslationHookBinding } from './extractor.js';
@@ -68,6 +69,36 @@ export function normalizeOptions(options: {
     ...(persist ? { persist } : {}),
     ...(loading ? { loading } : {}),
   };
+}
+
+export function normalizeTranslationMemory(
+  options: AiI18nTranslationMemoryOptions | undefined,
+): Required<AiI18nTranslationMemoryOptions> {
+  const storage = options?.storage ?? 'json';
+  if (storage !== 'json' && storage !== 'sqlite') {
+    throw new Error(
+      diagnosticMessage(
+        '[ai-i18n] translationMemory.storage 必须是“json”或“sqlite”。',
+        '[ai-i18n] translationMemory.storage must be "json" or "sqlite".',
+      ),
+    );
+  }
+  return { storage };
+}
+
+export function normalizeProviderCache(
+  cache: 'reuse' | 'fresh' | undefined,
+): 'reuse' | 'fresh' {
+  const normalized = cache ?? 'reuse';
+  if (normalized !== 'reuse' && normalized !== 'fresh') {
+    throw new Error(
+      diagnosticMessage(
+        '[ai-i18n] provider.cache 必须是“reuse”或“fresh”。',
+        '[ai-i18n] provider.cache must be "reuse" or "fresh".',
+      ),
+    );
+  }
+  return normalized;
 }
 
 function normalizePersist(

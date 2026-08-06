@@ -1,4 +1,5 @@
 import type { LangOption } from '@ai-i18n/core';
+import type { TranslationMemoryStorage } from '@ai-i18n/core/translation-memory';
 import type { AiI18nCacheOptions } from './options.js';
 
 export interface FileStoreOptions {
@@ -9,6 +10,9 @@ export interface FileStoreOptions {
   cleanupMissingSourceFiles?: boolean;
   cleanupOrphanMessages?: boolean;
   cache?: AiI18nCacheOptions;
+  translationMemory?: {
+    storage: TranslationMemoryStorage;
+  };
   onWarning?: (message: string) => void;
 }
 

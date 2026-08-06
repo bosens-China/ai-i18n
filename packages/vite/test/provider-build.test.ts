@@ -7,6 +7,7 @@ import { build } from 'vite';
 import { aiI18n } from '../src';
 import { FileStore } from '../src/file-store';
 import { buildOutputItems } from './build-output';
+import { readTestTranslationMemory } from './translation-memory-test-utils';
 
 const tempDirs: string[] = [];
 
@@ -109,5 +110,11 @@ describe('@ai-i18n/vite provider build', () => {
 });
 
 async function readJson(file: string): Promise<Record<string, unknown>> {
+  if (file.endsWith('translations.json')) {
+    return (await readTestTranslationMemory(file)) as unknown as Record<
+      string,
+      unknown
+    >;
+  }
   return JSON.parse(await fs.readFile(file, 'utf8')) as Record<string, unknown>;
 }

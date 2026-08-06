@@ -10,6 +10,7 @@ interface DevUpdateDependencies {
   state(): ProjectState;
   hot(): NormalizedHotChannel | undefined;
   coordinator(): ProviderCoordinator | undefined;
+  providerCache: 'reuse' | 'fresh';
   reportMissingTranslations?(message: string): void;
   translationEvent: string;
   localeEvent: string;
@@ -112,7 +113,9 @@ export function createDevUpdateSender(dependencies: DevUpdateDependencies) {
       }
       const project = dependencies.state();
       for (const moduleId of new Set(moduleIds)) {
-        for (const request of project.missingTranslations(moduleId)) {
+        for (const request of project.missingTranslations(moduleId, {
+          refreshCached: dependencies.providerCache === 'fresh',
+        })) {
           // Dev 不等待网络；Build 在虚拟模块固化前统一 flush。
           void coordinator.request(request);
         }

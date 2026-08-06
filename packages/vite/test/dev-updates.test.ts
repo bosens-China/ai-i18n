@@ -36,6 +36,7 @@ describe('Dev untranslated summary', () => {
       state: () => state,
       hot: () => undefined,
       coordinator: () => undefined,
+      providerCache: 'reuse',
       reportMissingTranslations: report,
       translationEvent: 'translation',
       localeEvent: 'locale',

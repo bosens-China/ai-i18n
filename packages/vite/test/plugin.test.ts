@@ -21,6 +21,21 @@ describe('@ai-i18n/vite plugin', () => {
     expect(() => aiI18n({ ...base, persist: { key: ' ' } })).toThrow(
       'persist.key must not be empty',
     );
+    expect(() =>
+      aiI18n({
+        ...base,
+        translationMemory: { storage: 'remote' as 'json' },
+      }),
+    ).toThrow('translationMemory.storage must be "json" or "sqlite"');
+    expect(() =>
+      aiI18n({
+        ...base,
+        provider: {
+          translator: vi.fn(),
+          cache: 'always' as 'reuse',
+        },
+      }),
+    ).toThrow('provider.cache must be "reuse" or "fresh"');
   });
 
   it('rejects a provider without a translator during config resolution', () => {

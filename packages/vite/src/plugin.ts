@@ -32,7 +32,12 @@ import { ProjectState } from './project-state.js';
 import { ProviderCoordinator } from './provider-coordinator.js';
 import { loadRegistration } from './registration-loader.js';
 import type { AiI18nOptions } from './options.js';
-import { normalizeOptions, normalizeRoot } from './plugin-utils.js';
+import {
+  normalizeOptions,
+  normalizeProviderCache,
+  normalizeRoot,
+  normalizeTranslationMemory,
+} from './plugin-utils.js';
 import { createSourceTransformHandler } from './source-transform.js';
 import { runtimeCode, runtimeStubCode } from './virtual-modules.js';
 import { AI_I18N_VIRTUAL_MODULE_ID } from './yuku-analyzer.js';
@@ -49,6 +54,10 @@ const LOCALE_UPDATE_EVENT = 'ai-i18n:locale-update';
 
 export function aiI18n(options: AiI18nOptions): Plugin {
   const normalized = normalizeOptions(options);
+  const translationMemory = normalizeTranslationMemory(
+    options.translationMemory,
+  );
+  const providerCache = normalizeProviderCache(options.provider?.cache);
   const htmlExtractor: HtmlExtractor | undefined = options.html
     ? createHtmlExtractor(options.html === true ? {} : options.html)
     : undefined;
@@ -103,6 +112,7 @@ export function aiI18n(options: AiI18nOptions): Plugin {
     state: currentState,
     hot: () => devHot,
     coordinator: () => coordinator,
+    providerCache,
     reportMissingTranslations(message) {
       if (config?.command === 'serve') config.logger?.info(message);
     },
@@ -198,6 +208,7 @@ export function aiI18n(options: AiI18nOptions): Plugin {
         cleanupMissingSourceFiles: options.cleanup?.missingSourceFiles ?? true,
         cleanupOrphanMessages: options.cleanup?.orphanMessages ?? false,
         ...(options.cache ? { cache: options.cache } : {}),
+        translationMemory,
         onWarning: (message) => resolved.logger.warn(`[ai-i18n] ${message}`),
       });
       if (resolved.command === 'build' && resolved.build.watch) {
@@ -216,14 +227,22 @@ export function aiI18n(options: AiI18nOptions): Plugin {
         currentState().hydrateCache(cache);
         currentState().hydrateOverrides(overrides);
       });
+      // 部分工具只执行 configResolved 后即释放临时 root；保留 rejection 供后续 hook 抛出，
+      // 同时登记观察者，避免未进入任何 hook 时产生 unhandled rejection。
+      void ready.catch(() => undefined);
       if (options.provider) {
-        const { translator, ...providerOptions } = options.provider;
+        const providerOptions = { ...options.provider };
+        const { translator } = providerOptions;
+        delete providerOptions.cache;
         coordinator = new ProviderCoordinator(translator, {
           ...providerOptions,
           async onResults(results) {
             await runStateTask(async () => {
               const project = currentState();
-              const affected = project.applyTranslations(results);
+              currentStore().markProviderTranslations(results);
+              const affected = project.applyTranslations(results, {
+                replaceCached: providerCache === 'fresh',
+              });
               if (config?.command !== 'build') {
                 const cache = await currentStore().sync(project.snapshot());
                 project.hydrateCache(cache);
@@ -360,8 +379,11 @@ export function aiI18n(options: AiI18nOptions): Plugin {
 
     hotUpdate: handleHotUpdate,
 
-    closeBundle() {
+    async closeBundle() {
       disposeDevUpdates();
+      if (config?.command !== 'build' || !config.build.watch) {
+        await store?.close();
+      }
     },
   };
 }

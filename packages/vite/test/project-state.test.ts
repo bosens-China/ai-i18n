@@ -176,6 +176,108 @@ describe('ProjectState incremental analysis', () => {
     });
   });
 
+  it('does not retry one missing field after ordinary repeated analysis in the same process', () => {
+    const state = new ProjectState('/workspace', options);
+    state.updateExtracted('', '/workspace/src/main.ts', [
+      {
+        id: '保存',
+        source: '保存',
+        locations: [{ line: 1, column: 0 }],
+      },
+    ]);
+
+    expect(state.missingTranslations('src/main.ts')).toEqual([
+      {
+        messageId: '保存',
+        source: '保存',
+        locales: ['en-US'],
+      },
+    ]);
+    expect(state.missingTranslations('src/main.ts')).toEqual([]);
+    state.applyTranslations([
+      { messageId: '保存', locale: 'en-US', value: null },
+    ]);
+    expect(state.missingTranslations('src/main.ts')).toEqual([]);
+
+    state.updateExtracted('', '/workspace/src/main.ts', [
+      {
+        id: '保存',
+        source: '立即保存',
+        locations: [{ line: 1, column: 0 }],
+      },
+    ]);
+    expect(state.missingTranslations('src/main.ts')).toHaveLength(1);
+  });
+
+  it('refreshes Provider cache without hiding or overwriting an in-flight Agent write', () => {
+    const state = new ProjectState('/workspace', options);
+    state.updateExtracted('', '/workspace/src/main.ts', [
+      {
+        id: '保存',
+        source: '保存',
+        locations: [{ line: 1, column: 0 }],
+      },
+      {
+        id: '取消',
+        source: '取消',
+        locations: [{ line: 2, column: 0 }],
+      },
+    ]);
+    state.hydrateCache({
+      version: 1,
+      revision: 1,
+      messages: {
+        保存: {
+          source: '保存',
+          sourceLang: 'zh-CN',
+          translations: { 'en-US': 'Old save' },
+        },
+        取消: {
+          source: '取消',
+          sourceLang: 'zh-CN',
+          translations: { 'en-US': 'Old cancel' },
+        },
+      },
+    });
+
+    expect(
+      state.missingTranslations('src/main.ts', { refreshCached: true }),
+    ).toHaveLength(2);
+    expect(state.localeMessages('en-US')).toEqual({
+      保存: 'Old save',
+      取消: 'Old cancel',
+    });
+
+    state.hydrateCache({
+      version: 1,
+      revision: 2,
+      messages: {
+        保存: {
+          source: '保存',
+          sourceLang: 'zh-CN',
+          translations: { 'en-US': 'Agent save' },
+        },
+        取消: {
+          source: '取消',
+          sourceLang: 'zh-CN',
+          translations: { 'en-US': 'Old cancel' },
+        },
+      },
+    });
+    state.applyTranslations(
+      [
+        { messageId: '保存', locale: 'en-US', value: 'Provider save' },
+        { messageId: '取消', locale: 'en-US', value: 'Provider cancel' },
+      ],
+      { replaceCached: true },
+    );
+
+    expect(state.localeMessages('en-US')).toEqual({
+      保存: 'Agent save',
+      取消: 'Provider cancel',
+    });
+  });
+
   it('rejects one explicit message ID pointing at different source text', () => {
     const state = new ProjectState('/workspace', options);
     state.updateExtracted('', '/workspace/src/main.ts', [

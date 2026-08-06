@@ -6,6 +6,11 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { build, type Plugin } from 'vite';
 import { aiI18n, Analyzer } from '../src';
 import { extractedTestPath } from './extracted-test-path';
+import {
+  readProtocolJson as readJson,
+  translationShardFiles,
+  writeProtocolJson as writeJson,
+} from './translation-memory-test-utils';
 
 const tempDirs: string[] = [];
 const runtimeEntry = path.resolve('packages/vite/src/runtime.ts');
@@ -359,7 +364,8 @@ async function protocolModifiedTimes(
   root: string,
 ): Promise<Record<string, bigint>> {
   const files = [
-    path.join(root, 'i18n/translations.json'),
+    path.join(root, 'i18n/storage.json'),
+    ...(await translationShardFiles(root)),
     extractedTestPath(root, 'src/main.ts'),
     path.join(root, 'i18n/locales/en-US.json'),
   ];
@@ -381,12 +387,4 @@ async function write(root: string, relative: string, content: string) {
 
 function translatedModule(source: string): string {
   return `import { t } from 'virtual:ai-i18n'; console.log(t(${JSON.stringify(source)}));`;
-}
-
-async function writeJson(file: string, value: unknown): Promise<void> {
-  await fs.writeFile(file, `${JSON.stringify(value, null, 2)}\n`);
-}
-
-async function readJson<T>(file: string): Promise<T> {
-  return JSON.parse(await fs.readFile(file, 'utf8')) as T;
 }
