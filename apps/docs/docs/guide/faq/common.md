@@ -14,7 +14,7 @@ Vue 模板、响应式更新和 `tRef()` 问题见 [Vue 常见问题](/guide/faq
 ## 为什么会安装 fs-native-extensions？
 
 `@ai-i18n/vite` 通过 `@ai-i18n/core` 依赖 `fs-native-extensions`。Vite 与
-`@ai-i18n/mcp` 可能同时修改 `translations.json` 或 `overrides.json`，因此需要跨进程文件锁，
+`@ai-i18n/mcp` 可能同时修改分片 JSON Translation Memory 或 `overrides.json`，因此需要跨进程文件锁，
 把“读取 → 修改 → 原子写入”整体串行化。否则，两个进程同时读写时，后完成的进程可能覆盖
 另一个进程的修改。
 
@@ -99,7 +99,7 @@ definePagePermissions({
 ## 为什么切换语言后仍然显示源文案？
 
 缺失翻译或值为 `null` 时，Runtime 固定回退到 source。检查
-`i18n/translations.json` 或 `i18n/overrides.json` 中是否存在目标 locale 的有效译文，并让
+当前 Translation Memory 或 `i18n/overrides.json` 中是否存在目标 locale 的有效译文，并让
 运行中的 Vite Dev 自动同步，或重新执行一次 Vite Build。
 
 可以通过 [AI 翻译](/guide/advanced/ai-translation)配置 Provider，也可以通过
@@ -123,3 +123,11 @@ Promise 并提供重试入口。
 需要。权威译文与生成声明随源码提交，可重建的提取结果和语言包不提交。完整文件清单、Build
 时机与 Monorepo 归属统一见[生成文件与 Git](/guide/basic/directory)；声明文件本身的作用见
 [TypeScript 与生成声明](/guide/quality/typescript)。
+
+## 修改模型或提示词后，为什么没有重新翻译？
+
+Translation Memory 默认复用历史结果。插件不能可靠识别自定义 Translator 内部的模型、温度、提示词或
+`baseURL`，也不会把这些配置写入缓存指纹。需要刷新一次时，在 Provider 中配置
+`cache: 'fresh'`。本次 Vite 进程会主动刷新已有自动译文，并继续复用本进程新生成的结果。该选项不影响
+MCP 或 AI Agent。完成后改回默认 `reuse`。详见
+[Translation Memory](/guide/advanced/translation-memory)。

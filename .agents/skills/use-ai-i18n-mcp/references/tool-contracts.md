@@ -53,7 +53,7 @@ of ordinary translation, human review, or completion verification.
    `ai_i18n_delete_orphan_messages`. Never construct an orphan ID.
 4. Repeat the list to verify the remaining orphan set.
 
-The delete tool removes complete messages from `translations.json`, not individual locale values. It
+The delete tool removes complete messages from the configured Translation Memory, not individual locale values. It
 revalidates the whole batch against the current extracted set before writing; if any target is active,
 the whole batch fails. Rebuild, re-list, show the changed result, and obtain approval again. Do not run
 Build or edit protocol files concurrently with cleanup.
@@ -63,7 +63,7 @@ review values separately through the override tools and only with explicit appro
 
 ## Human review
 
-Human decisions belong in `overrides.json`, not `translations.json`.
+Human decisions belong in `overrides.json`, not the JSON or SQLite Translation Memory.
 
 Use `ai_i18n_list_overrides` to inspect current values, including orphaned values. Use
 `ai_i18n_set_overrides` only when the user explicitly requests or approves human review wording:
@@ -77,7 +77,8 @@ To remove a human value, list it first and pass the returned opaque `override_id
 
 ## Write and verification boundaries
 
-- Translation tools modify only `translations.json`.
+- Translation tools modify only the Translation Memory selected by `storage.json`; never edit JSON
+  shards or the user-level SQLite database directly while the tools are available.
 - Human review tools modify only `overrides.json`.
 - MCP does not modify `extracted/` or `locales/`.
 - Preserve every template token before writing.

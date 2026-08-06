@@ -10,6 +10,8 @@ uses one. Do not enable adjacent features automatically.
 | Language persistence | Do not add `persist`. | `https://bosens-china.github.io/ai-i18n/api/vite/interfaces/ai-i18n-persist-options.md` |
 | Locale loading | Do not add `loading`. | `https://bosens-china.github.io/ai-i18n/guide/basic/locale-loading.md` |
 | Translation Memory limits or cleanup | Do not add `cache` or change `cleanup`. | `https://bosens-china.github.io/ai-i18n/api/vite/interfaces/ai-i18n-options.md` |
+| Translation Memory storage | Keep the default sharded JSON; change `translationMemory.storage` only on request. | `https://bosens-china.github.io/ai-i18n/guide/advanced/translation-memory.md` |
+| Provider cache refresh | Keep `provider.cache: 'reuse'`; use `fresh` only when the user requests one process-level Provider refresh. It applies equally to Dev and Build and never changes MCP behavior. | `https://bosens-china.github.io/ai-i18n/guide/advanced/translation-memory.md` |
 | HTML extraction | Do not add `html`. | `https://bosens-china.github.io/ai-i18n/api/vite/interfaces/html-extractor-options.md` |
 | ESLint | Do not install or configure the ESLint plugin unless requested. | `https://bosens-china.github.io/ai-i18n/guide/quality/eslint.md` |
 | Vitest | Do not add `aiI18nVitest()` unless requested. | `https://bosens-china.github.io/ai-i18n/guide/quality/testing.md` |

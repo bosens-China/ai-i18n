@@ -172,7 +172,7 @@ loading/error 变化应由应用自己的抽象单测或生产 Vite 集成测试
 
 ## 常见问题
 
-**测试环境需要先跑过 `vite build` 或存在 `i18n/translations.json` 吗？**
+**测试环境需要先跑过 `vite build` 或存在 Translation Memory 吗？**
 不需要。测试插件不依赖项目中的翻译文件，也能正常解析 `virtual:ai-i18n`。
 
 **能不能在同一个 `vitest.config.ts` 里同时注册 `aiI18n()` 和 `aiI18nVitest()`？**

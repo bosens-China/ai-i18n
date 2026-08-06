@@ -87,7 +87,8 @@ Run a full Vite Build after integration. Dev processes only modules requested by
 full Build processes the target entry's reachable module graph. The Build creates or refreshes:
 
 - the configured declaration file;
-- `translations.json` and `overrides.json`;
+- `storage.json`, `overrides.json`, and the configured Translation Memory (default
+  `translations/*.json`; optional user-level SQLite lives outside the project);
 - the rebuildable `extracted/` and `locales/` output.
 
 Do not edit `extracted/` or `locales/` manually.

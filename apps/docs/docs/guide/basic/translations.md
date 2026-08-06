@@ -12,11 +12,13 @@ ai-i18n 不会用空字符串代替缺失译文。缺译时页面会回退显示
    [Agent + MCP](/guide/advanced/ai-tools)。
 3. 检查关键页面和产品术语。
 4. 对不满意或需要固定的译文进行人工审校。
-5. 再运行一次 Build，并提交源码、`translations.json` 与 `overrides.json`。
+5. 再运行一次 Build，并按当前存储模式提交源码、Translation Memory 标记与 `overrides.json`。
 
 ## 自动翻译与人工译文
 
-自动翻译写入 `i18n/translations.json`。人工确认的译文写入 `i18n/overrides.json`，并且始终优先显示。
+自动翻译默认写入 `i18n/translations/` 分片。人工确认的译文写入 `i18n/overrides.json`，并且始终优先
+显示。也可以将自动译文放进用户级全局 SQLite，详见
+[Translation Memory](/guide/advanced/translation-memory)。
 
 适合人工审校的情况包括：
 
@@ -36,13 +38,13 @@ t('保存', { comment: '保存状态' });
 Provider 或 Agent + MCP 会自动维护文件结构，适合批量补译和按语境审校。需要手工调整少量译文时，
 也可以编辑现有 JSON 文件，但不要用下面的示例覆盖已经生成的内容。
 
-`translations.json` 保存自动译文。保留文件中的 `version`、`revision`、消息标识和源码信息，只修改
-目标消息 `translations` 下的语言值。以下完整示例对应不带 `comment` 的 `t('保存')`：
+默认存储下，`translations/*.json` 保存自动译文。先在分片中搜索目标 `source`，保留 `version`、消息
+标识和源码信息，只修改目标消息 `translations` 下的语言值。不要修改 `manifest.json`，也不要手工把
+消息移动到另一个分片。以下分片示例对应不带 `comment` 的 `t('保存')`：
 
 ```json
 {
   "version": 1,
-  "revision": 0,
   "messages": {
     "保存": {
       "source": "保存",
@@ -54,6 +56,9 @@ Provider 或 Agent + MCP 会自动维护文件结构，适合批量补译和按�
   }
 }
 ```
+
+SQLite 模式不适合直接编辑数据库，请使用 Provider 或 Agent + MCP。少量已确认措辞仍建议写入
+`overrides.json`，这样可以提交并在不同电脑间保持一致。
 
 `overrides.json` 保存人工决定。没有语境区分的文案可以写入对应消息的 `default`：
 

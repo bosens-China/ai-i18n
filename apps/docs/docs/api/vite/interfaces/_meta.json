@@ -21,6 +21,11 @@
   },
   {
     "type": "file",
+    "name": "ai-i18n-translation-memory-options",
+    "label": "AiI18nTranslationMemoryOptions"
+  },
+  {
+    "type": "file",
     "name": "html-extractor-options",
     "label": "HtmlExtractorOptions"
   },

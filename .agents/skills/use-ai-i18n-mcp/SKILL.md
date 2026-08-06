@@ -1,6 +1,6 @@
 ---
 name: use-ai-i18n-mcp
-description: Use the eight local ai-i18n MCP tools to inspect missing or orphaned translations, update translations.json, and manage reviewed overrides.json values. Use when working with ai_i18n_list_translations, ai_i18n_set_translations, ai_i18n_clear_translations, ai_i18n_list_orphan_messages, ai_i18n_delete_orphan_messages, ai_i18n_list_overrides, ai_i18n_set_overrides, or ai_i18n_delete_overrides, especially when a monorepo requires resolving one Vite app's i18n directory first.
+description: Use the eight local ai-i18n MCP tools to inspect missing or orphaned translations, update the configured JSON or SQLite Translation Memory, and manage reviewed overrides.json values. Use when working with ai_i18n_list_translations, ai_i18n_set_translations, ai_i18n_clear_translations, ai_i18n_list_orphan_messages, ai_i18n_delete_orphan_messages, ai_i18n_list_overrides, ai_i18n_set_overrides, or ai_i18n_delete_overrides, especially when a monorepo requires resolving one Vite app's i18n directory first.
 ---
 
 # Use ai-i18n MCP
@@ -32,10 +32,16 @@ Vite build. Treat source-only packages as `source_files` within the consuming ap
 targets. Never point two Vite builds at one i18n directory; call the tools once per selected app.
 Use tool-returned `source_file` values; never decode or guess a source path from a physical filename.
 
-The directory must contain `translations.json`, `overrides.json`, and `extracted/`. Run the target
-app's full Vite Build before the first MCP use when `extracted/` is missing or empty. Build again
+The directory must contain `overrides.json`, `extracted/`, and the Translation Memory selected by
+`storage.json`. JSON uses deterministic shards under `translations/`; SQLite uses one user-level
+database outside the repository. Never locate, open, or edit that database directly—the tools resolve
+the current project binding from the i18n directory. Run the target app's full Vite Build before the
+first MCP use when `extracted/` is missing or empty. Build again
 after switching branches or changing source or extraction configuration when the local result may be
 stale. Prefer Build over Dev because Dev covers only browser-requested modules.
+
+Ignore Vite `provider.cache` when operating MCP tools. It controls only one Vite process's Provider
+requests and never changes Agent list, write, clear, or orphan behavior.
 
 Messages that exist only in `.cjs`, `.cts`, or CommonJS source do not enter `extracted/`. Do not
 diagnose their absence as stale MCP data or attempt an MCP write for them; report the unsupported

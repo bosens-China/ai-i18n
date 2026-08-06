@@ -101,13 +101,14 @@ Build，确认入口可达源码均已提取，并检查以下文件：
 
 ```text
 src/ai-i18n.d.ts
-i18n/translations.json
+i18n/storage.json
+i18n/translations/
 i18n/overrides.json
 i18n/extracted/
 i18n/locales/
 ```
 
-应提交前三类声明或权威译文文件，忽略可重新生成的 `extracted/` 与 `locales/`。完整规则见
+应提交声明、存储标记和项目内译文，忽略可重新生成的 `extracted/` 与 `locales/`。完整规则见
 [生成文件与 Git](/guide/basic/directory)。
 
 ## 接入 UI 组件库

@@ -6,6 +6,11 @@
   },
   {
     "type": "file",
+    "name": "translation-memory",
+    "label": "Translation Memory"
+  },
+  {
+    "type": "file",
     "name": "ai-tools",
     "label": "接入 Agent"
   }

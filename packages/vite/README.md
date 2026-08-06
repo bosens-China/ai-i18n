@@ -1,8 +1,8 @@
 # @ai-i18n/vite
 
-Vite 的 ai-i18n 主插件。它在 Dev/Build 中提取显式 `t()`，维护可提交 Git 的
-`translations.json`、`overrides.json` 与 `src/ai-i18n.d.ts`，并生成可通过 Build 重建的
-`extracted/*.json`、`locales/**`，同时提供浏览器虚拟 Runtime。
+Vite 的 ai-i18n 主插件。它在 Dev/Build 中提取显式 `t()`，默认维护可提交 Git 的分片
+`translations/*.json`、`storage.json`、`overrides.json` 与 `src/ai-i18n.d.ts`，并生成可通过
+Build 重建的 `extracted/*.json`、`locales/**`，同时提供浏览器虚拟 Runtime。
 
 alpha 阶段请安装 `@ai-i18n/vite@alpha`，避免无标签安装命中较旧的 `latest`。
 Vue 模式要求 Vue ≥ 3.2.25。
@@ -38,6 +38,31 @@ aiI18n({
   ],
 });
 ```
+
+## Translation Memory
+
+默认 `translationMemory.storage: 'json'`，消息按稳定 SHA-256 前缀写入
+`i18n/translations/<xx>.json`，并由 `manifest.json` 记录 revision 和有效分片。旧版单文件
+`translations.json` 会自动迁移；`storage.json` 记录当前驱动，供 Vite 与 MCP 共同发现。
+
+需要在同一台电脑的项目间共享自动译文时，可改用用户级全局 SQLite：
+
+```ts
+aiI18n({
+  sourceLang: 'zh-CN',
+  locales,
+  translationMemory: { storage: 'sqlite' },
+});
+```
+
+数据库默认位于系统用户数据目录，可用 `AI_I18N_DATA_DIR` 覆盖，不写入项目也不提交 Git。
+数据库物理全局、逻辑按规范化项目路径绑定；只有同一语义身份的候选唯一时才跨项目自动复用，
+候选冲突时保持缺失。`overrides.json` 始终位于项目内且优先级最高。
+
+模型、`baseURL`、温度或提示词变化后需要重跑时，在 Provider 中使用 `cache: 'fresh'`。该策略不区分
+Dev/Build：它会刷新一次已有自动译文，并持久化、复用本进程新结果；失败或空结果不会因普通 HMR
+立即重复请求。默认 `cache: 'reuse'`。该选项只影响 Provider 调用，不改变 MCP、JSON 或 SQLite 的
+读写语义。插件不对任意 Translator 内部配置生成失效指纹。
 
 动态值使用 tagged template：`` t`你好 ${name}` ``。表达式会变成可调整顺序的编号占位符，
 不会交给模型翻译。源码中原样出现的 `{{0}}` 会在内部转义为 `{{=0}}`，运行时仍按原文显示。
@@ -154,8 +179,8 @@ aiI18n({
 ```
 
 两个限制都是可选正整数；任一限制超出时，插件按 message ID 稳定淘汰非活跃的
-Translation Memory，直到同时满足已配置的限制。`maxBytes` 按稳定序列化后整个
-`translations.json` 的 UTF-8 字节数计算。
+Translation Memory，直到同时满足已配置的限制。`maxBytes` 按稳定序列化后的逻辑
+Translation Memory 快照计算，与 JSON 分片或 SQLite 物理布局无关。
 
 现有 extracted 或 ProjectState 引用的 message 始终受保护。若活动数据自身超限，插件保留
 数据并输出 warning。省略 `cache` 时不执行容量淘汰；
@@ -163,7 +188,7 @@ Translation Memory，直到同时满足已配置的限制。`maxBytes` 按稳定
 
 普通 `vite build` 每次使用新的分析状态，并在完整模块图可用后统一写协议文件；
 `vite build --watch` 会跨重建复用 ProjectState，
-只重新 parse 变化 source，并刷新必要的 reverse dependents。`translations.json` 或
+只重新 parse 变化 source，并刷新必要的 reverse dependents。Translation Memory 或
 `overrides.json` 变化会更新翻译和注册内容，不重新 parse source；extracted 与 locale 始终
 由插件重建。删除、重命名或移除 import 后，插件会校准
 当前入口可达模块，同时继续保留可复用的 Translation Memory。Vite 配置、插件、extractor

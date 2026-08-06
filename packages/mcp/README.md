@@ -14,8 +14,9 @@ MCP 不扫描 workspace，也不执行 Vite 配置。Agent 必须先确认目标
 `extracted/` 使用 source 的 SHA-256 作为物理文件名。MCP 扫描 JSON 内容并使用其中的
 标准化 `source`，不会从 hash 文件名推断源码路径。
 
-MCP 会校验绝对路径、目录是否存在，以及 `translations.json`、`overrides.json` 和
-`extracted/` 是否符合当前协议。`extracted/` 是不提交 Git 的本地 Build 产物。首次使用、
+MCP 会校验绝对路径、目录是否存在，以及 `storage.json` 所选的分片 JSON 或 SQLite
+Translation Memory、`overrides.json` 和 `extracted/` 是否符合当前协议。MCP 不读取或执行
+Vite 配置；SQLite 的数据库路径由 core 按用户目录解析。`extracted/` 是不提交 Git 的本地 Build 产物。首次使用、
 目录缺失或为空，或者切换分支和修改提取相关配置后，先运行目标应用的一次完整 Vite Build。
 Dev 只包含浏览器实际请求过的模块。
 
@@ -33,7 +34,7 @@ server 使用 stdio 通信，标准输出专用于 MCP 协议。
 
 ## 工具
 
-- `ai_i18n_list_translations`：默认直接列出 `translations.json` 中仍缺失的消息，也可返回
+- `ai_i18n_list_translations`：默认直接列出当前 Translation Memory 中仍缺失的消息，也可返回
   文件汇总或全部消息。首次调用省略 `source_files` 以扫描整个应用。相同 `source + comment`
   无论出现在哪些文件都只返回一条。响应默认省略出现文件；需要检查完整共享范围时显式传
   `include_source_files: true`。
@@ -42,7 +43,7 @@ server 使用 stdio 通信，标准输出专用于 MCP 协议。
   `message: { source, comment? }`，调用方不接触内部 message ID。
 - `ai_i18n_clear_translations`：把指定译文重置为 `null`，不删除消息或 locale。
 - `ai_i18n_list_orphan_messages`：只在用户明确要求审查或清理时调用。完整 Build 后，列出
-  `translations.json` 中已不再被 `extracted/` 引用的消息，并返回删除所需的 opaque
+  Translation Memory 中已不再被 `extracted/` 引用的消息，并返回删除所需的 opaque
   `orphan_id`。
 - `ai_i18n_delete_orphan_messages`：用户审查列表并明确批准后，按 `orphan_id` 原子删除孤立
   Translation Memory。删除前会整批复验；任一消息重新被源码引用时，整批失败且不修改文件。
@@ -83,7 +84,8 @@ server 使用 stdio 通信，标准输出专用于 MCP 协议。
 
 ## 写入边界
 
-- 翻译工具只修改 `translations.json`；人工审校工具只修改 `overrides.json`。
+- 翻译工具只修改 `storage.json` 所选的 Translation Memory；人工审校工具只修改 `overrides.json`。
+- MCP 不读取 Vite 的 `provider.cache`；Provider 是否刷新进程缓存，不改变 Agent 的列表、写入或清除行为。
 - MCP 不修改 `extracted/` 或 `locales/`。
 - 每批写入都取得跨进程锁，在锁内重读并校验最新文件，然后按字段原子更新。
 - 每批最多 500 个输入。相同目标与相同值重复出现时只写一次并返回
@@ -108,6 +110,6 @@ server 使用 stdio 通信，标准输出专用于 MCP 协议。
    `ai_i18n_delete_orphan_messages`；不得自行构造 ID。
 4. 再次列出孤立消息，验证删除结果。
 
-孤立消息工具只读写 `translations.json`。`overrides.json` 中的孤立人工值继续通过 override
+孤立消息工具只读写当前 Translation Memory。`overrides.json` 中的孤立人工值继续通过 override
 列表与删除工具独立审查，不能随 Translation Memory 联动删除。运行清理期间不要并行执行 Build
 或手工修改协议文件。

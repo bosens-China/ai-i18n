@@ -7,7 +7,10 @@ ai-i18n 默认在 Vite root 下创建 `i18n/` 目录，用来保存译文和本�
 
 ```text
 i18n/
-├── translations.json
+├── storage.json
+├── translations/
+│   ├── manifest.json
+│   └── 00.json ... ff.json
 ├── overrides.json
 ├── extracted/
 └── locales/
@@ -15,7 +18,8 @@ i18n/
 
 你通常只需要关注两类文件：
 
-- `translations.json`：自动翻译或 Agent 补齐的译文。
+- `translations/`：默认的分片 JSON Translation Memory，保存自动翻译或 Agent 补齐的译文。
+- `storage.json`：记录当前项目选择 JSON 还是 SQLite，不包含本机数据库路径。
 - `overrides.json`：人工确认过的最终译文。它优先于自动翻译结果。
 
 `extracted/` 和 `locales/` 都是构建产物。插件会根据源码和上述译文重新生成它们，不要直接编辑。
@@ -26,7 +30,8 @@ i18n/
 
 - `src/ai-i18n.d.ts`，或通过 `dts` 配置的声明文件；
 - Vue 自动导入模式生成的相邻 `.vue.d.ts` 声明文件；
-- `i18n/translations.json`；
+- `i18n/storage.json`；
+- `i18n/translations/**/*.json`（使用默认 JSON 存储时）；
 - `i18n/overrides.json`。
 
 将以下目录加入 `.gitignore`：
@@ -39,6 +44,10 @@ i18n/locales/
 :::important
 译文文件与引用它们的源码应在同一个 PR 中提交。这样其他开发者和 CI 才能得到一致的翻译结果。
 :::
+
+选择 `translationMemory.storage: 'sqlite'` 时，全局数据库位于用户目录，不提交 Git；项目只提交
+`storage.json` 与 `overrides.json`。SQLite 是本机缓存，新机器和 CI 需要 Provider 重新生成自动
+译文。两种存储的选择见 [Translation Memory](/guide/advanced/translation-memory)。
 
 声明文件的作用和自定义路径见
 [TypeScript 与生成声明](/guide/quality/typescript)。
@@ -90,8 +99,8 @@ t('提交', { comment: '表单按钮' });
 
 ## 处理合并冲突
 
-合并冲突时保留 `translations.json` 与 `overrides.json` 的有效内容。同一人工译文出现不同版本时，由
-负责人确认最终措辞。解决冲突后运行一次 Build，再检查页面效果。
+合并冲突时保留 `translations/` 与 `overrides.json` 的有效内容，不要手工调整消息所属分片。同一人工
+译文出现不同版本时，由负责人确认最终措辞。解决冲突后运行一次 Build，再检查页面效果。
 
 如果同时使用 Agent 或 Provider 写入译文，避免在编辑器中并行手改同一份译文文件。先完成一方操作，再进行
 另一方操作。
