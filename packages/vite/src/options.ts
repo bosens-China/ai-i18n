@@ -20,7 +20,7 @@ export interface AiI18nLocaleLoadingOptions {
   prefetch?: readonly string[];
 }
 
-export interface AiI18nCacheOptions {
+export interface AiI18nTranslationMemoryCapacityOptions {
   maxMessages?: number;
   maxBytes?: number;
 }
@@ -28,10 +28,17 @@ export interface AiI18nCacheOptions {
 export interface AiI18nTranslationMemoryOptions {
   /** 持久化驱动；默认使用项目内可提交的分片 JSON。 */
   storage?: TranslationMemoryStorage;
+  /** 限制当前项目的历史 Translation Memory 容量。 */
+  capacity?: AiI18nTranslationMemoryCapacityOptions;
 }
 
 export interface AiI18nPersistOptions {
   key: string;
+}
+
+export interface AiI18nCleanupOptions {
+  missingSourceFiles?: boolean;
+  orphanMessages?: boolean;
 }
 
 export interface AiI18nOptions {
@@ -48,13 +55,9 @@ export interface AiI18nOptions {
   /** 持久化用户语言偏好；true 使用默认 key。 */
   persist?: boolean | AiI18nPersistOptions;
   loading?: AiI18nLocaleLoadingOptions;
-  cache?: AiI18nCacheOptions;
   translationMemory?: AiI18nTranslationMemoryOptions;
   provider?: AiI18nProviderOptions;
   directory?: string;
-  cleanup?: {
-    missingSourceFiles?: boolean;
-    orphanMessages?: boolean;
-  };
+  cleanup?: AiI18nCleanupOptions;
   html?: boolean | HtmlExtractorOptions;
 }

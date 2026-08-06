@@ -38,6 +38,7 @@ import {
   normalizeProviderCache,
   normalizeRoot,
   normalizeTranslationMemory,
+  rejectRemovedOptions,
 } from './plugin-utils.js';
 import { createSourceTransformHandler } from './source-transform.js';
 import { ssrWarningMessage } from './ssr-warning.js';
@@ -55,6 +56,7 @@ const TRANSLATION_UPDATE_EVENT = 'ai-i18n:update';
 const LOCALE_UPDATE_EVENT = 'ai-i18n:locale-update';
 
 export function aiI18n(options: AiI18nOptions): Plugin {
+  rejectRemovedOptions(options);
   const normalized = normalizeOptions(options);
   const translationMemory = normalizeTranslationMemory(
     options.translationMemory,
@@ -209,8 +211,10 @@ export function aiI18n(options: AiI18nOptions): Plugin {
         ...(options.directory ? { directory: options.directory } : {}),
         cleanupMissingSourceFiles: options.cleanup?.missingSourceFiles ?? true,
         cleanupOrphanMessages: options.cleanup?.orphanMessages ?? false,
-        ...(options.cache ? { cache: options.cache } : {}),
         translationMemory,
+        ...(translationMemory.capacity
+          ? { capacity: translationMemory.capacity }
+          : {}),
         onWarning: (message) => resolved.logger.warn(`[ai-i18n] ${message}`),
         onSynced(batchIds) {
           for (const batchId of batchIds) {

@@ -24,6 +24,19 @@ export function resolveFramework(
   plugins: readonly Plugin[],
   configured?: AiI18nFramework,
 ): AiI18nFramework {
+  if (
+    configured !== undefined &&
+    configured !== 'vanilla' &&
+    configured !== 'vue' &&
+    configured !== 'react'
+  ) {
+    throw new TypeError(
+      diagnosticMessage(
+        '[ai-i18n] framework 必须是“vanilla”、“vue”或“react”。',
+        '[ai-i18n] framework must be "vanilla", "vue", or "react".',
+      ),
+    );
+  }
   // configResolved 提供最终插件名，避免要求用户重复声明宿主框架。
   const names = plugins.map((plugin) => plugin.name);
   const hasVue = names.some(

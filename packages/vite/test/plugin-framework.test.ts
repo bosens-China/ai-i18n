@@ -7,6 +7,15 @@ import {
 } from './plugin-test-utils';
 
 describe('@ai-i18n/vite framework transforms', () => {
+  it('rejects an invalid framework from a JavaScript configuration', () => {
+    expect(() =>
+      setupPlugin([], undefined, {
+        ...options,
+        framework: 'svelte' as never,
+      }),
+    ).toThrow('framework must be "vanilla", "vue", or "react"');
+  });
+
   it('auto-imports the Vanilla runtime without changing local bindings', async () => {
     const { transform } = setupPlugin([], undefined, {
       ...options,

@@ -1,7 +1,7 @@
 import { Buffer } from 'node:buffer';
 import type { TranslationMemoryFile } from '@ai-i18n/core';
 import { diagnosticMessage } from '@ai-i18n/analyzer';
-import type { AiI18nCacheOptions } from './options.js';
+import type { AiI18nTranslationMemoryCapacityOptions } from './options.js';
 import { stableJson } from './json-files.js';
 
 interface CacheUsage {
@@ -13,7 +13,7 @@ interface CacheUsage {
 export function enforceCacheCapacity(
   cache: TranslationMemoryFile,
   activeMessageIds: Iterable<string>,
-  options: AiI18nCacheOptions | undefined,
+  options: AiI18nTranslationMemoryCapacityOptions | undefined,
   onWarning?: (message: string) => void,
 ): void {
   if (!options?.maxMessages && !options?.maxBytes) return;
@@ -57,7 +57,7 @@ function withoutMessages(
 
 function cacheUsage(
   cache: TranslationMemoryFile,
-  options: AiI18nCacheOptions,
+  options: AiI18nTranslationMemoryCapacityOptions,
 ): CacheUsage {
   const messages = Object.keys(cache.messages).length;
   const bytes =
@@ -75,7 +75,7 @@ function cacheUsage(
 
 function capacityWarning(
   usage: CacheUsage,
-  options: AiI18nCacheOptions,
+  options: AiI18nTranslationMemoryCapacityOptions,
 ): string {
   const englishLimits = [
     options.maxMessages === undefined

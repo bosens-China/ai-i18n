@@ -40,6 +40,12 @@ export interface ProviderCoordinatorOptions {
   ) => void | Promise<void>;
   onWarning?: (message: string) => void;
 }
+
+type TranslationBatchEventDetails = TranslationBatchEvent extends infer Event
+  ? Event extends unknown
+    ? Omit<Event, 'logging'>
+    : never
+  : never;
 interface PendingRequest {
   key: string;
   request: ProviderRequest;
@@ -164,11 +170,10 @@ export class ProviderCoordinator {
     this.errors.length = 0;
   }
 
-  reportBatchEvent(event: TranslationBatchEvent): void {
-    if (!this.logging) return;
+  reportBatchEvent(event: TranslationBatchEventDetails): void {
     reportTranslationBatchEvent(
       this.translator,
-      { ...event, logging: this.logging },
+      { ...event, logging: this.logging } as TranslationBatchEvent,
       this.onWarning,
     );
   }

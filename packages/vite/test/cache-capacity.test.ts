@@ -38,14 +38,29 @@ describe('Cache capacity', () => {
   it('validates positive integer limits', () => {
     const base = { sourceLang: options.sourceLang, locales: options.locales };
     for (const value of [0, -1, 1.5, Number.MAX_SAFE_INTEGER + 1]) {
-      expect(() => aiI18n({ ...base, cache: { maxMessages: value } })).toThrow(
-        'cache.maxMessages must be a positive integer',
+      expect(() =>
+        aiI18n({
+          ...base,
+          translationMemory: { capacity: { maxMessages: value } },
+        }),
+      ).toThrow(
+        'translationMemory.capacity.maxMessages must be a positive integer',
       );
-      expect(() => aiI18n({ ...base, cache: { maxBytes: value } })).toThrow(
-        'cache.maxBytes must be a positive integer',
+      expect(() =>
+        aiI18n({
+          ...base,
+          translationMemory: { capacity: { maxBytes: value } },
+        }),
+      ).toThrow(
+        'translationMemory.capacity.maxBytes must be a positive integer',
       );
     }
-    expect(() => aiI18n({ ...base, cache: {} })).not.toThrow();
+    expect(() =>
+      aiI18n({ ...base, translationMemory: { capacity: {} } }),
+    ).not.toThrow();
+    expect(() =>
+      aiI18n({ ...base, cache: { maxMessages: 1 } } as never),
+    ).toThrow('Top-level cache has been removed');
   });
 
   it('keeps inactive Translation Memory when capacity is omitted', async () => {
@@ -228,7 +243,7 @@ async function prepareCache(
 
 function capacityStore(
   root: string,
-  cache?: { maxMessages?: number; maxBytes?: number },
+  capacity?: { maxMessages?: number; maxBytes?: number },
   warnings: string[] = [],
   cleanupOrphanMessages = false,
   cleanupMissingSourceFiles = true,
@@ -239,7 +254,7 @@ function capacityStore(
     locales: options.locales,
     cleanupOrphanMessages,
     cleanupMissingSourceFiles,
-    ...(cache ? { cache } : {}),
+    ...(capacity ? { capacity } : {}),
     onWarning: (message) => warnings.push(message),
   });
 }

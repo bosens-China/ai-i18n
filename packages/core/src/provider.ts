@@ -22,17 +22,30 @@ export type TranslationResult = Readonly<Record<string, TranslationValue>>;
 export type TranslationBatchStage =
   'scheduled' | 'state-applied' | 'persisted' | 'failed';
 
-export interface TranslationBatchEvent {
+interface TranslationBatchEventBase {
   batchId: string;
-  stage: TranslationBatchStage;
-  /** 与对应批次一致的诊断日志目录；false 或省略表示关闭。 */
-  logging?: TranslationLogging;
-  locales?: readonly string[];
-  messageCount?: number;
-  resultCount?: number;
-  affectedModules?: number;
-  reason?: string;
+  /** 与对应批次一致的诊断日志目录；false 表示关闭。 */
+  logging: TranslationLogging;
 }
+
+export type TranslationBatchEvent =
+  | (TranslationBatchEventBase & {
+      stage: 'scheduled';
+      locales: readonly string[];
+      messageCount: number;
+    })
+  | (TranslationBatchEventBase & {
+      stage: 'state-applied';
+      resultCount: number;
+      affectedModules: number;
+    })
+  | (TranslationBatchEventBase & { stage: 'persisted' })
+  | (TranslationBatchEventBase & {
+      stage: 'failed';
+      locales: readonly string[];
+      messageCount: number;
+      reason: string;
+    });
 
 export type Translator = ((
   batch: TranslationBatch,

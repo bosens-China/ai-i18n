@@ -289,7 +289,7 @@ export class FileStore {
         enforceCacheCapacity(
           memory,
           activeMessageIds,
-          this.options.cache,
+          this.options.capacity,
           this.options.onWarning,
         );
       }

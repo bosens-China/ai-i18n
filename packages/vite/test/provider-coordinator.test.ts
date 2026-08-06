@@ -245,7 +245,7 @@ describe('ProviderCoordinator', () => {
     );
   });
 
-  it('disables logging by default without reporting lifecycle events', async () => {
+  it('reports lifecycle events with logging disabled', async () => {
     const translator = echoTranslator();
     translator.reportBatchEvent = vi.fn();
     const coordinator = new ProviderCoordinator(translator, {
@@ -261,7 +261,13 @@ describe('ProviderCoordinator', () => {
       locales: ['en-US'],
       messages: [{ source: '保存' }],
     });
-    expect(translator.reportBatchEvent).not.toHaveBeenCalled();
+    expect(translator.reportBatchEvent).toHaveBeenCalledWith({
+      batchId: expect.any(String),
+      logging: false,
+      stage: 'scheduled',
+      locales: ['en-US'],
+      messageCount: 1,
+    });
   });
 });
 

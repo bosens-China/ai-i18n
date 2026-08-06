@@ -11,7 +11,8 @@ export type {
 } from './yuku-analyzer.js';
 export { aiI18n } from './plugin.js';
 export type {
-  AiI18nCacheOptions,
+  AiI18nCleanupOptions,
+  AiI18nTranslationMemoryCapacityOptions,
   AiI18nLocaleLoadingOptions,
   AiI18nOptions,
   AiI18nPersistOptions,

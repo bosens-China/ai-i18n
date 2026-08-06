@@ -6,12 +6,22 @@ import {
 } from '@ai-i18n/analyzer';
 import { normalizePath } from 'vite';
 import type {
-  AiI18nCacheOptions,
   AiI18nLocaleLoadingOptions,
+  AiI18nTranslationMemoryCapacityOptions,
   AiI18nTranslationMemoryOptions,
 } from './options.js';
 import type { NormalizedAiI18nOptions } from './project-state.js';
 import type { SourceExtraction, TranslationHookBinding } from './extractor.js';
+
+export function rejectRemovedOptions(options: object): void {
+  if (!('cache' in options)) return;
+  throw new TypeError(
+    diagnosticMessage(
+      '[ai-i18n] 顶层 cache 已移除，请改用 translationMemory.capacity。',
+      '[ai-i18n] Top-level cache has been removed; use translationMemory.capacity instead.',
+    ),
+  );
+}
 
 export function normalizeOptions(options: {
   sourceLang: string;
@@ -19,7 +29,6 @@ export function normalizeOptions(options: {
   locales: readonly LangOption[];
   persist?: boolean | { key: string };
   loading?: AiI18nLocaleLoadingOptions;
-  cache?: AiI18nCacheOptions;
 }): NormalizedAiI18nOptions {
   const locales = options.locales.map((locale) => ({ ...locale }));
   const values = new Set(locales.map((locale) => locale.value));
@@ -56,8 +65,6 @@ export function normalizeOptions(options: {
       ),
     );
   }
-  validatePositiveInteger('cache.maxMessages', options.cache?.maxMessages);
-  validatePositiveInteger('cache.maxBytes', options.cache?.maxBytes);
   const persist = normalizePersist(options.persist);
   const loading = options.loading
     ? normalizeLoading(options.loading, values, options.sourceLang, defaultLang)
@@ -73,7 +80,10 @@ export function normalizeOptions(options: {
 
 export function normalizeTranslationMemory(
   options: AiI18nTranslationMemoryOptions | undefined,
-): Required<AiI18nTranslationMemoryOptions> {
+): {
+  storage: 'json' | 'sqlite';
+  capacity?: AiI18nTranslationMemoryCapacityOptions;
+} {
   const storage = options?.storage ?? 'json';
   if (storage !== 'json' && storage !== 'sqlite') {
     throw new Error(
@@ -83,7 +93,16 @@ export function normalizeTranslationMemory(
       ),
     );
   }
-  return { storage };
+  const capacity = options?.capacity;
+  validatePositiveInteger(
+    'translationMemory.capacity.maxMessages',
+    capacity?.maxMessages,
+  );
+  validatePositiveInteger(
+    'translationMemory.capacity.maxBytes',
+    capacity?.maxBytes,
+  );
+  return { storage, ...(capacity ? { capacity } : {}) };
 }
 
 export function normalizeProviderCache(
