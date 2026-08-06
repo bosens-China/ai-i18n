@@ -2,6 +2,7 @@ import { LangChainTracer } from '@langchain/core/tracers/tracer_langchain';
 import { ChatOpenAI } from '@langchain/openai';
 import { Client } from 'langsmith';
 import type {
+  TranslationBatch,
   TranslationMessage,
   TranslationResult,
   TranslationValue,
@@ -9,6 +10,7 @@ import type {
 } from '@ai-i18n/core';
 import { hasSameTemplateTokens } from '@ai-i18n/core';
 import { diagnosticMessage } from '@ai-i18n/core/diagnostics';
+import { createOpenAILogSession } from './logging';
 
 export interface LangSmithOptions {
   apiKey: string;
@@ -68,6 +70,11 @@ export function openAI(options: OpenAIOptions): Translator {
   // 显式占位值可阻止 LangChain 把宿主 OPENAI_API_KEY 泄露给本地服务。
   const apiKey = options.apiKey?.trim() || 'local-no-auth';
   const callbacks = createLangSmithCallbacks(options.langSmith);
+  const logSession = createOpenAILogSession({
+    baseURL,
+    model: modelName,
+    apiKey,
+  });
 
   const chatModel = new ChatOpenAI({
     model: modelName,
@@ -80,11 +87,13 @@ export function openAI(options: OpenAIOptions): Translator {
     ...(callbacks ? { callbacks } : {}),
     configuration: {
       baseURL,
+      logger: logSession.logger,
+      logLevel: 'debug' as const,
       ...(headers ? { defaultHeaders: headers } : {}),
     },
   });
 
-  return async ({ locales, messages }) => {
+  async function translate({ locales, messages }: TranslationBatch) {
     if (messages.length === 0) return [];
     if (!locales.length || new Set(locales).size !== locales.length) {
       throw new Error(
@@ -103,6 +112,7 @@ export function openAI(options: OpenAIOptions): Translator {
       },
     );
 
+    const startedAt = Date.now();
     let payload: TranslationPayload;
     try {
       payload = await model.invoke([
@@ -113,10 +123,35 @@ export function openAI(options: OpenAIOptions): Translator {
         },
       ]);
     } catch (error) {
+      logSession.error('translation request failed', error);
       throw safeProviderError(error);
     }
-    return validateResults(messages, locales, parsePayload(payload));
+    try {
+      const results = validateResults(messages, locales, parsePayload(payload));
+      logSession.info('translation batch validated', {
+        locales,
+        messages: messages.length,
+        translations: results.length * locales.length,
+        durationMs: Date.now() - startedAt,
+      });
+      return results;
+    } catch (error) {
+      logSession.error('translation result validation failed', error);
+      throw error;
+    }
+  }
+
+  let directBatchSequence = 0;
+  const translator: Translator = ({ batchId, logging, locales, messages }) => {
+    const resolvedBatchId =
+      batchId?.trim() ||
+      `openai_${Date.now().toString(36)}_${(++directBatchSequence).toString(36)}`;
+    return logSession.run(resolvedBatchId, logging, () =>
+      translate({ batchId: resolvedBatchId, locales, messages }),
+    );
   };
+  translator.reportBatchEvent = (event) => logSession.event(event);
+  return translator;
 }
 
 function outputInstructions(locales: readonly string[], rowCount: number) {

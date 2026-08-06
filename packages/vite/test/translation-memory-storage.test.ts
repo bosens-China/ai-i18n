@@ -1,7 +1,7 @@
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import type { Translator } from '@ai-i18n/core';
+import type { TranslationBatchEvent, Translator } from '@ai-i18n/core';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { build } from 'vite';
 import { aiI18n } from '../src';
@@ -23,6 +23,30 @@ afterEach(async () => {
 });
 
 describe('Translation Memory Vite storage', () => {
+  it('traces one build batch through state application and persistence', async () => {
+    const root = await fixture('batch-trace');
+    const provider = translator('Save');
+    const reportBatchEvent = vi.fn<(event: TranslationBatchEvent) => void>();
+    provider.reportBatchEvent = reportBatchEvent;
+
+    await buildProject(root, provider, { logging: true });
+
+    const batchId = vi.mocked(provider).mock.calls[0]![0].batchId;
+    expect(batchId).toEqual(expect.any(String));
+    const events = reportBatchEvent.mock.calls
+      .map(([event]) => event)
+      .filter((event) => event.batchId === batchId);
+    expect(events.map((event) => event.stage)).toEqual([
+      'scheduled',
+      'state-applied',
+      'persisted',
+    ]);
+    expect(events[1]).toMatchObject({ resultCount: 1, affectedModules: 1 });
+    expect(
+      JSON.stringify(await readTestTranslationMemory(path.join(root, 'i18n'))),
+    ).not.toContain(batchId as string);
+  });
+
   it('fresh Provider cache replaces history once and reuses the result afterwards', async () => {
     const root = await fixture('fresh');
     const initial = translator('Old');
@@ -94,6 +118,7 @@ async function buildProject(
   options?: {
     storage?: 'json' | 'sqlite';
     providerCache?: 'reuse' | 'fresh';
+    logging?: boolean | string;
   },
 ): Promise<void> {
   await build({
@@ -109,6 +134,9 @@ async function buildProject(
           ? {
               provider: {
                 translator: provider,
+                ...(options?.logging === undefined
+                  ? {}
+                  : { logging: options.logging }),
                 ...(options?.providerCache
                   ? { cache: options.providerCache }
                   : {}),

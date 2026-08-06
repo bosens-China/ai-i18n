@@ -30,6 +30,7 @@ import {
 import { loadLocaleModule, renderLocaleChunk } from './locale-module-loader.js';
 import { ProjectState } from './project-state.js';
 import { ProviderCoordinator } from './provider-coordinator.js';
+import { resolveProviderLogging } from './provider-logging.js';
 import { loadRegistration } from './registration-loader.js';
 import type { AiI18nOptions } from './options.js';
 import {
@@ -211,6 +212,14 @@ export function aiI18n(options: AiI18nOptions): Plugin {
         ...(options.cache ? { cache: options.cache } : {}),
         translationMemory,
         onWarning: (message) => resolved.logger.warn(`[ai-i18n] ${message}`),
+        onSynced(batchIds) {
+          for (const batchId of batchIds) {
+            coordinator?.reportBatchEvent({
+              batchId,
+              stage: 'persisted',
+            });
+          }
+        },
       });
       if (resolved.command === 'build' && resolved.build.watch) {
         resolved.logger.info(
@@ -233,16 +242,28 @@ export function aiI18n(options: AiI18nOptions): Plugin {
       void ready.catch(() => undefined);
       if (options.provider) {
         const providerOptions = { ...options.provider };
-        const { translator } = providerOptions;
+        const { translator, logging } = providerOptions;
         delete providerOptions.cache;
+        delete providerOptions.logging;
         coordinator = new ProviderCoordinator(translator, {
           ...providerOptions,
-          async onResults(results) {
+          logging: resolveProviderLogging(
+            logging,
+            normalizeRoot(resolved.root),
+          ),
+          async onResults(results, { batchId }) {
             await runStateTask(async () => {
               const project = currentState();
               currentStore().markProviderTranslations(results);
               const affected = project.applyTranslations(results, {
                 replaceCached: providerCache === 'fresh',
+              });
+              currentStore().markProviderBatch(batchId);
+              coordinator?.reportBatchEvent({
+                batchId,
+                stage: 'state-applied',
+                resultCount: results.length,
+                affectedModules: affected.length,
               });
               if (config?.command !== 'build') {
                 const cache = await currentStore().sync(project.snapshot());

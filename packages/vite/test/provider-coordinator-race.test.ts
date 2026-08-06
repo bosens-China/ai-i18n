@@ -49,6 +49,8 @@ describe('ProviderCoordinator request races', () => {
       { messageId: 'stable', locale: 'en-US', value: 'en-US:新文案' },
     ]);
     expect(translator).toHaveBeenCalledWith({
+      batchId: expect.any(String),
+      logging: false,
       locales: ['en-US'],
       messages: [{ source: '新文案' }],
     });
@@ -147,9 +149,10 @@ describe('ProviderCoordinator request races', () => {
         await latest;
       }
 
-      expect(onResults).toHaveBeenCalledWith([
-        { messageId: 'stable', locale: 'ja-JP', value: 'ja-JP:文案' },
-      ]);
+      expect(onResults).toHaveBeenCalledWith(
+        [{ messageId: 'stable', locale: 'ja-JP', value: 'ja-JP:文案' }],
+        { batchId: expect.any(String) },
+      );
       await coordinator.flush();
       expect(onResults).toHaveBeenCalledOnce();
     },
@@ -236,9 +239,10 @@ describe('ProviderCoordinator request races', () => {
 
       await expect(coordinator.flush()).resolves.toBeUndefined();
       expect(warning).not.toHaveBeenCalled();
-      expect(onResults).toHaveBeenLastCalledWith([
-        { messageId: 'stable', locale: 'ja-JP', value: 'Recovered' },
-      ]);
+      expect(onResults).toHaveBeenLastCalledWith(
+        [{ messageId: 'stable', locale: 'ja-JP', value: 'Recovered' }],
+        { batchId: expect.any(String) },
+      );
     },
   );
 });

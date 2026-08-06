@@ -1,0 +1,105 @@
+---
+title: LLM 日志与排障
+description: 启用并阅读 OpenAI Provider 审查日志，用 batchId 定位翻译链路问题
+---
+
+OpenAI Provider 可以把每个翻译批次的模型输入、模型输出、校验和持久化状态写成普通文本日志。
+这些日志适合人工审查，也可以交给 AI Agent 判断问题发生在哪个环节。
+
+## 开启或关闭日志
+
+日志默认关闭。需要排障或审查时，只需配置 `provider.logging`：
+
+```ts
+aiI18n({
+  sourceLang: 'zh-CN',
+  locales,
+  provider: {
+    translator: openAI({
+      baseURL: process.env.AI_BASE_URL!,
+      apiKey: process.env.AI_API_KEY,
+      model: process.env.AI_MODEL!,
+    }),
+    logging: true,
+  },
+});
+```
+
+省略或设置 `provider.logging: false` 时，当前 Vite Dev 或 Build 进程不会创建、追加日志，也不会
+创建默认的 `logs/` 目录；翻译、提取、缓存和持久化照常执行。
+
+`logging: true` 写入 Vite 项目根目录下的 `logs/`。也可以直接用字符串指定目录：
+
+```ts
+provider: {
+  translator,
+  logging: 'diagnostics/llm', // 相对 Vite root
+}
+```
+
+相对字符串基于 Vite root 解析；绝对字符串保持不变。空字符串或只包含空白的字符串是无效配置，
+插件会在启动时报告双语错误。日志开关没有 OpenAI Provider 级的第二套优先级。
+
+## 日志文件生命周期
+
+一个 `openAI()` Translator 实例在每个已解析目录中使用一个日志文件，文件名包含本地日期、时间、
+PID 和进程序号：
+
+```text
+2026-08-06_13-46-44-834-p65013-1.log
+```
+
+- 普通 Build 每次创建新的 Translator，因此通常生成一个新文件。
+- 同一 Dev、HMR 或 Build Watch 进程复用 Translator，后续批次继续追加到同一文件。
+- 日志写入失败只警告一次，不会让翻译或 Build 失败。
+
+## 按 batchId 阅读
+
+同一翻译批次的每个日志块都带有相同 `batchId`。排障时先找到失败文案对应的 REQUEST 或
+BATCH FAILED，再沿相同 ID 阅读：
+
+```text
+BATCH SCHEDULED
+REQUEST
+RESPONSE
+VALIDATION
+STATE APPLIED
+PERSISTED
+```
+
+| 日志块            | 重点检查                                                        |
+| ----------------- | --------------------------------------------------------------- |
+| `BATCH SCHEDULED` | 目标语言和消息数量是否符合预期。                                |
+| `REQUEST`         | `PARAMETERS`、`SYSTEM`、`USER` 是否包含正确模型参数和提示词。   |
+| `RESPONSE`        | `REASONING`、`ASSISTANT`、finish reason、扩展字段与原始 usage。 |
+| `VALIDATION`      | Provider 是否成功解析并校验全部语言和数组下标。                 |
+| `STATE APPLIED`   | 结果是否进入当前 Vite ProjectState，以及影响的模块数量。        |
+| `PERSISTED`       | 包含该批结果的文件与 Translation Memory 是否写入成功。          |
+| `BATCH FAILED`    | Translator、输出校验或后续批次处理的失败原因。                  |
+| `TRANSPORT ERROR` | 请求地址、状态、耗时与 SDK 暴露的网络错误。                     |
+
+并发批次可能交错写入同一个文件，所以不要只按相邻行判断请求与响应；始终按 `batchId` 关联。
+
+## 常见定位方式
+
+- 有 REQUEST、没有 RESPONSE：优先检查超时、网络、认证、模型名与服务端错误。
+- 有 RESPONSE、随后 BATCH FAILED：检查 assistant JSON、目标语言键、数组长度和占位符。
+- 有 VALIDATION、没有 STATE APPLIED：检查 Vite 是否已有更新的同 message 请求，或状态应用错误。
+- 有 STATE APPLIED、没有 PERSISTED：结合 Build/Dev 终端错误检查目录权限、文件冲突或存储失败。
+- 已有 PERSISTED 但页面不更新：转向 Runtime 注册、当前语言、HMR 或 locale 加载排障。
+
+给 AI Agent 排障时，提供相关日志文件并要求它先按 `batchId` 汇总上述阶段，再结合终端错误判断。日志
+保留 SDK 实际暴露的 system/user messages、reasoning、assistant content、usage 和扩展字段，但不是
+逐字节 HTTP 抓包；服务端或 SDK 没有暴露的数据无法补记。
+
+## 安全与 Git 忽略
+
+日志包含待翻译业务文案、完整提示词和模型输出，不应提交到版本库。至少加入：
+
+```text
+logs/
+*.log
+```
+
+使用自定义目录时也要忽略该目录。Provider 会脱敏显式 API key，OpenAI SDK 会脱敏常见认证
+Header；提交或分享日志前仍应人工检查业务敏感信息。

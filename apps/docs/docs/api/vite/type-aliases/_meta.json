@@ -33,5 +33,15 @@
     "type": "file",
     "name": "translation-result",
     "label": "TranslationResult"
+  },
+  {
+    "type": "file",
+    "name": "translation-batch-stage",
+    "label": "TranslationBatchStage"
+  },
+  {
+    "type": "file",
+    "name": "translation-logging",
+    "label": "TranslationLogging"
   }
 ]

@@ -54,6 +54,7 @@ export class FileStore {
   private readonly lastWritten = new Map<string, string>();
   private memoryStore: Promise<TranslationMemoryStore> | undefined;
   private readonly providerFields = new Set<string>();
+  private readonly pendingProviderBatches = new Set<string>();
   private readonly translationManagedFiles = new Set<string>();
 
   constructor(private readonly options: FileStoreOptions) {
@@ -72,11 +73,31 @@ export class FileStore {
     snapshot: ProjectSnapshot,
     options: FileStoreLoadOptions = {},
   ): Promise<TranslationMemoryFile> {
+    const batchIds = [...this.pendingProviderBatches];
+    for (const batchId of batchIds) this.pendingProviderBatches.delete(batchId);
     // 每次任务都从最新磁盘状态开始；失败不会阻塞后续写入任务。
-    const task = this.queue.then(
-      () => this.writeSnapshot(snapshot, options),
-      () => this.writeSnapshot(snapshot, options),
-    );
+    const write = () => this.writeSnapshot(snapshot, options);
+    const task = this.queue
+      .then(write, write)
+      .then((cache) => {
+        try {
+          const pending = this.options.onSynced?.(batchIds);
+          if (pending) {
+            void Promise.resolve(pending).catch((cause) => {
+              this.warnPersistenceTraceFailure(cause);
+            });
+          }
+        } catch (cause) {
+          this.warnPersistenceTraceFailure(cause);
+        }
+        return cache;
+      })
+      .catch((cause) => {
+        for (const batchId of batchIds) {
+          this.pendingProviderBatches.add(batchId);
+        }
+        throw cause;
+      });
     this.queue = task.then(
       () => undefined,
       () => undefined,
@@ -156,6 +177,20 @@ export class FileStore {
         );
       }
     }
+  }
+
+  markProviderBatch(batchId: string): void {
+    this.pendingProviderBatches.add(batchId);
+  }
+
+  private warnPersistenceTraceFailure(cause: unknown): void {
+    const reason = cause instanceof Error ? cause.message : String(cause);
+    this.options.onWarning?.(
+      diagnosticMessage(
+        `翻译批次持久化追踪失败，文件已成功写入。原因：${reason}`,
+        `Translation batch persistence tracing failed after files were written. Cause: ${reason}`,
+      ),
+    );
   }
 
   async close(): Promise<void> {

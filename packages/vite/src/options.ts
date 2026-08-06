@@ -11,6 +11,8 @@ export type AiI18nProviderOptions = Pick<
   translator: Translator;
   /** 是否在当前 Vite 进程中刷新一次 Provider 自动翻译；默认 reuse。 */
   cache?: 'reuse' | 'fresh';
+  /** false/省略关闭，true 使用 root/logs，字符串表示相对 root 或绝对日志目录。 */
+  logging?: boolean | string;
 };
 
 export interface AiI18nLocaleLoadingOptions {

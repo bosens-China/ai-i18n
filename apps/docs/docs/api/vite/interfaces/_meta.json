@@ -48,5 +48,10 @@
     "type": "file",
     "name": "translation-batch",
     "label": "TranslationBatch"
+  },
+  {
+    "type": "file",
+    "name": "translation-batch-event",
+    "label": "TranslationBatchEvent"
   }
 ]

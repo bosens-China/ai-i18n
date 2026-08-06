@@ -1,10 +1,13 @@
 import {
   type TranslationMessage,
+  type TranslationBatchEvent,
+  type TranslationLogging,
   type TranslationValue,
   type Translator,
 } from '@ai-i18n/core';
 import { diagnosticMessage } from '@ai-i18n/analyzer';
 import {
+  createBatchId,
   localeKey,
   nonNegativeNumber,
   positiveInteger,
@@ -14,27 +17,29 @@ import {
   validateRequest,
   validateResults,
 } from './provider-coordinator-helpers.js';
-
+import { reportTranslationBatchEvent } from './provider-batch-tracing.js';
 export interface ProviderRequest extends TranslationMessage {
   messageId: string;
   locales: readonly string[];
 }
-
 export interface ProviderResult {
   messageId: string;
   locale: string;
   value: TranslationValue;
 }
-
 export interface ProviderCoordinatorOptions {
   debounceMs?: number;
   batchLength?: number;
   maxConcurrency?: number;
   strict?: boolean;
-  onResults?: (results: readonly ProviderResult[]) => void | Promise<void>;
+  /** Translator 批次诊断日志目录；默认关闭。 */
+  logging?: TranslationLogging;
+  onResults?: (
+    results: readonly ProviderResult[],
+    context: { batchId: string },
+  ) => void | Promise<void>;
   onWarning?: (message: string) => void;
 }
-
 interface PendingRequest {
   key: string;
   request: ProviderRequest;
@@ -43,19 +48,18 @@ interface PendingRequest {
   resolve: (results: readonly ProviderResult[]) => void;
   serializedLength: number;
 }
-
 interface RequestState {
   latest: ProviderRequest;
   pending: Set<PendingRequest>;
   resolvedLocales: Set<string>;
   failed: boolean;
 }
-
 export class ProviderCoordinator {
   private readonly debounceMs: number;
   private readonly batchLength: number;
   private readonly maxConcurrency: number;
   private readonly strict: boolean;
+  private readonly logging: TranslationLogging;
   private readonly onResults?: ProviderCoordinatorOptions['onResults'];
   private readonly onWarning: (message: string) => void;
   private readonly active = new Map<string, PendingRequest>();
@@ -64,7 +68,6 @@ export class ProviderCoordinator {
   private readonly inFlight = new Set<Promise<void>>();
   private readonly errors: Error[] = [];
   private timer: ReturnType<typeof setTimeout> | undefined;
-
   constructor(
     private readonly translator: Translator,
     options: ProviderCoordinatorOptions = {},
@@ -82,6 +85,7 @@ export class ProviderCoordinator {
       'maxConcurrency',
     );
     this.strict = options.strict ?? false;
+    this.logging = options.logging ?? false;
     this.onResults = options.onResults;
     this.onWarning = options.onWarning ?? console.warn;
   }
@@ -160,6 +164,15 @@ export class ProviderCoordinator {
     this.errors.length = 0;
   }
 
+  reportBatchEvent(event: TranslationBatchEvent): void {
+    if (!this.logging) return;
+    reportTranslationBatchEvent(
+      this.translator,
+      { ...event, logging: this.logging },
+      this.onWarning,
+    );
+  }
+
   private schedule(): void {
     if (this.timer) return;
     this.timer = setTimeout(() => {
@@ -235,13 +248,25 @@ export class ProviderCoordinator {
   }
 
   private async runBatch(batch: PendingRequest[]): Promise<void> {
+    const batchId = createBatchId();
     const locales = batch[0]!.request.locales;
+    this.reportBatchEvent({
+      batchId,
+      stage: 'scheduled',
+      locales,
+      messageCount: batch.length,
+    });
     try {
       const messages = batch.map((pending) => promptMessage(pending.request));
       const rows = validateResults(
         messages,
         locales,
-        await this.translator({ locales, messages }),
+        await this.translator({
+          batchId,
+          logging: this.logging,
+          locales,
+          messages,
+        }),
       );
       const results = batch.map((pending, index) =>
         locales.map((locale) => ({
@@ -267,7 +292,7 @@ export class ProviderCoordinator {
         );
       });
       if (currentResults.length) {
-        await this.onResults?.(currentResults);
+        await this.onResults?.(currentResults, { batchId });
         for (const [index, pending] of batch.entries()) {
           const latest = pending.state.latest;
           if (
@@ -299,6 +324,13 @@ export class ProviderCoordinator {
         ),
         { cause },
       );
+      this.reportBatchEvent({
+        batchId,
+        stage: 'failed',
+        locales,
+        messageCount: batch.length,
+        reason,
+      });
       if (hasCurrentRequest) {
         for (const pending of batch) {
           if (sameRequest(pending.state.latest, pending.request)) {
@@ -334,7 +366,6 @@ export class ProviderCoordinator {
     this.timer = undefined;
   }
 }
-
 function sameRequest(left: ProviderRequest, right: ProviderRequest): boolean {
   return (
     left.source === right.source &&

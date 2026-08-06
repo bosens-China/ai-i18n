@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { aiI18n, type AiI18nOptions } from '../src/index';
+import { aiI18n, type AiI18nOptions, type Translator } from '../src/index';
 import { callHook, options, setupPlugin } from './plugin-test-utils';
 
 describe('@ai-i18n/vite plugin', () => {
@@ -31,7 +31,7 @@ describe('@ai-i18n/vite plugin', () => {
       aiI18n({
         ...base,
         provider: {
-          translator: vi.fn(),
+          translator: vi.fn<Translator>(),
           cache: 'always' as 'reuse',
         },
       }),

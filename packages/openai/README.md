@@ -7,6 +7,12 @@ alpha 阶段请安装 `@ai-i18n/openai@alpha`。
 
 ```ts
 import { openAI } from '@ai-i18n/openai';
+import { aiI18n } from '@ai-i18n/vite';
+
+const locales = [
+  { value: 'zh-CN', label: '中文' },
+  { value: 'en-US', label: 'English' },
+];
 
 const translator = openAI({
   baseURL: process.env.AI_BASE_URL!,
@@ -25,6 +31,15 @@ const translator = openAI({
       }
     : undefined,
 });
+
+aiI18n({
+  sourceLang: 'zh-CN',
+  locales,
+  provider: {
+    translator,
+    logging: true,
+  },
+});
 ```
 
 `temperature`、`timeoutMs`、`maxRetries` 默认分别为 `1`、`120_000`、`3`；`maxTokens`
@@ -32,6 +47,28 @@ const translator = openAI({
 追加纯 JSON 约束和最小示例，然后按内部 Schema、输入下标和目标语言严格校验结果。传入
 `langSmith` 即启用 tracing，不传则不会创建 LangSmith client。
 `temperature` 会原样传给兼容服务，是否实际生效由服务、模型及其运行模式决定。
+
+LLM 调试日志默认关闭，并且只通过 Vite 的 `provider.logging` 配置。设置为 `true` 时写入 Vite
+root 下的 `logs/`；设置为字符串时选择目录，相对路径基于 Vite root，绝对路径保持不变。每次创建
+`openAI()` translator 时会在首次写入时分配一个新的
+`日期-时间-pPID-序号.log` 文件；同一实例在 Dev/HMR 或 Build Watch 中重复调用时持续追加到
+该文件。日志把 OpenAI SDK debug 事件整理为便于人工审查的多行文本：完整记录最终发送的
+system、user 等 messages，以及每个响应 choice 的思考、回复和 message 扩展字段；同时保留
+模型、请求 ID、耗时、finish reason、usage、Provider 校验结果和错误。未设置参数、SDK runtime
+字段和常规传输 Header 不会写入。
+
+Vite 应用省略或设置 `provider.logging: false` 时，不会创建或追加当前 Dev/Build 进程的批次日志，
+也不会创建默认目录，但不会停止翻译、提取、缓存或持久化。空目录字符串是配置错误。
+
+由 Vite 调度时，BATCH SCHEDULED、REQUEST、RESPONSE、VALIDATION、STATE APPLIED、PERSISTED
+或 BATCH FAILED 块通过同一 `batchId` 串起。并发调用使用独立异步上下文，不会把 SDK 响应和校验
+结果记到其他批次。直接调用 `openAI()` 返回的 Translator 且不传 `batchId` 时，Provider 会生成
+本地诊断 ID。
+
+日志可能包含待翻译文案和模型输出，应把日志目录加入 `.gitignore`，例如 `logs/` 和 `*.log`。
+Provider 会脱敏显式 API key，SDK 会脱敏常见认证 Header；日志不承诺保留逐字节 HTTP 原文，
+也不保证第三方服务或 SDK 未暴露的内部重试响应正文。日志写入失败只输出一次警告，不会中止翻译
+或宿主 Build。
 
 Vite 先按“缺失目标 locale 集合”分组，再把每组作为一个 Translator 批次。`openAI()`
 对收到的每批只调用模型一次；已有英文缓存译文的消息只会进入“缺日文”组，不会重复生成英文。

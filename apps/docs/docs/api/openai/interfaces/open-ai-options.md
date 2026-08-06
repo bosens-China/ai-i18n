@@ -47,6 +47,25 @@ interface OpenAIOptions {
 Provider 不主动读取宿主的 `OPENAI_API_KEY`。密钥必须显式传入；省略时使用本地服务占位值，
 避免意外把宿主环境变量发送到其他地址。
 
+## 日志
+
+OpenAI Provider 不提供第二套日志开关。经过 Vite 调用时，只由 `provider.logging` 决定是否记录及
+写入目录；默认关闭，`true` 使用 Vite root 下的 `logs/`，字符串可指定相对或绝对目录。
+
+启用后，一个 `openAI()` translator 实例在对应目录使用一个日志文件。同一实例处理多个批次时持续
+追加；新建实例会生成带本地日期时间、PID 和序号的新文件。Vite 触发的 BATCH SCHEDULED、REQUEST、RESPONSE、
+VALIDATION、STATE APPLIED、PERSISTED 或 BATCH FAILED 块带有同一 `batchId`；并发批次使用各自的
+ID。日志完整记录最终发送的 messages，以及每个响应 choice 的 reasoning、assistant content 和
+message 扩展字段；同时保留模型、请求 ID、状态、耗时、usage、Provider 校验结果与错误。未设置
+请求参数、SDK runtime 字段和常规传输 Header 会被过滤。日志写入失败只警告一次，不改变翻译或
+Build 的结果。
+
+日志包含发送给模型的文案和模型输出，应将 `logs/`、`*.log` 或自定义目录加入 `.gitignore`。
+显式 API key 由 Provider 脱敏，常见认证 Header 由 OpenAI SDK 脱敏。日志不等同于逐字节 HTTP
+抓包，也无法记录服务或 SDK 没有暴露的内部响应正文。
+
+完整阅读与排障方法见 [LLM 日志与排障](/guide/advanced/llm-logs)。
+
 ## systemPrompt
 
 `systemPrompt` 只需要描述翻译要求。Provider 会追加目标语言、`source` / `comment` 输入约定、

@@ -49,6 +49,9 @@ export {
 } from './template.js';
 export type {
   TranslationBatch,
+  TranslationBatchEvent,
+  TranslationBatchStage,
+  TranslationLogging,
   TranslationMessage,
   TranslationResult,
   Translator,

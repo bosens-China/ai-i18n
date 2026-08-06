@@ -40,7 +40,13 @@ i18n/
 i18n/extracted/
 i18n/locales/
 i18n/storage.json
+logs/
+*.log
 ```
+
+`logs/` 与 `*.log` 是 OpenAI Provider 的本地审查日志，可能包含完整提示词、业务文案和模型输出，
+不得提交。使用自定义日志目录时也要忽略该目录。详情见
+[LLM 日志与排障](/guide/advanced/llm-logs)。
 
 :::important
 译文文件与引用它们的源码应在同一个 PR 中提交。这样其他开发者和 CI 才能得到一致的翻译结果。

@@ -11,6 +11,13 @@ interface BatchPending {
   serializedLength: number;
 }
 
+let batchSequence = 0;
+
+export function createBatchId(): string {
+  batchSequence += 1;
+  return `batch_${Date.now().toString(36)}_${batchSequence.toString(36)}`;
+}
+
 export function promptMessage(request: ProviderRequest): TranslationMessage {
   return {
     source: request.source,

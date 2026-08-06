@@ -65,6 +65,16 @@ Dev/Build：它会刷新一次已有自动译文，并持久化、复用本进�
 立即重复请求。默认 `cache: 'reuse'`。该选项只影响 Provider 调用，不改变 MCP、JSON 或 SQLite 的
 读写语义。插件不对任意 Translator 内部配置生成失效指纹。
 
+Vite 为每次实际 Translator 调用传入可选诊断 `batchId`。日志型 Translator 可以实现可选的
+`reportBatchEvent`，接收 `scheduled`、`state-applied`、`persisted` 和 `failed` 生命周期事件；普通
+函数无需实现。追踪接收器失败只产生 warning，不会阻塞翻译或 Build。`batchId` 不发送给模型，也不
+写入 Translation Memory、message ID 或缓存键。
+
+`provider.logging` 默认是 `false`。显式设为 `true` 时使用 Vite root 下的 `logs/`；字符串表示日志
+目录，相对路径基于 Vite root，绝对路径保持不变，空字符串无效。启用时 Vite 报告上述生命周期并把
+解析后的目录传给 Translator；关闭时官方 OpenAI Provider 不创建或追加日志，但翻译、提取、缓存和
+持久化保持不变。自定义 Translator 可以忽略这个可选诊断字段。
+
 动态值使用 tagged template：`` t`你好 ${name}` ``。表达式会变成可调整顺序的编号占位符，
 不会交给模型翻译。源码中原样出现的 `{{0}}` 会在内部转义为 `{{=0}}`，运行时仍按原文显示。
 Runtime 发现译文占位符不匹配时会输出 console warning，但仍继续使用该译文。

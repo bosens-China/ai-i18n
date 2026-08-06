@@ -23,8 +23,15 @@ describe('ProviderCoordinator', () => {
     await Promise.all([japaneseOnly, bilingual]);
     expect(translator).toHaveBeenCalledTimes(2);
     expect(vi.mocked(translator).mock.calls.map(([batch]) => batch)).toEqual([
-      { locales: ['ja-JP'], messages: [{ source: '旧文案' }] },
       {
+        batchId: expect.any(String),
+        logging: false,
+        locales: ['ja-JP'],
+        messages: [{ source: '旧文案' }],
+      },
+      {
+        batchId: expect.any(String),
+        logging: false,
         locales: ['en-US', 'ja-JP'],
         messages: [{ source: '新增文案' }],
       },
@@ -174,6 +181,87 @@ describe('ProviderCoordinator', () => {
     await expect(result).resolves.toEqual([
       { messageId: '空白', locale: 'en-US', value: '' },
     ]);
+  });
+
+  it('reports scheduling and failure with the translator batch ID', async () => {
+    const reportBatchEvent = vi.fn();
+    const translator: Translator = vi.fn<Translator>(async () => {
+      throw new Error('provider unavailable');
+    });
+    translator.reportBatchEvent = reportBatchEvent;
+    const logging = '/tmp/ai-i18n-test-logs';
+    const coordinator = new ProviderCoordinator(translator, {
+      batchLength: 1,
+      logging,
+      onWarning: () => {},
+    });
+
+    await coordinator.request(translationRequest('保存', ['en-US']));
+    await coordinator.flush();
+
+    const batchId = vi.mocked(translator).mock.calls[0]![0].batchId;
+    expect(batchId).toEqual(expect.any(String));
+    expect(reportBatchEvent.mock.calls.map(([event]) => event)).toEqual([
+      {
+        batchId,
+        stage: 'scheduled',
+        logging,
+        locales: ['en-US'],
+        messageCount: 1,
+      },
+      {
+        batchId,
+        stage: 'failed',
+        logging,
+        locales: ['en-US'],
+        messageCount: 1,
+        reason: 'provider unavailable',
+      },
+    ]);
+  });
+
+  it('keeps translating when the batch trace receiver fails', async () => {
+    const warning = vi.fn();
+    const translator = echoTranslator();
+    translator.reportBatchEvent = vi.fn(async () => {
+      throw new Error('trace unavailable');
+    });
+    const coordinator = new ProviderCoordinator(translator, {
+      batchLength: 1,
+      logging: '/tmp/ai-i18n-test-logs',
+      onWarning: warning,
+    });
+
+    await expect(
+      coordinator.request(translationRequest('保存', ['en-US'])),
+    ).resolves.toEqual([
+      { messageId: '保存', locale: 'en-US', value: 'en-US:保存' },
+    ]);
+    await expect(coordinator.flush()).resolves.toBeUndefined();
+    expect(warning).toHaveBeenCalledWith(
+      expect.stringContaining(
+        'Translation batch tracing failed; translation will continue.',
+      ),
+    );
+  });
+
+  it('disables logging by default without reporting lifecycle events', async () => {
+    const translator = echoTranslator();
+    translator.reportBatchEvent = vi.fn();
+    const coordinator = new ProviderCoordinator(translator, {
+      batchLength: 1,
+    });
+
+    await coordinator.request(translationRequest('保存', ['en-US']));
+    await coordinator.flush();
+
+    expect(translator).toHaveBeenCalledWith({
+      batchId: expect.any(String),
+      logging: false,
+      locales: ['en-US'],
+      messages: [{ source: '保存' }],
+    });
+    expect(translator.reportBatchEvent).not.toHaveBeenCalled();
   });
 });
 

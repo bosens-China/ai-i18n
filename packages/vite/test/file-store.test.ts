@@ -1,6 +1,6 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { FileStore } from '../src/file-store';
 import { ProjectState } from '../src/project-state';
 import { extractedTestPath } from './extracted-test-path';
@@ -8,6 +8,28 @@ import { options, readJson, setup } from './file-store-test-utils';
 import { updateTestTranslationMemory } from './translation-memory-test-utils';
 
 describe('FileStore', () => {
+  it('does not let a pending persistence trace block a successful sync', async () => {
+    const { root, state } = await setup();
+    const onSynced = vi.fn(() => new Promise<void>(() => {}));
+    const store = new FileStore({
+      root,
+      sourceLang: options.sourceLang,
+      locales: options.locales,
+      onSynced,
+    });
+    const source = path.join(root, 'src/main.ts');
+    const code = "import { t } from 'virtual:ai-i18n'; t('保存')";
+    await fs.writeFile(source, code);
+    state.update(code, source);
+    store.markProviderBatch('batch-test');
+
+    await expect(store.sync(state.snapshot())).resolves.toBeDefined();
+    expect(onSynced).toHaveBeenCalledWith(['batch-test']);
+    await expect(
+      fs.access(path.join(root, 'i18n/locales/en-US.json')),
+    ).resolves.toBeUndefined();
+  });
+
   it('writes deterministic memory, extracted and locale files', async () => {
     const { root, state, store } = await setup();
     const source = path.join(root, 'src/main.ts');

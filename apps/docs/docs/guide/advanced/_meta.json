@@ -6,6 +6,11 @@
   },
   {
     "type": "file",
+    "name": "llm-logs",
+    "label": "LLM 日志与排障"
+  },
+  {
+    "type": "file",
     "name": "translation-memory",
     "label": "Translation Memory"
   },

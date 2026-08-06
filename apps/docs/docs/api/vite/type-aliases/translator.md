@@ -12,9 +12,11 @@ import type { Translator } from '@ai-i18n/vite';
 ## 定义
 
 ```ts
-type Translator = (
+type Translator = ((
   batch: TranslationBatch,
-) => Promise<readonly TranslationResult[]>;
+) => Promise<readonly TranslationResult[]>) & {
+  reportBatchEvent?: (event: TranslationBatchEvent) => void | Promise<void>;
+};
 ```
 
 ## 契约
@@ -22,6 +24,10 @@ type Translator = (
 Translator 返回的数组必须与 `batch.messages` 等长。每一行必须且只能包含
 `batch.locales` 中的语言键，值为译文或 `null`。输入和输出通过数组下标对应，不需要返回
 message ID。
+
+`reportBatchEvent` 是可选的旁路诊断接收器。Vite 会报告 `scheduled`、`state-applied`、
+`persisted` 或 `failed`；接收器缺失、同步抛错或异步拒绝都不会改变翻译与 Build 结果。实现日志
+Provider 时可用同一 `batchId` 把这些事件和模型请求关联起来。普通函数 Translator 不需要实现它。
 
 ## 示例
 
@@ -41,5 +47,6 @@ export const translator: Translator = async ({ locales, messages }) =>
 相关类型：
 
 - [`TranslationBatch`](/api/vite/interfaces/translation-batch)
+- [`TranslationBatchEvent`](/api/vite/interfaces/translation-batch-event)
 - [`TranslationMessage`](/api/vite/interfaces/translation-message)
 - [`TranslationResult`](/api/vite/type-aliases/translation-result)

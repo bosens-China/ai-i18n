@@ -104,6 +104,10 @@
 - Provider 缓存策略不区分 Dev 与 Build。默认 `reuse`；`fresh` 让当前 Vite 进程向 Provider 刷新一次已有自动译文，并立即复用本进程的新结果。历史值仍可供 Runtime 使用，JSON、SQLite 与 MCP 不改变读取和共享语义。
 - Provider、模型、`baseURL`、温度和提示词不自动参与缓存指纹。任意 Translator 无法被可靠、安全地序列化；需要重跑时由用户显式设置 `provider.cache: 'fresh'`，人工 overrides 始终保留。
 - 同一消息与 locale 在一个进程中只发起一次普通翻译尝试；并发请求由 Provider Coordinator 合并，失败或空结果不会因普通 HMR 无限重试，源码身份变化或重启进程后可重新尝试。
+- LLM 审查日志默认关闭并只由 Vite 的 `provider.logging` 配置。`true` 使用 Vite root 下的 `logs/`；字符串表示相对 Vite root 或绝对日志目录，空字符串无效。Vite 把解析后的关闭状态或绝对目录传给 Translator 和生命周期事件；一个 OpenAI Translator 实例在每个目录对应一个文件，Dev/HMR 与 Build Watch 持续追加，独立 Build 创建新文件。
+- OpenAI 审查日志完整保留实际 messages、每个 choice 的 assistant message、思考、回复、usage、重试、错误和校验结果，过滤未设置参数、SDK runtime 字段与常规传输 Header；未知 message 扩展字段不能因格式化丢失。
+- OpenAI 日志必须脱敏显式 API key 与常见认证 Header。日志可能包含业务文案与模型输出，仓库和接入文档必须忽略 `logs/`、`*.log` 与自定义日志目录；日志写入失败或追踪接收器异常不能改变翻译、提取、缓存或 Build 结果。
+- Vite 为每次实际 Translator 批次分配诊断 `batchId`；OpenAI 日志用同一 ID 串联调度、REQUEST、RESPONSE、VALIDATION、状态应用、持久化与失败事件，并发批次不得串号。`batchId` 不进入模型提示词、消息身份、缓存键或 Translation Memory 协议；追踪接收器失败不能改变翻译与 Build。
 
 ## 静态分析与开发体验
 

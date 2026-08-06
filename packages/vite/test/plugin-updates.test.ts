@@ -1,6 +1,10 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import type { TranslationResult, Translator } from '@ai-i18n/core';
+import type {
+  TranslationBatchEvent,
+  TranslationResult,
+  Translator,
+} from '@ai-i18n/core';
 import { describe, expect, it, vi } from 'vitest';
 import { extractedPath } from '../src/file-store-paths';
 import {
@@ -26,10 +30,15 @@ describe('@ai-i18n/vite plugin updates', () => {
             );
         }),
     );
+    const reportBatchEvent = vi.fn<(event: TranslationBatchEvent) => void>();
+    translator.reportBatchEvent = reportBatchEvent;
     const { plugin, transform, hotSend, directory } = setupPlugin(
       [],
       undefined,
-      { ...options, provider: { translator, batchLength: 1 } },
+      {
+        ...options,
+        provider: { translator, batchLength: 1, logging: true },
+      },
     );
 
     const transformed = await transform(
@@ -38,6 +47,9 @@ describe('@ai-i18n/vite plugin updates', () => {
     );
     expect(transformed?.code).toContain('register?module=src%2Fprovider.ts');
     expect(translator).toHaveBeenCalledTimes(1);
+    expect(translator).toHaveBeenCalledWith(
+      expect.objectContaining({ logging: path.resolve('/workspace/logs') }),
+    );
 
     const registerId = '\0virtual:ai-i18n/register?module=src%2Fprovider.ts';
     const before = await callHook<Promise<string>>(plugin.load, registerId);
@@ -58,6 +70,19 @@ describe('@ai-i18n/vite plugin updates', () => {
     ).toMatchObject({
       messages: { 保存: 'Save' },
     });
+    const batchId = vi.mocked(translator).mock.calls[0]![0].batchId;
+    expect(batchId).toEqual(expect.any(String));
+    expect(
+      reportBatchEvent.mock.calls
+        .map(([event]) => event)
+        .filter((event) => event.batchId === batchId)
+        .map((event) => event.stage),
+    ).toEqual(['scheduled', 'state-applied', 'persisted']);
+    expect(
+      reportBatchEvent.mock.calls.every(
+        ([event]) => event.logging === path.resolve('/workspace/logs'),
+      ),
+    ).toBe(true);
 
     const extractedFile = extractedPath(directory, 'src/provider.ts');
     const hotUpdate = objectHandler<

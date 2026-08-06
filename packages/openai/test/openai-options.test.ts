@@ -56,7 +56,16 @@ describe('openAI options', () => {
       timeout: 120_000,
       maxRetries: 3,
       useResponsesApi: false,
-      configuration: { baseURL: 'http://127.0.0.1:11434/v1' },
+      configuration: {
+        baseURL: 'http://127.0.0.1:11434/v1',
+        logLevel: 'debug',
+        logger: expect.objectContaining({
+          debug: expect.any(Function),
+          info: expect.any(Function),
+          warn: expect.any(Function),
+          error: expect.any(Function),
+        }),
+      },
     });
   });
 

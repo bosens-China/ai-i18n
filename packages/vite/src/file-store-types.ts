@@ -14,6 +14,8 @@ export interface FileStoreOptions {
     storage: TranslationMemoryStorage;
   };
   onWarning?: (message: string) => void;
+  /** 文件与 Translation Memory 全部写入成功后调用。 */
+  onSynced?: (batchIds: readonly string[]) => void | Promise<void>;
 }
 
 export interface FileStoreLoadOptions {
