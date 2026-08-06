@@ -25,8 +25,8 @@ insufficient or when a tool or protocol file is unavailable.
    or a similarly named `i18n/` directory as the target.
 2. Read the app's `package.json`, package scripts, and `vite.config.*` as text. Do not execute the
    Vite config.
-3. Resolve Vite `root` from the command's working directory. Then resolve `aiI18n({ directory })`
-   against that root; the default directory is `i18n`.
+3. Resolve Vite `root` from the command's working directory. Resolve a relative `aiI18n({ directory })`
+   against that root; use an absolute `directory` unchanged. The default directory is `i18n`.
 4. Pass the resulting absolute path as `i18n_directory`.
 
 If more than one Vite app is plausible, ask the user which app to use before calling MCP.

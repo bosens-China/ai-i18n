@@ -109,7 +109,9 @@ Provider 只补齐缺失译文。翻译失败时，页面继续显示源码文�
 Build，并检查关键页面和固定术语。
 
 需要让 CI 在翻译请求失败或仍有缺失译文时停止构建，可以设置 `provider.strict: true`。批次大小、
-重试、并发和超时等高级选项见 [`AiI18nProviderOptions`](/api/vite/type-aliases/ai-i18n-provider-options)。
+并发、日志和刷新策略见 [`AiI18nProviderOptions`](/api/vite/type-aliases/ai-i18n-provider-options)。
+重试与超时由具体 Translator 或 Provider SDK 配置；OpenAI-compatible Provider 的字段见
+[`OpenAIOptions`](/api/openai/interfaces/open-ai-options)。
 
 Provider 的模型、`baseURL`、温度或提示词变化时，插件默认继续复用历史自动译文，不会尝试分析
 Translator 内部配置。需要让新配置刷新一次时，使用 `provider.cache: 'fresh'`；本进程生成的新结果仍会

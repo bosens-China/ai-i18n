@@ -55,7 +55,9 @@ SDK runtime 与常规传输噪声。并发调用使用独立异步上下文，�
 相对或绝对目录。完整阅读方法见
 [LLM 日志与排障](/guide/advanced/llm-logs)。
 
-Provider 使用 OpenAI-compatible JSON mode，并校验返回数组长度、语言键和译文类型。模型服务
-需要支持 Chat Completions 和 `response_format: { type: "json_object" }`。
+Provider 使用 OpenAI-compatible JSON mode。目标语言和批次长度会生成本批唯一的结构化 Schema；
+同一 Schema 同时约束模型输出并校验实际响应，因此返回对象的顶层字段、数组长度、语言键和译文
+类型都必须精确匹配，额外字段也会被拒绝。占位符一致性在结构校验后单独检查。模型服务需要支持
+Chat Completions 和 `response_format: { type: "json_object" }`。
 
 完整接入流程见 [AI 翻译](/guide/advanced/ai-translation)。

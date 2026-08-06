@@ -44,7 +44,9 @@ aiI18n({
 
 `temperature`、`timeoutMs`、`maxRetries` 默认分别为 `1`、`120_000`、`3`；`maxTokens`
 不设置时交给模型决定。Provider 使用 OpenAI-compatible JSON mode，并在用户提示词尾部固定
-追加纯 JSON 约束和最小示例，然后按内部 Schema、输入下标和目标语言严格校验结果。传入
+追加纯 JSON 约束和最小示例。目标语言与批次长度生成的 Zod Schema 同时提供给 LangChain
+structured output 并校验实际响应，顶层字段、输入下标、目标语言和值类型必须精确匹配；占位符
+一致性随后按 source 与译文单独校验。配置、目标语言与消息结构也会在请求前通过 Zod 校验。传入
 `langSmith` 即启用 tracing，不传则不会创建 LangSmith client。
 `temperature` 会原样传给兼容服务，是否实际生效由服务、模型及其运行模式决定。
 

@@ -25,6 +25,22 @@ aiI18n({
 分片文件与 `overrides.json` 应随源码提交。JSON 是默认存储，因此项目内不会生成 `storage.json`。
 不要按行数手工移动消息；插件会稳定决定每条消息所在的分片。
 
+`capacity` 只在需要限制历史译文时配置：
+
+```ts
+translationMemory: {
+  storage: 'json',
+  capacity: {
+    maxMessages: 20_000,
+    maxBytes: 10 * 1024 * 1024,
+  },
+}
+```
+
+它会淘汰当前源码不再引用的消息；活动消息始终保留，因此容量是软上限。容量计算不包含
+`overrides.json`、`extracted/` 或 `locales/`。完整字段见
+[`AiI18nTranslationMemoryCapacityOptions`](/api/vite/interfaces/ai-i18n-translation-memory-capacity-options)。
+
 ## 可选：用户级全局 SQLite
 
 希望同一台电脑上的多个项目共享自动译文时，可以选择 SQLite：

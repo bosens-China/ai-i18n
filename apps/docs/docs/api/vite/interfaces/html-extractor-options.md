@@ -27,10 +27,11 @@ interface HtmlExtractorOptions {
 
 ## 用法
 
-| `AiI18nOptions.html` 写法 | 行为                                         |
-| ------------------------- | -------------------------------------------- |
-| `false` 或省略            | 不处理 HTML。                                |
-| `true`                    | 提取文本与默认属性。                         |
-| `{ attributes }`          | 提取文本，并使用传入数组替换默认属性白名单。 |
+| `AiI18nOptions.html` 写法 | 行为                                      |
+| ------------------------- | ----------------------------------------- |
+| `false` 或省略            | 不处理 HTML。                             |
+| `true`                    | 提取完整的静态 `t()` 文本节点与默认属性。 |
+| `{ attributes }`          | 提取完整的静态 `t()`，并替换属性白名单。  |
 
-HTML 提取与 `framework` 模式相互独立。
+普通 HTML 文本、混合文本、内联脚本和非白名单属性不会自动翻译。HTML 提取与 `framework` 模式
+相互独立。完整写法见[通用文案写法](/guide/basic/static-analysis/common#html)。

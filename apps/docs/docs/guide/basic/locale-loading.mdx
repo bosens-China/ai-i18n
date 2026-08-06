@@ -221,8 +221,8 @@ const state = getLangLoadState();
 
 - `preload` 与 `prefetch` 只能填写 `locales` 中的目标 locale，不能填写 `sourceLang`。
 - 同一 locale 不能同时出现在两个列表中；同一列表内的重复值会自动去重。
-- 非 source 的 `defaultLang` 会自动按 preload 处理。资源就绪前先渲染 source fallback，
-  加载完成后再通知订阅者更新。
+- 非 source 的 `defaultLang` 会自动按 preload 处理。不要再把它填入 `prefetch`，否则配置会在启动时
+  报错。资源就绪前先渲染 source fallback，加载完成后再通知订阅者更新。
 - 相同 locale 的并发调用会复用同一次底层语言包加载请求，不保证各次 `setLang()` 返回的
   Promise 引用相等。不同 locale 的并发切换以最后一次调用为准。
 - 缺失或值为 `null` 的译文始终回退到 source 文案。

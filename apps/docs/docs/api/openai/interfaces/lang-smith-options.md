@@ -22,12 +22,12 @@ interface LangSmithOptions {
 
 ## 字段
 
-| 字段          | 类型     | 必填 | 默认值             | 作用                |
-| ------------- | -------- | ---- | ------------------ | ------------------- |
-| `apiKey`      | `string` | 是   | 无                 | LangSmith API key。 |
-| `project`     | `string` | 否   | LangSmith 默认项目 | 写入的项目名。      |
-| `endpoint`    | `string` | 否   | LangSmith 默认地址 | 自托管或代理地址。  |
-| `workspaceId` | `string` | 否   | 无                 | 目标 workspace。    |
+| 字段          | 类型     | 必填 | 默认值             | 约束 | 作用                |
+| ------------- | -------- | ---- | ------------------ | ---- | ------------------- |
+| `apiKey`      | `string` | 是   | 无                 | 非空 | LangSmith API key。 |
+| `project`     | `string` | 否   | LangSmith 默认项目 | 无   | 写入的项目名。      |
+| `endpoint`    | `string` | 否   | LangSmith 默认地址 | 无   | 自托管或代理地址。  |
+| `workspaceId` | `string` | 否   | 无                 | 无   | 目标 workspace。    |
 
 只有传入 `OpenAIOptions.langSmith` 时，Provider 才会创建 tracing callback。
 

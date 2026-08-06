@@ -5,6 +5,7 @@
 ## 文档边界
 
 - 用户可见的 API、配置和接入流程以 apps/docs 为准。
+- 公开 TypeScript 类型与 API 参考当前继续手写维护；Zod Schema 只负责运行时校验，不作为文档生成来源。
 - Rspress 发布 `llms.txt` 精简索引与 `llms-full.txt` 完整正文。Agent 默认先读取
   `llms.txt`，再按任务读取具体用户页面；不默认加载完整正文。
 - 包级安装、运行与开发者配置以各 packages/*/README.md 为准。
@@ -43,6 +44,7 @@
 ### 框架模式与自动导入
 
 - 插件在 Vanilla、Vue、React 三种互斥模式中运行。默认由最终 Vite 插件列表推断，也允许显式覆盖；同时命中 Vue 与 React 时拒绝启动。
+- 显式 framework 只接受 vanilla、vue、react；JavaScript 配置同样在启动时校验，不能依赖 TypeScript 才发现无效值。
 - 显式从 virtual:ai-i18n 导入的 API 始终可用。自动导入只减少 import 样板，不改变 Runtime 的导出边界。
 - 三种模式都自动导入 t()、语言控制 API 与 subscribe()；Vue 额外自动导入 useI18n()、tRef()、i18nComputed() 与 tComputed()，React 额外自动导入 useI18n()。
 - 自动导入按未绑定的值引用注入，覆盖直接调用、函数传递和对象简写；局部 binding、属性名、类型位置与赋值目标不能触发注入。
@@ -94,6 +96,7 @@
 - 不保留未发布旧 schema 或旧 MCP 工具参数的兼容层；只为已存在的单文件 Translation Memory 提供一次自动迁移。
 - sourceLang 变更时，当前实现会在 comment 一致且历史候选唯一时尽力复用历史翻译；候选不唯一时保持缺失，不猜测。这是保守兼容行为，不构成公开的稳定迁移承诺。
 - Translation Memory 的容量限制与 orphan 清理只淘汰非活动历史消息，不能为满足上限而破坏当前源码仍引用的译文。
+- 容量限制属于 translationMemory.capacity，按当前项目的逻辑 Translation Memory 快照计算；provider.cache 只控制当前 Vite 进程的自动译文刷新，两者不能混用。
 
 ### Vite 生命周期与 Provider
 
@@ -105,7 +108,9 @@
 - Provider、模型、`baseURL`、温度和提示词不自动参与缓存指纹。任意 Translator 无法被可靠、安全地序列化；需要重跑时由用户显式设置 `provider.cache: 'fresh'`，人工 overrides 始终保留。
 - 同一消息与 locale 在一个进程中只发起一次普通翻译尝试；并发请求由 Provider Coordinator 合并，失败或空结果不会因普通 HMR 无限重试，源码身份变化或重启进程后可重新尝试。
 - LLM 审查日志默认关闭并只由 Vite 的 `provider.logging` 配置。`true` 使用 Vite root 下的 `logs/`；字符串表示相对 Vite root 或绝对日志目录，空字符串无效。Vite 把解析后的关闭状态或绝对目录传给 Translator 和生命周期事件；一个 OpenAI Translator 实例在每个目录对应一个文件，Dev/HMR 与 Build Watch 持续追加，独立 Build 创建新文件。
+- 实现 reportBatchEvent 的 Translator 始终接收 scheduled、state-applied、persisted、failed 事件；事件按 stage 使用判别联合类型并始终携带规范化 logging。关闭日志只禁止写入日志文件，不禁止事件派发。
 - OpenAI 审查日志完整保留实际 messages、每个 choice 的 assistant message、思考、回复、usage、重试、错误和校验结果，过滤未设置参数、SDK runtime 字段与常规传输 Header；未知 message 扩展字段不能因格式化丢失。
+- OpenAI Provider 直接使用 Zod 4 统一解析配置、批次输入和安全错误状态；按目标 locale 与批次长度生成的动态 Zod Schema 同时交给 LangChain structured output 并校验响应，不能再并行维护手写 JSON Schema 与对象结构判断。占位符一致性等跨 source/translation 的业务不变量保留专用校验；SDK 日志格式化为兼容未知扩展字段保持宽松读取。
 - OpenAI 日志必须脱敏显式 API key 与常见认证 Header。日志可能包含业务文案与模型输出，仓库和接入文档必须忽略 `logs/`、`*.log` 与自定义日志目录；日志写入失败或追踪接收器异常不能改变翻译、提取、缓存或 Build 结果。
 - Vite 为每次实际 Translator 批次分配诊断 `batchId`；OpenAI 日志用同一 ID 串联调度、REQUEST、RESPONSE、VALIDATION、状态应用、持久化与失败事件，并发批次不得串号。`batchId` 不进入模型提示词、消息身份、缓存键或 Translation Memory 协议；追踪接收器失败不能改变翻译与 Build。
 

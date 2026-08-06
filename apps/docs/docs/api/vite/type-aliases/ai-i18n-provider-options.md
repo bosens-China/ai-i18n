@@ -49,7 +49,8 @@ root，绝对路径保持不变。空字符串无效。开启后，Vite 会把�
 
 `cache: 'fresh'` 只影响当前 Vite 进程发起的 Provider 调用。已有译文仍可供 Runtime 使用；本进程
 生成的新结果会立即缓存，普通 HMR 不会重复请求。该选项不传给 Translator，也不影响 MCP 或 AI Agent
-读写 Translation Memory。
+读写 Translation Memory。它与 `translationMemory.capacity` 无关：前者控制一次 Provider 刷新，后者
+控制历史 Translation Memory 的容量。
 
 ## 示例
 

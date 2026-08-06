@@ -21,36 +21,31 @@ interface AiI18nOptions {
   locales: readonly LangOption[];
   persist?: boolean | AiI18nPersistOptions;
   loading?: AiI18nLocaleLoadingOptions;
-  cache?: AiI18nCacheOptions;
   translationMemory?: AiI18nTranslationMemoryOptions;
   provider?: AiI18nProviderOptions;
   directory?: string;
-  cleanup?: {
-    missingSourceFiles?: boolean;
-    orphanMessages?: boolean;
-  };
+  cleanup?: AiI18nCleanupOptions;
   html?: boolean | HtmlExtractorOptions;
 }
 ```
 
 ## 字段
 
-| 字段                | 类型                                                                                        | 必填 | 默认值               | 作用                                      |
-| ------------------- | ------------------------------------------------------------------------------------------- | ---- | -------------------- | ----------------------------------------- |
-| `sourceLang`        | `string`                                                                                    | 是   | 无                   | 源码文案所属语言。                        |
-| `locales`           | [`readonly LangOption[]`](/api/vite/interfaces/lang-option)                                 | 是   | 无                   | 项目支持的语言列表。                      |
-| `defaultLang`       | `string`                                                                                    | 否   | `sourceLang`         | 没有有效持久化值时使用的初始语言。        |
-| `persist`           | `boolean` 或 [`AiI18nPersistOptions`](/api/vite/interfaces/ai-i18n-persist-options)         | 否   | `false`              | 使用 localStorage 保存语言偏好。          |
-| `loading`           | [`AiI18nLocaleLoadingOptions`](/api/vite/interfaces/ai-i18n-locale-loading-options)         | 否   | 全语言注册           | 按 locale 拆分语言资产。                  |
-| `framework`         | [`AiI18nFramework`](/api/vite/type-aliases/ai-i18n-framework)                               | 否   | 自动检测             | 指定 Vanilla、Vue 或 React 模式。         |
-| `autoImport`        | `boolean`                                                                                   | 否   | `false`              | 自动注入当前框架模式的 Runtime API。      |
-| `dts`               | `string \| false`                                                                           | 否   | `'src/ai-i18n.d.ts'` | 设置声明文件路径，或关闭生成。            |
-| `directory`         | `string`                                                                                    | 否   | `'i18n'`             | 设置相对于 Vite `root` 的协议目录。       |
-| `provider`          | [`AiI18nProviderOptions`](/api/vite/type-aliases/ai-i18n-provider-options)                  | 否   | 不调用模型           | 配置自动翻译函数、缓存与调度策略。        |
-| `html`              | [`boolean \| HtmlExtractorOptions`](/api/vite/interfaces/html-extractor-options)            | 否   | `false`              | 开启 `index.html` 文本和属性提取。        |
-| `cache`             | [`AiI18nCacheOptions`](/api/vite/interfaces/ai-i18n-cache-options)                          | 否   | 不限制               | 限制历史 Translation Memory 的容量。      |
-| `translationMemory` | [`AiI18nTranslationMemoryOptions`](/api/vite/interfaces/ai-i18n-translation-memory-options) | 否   | 分片 JSON            | 选择项目内分片 JSON 或用户级全局 SQLite。 |
-| `cleanup`           | `{ missingSourceFiles?: boolean; orphanMessages?: boolean }`                                | 否   | 见下文               | 控制失效提取文件和孤立消息的清理。        |
+| 字段                | 类型                                                                                        | 必填 | 默认值               | 作用                                     |
+| ------------------- | ------------------------------------------------------------------------------------------- | ---- | -------------------- | ---------------------------------------- |
+| `sourceLang`        | `string`                                                                                    | 是   | 无                   | 源码文案所属语言。                       |
+| `locales`           | [`readonly LangOption[]`](/api/vite/interfaces/lang-option)                                 | 是   | 无                   | 项目支持的语言列表。                     |
+| `defaultLang`       | `string`                                                                                    | 否   | `sourceLang`         | 没有有效持久化值时使用的初始语言。       |
+| `persist`           | `boolean` 或 [`AiI18nPersistOptions`](/api/vite/interfaces/ai-i18n-persist-options)         | 否   | `false`              | 使用 localStorage 保存语言偏好。         |
+| `loading`           | [`AiI18nLocaleLoadingOptions`](/api/vite/interfaces/ai-i18n-locale-loading-options)         | 否   | 全语言注册           | 按 locale 拆分语言资产。                 |
+| `framework`         | [`AiI18nFramework`](/api/vite/type-aliases/ai-i18n-framework)                               | 否   | 自动检测             | 指定 Vanilla、Vue 或 React 模式。        |
+| `autoImport`        | `boolean`                                                                                   | 否   | `false`              | 自动注入当前框架模式的 Runtime API。     |
+| `dts`               | `string \| false`                                                                           | 否   | `'src/ai-i18n.d.ts'` | 设置声明文件路径，或关闭生成。           |
+| `directory`         | `string`                                                                                    | 否   | `'i18n'`             | 设置协议目录；相对路径基于 Vite `root`。 |
+| `provider`          | [`AiI18nProviderOptions`](/api/vite/type-aliases/ai-i18n-provider-options)                  | 否   | 不调用模型           | 配置自动翻译函数、缓存与调度策略。       |
+| `html`              | [`boolean \| HtmlExtractorOptions`](/api/vite/interfaces/html-extractor-options)            | 否   | `false`              | 开启 `index.html` 文本和属性提取。       |
+| `translationMemory` | [`AiI18nTranslationMemoryOptions`](/api/vite/interfaces/ai-i18n-translation-memory-options) | 否   | 分片 JSON            | 选择存储方式，并按需限制历史译文容量。   |
+| `cleanup`           | [`AiI18nCleanupOptions`](/api/vite/interfaces/ai-i18n-cleanup-options)                      | 否   | 保留默认清理策略     | 控制失效提取文件和孤立消息的清理。       |
 
 ## 语言约束
 
@@ -77,6 +72,7 @@ interface AiI18nOptions {
 | 都不存在                          | `vanilla` |
 
 同一个 build 同时出现 Vue 与 React 插件时会报错。显式设置 `framework` 不会绕过这项检查。
+显式值只能是 `'vanilla'`、`'vue'` 或 `'react'`；JavaScript 配置中的其他值也会在启动时被拒绝。
 
 `autoImport: true` 注入的 API 取决于最终模式。三种模式都有 `t`、`setLang`、`getLang`、
 `getLangs`、`getLangLoadState` 与 `subscribe`；Vue 额外注入 `useI18n`、`tRef`、
@@ -84,14 +80,9 @@ interface AiI18nOptions {
 
 完整接入方法见[自动导入](/guide/basic/auto-import)。
 
-## 清理策略
+## 路径
 
-| 字段                 | 默认值  | 作用                                            |
-| -------------------- | ------- | ----------------------------------------------- |
-| `missingSourceFiles` | `true`  | 删除源文件不存在时对应的 `extracted` 文件。     |
-| `orphanMessages`     | `false` | 保留当前源码不再引用的历史 Translation Memory。 |
-
-建议保留默认值。`orphanMessages: true` 会删除全部非活跃消息，优先级高于 Cache 容量限制。
+`directory` 与 `dts` 的相对路径都基于 Vite `root` 解析；传入绝对路径时直接使用该路径。
 
 ## 相关内容
 
@@ -99,4 +90,5 @@ interface AiI18nOptions {
 - [语言分包与按需加载](/guide/basic/locale-loading)
 - [生成文件与 Git](/guide/basic/directory)
 - [TypeScript 与生成声明](/guide/quality/typescript)
+- [Translation Memory](/guide/advanced/translation-memory)
 - [ESLint](/guide/quality/eslint)

@@ -37,8 +37,8 @@ interface AiI18nLocaleLoadingOptions {
 - 同一 locale 不能同时出现在两个列表中；
 - 单个列表中的重复值会自动去重。
 
-非 source 的 `defaultLang` 会自动加入 `preload`。相同 locale 的并发调用复用底层加载请求；
-不同 locale 的并发切换以最后一次 `setLang()` 调用为准。
+非 source 的 `defaultLang` 会自动加入 `preload`，因此不能再把它列入 `prefetch`；该组合会在启动时
+报错。相同 locale 的并发调用复用底层加载请求；不同 locale 的并发切换以最后一次 `setLang()` 调用为准。
 
 ## 示例
 

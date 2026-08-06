@@ -28,21 +28,23 @@ interface OpenAIOptions {
 
 ## 字段
 
-| 字段           | 类型                                                            | 必填 | 默认值         | 作用                                 |
-| -------------- | --------------------------------------------------------------- | ---- | -------------- | ------------------------------------ |
-| `baseURL`      | `string`                                                        | 是   | 无             | OpenAI-compatible API 根地址。       |
-| `model`        | `string`                                                        | 是   | 无             | 显式选择模型。                       |
-| `apiKey`       | `string`                                                        | 否   | 本地占位值     | 请求认证密钥。                       |
-| `temperature`  | `number`                                                        | 否   | `1`            | 模型 temperature。                   |
-| `maxTokens`    | `number`                                                        | 否   | 由模型决定     | 单次响应 token 上限。                |
-| `timeoutMs`    | `number`                                                        | 否   | `120_000`      | 单次请求超时，单位为毫秒。           |
-| `maxRetries`   | `number`                                                        | 否   | `3`            | LangChain 层的最大重试次数。         |
-| `headers`      | `HeadersInit`                                                   | 否   | 无             | 追加到 Provider 请求的 HTTP Header。 |
-| `systemPrompt` | `string`                                                        | 否   | 内置翻译提示词 | 覆盖产品领域、术语和风格要求。       |
-| `langSmith`    | [`LangSmithOptions`](/api/openai/interfaces/lang-smith-options) | 否   | 不启用         | 启用 LangSmith tracing。             |
+| 字段           | 类型                                                          | 必填 | 默认值             | 约束      | 作用                                 |
+| -------------- | ------------------------------------------------------------- | ---- | ------------------ | --------- | ------------------------------------ |
+| `baseURL`      | `string`                                                      | 是   | 无                 | 非空      | OpenAI-compatible API 根地址。       |
+| `model`        | `string`                                                      | 是   | 无                 | 非空      | 显式选择模型。                       |
+| `apiKey`       | `string`                                                      | 否   | 本地服务使用占位值 | 无        | 请求认证密钥。                       |
+| `temperature`  | `number`                                                      | 否   | `1`                | ≥ 0       | 传给模型的 temperature。             |
+| `maxTokens`    | `number`                                                      | 否   | 由模型决定         | 整数；> 0 | 单次响应 token 上限。                |
+| `timeoutMs`    | `number`                                                      | 否   | `120000`           | 整数；> 0 | 单次请求超时，单位为毫秒。           |
+| `maxRetries`   | `number`                                                      | 否   | `3`                | 整数；≥ 0 | LangChain 层的最大重试次数。         |
+| `headers`      | `HeadersInit`                                                 | 否   | 无                 | 无        | 追加到 Provider 请求的 HTTP Header。 |
+| `systemPrompt` | `string`                                                      | 否   | 内置翻译提示词     | 非空      | 覆盖产品领域、术语和风格要求。       |
+| `langSmith`    | [LangSmithOptions](/api/openai/interfaces/lang-smith-options) | 否   | 不启用             | 无        | 启用 LangSmith tracing。             |
 
 `baseURL`、`model` 和显式传入的 `systemPrompt` 去除首尾空白后不能为空。`temperature` 必须
 大于或等于 `0`；`maxTokens` 与 `timeoutMs` 必须是正整数；`maxRetries` 必须是非负整数。
+`headers` 会按标准 `HeadersInit` 解析并规范化。所有配置在创建 Provider 时一次性校验；任一字段
+无效都会在模型请求发出前报告具体字段，不会等到 Dev 或 Build 的首个翻译批次才失败。
 
 Provider 不主动读取宿主的 `OPENAI_API_KEY`。密钥必须显式传入；省略时使用本地服务占位值，
 避免意外把宿主环境变量发送到其他地址。

@@ -16,8 +16,13 @@
   },
   {
     "type": "file",
-    "name": "ai-i18n-cache-options",
-    "label": "AiI18nCacheOptions"
+    "name": "ai-i18n-translation-memory-capacity-options",
+    "label": "AiI18nTranslationMemoryCapacityOptions"
+  },
+  {
+    "type": "file",
+    "name": "ai-i18n-cleanup-options",
+    "label": "AiI18nCleanupOptions"
   },
   {
     "type": "file",

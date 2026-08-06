@@ -66,8 +66,8 @@ binding，以及本地同名值的遮挡规则统一见[自动导入](/guide/bas
 
 ## 自定义声明路径
 
-只有默认的 `src/ai-i18n.d.ts` 不适合项目目录结构时，才需要设置 `dts`。路径相对于当前
-Vite root：
+只有默认的 `src/ai-i18n.d.ts` 不适合项目目录结构时，才需要设置 `dts`。相对路径基于当前
+Vite root；也可以使用绝对路径：
 
 ```ts title="vite.config.ts"
 aiI18n({

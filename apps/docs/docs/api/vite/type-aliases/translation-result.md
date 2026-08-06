@@ -16,7 +16,8 @@ type TranslationResult = Readonly<Record<string, string | null>>;
 ```
 
 键必须与当前 [`TranslationBatch.locales`](/api/vite/interfaces/translation-batch) 完全一致。
-非空字符串表示译文，`null` 表示该目标语言仍缺译。
+任意字符串（包括空字符串）都是有效译文；`null` 表示该目标语言仍缺译。Runtime 只对 `null` 或
+缺失字段回退 source 文案。
 
 ```ts
 const result: TranslationResult = {

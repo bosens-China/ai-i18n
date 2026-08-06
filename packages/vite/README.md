@@ -71,9 +71,10 @@ Vite 为每次实际 Translator 调用传入可选诊断 `batchId`。日志型 T
 写入 Translation Memory、message ID 或缓存键。
 
 `provider.logging` 默认是 `false`。显式设为 `true` 时使用 Vite root 下的 `logs/`；字符串表示日志
-目录，相对路径基于 Vite root，绝对路径保持不变，空字符串无效。启用时 Vite 报告上述生命周期并把
-解析后的目录传给 Translator；关闭时官方 OpenAI Provider 不创建或追加日志，但翻译、提取、缓存和
-持久化保持不变。自定义 Translator 可以忽略这个可选诊断字段。
+目录，相对路径基于 Vite root，绝对路径保持不变，空字符串无效。Vite 总会向实现
+`reportBatchEvent` 的 Translator 报告生命周期，并把解析后的关闭状态或目录传给 Translator；关闭时
+官方 OpenAI Provider 不创建或追加日志，但翻译、提取、缓存和持久化保持不变。自定义 Translator
+可以忽略这个可选诊断字段。
 
 动态值使用 tagged template：`` t`你好 ${name}` ``。表达式会变成可调整顺序的编号占位符，
 不会交给模型翻译。源码中原样出现的 `{{0}}` 会在内部转义为 `{{=0}}`，运行时仍按原文显示。
@@ -176,15 +177,17 @@ Vue / React 的 `useI18n()` 额外返回 `langLoadState`、`isLangLoading` 与
 并可直接使用 Options `watch.currentLang` 监听成功的语言切换。省略 `loading` 时保持全语言
 注册模式。
 
-## Cache 容量
+## Translation Memory 容量
 
 ```ts
 aiI18n({
   sourceLang: 'zh-CN',
   locales,
-  cache: {
-    maxMessages: 20_000,
-    maxBytes: 10 * 1024 * 1024,
+  translationMemory: {
+    capacity: {
+      maxMessages: 20_000,
+      maxBytes: 10 * 1024 * 1024,
+    },
   },
 });
 ```
@@ -194,7 +197,7 @@ Translation Memory，直到同时满足已配置的限制。`maxBytes` 按稳定
 Translation Memory 快照计算，与 JSON 分片或 SQLite 物理布局无关。
 
 现有 extracted 或 ProjectState 引用的 message 始终受保护。若活动数据自身超限，插件保留
-数据并输出 warning。省略 `cache` 时不执行容量淘汰；
+数据并输出 warning。省略 `translationMemory.capacity` 时不执行容量淘汰；
 `cleanup.orphanMessages: true` 仍会优先删除全部非活跃消息。
 
 普通 `vite build` 每次使用新的分析状态，并在完整模块图可用后统一写协议文件；
