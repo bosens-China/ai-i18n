@@ -22,29 +22,22 @@ export async function fixture(
   tempDirectories.push(root);
   const directory = path.join(root, 'apps/web/i18n');
   await fs.mkdir(path.join(directory, 'extracted'), { recursive: true });
-  await fs.writeFile(
-    path.join(directory, 'translations.json'),
-    JSON.stringify({
-      version: 1,
-      revision: 0,
-      messages: {
-        保存: {
-          source: '保存',
-          sourceLang: 'zh-CN',
-          translations: { 'en-US': null, 'ja-JP': '保存する' },
-        },
-        退出: {
-          source: '退出',
-          sourceLang: 'zh-CN',
-          translations: { 'en-US': 'Exit', 'ja-JP': null },
-        },
+  const store = await openTranslationMemoryStore({ directory, storage });
+  await store.transact((memory) => {
+    memory.messages = {
+      保存: {
+        source: '保存',
+        sourceLang: 'zh-CN',
+        translations: { 'en-US': null, 'ja-JP': '保存する' },
       },
-    }),
-  );
-  if (storage === 'sqlite') {
-    const store = await openTranslationMemoryStore({ directory, storage });
-    store.close();
-  }
+      退出: {
+        source: '退出',
+        sourceLang: 'zh-CN',
+        translations: { 'en-US': 'Exit', 'ja-JP': null },
+      },
+    };
+  });
+  store.close();
   await fs.writeFile(
     path.join(directory, 'overrides.json'),
     JSON.stringify({ version: 1, messages: {} }),

@@ -6,7 +6,6 @@ import { JsonTranslationMemoryStore } from './translation-memory-json.js';
 import {
   globalTranslationMemoryPath,
   jsonTranslationMemoryPath,
-  legacyTranslationMemoryPath,
   storageMarkerPath,
 } from './translation-memory-paths.js';
 import { SqliteTranslationMemoryStore } from './translation-memory-sqlite.js';
@@ -26,7 +25,7 @@ export async function openTranslationMemoryStore(
   // Vite、MCP 与 pnpm workspace 可能通过不同符号链接访问同一目录，项目身份必须先规范化。
   const directory = await fs.realpath(requestedDirectory);
   const marker = await readMarker(directory);
-  const existing = marker?.storage ?? (await inferStorage(directory));
+  const existing = marker?.storage ?? 'json';
   const requested = options.storage ?? existing;
   if (existing === requested) {
     const store = await createStore(
@@ -34,7 +33,7 @@ export async function openTranslationMemoryStore(
       requested,
       options.dataDirectory,
     );
-    await writeMarker(directory, requested);
+    await syncMarker(directory, requested);
     return store;
   }
 
@@ -49,7 +48,7 @@ export async function openTranslationMemoryStore(
     await next.transact((draft) => {
       draft.messages = structuredClone(memory.messages);
     });
-    await writeMarker(directory, requested);
+    await syncMarker(directory, requested);
     if (previous.storage === 'json') await previous.removeProjectData();
     return next;
   } catch (error) {
@@ -64,7 +63,7 @@ export async function readTranslationMemoryStorage(
   directory: string,
 ): Promise<TranslationMemoryStorage> {
   const resolved = path.resolve(directory);
-  return (await readMarker(resolved))?.storage ?? inferStorage(resolved);
+  return (await readMarker(resolved))?.storage ?? 'json';
 }
 
 async function createStore(
@@ -83,23 +82,13 @@ async function createStore(
       );
 }
 
-async function inferStorage(
-  directory: string,
-): Promise<TranslationMemoryStorage> {
-  if (
-    (await exists(jsonTranslationMemoryPath(directory))) ||
-    (await exists(legacyTranslationMemoryPath(directory)))
-  ) {
-    return 'json';
-  }
-  return 'json';
-}
-
 async function readMarker(
   directory: string,
 ): Promise<TranslationMemoryStorageMarker | undefined> {
   const value = await readJson(storageMarkerPath(directory));
   if (value === undefined) return undefined;
+  // TODO(stable-release): 首个非 prerelease 稳定版本发布前，移除对
+  // storage: 'json' 旧标记的兼容解析；缺少标记直接表示 JSON。
   if (
     !value ||
     typeof value !== 'object' ||
@@ -120,23 +109,19 @@ async function readMarker(
   return value as TranslationMemoryStorageMarker;
 }
 
-async function writeMarker(
+async function syncMarker(
   directory: string,
   storage: TranslationMemoryStorage,
 ): Promise<void> {
+  const file = storageMarkerPath(directory);
+  if (storage === 'json') {
+    await fs.rm(file, { force: true });
+    return;
+  }
   const marker: TranslationMemoryStorageMarker = { version: 1, storage };
-  await writeFile(storageMarkerPath(directory), stableJson(marker), {
+  await writeFile(file, stableJson(marker), {
     encoding: 'utf8',
     chown: false,
     mode: false,
   });
-}
-
-async function exists(target: string): Promise<boolean> {
-  try {
-    await fs.access(target);
-    return true;
-  } catch {
-    return false;
-  }
 }

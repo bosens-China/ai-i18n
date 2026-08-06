@@ -23,6 +23,10 @@ describe('Translation Memory stores', () => {
     const directory = path.join(root, 'i18n');
     await fs.mkdir(directory, { recursive: true });
     await fs.writeFile(
+      path.join(directory, 'storage.json'),
+      stableJson({ version: 1, storage: 'json' }),
+    );
+    await fs.writeFile(
       path.join(directory, 'translations.json'),
       stableJson({
         version: 1,
@@ -47,11 +51,9 @@ describe('Translation Memory stores', () => {
     await expect(
       fs.access(path.join(directory, 'translations.json')),
     ).rejects.toMatchObject({ code: 'ENOENT' });
-    expect(
-      JSON.parse(
-        await fs.readFile(path.join(directory, 'storage.json'), 'utf8'),
-      ),
-    ).toEqual({ version: 1, storage: 'json' });
+    await expect(
+      fs.access(path.join(directory, 'storage.json')),
+    ).rejects.toMatchObject({ code: 'ENOENT' });
   });
 
   it('recovers a complete JSON transaction journal after an interrupted shard commit', async () => {
@@ -112,6 +114,46 @@ describe('Translation Memory stores', () => {
     expect(memory.revision).toBe(24);
     first.close();
     second.close();
+  });
+
+  it('uses no marker for JSON and keeps one only while SQLite is selected', async () => {
+    const root = await temporaryDirectory();
+    const directory = path.join(root, 'i18n');
+    const dataDirectory = path.join(root, 'global');
+    const json = await openTranslationMemoryStore({ directory });
+    await json.transact((memory) => {
+      memory.messages.Save = message('保存', 'Save');
+    });
+    json.close();
+    await expect(
+      fs.access(path.join(directory, 'storage.json')),
+    ).rejects.toMatchObject({ code: 'ENOENT' });
+
+    const sqlite = await openTranslationMemoryStore({
+      directory,
+      storage: 'sqlite',
+      dataDirectory,
+    });
+    expect((await sqlite.load()).messages.Save).toBeDefined();
+    expect(
+      JSON.parse(
+        await fs.readFile(path.join(directory, 'storage.json'), 'utf8'),
+      ),
+    ).toEqual({ version: 1, storage: 'sqlite' });
+    sqlite.close();
+
+    const restoredJson = await openTranslationMemoryStore({
+      directory,
+      storage: 'json',
+      dataDirectory,
+    });
+    expect(
+      (await restoredJson.load()).messages.Save?.translations['en-US'],
+    ).toBe('Save');
+    await expect(
+      fs.access(path.join(directory, 'storage.json')),
+    ).rejects.toMatchObject({ code: 'ENOENT' });
+    restoredJson.close();
   });
 
   it('shares one unique SQLite candidate and refuses ambiguous reuse', async () => {

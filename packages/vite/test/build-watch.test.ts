@@ -364,7 +364,6 @@ async function protocolModifiedTimes(
   root: string,
 ): Promise<Record<string, bigint>> {
   const files = [
-    path.join(root, 'i18n/storage.json'),
     ...(await translationShardFiles(root)),
     extractedTestPath(root, 'src/main.ts'),
     path.join(root, 'i18n/locales/en-US.json'),
