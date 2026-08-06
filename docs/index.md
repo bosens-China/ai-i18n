@@ -12,6 +12,10 @@
 
 代码、类型、测试和可执行工作流始终优先于说明性文档。
 
+## 未来计划
+
+- [稳定版移除单文件 Translation Memory 兼容](./plans/remove-legacy-translation-memory/PRD.md)：首个非 prerelease 稳定版本发布前完成。
+
 ## 进行中需求
 
 当前没有进行中的需求。

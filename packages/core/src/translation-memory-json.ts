@@ -45,6 +45,8 @@ export class JsonTranslationMemoryStore implements TranslationMemoryStore {
     return withFileLock(this.translationsDirectory, async () => {
       await this.recover();
       const current = await this.readCurrent();
+      // TODO(stable-release): 首个非 prerelease 稳定版本发布前，删除单文件
+      // translations.json 的读取、自动迁移、旧路径、测试与文档。
       if (await exists(legacyTranslationMemoryPath(this.directory))) {
         await this.commit(current);
       }

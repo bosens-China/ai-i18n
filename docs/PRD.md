@@ -74,7 +74,7 @@
 ### Translation Memory 存储
 
 - JSON 是默认驱动。消息按 message ID 的 SHA-256 前缀稳定分片，manifest 保存 revision 与有效分片；单次事务先写完整 journal，再提交分片与 manifest，进程中断后由 journal 恢复。
-- 当前单文件 translations.json 自动迁移为分片 JSON，迁移后删除旧权威来源；除此之外不保留未发布旧协议的长期兼容层。
+- Alpha 阶段将单文件 translations.json 自动迁移为分片 JSON，迁移后删除旧权威来源；首个非 prerelease 稳定版本不再保留该兼容层，也不保留其他未发布旧协议的长期兼容层。
 - SQLite 使用平台用户数据目录中的单个全局数据库，并允许 AI_I18N_DATA_DIR 覆盖；项目目录只记录驱动，不记录数据库路径、源码绝对路径、Provider 配置或密钥。
 - SQLite 项目身份由 realpath 后的 i18n 目录 hash 派生。候选身份包含 sourceLang、targetLang、source 与 comment；项目已有绑定优先，无绑定时只自动复用唯一候选，多个不同候选保持缺失。
 - SQLite 是本机可丢弃缓存，不提供跨机器或团队同步。数据库丢失后由 Provider 重新生成，项目人工 overrides 不受影响。
