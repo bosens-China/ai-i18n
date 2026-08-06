@@ -42,6 +42,7 @@
 - 三种模式都自动导入 t()、语言控制 API 与 subscribe()；Vue 额外自动导入 useI18n()、tRef()、i18nComputed() 与 tComputed()，React 额外自动导入 useI18n()。
 - 自动导入按未绑定的值引用注入，覆盖直接调用、函数传递和对象简写；局部 binding、属性名、类型位置与赋值目标不能触发注入。
 - Vue template 类型桥与主 dts 相邻生成；同名文件没有 ai-i18n 生成标记时拒绝覆盖。修改 dts 路径或关闭生成后无法可靠推断旧自定义路径，旧声明由用户显式删除，不扫描目录猜测。
+- 主 dts 与 Vue template 类型桥使用统一的生成文件头，标记所有权并抑制宿主 TypeScript、ESLint、Prettier 与 Biome 对生成内容的检查或改写；声明正确性由生成器测试与框架类型检查保证。
 - Vue 模式的顶层 t() 会读取 adapter revision，在 template、render 或 computed 的响应式执行路径中建立依赖；Options API 与 Composition API 均可直接使用。React 组件仍必须通过 useI18n() 订阅。普通模块中的 t() 不会自行创建响应式执行路径，应在实际需要文案时调用。
 - getLang() 与 getLangLoadState() 返回调用时快照。ESLint 提示模块顶层缓存、Vue setup / Options data 保存和可确定的组件渲染读取；action、事件与普通函数可以按需读取，跨文件 store 数据流不做不可靠推断。
 
