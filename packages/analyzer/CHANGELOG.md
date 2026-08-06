@@ -1,5 +1,14 @@
 # @ai-i18n/analyzer
 
+## [1.0.0-alpha.13](https://github.com/bosens-China/ai-i18n/compare/analyzer-v1.0.0-alpha.12...analyzer-v1.0.0-alpha.13) (2026-08-06)
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @ai-i18n/core bumped to 1.0.0-alpha.8
+
 ## [1.0.0-alpha.12](https://github.com/bosens-China/ai-i18n/compare/analyzer-v1.0.0-alpha.11...analyzer-v1.0.0-alpha.12) (2026-08-03)
 
 

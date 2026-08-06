@@ -1,5 +1,20 @@
 # @ai-i18n/openai
 
+## [1.0.0-alpha.9](https://github.com/bosens-China/ai-i18n/compare/openai-v1.0.0-alpha.8...openai-v1.0.0-alpha.9) (2026-08-06)
+
+
+### Features
+
+* **openai:** 使用 Zod 统一校验输入输出 ([c17a402](https://github.com/bosens-China/ai-i18n/commit/c17a4026748b8b5adbd27be6fb8de7319c25f30c))
+* 支持可审查的 LLM 日志 ([395d778](https://github.com/bosens-China/ai-i18n/commit/395d778cc256acda757a42e2d954bb0c625a5acb))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @ai-i18n/core bumped to 1.0.0-alpha.8
+
 ## [1.0.0-alpha.8](https://github.com/bosens-China/ai-i18n/compare/openai-v1.0.0-alpha.7...openai-v1.0.0-alpha.8) (2026-08-03)
 
 

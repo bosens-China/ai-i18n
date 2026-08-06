@@ -1,5 +1,21 @@
 # @ai-i18n/core
 
+## [1.0.0-alpha.8](https://github.com/bosens-China/ai-i18n/compare/core-v1.0.0-alpha.7...core-v1.0.0-alpha.8) (2026-08-06)
+
+
+### Features
+
+* **core:** 支持分片 JSON 与全局 SQLite 翻译存储 ([10b4c08](https://github.com/bosens-China/ai-i18n/commit/10b4c08a564a4c92ef6258249abc202c1ff59e04))
+* **core:** 默认 JSON 省略存储标记 ([d09dad7](https://github.com/bosens-China/ai-i18n/commit/d09dad722b62304c9914ebb64a98163bb88b68eb))
+* **mcp:** 补充翻译上下文与模板校验详情 ([81b0a21](https://github.com/bosens-China/ai-i18n/commit/81b0a210249c9c940c5726319a45095802f96931))
+* **vite:** 收紧配置与 Provider 事件契约 ([b8c3661](https://github.com/bosens-China/ai-i18n/commit/b8c36610e50275759888af07c6eaafe0c7a91652))
+* 支持可审查的 LLM 日志 ([395d778](https://github.com/bosens-China/ai-i18n/commit/395d778cc256acda757a42e2d954bb0c625a5acb))
+
+
+### Bug Fixes
+
+* **core:** 增量提交 JSON 翻译分片 ([1f15177](https://github.com/bosens-China/ai-i18n/commit/1f151775874b1e9665995fad440f42dab2669aec))
+
 ## [1.0.0-alpha.7](https://github.com/bosens-China/ai-i18n/compare/core-v1.0.0-alpha.6...core-v1.0.0-alpha.7) (2026-08-03)
 
 
