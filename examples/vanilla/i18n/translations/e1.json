@@ -1,0 +1,12 @@
+{
+  "messages": {
+    "Vanilla 示例": {
+      "source": "Vanilla 示例",
+      "sourceLang": "zh-CN",
+      "translations": {
+        "en-US": "Vanilla demo"
+      }
+    }
+  },
+  "version": 1
+}

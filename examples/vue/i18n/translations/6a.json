@@ -1,0 +1,13 @@
+{
+  "messages": {
+    "共享 Runtime": {
+      "source": "共享 Runtime",
+      "sourceLang": "zh-CN",
+      "translations": {
+        "en-US": "Shared Runtime",
+        "ja-JP": "共有 Runtime"
+      }
+    }
+  },
+  "version": 1
+}

@@ -1,0 +1,21 @@
+{
+  "messages": {
+    "在同一页面对照 Composition API 与纯 Options API 的响应式能力。": {
+      "source": "在同一页面对照 Composition API 与纯 Options API 的响应式能力。",
+      "sourceLang": "zh-CN",
+      "translations": {
+        "en-US": "Compare the reactive capabilities of Composition API and pure Options API on one page.",
+        "ja-JP": "1つのページで Composition API と純粋な Options API のリアクティブ機能を比較します。"
+      }
+    },
+    "递归解析项目引用": {
+      "source": "递归解析项目引用",
+      "sourceLang": "zh-CN",
+      "translations": {
+        "en-US": "Resolve project references recursively",
+        "ja-JP": "プロジェクト参照を再帰的に解決"
+      }
+    }
+  },
+  "version": 1
+}

@@ -1,0 +1,13 @@
+{
+  "messages": {
+    "语言包加载失败，当前语言保持不变。": {
+      "source": "语言包加载失败，当前语言保持不变。",
+      "sourceLang": "zh-CN",
+      "translations": {
+        "en-US": "The language pack failed to load. The current language was kept.",
+        "ja-JP": "言語パックの読み込みに失敗しました。現在の言語を維持します。"
+      }
+    }
+  },
+  "version": 1
+}

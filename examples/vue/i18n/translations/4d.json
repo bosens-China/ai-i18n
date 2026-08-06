@@ -1,0 +1,13 @@
+{
+  "messages": {
+    "切换任一面板，另一侧同步更新。": {
+      "source": "切换任一面板，另一侧同步更新。",
+      "sourceLang": "zh-CN",
+      "translations": {
+        "en-US": "Switch in either panel and the other updates in sync.",
+        "ja-JP": "どちらかのパネルで切り替えると、もう一方も同期して更新されます。"
+      }
+    }
+  },
+  "version": 1
+}

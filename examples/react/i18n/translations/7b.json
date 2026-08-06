@@ -1,0 +1,12 @@
+{
+  "messages": {
+    "跨文件路径别名已通过静态分析": {
+      "source": "跨文件路径别名已通过静态分析",
+      "sourceLang": "zh-CN",
+      "translations": {
+        "en-US": null
+      }
+    }
+  },
+  "version": 1
+}

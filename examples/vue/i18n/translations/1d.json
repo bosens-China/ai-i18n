@@ -1,0 +1,13 @@
+{
+  "messages": {
+    "切换语言": {
+      "source": "切换语言",
+      "sourceLang": "zh-CN",
+      "translations": {
+        "en-US": "Switch language",
+        "ja-JP": "言語切り替え"
+      }
+    }
+  },
+  "version": 1
+}

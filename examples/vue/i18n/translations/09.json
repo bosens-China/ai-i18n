@@ -1,0 +1,13 @@
+{
+  "messages": {
+    "在 Options API 中切换语言": {
+      "source": "在 Options API 中切换语言",
+      "sourceLang": "zh-CN",
+      "translations": {
+        "en-US": "Switch language in Options API",
+        "ja-JP": "Options API で言語を切り替える"
+      }
+    }
+  },
+  "version": 1
+}

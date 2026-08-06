@@ -1,0 +1,19 @@
+{
+  "messages": {
+    "ai-i18n React 示例": {
+      "source": "ai-i18n React 示例",
+      "sourceLang": "zh-CN",
+      "translations": {
+        "en-US": "ai-i18n React demo"
+      }
+    },
+    "递归解析项目引用": {
+      "source": "递归解析项目引用",
+      "sourceLang": "zh-CN",
+      "translations": {
+        "en-US": null
+      }
+    }
+  },
+  "version": 1
+}

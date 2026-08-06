@@ -1,0 +1,13 @@
+{
+  "messages": {
+    "Options 原生监听": {
+      "source": "Options 原生监听",
+      "sourceLang": "zh-CN",
+      "translations": {
+        "en-US": "Native Options watcher",
+        "ja-JP": "Options 標準の監視"
+      }
+    }
+  },
+  "version": 1
+}

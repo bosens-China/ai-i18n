@@ -1,0 +1,12 @@
+{
+  "messages": {
+    "交互式语言切换演示": {
+      "source": "交互式语言切换演示",
+      "sourceLang": "zh-CN",
+      "translations": {
+        "en-US": "Interactive language switch demo"
+      }
+    }
+  },
+  "version": 1
+}

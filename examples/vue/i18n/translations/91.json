@@ -1,0 +1,13 @@
+{
+  "messages": {
+    "tRef 响应式文案": {
+      "source": "tRef 响应式文案",
+      "sourceLang": "zh-CN",
+      "translations": {
+        "en-US": "Reactive copy with tRef",
+        "ja-JP": "tRef のリアクティブテキスト"
+      }
+    }
+  },
+  "version": 1
+}

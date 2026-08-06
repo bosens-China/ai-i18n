@@ -1,0 +1,13 @@
+{
+  "messages": {
+    "完整兼容": {
+      "source": "完整兼容",
+      "sourceLang": "zh-CN",
+      "translations": {
+        "en-US": "Full support",
+        "ja-JP": "完全対応"
+      }
+    }
+  },
+  "version": 1
+}

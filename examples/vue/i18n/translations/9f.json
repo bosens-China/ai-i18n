@@ -1,0 +1,21 @@
+{
+  "messages": {
+    "尚未发生语言变化": {
+      "source": "尚未发生语言变化",
+      "sourceLang": "zh-CN",
+      "translations": {
+        "en-US": "No language change yet",
+        "ja-JP": "まだ言語は変更されていません"
+      }
+    },
+    "语言": {
+      "source": "语言",
+      "sourceLang": "zh-CN",
+      "translations": {
+        "en-US": "Language",
+        "ja-JP": "言語"
+      }
+    }
+  },
+  "version": 1
+}

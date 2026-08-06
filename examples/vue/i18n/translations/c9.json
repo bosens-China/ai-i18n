@@ -1,0 +1,13 @@
+{
+  "messages": {
+    "Composition API 与 Vite extractor 共享 Runtime": {
+      "source": "Composition API 与 Vite extractor 共享 Runtime",
+      "sourceLang": "zh-CN",
+      "translations": {
+        "en-US": "Composition API and the Vite extractor share one Runtime",
+        "ja-JP": null
+      }
+    }
+  },
+  "version": 1
+}

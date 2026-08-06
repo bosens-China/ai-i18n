@@ -1,0 +1,13 @@
+{
+  "messages": {
+    "当前语言": {
+      "source": "当前语言",
+      "sourceLang": "zh-CN",
+      "translations": {
+        "en-US": "Current language",
+        "ja-JP": "現在の言語"
+      }
+    }
+  },
+  "version": 1
+}

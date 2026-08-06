@@ -1,0 +1,12 @@
+{
+  "messages": {
+    "让产品自然地说每一种语言": {
+      "source": "让产品自然地说每一种语言",
+      "sourceLang": "zh-CN",
+      "translations": {
+        "en-US": "Help your product speak every language naturally"
+      }
+    }
+  },
+  "version": 1
+}

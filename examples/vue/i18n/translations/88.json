@@ -1,0 +1,13 @@
+{
+  "messages": {
+    "无需 setup，也无需 .value。": {
+      "source": "无需 setup，也无需 .value。",
+      "sourceLang": "zh-CN",
+      "translations": {
+        "en-US": "No setup or .value required.",
+        "ja-JP": "setup も .value も不要です。"
+      }
+    }
+  },
+  "version": 1
+}
