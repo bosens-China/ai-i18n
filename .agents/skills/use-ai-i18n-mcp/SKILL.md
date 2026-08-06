@@ -8,8 +8,16 @@ description: Use the eight local ai-i18n MCP tools to inspect missing or orphane
 Use the locate → list → update → verify workflow. Do not scan for i18n directories or edit generated
 files manually while the MCP tools are available.
 
-`@ai-i18n/mcp` is a local stdio package. During prerelease, register it with
-`npx -y @ai-i18n/mcp@alpha`; registration does not take a project path.
+## Read the right source
+
+For user-facing registration, product behavior, generated-file guidance, or integration
+troubleshooting, read `https://bosens-china.github.io/ai-i18n/llms.txt` and then the one relevant page.
+Do not load `llms-full.txt` by default or duplicate that guidance in this Skill.
+
+For MCP calls, read [Tool contracts](references/tool-contracts.md) before the first call. It is the
+Agent-only authority for message identity, inputs, pagination, batch behavior, write boundaries, and
+authorization. Read [Error recovery](references/recovery.md) only after a returned `next_action` is
+insufficient or when a tool or protocol file is unavailable.
 
 ## Locate the target app
 
@@ -32,33 +40,9 @@ Vite build. Treat source-only packages as `source_files` within the consuming ap
 targets. Never point two Vite builds at one i18n directory; call the tools once per selected app.
 Use tool-returned `source_file` values; never decode or guess a source path from a physical filename.
 
-The directory must contain `overrides.json`, `extracted/`, and the Translation Memory selected by
-`storage.json`. JSON uses deterministic shards under `translations/`; SQLite uses one user-level
-database outside the repository. Never locate, open, or edit that database directly—the tools resolve
-the current project binding from the i18n directory. Run the target app's full Vite Build before the
-first MCP use when `extracted/` is missing or empty. Build again
-after switching branches or changing source or extraction configuration when the local result may be
-stale. Prefer Build over Dev because Dev covers only browser-requested modules.
-
-Ignore Vite `provider.cache` when operating MCP tools. It controls only one Vite process's Provider
-requests and never changes Agent list, write, clear, or orphan behavior.
-
-Messages that exist only in `.cjs`, `.cts`, or CommonJS source do not enter `extracted/`. Do not
-diagnose their absence as stale MCP data or attempt an MCP write for them; report the unsupported
-source and require migration to supported browser ESM source before rebuilding.
-
-Keep the resolved i18n directory's `extracted/` and `locales/` subdirectories in `.gitignore`. For
-complete generated-file and Git guidance, read
-[Generated files and Git](https://bosens-china.github.io/ai-i18n/guide/basic/directory.md).
-
-## Load the tool contract
-
-Read [Tool contracts](references/tool-contracts.md) before the first MCP call. It defines message
-identity, pagination, the eight tool boundaries, batch behavior, orphan cleanup authorization, and
-human review scopes.
-
-Read [Error recovery](references/recovery.md) only when a tool is unavailable, protocol files are
-missing or stale, or an MCP call returns an error.
+Run the selected app's full Vite Build before first use when extraction is missing or empty, and after
+source, branch, or extraction configuration changes that make it stale. Do not execute Vite config
+merely to locate the directory. Never open or edit Translation Memory storage directly.
 
 ## Execute the workflow
 
@@ -80,8 +64,10 @@ conflicting non-empty values.
 
 List items omit `source_files` by default. Keep that compact response for translation work; request
 `include_source_files: true` only when the user needs per-file impact or when an exact file filter must
-be prepared. When a tool fails, follow its returned `next_action` before consulting the recovery
-reference.
+be prepared. When `message.comment` and project terminology do not disambiguate short copy, request
+`include_occurrences: true`, then read the nearby source lines for the returned files from the target
+workspace. Do not request occurrences for every batch by default or treat paths and locations as write
+identity. When a tool fails, follow its returned `next_action` before consulting the recovery reference.
 
 ## Report
 

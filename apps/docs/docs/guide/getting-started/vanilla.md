@@ -74,3 +74,9 @@ pnpm build
 
 Dev 只提取浏览器实际请求过的模块。首次接入后应执行一次完整 Build，确认入口可达源码均已
 提取。生成文件及 Git 提交规则见[生成文件与 Git](/guide/basic/directory)。
+
+## 下一步
+
+- [保存语言偏好](/api/vite/interfaces/ai-i18n-persist-options)：按需使用 localStorage 记住用户选择。
+- [测试（Vitest）](/guide/quality/testing)：使用专用内存 Runtime 测试业务模块。
+- [通用文案写法](/guide/basic/static-analysis/common)：处理动态值、文案集合和业务枚举。

@@ -144,5 +144,7 @@ Pickers 还需同步日期适配器的 locale。
 ## 下一步
 
 - [React 常见问题](/guide/faq/react)：排查 JSX 提取、组件订阅与 React Compiler。
+- [保存语言偏好](/api/vite/interfaces/ai-i18n-persist-options)：按需使用 localStorage 记住用户选择。
+- [测试（Vitest）](/guide/quality/testing)：使用 React 插件与专用内存 Runtime 测试组件。
 - [自动导入](/guide/basic/auto-import)：显式开启后省略 `useI18n` import。
 - [React 在线演示](/demo/react)：查看可交互的完整示例。

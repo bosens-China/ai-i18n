@@ -5,8 +5,12 @@
 ## 文档边界
 
 - 用户可见的 API、配置和接入流程以 apps/docs 为准。
+- Rspress 发布 `llms.txt` 精简索引与 `llms-full.txt` 完整正文。Agent 默认先读取
+  `llms.txt`，再按任务读取具体用户页面；不默认加载完整正文。
 - 包级安装、运行与开发者配置以各 packages/*/README.md 为准。
 - MCP 的公开工具契约以 packages/mcp/README.md 与源码 schema 为准。
+- 对外 Skill 不复制用户教程，只保留 Agent 的目标选择、默认决策、工具契约、授权与写入边界、
+  验证和错误恢复；具体产品用法通过 `llms.txt` 路由到 apps/docs。
 - 本文只记录跨模块决策。参数表、测试数量、阶段任务和实现过程不在本文重复。
 - 新决策替换旧决策时，直接修改对应主题；不追加 Phase 文档让读者自行判断优先级。
 
@@ -32,6 +36,7 @@
 - 消息 ID 由 source 与可选的静态 comment 构成，不包含文件路径。相同语义可复用 Translation Memory；需要区分语义时必须传入 comment。
 - 缺失译文保持 null，Runtime 回退 source 文案。Provider 与普通补译只补缺失字段，不能静默覆盖已提交译文。
 - defineI18nMessages() 是编译期宏，用于成员级静态集合访问。整棵静态文案树直接传给 t()、Vue tRef() 或 Vue tComputed() 时不需要宏。
+- 数据库、接口与业务判断保存稳定语义 code；有限业务枚举通过静态文案映射在展示层翻译，不把译文作为持久值或业务身份。
 
 ## Runtime 与框架
 

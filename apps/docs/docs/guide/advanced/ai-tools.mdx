@@ -26,6 +26,21 @@ npx skills add bosens-China/ai-i18n --skill use-ai-i18n-mcp integrate-ai-i18n -y
 
 Skills 会引导 Agent 选择正确的 Vite 应用，并区分自动译文与人工审校结果。
 
+## 给 Agent 的文档入口
+
+Rspress Build 会在文档站根目录生成
+[`llms.txt`](https://bosens-china.github.io/ai-i18n/llms.txt) 和
+[`llms-full.txt`](https://bosens-china.github.io/ai-i18n/llms-full.txt)：
+
+- `llms.txt` 是带页面说明的精简索引。建议 Agent 先读它，再打开与当前框架或功能直接相关的
+  Markdown 页面。
+- `llms-full.txt` 包含完整文档正文，适合需要一次性导入整套资料的工具；日常编码任务不必默认
+  加载，以免占用过多上下文。
+
+Skills 只维护 Agent 的目标选择、默认决策、写入与授权边界、验证和错误恢复。安装、配置、API、
+框架示例与排障方法以本文档站为准，因此 Agent 遇到具体产品用法时应从 `llms.txt` 定位页面，
+而不是依赖 Skill 中复制的教程。
+
 ## 注册 MCP 服务器
 
 ai-i18n 支持 Codex、Cursor、Claude Code 和 Antigravity。请在所使用的 AI 编码工具中注册

@@ -115,6 +115,29 @@ t(messages.states[index]);
 类型来自 Vite 生成的主声明。编辑器找不到该名字时，按
 [TypeScript 与生成声明](/guide/quality/typescript)排查。
 
+### 动态业务数据只翻译展示标签
+
+数据库、接口参数和业务判断应保存稳定 code，不要保存当前语言的译文。为有限枚举建立静态
+文案映射，在展示时按 code 选择并翻译：
+
+```ts
+type SportType = 'running' | 'cycling' | 'swimming';
+
+const sportLabels = defineI18nMessages<Record<SportType, string>>({
+  running: '跑步',
+  cycling: '骑行',
+  swimming: '游泳',
+});
+
+export function getSportLabel(sportType: SportType) {
+  return t(sportLabels[sportType]);
+}
+```
+
+例如记录中始终保存 `running`，界面才根据当前语言显示“跑步”或“Running”。这样切换语言不会
+改变持久数据，排序、筛选和接口契约也不依赖展示文案。运行时可能出现未知 code 时，先由业务代码
+决定回退或报错，不要把不受约束的动态字符串直接传给 `t()`。
+
 翻译注释同样需要静态求值：
 
 ```ts
