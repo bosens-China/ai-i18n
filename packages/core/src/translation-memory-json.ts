@@ -73,7 +73,7 @@ export class JsonTranslationMemoryStore implements TranslationMemoryStore {
         chown: false,
         mode: false,
       });
-      await this.commit(draft);
+      await this.commit(draft, current);
       return draft;
     });
   }
@@ -146,26 +146,36 @@ export class JsonTranslationMemoryStore implements TranslationMemoryStore {
       await this.commit(parseTranslationMemoryFile(value));
   }
 
-  private async commit(memory: TranslationMemoryFile): Promise<void> {
+  private async commit(
+    memory: TranslationMemoryFile,
+    previousMemory?: TranslationMemoryFile,
+  ): Promise<void> {
     await fs.mkdir(this.translationsDirectory, { recursive: true });
-    const grouped = new Map<string, Record<string, CacheMessage>>();
-    for (const [messageId, message] of Object.entries(memory.messages)) {
-      const shard = shardName(messageId);
-      const messages = grouped.get(shard) ?? {};
-      messages[messageId] = message;
-      grouped.set(shard, messages);
-    }
+    const previousManifest = await this.readManifest();
+    const grouped = groupMessages(memory);
+    // 旧单文件迁移和 journal 恢复没有可信的已提交分片，仍需全量写入。
+    const previousGrouped =
+      previousManifest && previousMemory
+        ? groupMessages(previousMemory)
+        : undefined;
     const shards = [...grouped.keys()].sort();
     for (const shard of shards) {
       const value: ShardFile = { version: 1, messages: grouped.get(shard)! };
-      await writeFile(this.shardPath(shard), stableJson(value), {
+      const serialized = stableJson(value);
+      const previousMessages = previousGrouped?.get(shard);
+      if (
+        previousMessages &&
+        stableJson({ version: 1, messages: previousMessages }) === serialized
+      ) {
+        continue;
+      }
+      await writeFile(this.shardPath(shard), serialized, {
         encoding: 'utf8',
         chown: false,
         mode: false,
       });
     }
-    const previous = await this.readManifest();
-    const stale = (previous?.shards ?? []).filter(
+    const stale = (previousManifest?.shards ?? []).filter(
       (shard) => !grouped.has(shard),
     );
     for (const shard of stale)
@@ -226,6 +236,19 @@ export class JsonTranslationMemoryStore implements TranslationMemoryStore {
 
 function shardName(messageId: string): string {
   return createHash('sha256').update(messageId).digest('hex').slice(0, 2);
+}
+
+function groupMessages(
+  memory: TranslationMemoryFile,
+): Map<string, Record<string, CacheMessage>> {
+  const grouped = new Map<string, Record<string, CacheMessage>>();
+  for (const [messageId, message] of Object.entries(memory.messages)) {
+    const shard = shardName(messageId);
+    const messages = grouped.get(shard) ?? {};
+    messages[messageId] = message;
+    grouped.set(shard, messages);
+  }
+  return grouped;
 }
 
 function parseShard(value: unknown, shard: string): ShardFile {

@@ -1,6 +1,7 @@
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
+import { createHash } from 'node:crypto';
 import { afterEach, describe, expect, it } from 'vitest';
 import {
   openTranslationMemoryStore,
@@ -116,6 +117,31 @@ describe('Translation Memory stores', () => {
     second.close();
   });
 
+  it('rewrites only JSON shards changed by a transaction', async () => {
+    const root = await temporaryDirectory();
+    const directory = path.join(root, 'i18n');
+    const store = await openTranslationMemoryStore({ directory });
+    await store.transact((memory) => {
+      memory.messages.Save = message('保存', 'Save');
+      memory.messages.Cancel = message('取消', 'Cancel');
+    });
+
+    const cancelShard = translationShardPath(directory, 'Cancel');
+    const untouched = `\n${await fs.readFile(cancelShard, 'utf8')}`;
+    await fs.writeFile(cancelShard, untouched);
+
+    await store.transact((memory) => {
+      memory.messages.Save!.translations['en-US'] = 'Store';
+    });
+
+    expect(await fs.readFile(cancelShard, 'utf8')).toBe(untouched);
+    const memory = await store.load();
+    expect(memory.revision).toBe(2);
+    expect(memory.messages.Save?.translations['en-US']).toBe('Store');
+    expect(memory.messages.Cancel?.translations['en-US']).toBe('Cancel');
+    store.close();
+  });
+
   it('uses no marker for JSON and keeps one only while SQLite is selected', async () => {
     const root = await temporaryDirectory();
     const directory = path.join(root, 'i18n');
@@ -222,4 +248,12 @@ async function temporaryDirectory(): Promise<string> {
   );
   tempDirectories.push(directory);
   return directory;
+}
+
+function translationShardPath(directory: string, messageId: string): string {
+  const shard = createHash('sha256')
+    .update(messageId)
+    .digest('hex')
+    .slice(0, 2);
+  return path.join(directory, 'translations', `${shard}.json`);
 }
