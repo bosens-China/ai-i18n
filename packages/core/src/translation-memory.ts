@@ -115,7 +115,7 @@ async function transactDocument<T>(
   });
 }
 
-async function withFileLock<T>(
+export async function withFileLock<T>(
   file: string,
   task: () => Promise<T>,
 ): Promise<T> {
@@ -130,7 +130,7 @@ async function withFileLock<T>(
   const handle = await fs.open(lockFile, 'a+');
   let locked = false;
   try {
-    // 锁稳定的旁路文件；原子替换 translations.json 时锁身份不会变化。
+    // 锁稳定的旁路文件；原子替换协议文件时锁身份不会变化。
     await waitForLock(handle.fd);
     locked = true;
     return await task();
@@ -143,7 +143,7 @@ async function withFileLock<T>(
   }
 }
 
-async function readJson(file: string): Promise<unknown | undefined> {
+export async function readJson(file: string): Promise<unknown | undefined> {
   try {
     return JSON.parse(await fs.readFile(file, 'utf8')) as unknown;
   } catch (error) {
@@ -155,6 +155,17 @@ async function readJson(file: string): Promise<unknown | undefined> {
 export function stableJson(value: unknown): string {
   return `${JSON.stringify(sortValue(value), null, 2)}\n`;
 }
+
+export {
+  openTranslationMemoryStore,
+  readTranslationMemoryStorage,
+} from './translation-memory-store.js';
+export type {
+  OpenTranslationMemoryStoreOptions,
+  TranslationMemoryStorage,
+  TranslationMemoryStorageMarker,
+  TranslationMemoryStore,
+} from './translation-memory-store-types.js';
 
 function sortValue(value: unknown): unknown {
   if (Array.isArray(value)) return value.map(sortValue);
