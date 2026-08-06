@@ -41,7 +41,8 @@
     "@ai-i18n/core": "workspace:*",
     "@langchain/core": "^1.2.4",
     "@langchain/openai": "^1.5.5",
-    "langsmith": "^0.8.9"
+    "langsmith": "^0.8.9",
+    "zod": "^4.0.0"
   },
   "publishConfig": {
     "access": "public"

@@ -139,6 +139,8 @@ describe('openAI', () => {
       { translations: [{}] },
       { translations: [{ 'en-US': 'Save', 'ja-JP': '保存' }] },
       { translations: [{ 'en-US': 1 }] },
+      { translations: [{ 'en-US': 'Save' }], explanation: 'extra' },
+      { translations: 'Save' },
     ];
 
     for (const payload of invalidPayloads) {
@@ -207,6 +209,32 @@ describe('openAI', () => {
     expect(requested).toBe(false);
   });
 
+  it('rejects malformed locales and messages before requesting the service', async () => {
+    let requestCount = 0;
+    const baseURL = await startServer(async () => {
+      requestCount += 1;
+      return completion({ translations: [{ 'en-US': 'Save' }] });
+    });
+    const translator = openAI(validOptions(baseURL));
+
+    await expect(
+      translator({ locales: [' '], messages: [{ source: '保存' }] }),
+    ).rejects.toThrow('[ai-i18n/openai] invalid target locales');
+    await expect(
+      translator({
+        locales: ['en-US'],
+        messages: [{ source: '保存', context: 'button' }],
+      } as never),
+    ).rejects.toThrow('[ai-i18n/openai] invalid translation messages');
+    await expect(
+      translator({
+        locales: ['en-US'],
+        messages: [{ source: '保存', comment: 1 }],
+      } as never),
+    ).rejects.toThrow('[ai-i18n/openai] invalid translation messages');
+    expect(requestCount).toBe(0);
+  });
+
   it('localizes invalid target locale diagnostics', async () => {
     const translator = openAI(validOptions());
     const batch = {
@@ -261,12 +289,29 @@ describe('openAI', () => {
     expect(() => openAI({ ...validOptions(), maxRetries: -1 })).toThrow(
       'maxRetries must be a non-negative integer',
     );
+    expect(() => openAI({ ...validOptions(), temperature: Infinity })).toThrow(
+      'temperature must be a number',
+    );
+    expect(() => openAI({ ...validOptions(), timeoutMs: 0 })).toThrow(
+      'timeoutMs must be a positive integer',
+    );
+    expect(() => openAI({ ...validOptions(), maxTokens: 1.5 })).toThrow(
+      'maxTokens must be a positive integer',
+    );
+    expect(() => openAI({ ...validOptions(), headers: 1 as never })).toThrow(
+      'headers must be valid HeadersInit',
+    );
     expect(() =>
       openAI({
         ...validOptions(),
         langSmith: { apiKey: ' ' },
       }),
     ).toThrow('langSmith.apiKey is required');
+
+    vi.stubEnv('AI_I18N_DIAGNOSTIC_LOCALE', 'zh-CN');
+    expect(() => openAI({ ...validOptions(), baseURL: ' ' })).toThrow(
+      '[ai-i18n/openai] 配置无效：baseURL为必填项',
+    );
   });
 });
 

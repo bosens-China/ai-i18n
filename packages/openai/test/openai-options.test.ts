@@ -92,4 +92,27 @@ describe('openAI options', () => {
     });
     expect(captured.model?.callbacks).toHaveLength(1);
   });
+
+  it('normalizes optional provider strings through the configuration schema', () => {
+    openAI({
+      baseURL: ' https://example.com/v1/ ',
+      model: ' model ',
+      apiKey: ' key ',
+      systemPrompt: ' prompt ',
+      langSmith: {
+        apiKey: ' langsmith-key ',
+        project: ' ',
+        endpoint: ' ',
+        workspaceId: ' ',
+      },
+    });
+
+    expect(captured.model).toMatchObject({
+      model: 'model',
+      apiKey: 'key',
+      configuration: { baseURL: 'https://example.com/v1' },
+    });
+    expect(captured.client).toEqual({ apiKey: 'langsmith-key' });
+    expect(captured.tracer).toEqual({ client: captured.clientInstance });
+  });
 });
