@@ -70,6 +70,7 @@ test('lists missing messages by default and file summaries on request', async ()
     missing_locales: ['en-US'],
   });
   expect(missing.items[0]).not.toHaveProperty('source_files');
+  expect(missing.items[0]).not.toHaveProperty('occurrences');
 
   const remaining = await service.listTranslations({
     i18n_directory: directory,
@@ -153,6 +154,32 @@ test('lists missing messages by default and file summaries on request', async ()
       source_files: ['src/home.ts', 'src/shared.ts'],
     }),
   ]);
+
+  const withOccurrences = await service.listTranslations({
+    i18n_directory: directory,
+    include_occurrences: true,
+    limit: 100,
+  });
+  expect(
+    withOccurrences.items.filter(
+      (item) => 'message' in item && item.message.source === '保存',
+    ),
+  ).toEqual([
+    expect.objectContaining({
+      message: { source: '保存' },
+      occurrences: [
+        {
+          source_file: 'src/home.ts',
+          locations: [{ line: 1, column: 0 }],
+        },
+        {
+          source_file: 'src/shared.ts',
+          locations: [{ line: 1, column: 0 }],
+        },
+      ],
+    }),
+  ]);
+  expect(withOccurrences.items[0]).not.toHaveProperty('source_files');
 });
 
 test('lists default, message-scoped, and orphaned human overrides', async () => {

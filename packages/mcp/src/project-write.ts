@@ -1,5 +1,9 @@
 import path from 'node:path';
-import { hasSameTemplateTokens, type ExtractedMessage } from '@ai-i18n/core';
+import {
+  hasSameTemplateTokens,
+  templateTokens,
+  type ExtractedMessage,
+} from '@ai-i18n/core';
 import { transactTranslationOverrides } from '@ai-i18n/core/translation-memory';
 import { fail } from './errors.js';
 import {
@@ -39,7 +43,14 @@ export async function setTranslations(
   );
   for (const target of targets) {
     if (!hasSameTemplateTokens(target.message.source, target.input.value)) {
-      fail('TEMPLATE_TOKEN_MISMATCH', targetDetails(target.input));
+      fail(
+        'TEMPLATE_TOKEN_MISMATCH',
+        templateTokenMismatchDetails(
+          target.message.source,
+          target.input.value,
+          targetDetails(target.input),
+        ),
+      );
     }
   }
   let addedCount = 0;
@@ -151,7 +162,14 @@ export async function setOverrides(
       fail('MESSAGE_SCOPE_REQUIRES_COMMENT', targetDetails(target.input));
     }
     if (!hasSameTemplateTokens(target.message.source, target.input.value)) {
-      fail('TEMPLATE_TOKEN_MISMATCH', targetDetails(target.input));
+      fail(
+        'TEMPLATE_TOKEN_MISMATCH',
+        templateTokenMismatchDetails(
+          target.message.source,
+          target.input.value,
+          targetDetails(target.input),
+        ),
+      );
     }
   }
   let addedCount = 0;
@@ -185,6 +203,32 @@ export async function setOverrides(
     unchangedCount,
     deduplicatedCount,
   );
+}
+
+function templateTokenMismatchDetails(
+  source: string,
+  value: string,
+  details: Record<string, unknown>,
+): Record<string, unknown> {
+  const expectedTokens = templateTokens(source);
+  const receivedTokens = templateTokens(value);
+  return {
+    ...details,
+    expected_tokens: expectedTokens,
+    received_tokens: receivedTokens,
+    missing_tokens: subtractTokens(expectedTokens, receivedTokens),
+    unexpected_tokens: subtractTokens(receivedTokens, expectedTokens),
+  };
+}
+
+function subtractTokens(tokens: string[], matchedTokens: string[]): string[] {
+  const remaining = [...matchedTokens];
+  return tokens.filter((token) => {
+    const index = remaining.indexOf(token);
+    if (index === -1) return true;
+    remaining.splice(index, 1);
+    return false;
+  });
 }
 
 export async function deleteOverrides(

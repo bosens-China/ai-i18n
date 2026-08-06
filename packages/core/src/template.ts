@@ -31,15 +31,18 @@ export function formatTemplateMessage(
   );
 }
 
-function templateTokenSignature(message: string): string {
-  return JSON.stringify(
-    [...message.matchAll(TEMPLATE_TOKEN_RE)].map((match) => match[0]).sort(),
-  );
+export function templateTokens(message: string): string[] {
+  return [...message.matchAll(TEMPLATE_TOKEN_RE)]
+    .map((match) => match[0])
+    .sort();
 }
 
 export function hasSameTemplateTokens(
   source: string,
   translation: string,
 ): boolean {
-  return templateTokenSignature(source) === templateTokenSignature(translation);
+  return (
+    JSON.stringify(templateTokens(source)) ===
+    JSON.stringify(templateTokens(translation))
+  );
 }

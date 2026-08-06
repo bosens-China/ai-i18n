@@ -15,6 +15,10 @@ discovers source files and returns writable missing entries.
 - List items omit `source_files` by default. Set `include_source_files: true` only when the task needs
   the complete shared occurrence range or per-file impact reporting. The `source_files` input can
   still filter list operations and is not part of write identity.
+- Set `include_occurrences: true` only when a message needs source context. Each returned occurrence
+  pairs one `source_file` with all extracted line and column locations for that shared message. Read
+  nearby source from the target workspace; MCP does not return source snippets. Occurrences are not
+  part of write identity.
 
 One message update affects every source file where that message occurs.
 
@@ -82,6 +86,9 @@ To remove a human value, list it first and pass the returned opaque `override_id
 - Human review tools modify only `overrides.json`.
 - MCP does not modify `extracted/` or `locales/`.
 - Preserve every template token before writing.
+- On `TEMPLATE_TOKEN_MISMATCH`, compare `expected_tokens` with `received_tokens`, insert every entry
+  from `missing_tokens`, remove every entry from `unexpected_tokens`, and retry the corrected whole
+  batch. Repeated tokens are significant.
 - After automatic translation changes, repeat `ai_i18n_list_translations` with the same scope.
 - After orphan deletion, repeat `ai_i18n_list_orphan_messages` after the same complete Build.
 - After human review changes, repeat `ai_i18n_list_overrides` with the same scope.

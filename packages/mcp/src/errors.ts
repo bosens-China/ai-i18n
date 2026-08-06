@@ -73,7 +73,7 @@ const ERROR_NEXT_ACTIONS: Record<string, string> = {
   TRANSLATION_CONFLICT:
     'List current translations again. Use overwrite_existing only after the user explicitly approves replacing them.',
   TEMPLATE_TOKEN_MISMATCH:
-    'Copy every template token from message.source into the translated value, then retry.',
+    'Add every entry from missing_tokens, remove every entry from unexpected_tokens, then retry with the corrected value.',
   MESSAGE_SCOPE_REQUIRES_COMMENT:
     'Use default scope, or list and select a message with a non-empty static comment before retrying.',
   INVALID_CURSOR:

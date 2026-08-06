@@ -336,26 +336,56 @@ test('validates message references, message scope, templates, and duplicates', a
   ).rejects.toMatchObject({ code: 'DUPLICATE_TARGET_CONFLICT' });
 
   await addFixtureMessage(directory, {
-    id: '当前 {{0}}',
-    source: '当前 {{0}}',
+    id: '当前 {{0}} / {{1}} / {{1}}',
+    source: '当前 {{0}} / {{1}} / {{1}}',
   });
   await expect(
     service.setTranslations({
       i18n_directory: directory,
       updates: [
         {
-          message: reference('当前 {{0}}'),
+          message: reference('当前 {{0}} / {{1}} / {{1}}'),
           locale: 'en-US',
-          value: 'Current value',
+          value: 'Current {{0}} / {{2}}',
         },
       ],
     }),
-  ).rejects.toMatchObject({ code: 'TEMPLATE_TOKEN_MISMATCH' });
+  ).rejects.toMatchObject({
+    code: 'TEMPLATE_TOKEN_MISMATCH',
+    details: {
+      expected_tokens: ['{{0}}', '{{1}}', '{{1}}'],
+      received_tokens: ['{{0}}', '{{2}}'],
+      missing_tokens: ['{{1}}', '{{1}}'],
+      unexpected_tokens: ['{{2}}'],
+    },
+  });
+  await expect(
+    service.setOverrides({
+      i18n_directory: directory,
+      updates: [
+        {
+          message: reference('当前 {{0}} / {{1}} / {{1}}'),
+          locale: 'en-US',
+          value: 'Current {{0}}',
+          scope: 'default',
+        },
+      ],
+    }),
+  ).rejects.toMatchObject({
+    code: 'TEMPLATE_TOKEN_MISMATCH',
+    details: {
+      missing_tokens: ['{{1}}', '{{1}}'],
+      unexpected_tokens: [],
+    },
+  });
   expect(
-    (await readFixtureMemory(directory)).messages['当前 {{0}}']?.translations[
-      'en-US'
-    ],
+    (await readFixtureMemory(directory)).messages['当前 {{0}} / {{1}} / {{1}}']
+      ?.translations['en-US'],
   ).toBeNull();
+  expect(await readFixtureOverrides(directory)).toEqual({
+    version: 1,
+    messages: {},
+  });
 });
 
 function reference(source: string, comment?: string) {

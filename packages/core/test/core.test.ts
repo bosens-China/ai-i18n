@@ -7,6 +7,7 @@ import {
   parseLocaleFile,
   parseTranslationOverridesFile,
   parseTranslationMemoryFile,
+  templateTokens,
 } from '../src/index';
 import { locales } from './runtime-test-fixtures';
 
@@ -169,6 +170,11 @@ describe('@ai-i18n/core schemas', () => {
   });
 
   it('distinguishes runtime and escaped literal template tokens', () => {
+    expect(templateTokens('当前 {{1}} / {{0}} / {{0}}')).toEqual([
+      '{{0}}',
+      '{{0}}',
+      '{{1}}',
+    ]);
     expect(
       hasSameTemplateTokens(
         '语法 {{=0}}，当前 {{0}}',

@@ -45,6 +45,7 @@ export {
   escapeTemplateLiteral,
   formatTemplateMessage,
   hasSameTemplateTokens,
+  templateTokens,
 } from './template.js';
 export type {
   TranslationBatch,

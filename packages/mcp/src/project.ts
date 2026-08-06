@@ -22,8 +22,14 @@ export interface ListTranslationsInput {
   view?: TranslationView;
   locales?: readonly string[];
   include_source_files?: boolean;
+  include_occurrences?: boolean;
   cursor?: string;
   limit: number;
+}
+
+export interface MessageOccurrence {
+  source_file: string;
+  locations: Array<{ line: number; column: number }>;
 }
 
 export interface TranslationFileItem {
@@ -36,6 +42,7 @@ export interface TranslationFileItem {
 
 export interface TranslationItem {
   source_files?: string[];
+  occurrences?: MessageOccurrence[];
   message: MessageReference;
   translations: Record<string, string | null>;
   missing_locales: string[];

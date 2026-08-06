@@ -37,7 +37,8 @@ server 使用 stdio 通信，标准输出专用于 MCP 协议。
 - `ai_i18n_list_translations`：默认直接列出当前 Translation Memory 中仍缺失的消息，也可返回
   文件汇总或全部消息。首次调用省略 `source_files` 以扫描整个应用。相同 `source + comment`
   无论出现在哪些文件都只返回一条。响应默认省略出现文件；需要检查完整共享范围时显式传
-  `include_source_files: true`。
+  `include_source_files: true`。短文案需要源码语境时，可传 `include_occurrences: true`，取得
+  每个 `source_file` 对应的完整 `locations`；MCP 不读取或返回源码片段。
 - `ai_i18n_set_translations`：默认只填充 `null`；显式传
   `overwrite_existing: true` 时允许覆盖非空译文。写入目标使用列表返回的
   `message: { source, comment? }`，调用方不接触内部 message ID。
@@ -92,7 +93,9 @@ server 使用 stdio 通信，标准输出专用于 MCP 协议。
   `deduplicated_count`；同一目标出现不同值时整批以 `DUPLICATE_TARGET_CONFLICT` 失败。
 - `affected_file_count` 统计目标消息在应用中实际出现的源文件数量。写入一次即可影响
   全部 occurrence；需要逐文件检查时，在列表调用中请求 `include_source_files: true`。
-- 模板占位符必须保持一致，空字符串是合法译文。
+- 模板占位符必须保持一致，空字符串是合法译文。不一致时整批以
+  `TEMPLATE_TOKEN_MISMATCH` 失败，并返回 `expected_tokens`、`received_tokens`、
+  `missing_tokens` 与 `unexpected_tokens`；重复 token 按出现次数比较。
 - Vite Dev 运行时会自动重建 locales；否则在下一次 `vite dev` 或 `vite build` 时同步。
 
 写入时若 `message` 不再存在，请重新调用 `ai_i18n_list_translations`，并原样复制返回的

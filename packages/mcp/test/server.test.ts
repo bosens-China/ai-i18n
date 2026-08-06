@@ -61,6 +61,7 @@ test('registers eight focused tools without legacy mode or output schemas', asyn
     );
     expect(listTranslations?.inputSchema).toMatchObject({
       properties: {
+        include_occurrences: { default: false, type: 'boolean' },
         include_source_files: { default: false, type: 'boolean' },
         limit: { default: 100, maximum: 500, minimum: 1, type: 'integer' },
       },
@@ -127,6 +128,7 @@ test('returns one compact JSON TextContent and no structuredContent', async () =
       count: 2,
     });
     expect(JSON.parse(text).items[0]).not.toHaveProperty('source_files');
+    expect(JSON.parse(text).items[0]).not.toHaveProperty('occurrences');
 
     const withSourceFiles = await client.callTool({
       name: 'ai_i18n_list_translations',
@@ -138,6 +140,17 @@ test('returns one compact JSON TextContent and no structuredContent', async () =
     expect(
       JSON.parse(toolText(withSourceFiles.content)).items[0],
     ).toHaveProperty('source_files');
+
+    const withOccurrences = await client.callTool({
+      name: 'ai_i18n_list_translations',
+      arguments: {
+        i18n_directory: path.join(root, 'apps/web/i18n'),
+        include_occurrences: true,
+      },
+    });
+    expect(
+      JSON.parse(toolText(withOccurrences.content)).items[0],
+    ).toHaveProperty('occurrences');
 
     await addFixtureOrphanMessage(path.join(root, 'apps/web/i18n'), {
       id: '旧文案',

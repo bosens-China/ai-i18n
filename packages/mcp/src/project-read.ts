@@ -38,6 +38,7 @@ export async function listTranslations(
     files,
     input.locales,
     input.include_source_files,
+    input.include_occurrences,
   );
   const view = input.view ?? 'missing';
   const items =
@@ -233,6 +234,7 @@ function collectMessages(
   files: readonly ExtractedFile[],
   locales?: readonly string[],
   includeSourceFiles = false,
+  includeOccurrences = false,
 ): TranslationItem[] {
   const selectedFiles = new Set(files.map((file) => file.source));
   const selectedMessageIds = new Set(
@@ -250,6 +252,14 @@ function collectMessages(
       const sourceFiles = [...new Set(matching.map((item) => item.file))];
       return {
         ...(includeSourceFiles ? { source_files: sourceFiles } : {}),
+        ...(includeOccurrences
+          ? {
+              occurrences: matching.map((item) => ({
+                source_file: item.file,
+                locations: item.locations,
+              })),
+            }
+          : {}),
         message: messageReference(selected),
         translations,
         missing_locales: Object.entries(translations)

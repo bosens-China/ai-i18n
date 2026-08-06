@@ -87,7 +87,7 @@ export function createAiI18nMcpServer(): McpServer {
     {
       title: 'List translations',
       description:
-        'Inspect extracted source files and raw Translation Memory values from the configured JSON or SQLite storage. Omit source_files on the first call. view defaults to missing and returns one writable message object per shared source and comment; summary returns per-file counts; all returns every message. source_files is omitted from items unless include_source_files is true. Follow next_cursor until has_more is false.',
+        'Inspect extracted source files and raw Translation Memory values from the configured JSON or SQLite storage. Omit source_files on the first call. view defaults to missing and returns one writable message object per shared source and comment; summary returns per-file counts; all returns every message. source_files and per-file locations are omitted unless explicitly requested. Follow next_cursor until has_more is false.',
       inputSchema: z
         .object({
           i18n_directory: DirectorySchema,
@@ -97,6 +97,12 @@ export function createAiI18nMcpServer(): McpServer {
           view: z.enum(['summary', 'missing', 'all']).default('missing'),
           locales: LocalesSchema,
           include_source_files: z.boolean().default(false),
+          include_occurrences: z
+            .boolean()
+            .default(false)
+            .describe(
+              'Include every source_file and its extracted line and column locations for each message.',
+            ),
           cursor: CursorSchema,
           limit: LimitSchema,
         })
