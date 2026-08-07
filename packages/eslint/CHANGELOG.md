@@ -1,5 +1,12 @@
 # @ai-i18n/eslint-plugin
 
+## [1.0.0-alpha.16](https://github.com/bosens-China/ai-i18n/compare/eslint-plugin-v1.0.0-alpha.15...eslint-plugin-v1.0.0-alpha.16) (2026-08-07)
+
+
+### Features
+
+* **eslint:** 检测翻译源文中的静态标记 ([2b913b1](https://github.com/bosens-China/ai-i18n/commit/2b913b1ecf4354a5eadcf7e01d8aa71dad5924cc))
+
 ## [1.0.0-alpha.15](https://github.com/bosens-China/ai-i18n/compare/eslint-plugin-v1.0.0-alpha.14...eslint-plugin-v1.0.0-alpha.15) (2026-08-06)
 
 
