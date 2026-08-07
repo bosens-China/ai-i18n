@@ -1,5 +1,12 @@
 # @ai-i18n/core
 
+## [1.0.0-alpha.10](https://github.com/bosens-China/ai-i18n/compare/core-v1.0.0-alpha.9...core-v1.0.0-alpha.10) (2026-08-07)
+
+
+### Features
+
+* 支持文件级人工译文覆盖 ([2b78e41](https://github.com/bosens-China/ai-i18n/commit/2b78e414c04df136d5d9a379459bb9678cec1dc8))
+
 ## [1.0.0-alpha.9](https://github.com/bosens-China/ai-i18n/compare/core-v1.0.0-alpha.8...core-v1.0.0-alpha.9) (2026-08-07)
 
 

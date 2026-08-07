@@ -1,5 +1,20 @@
 # @ai-i18n/vite
 
+## [1.0.0-alpha.17](https://github.com/bosens-China/ai-i18n/compare/vite-v1.0.0-alpha.16...vite-v1.0.0-alpha.17) (2026-08-07)
+
+
+### Features
+
+* 支持文件级人工译文覆盖 ([2b78e41](https://github.com/bosens-China/ai-i18n/commit/2b78e414c04df136d5d9a379459bb9678cec1dc8))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @ai-i18n/analyzer bumped to 1.0.0-alpha.15
+    * @ai-i18n/core bumped to 1.0.0-alpha.10
+
 ## [1.0.0-alpha.16](https://github.com/bosens-China/ai-i18n/compare/vite-v1.0.0-alpha.15...vite-v1.0.0-alpha.16) (2026-08-07)
 
 

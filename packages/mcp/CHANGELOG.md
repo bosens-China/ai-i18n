@@ -1,5 +1,19 @@
 # @ai-i18n/mcp
 
+## [1.0.0-alpha.15](https://github.com/bosens-China/ai-i18n/compare/mcp-v1.0.0-alpha.14...mcp-v1.0.0-alpha.15) (2026-08-07)
+
+
+### Features
+
+* 支持文件级人工译文覆盖 ([2b78e41](https://github.com/bosens-China/ai-i18n/commit/2b78e414c04df136d5d9a379459bb9678cec1dc8))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @ai-i18n/core bumped to 1.0.0-alpha.10
+
 ## [1.0.0-alpha.14](https://github.com/bosens-China/ai-i18n/compare/mcp-v1.0.0-alpha.13...mcp-v1.0.0-alpha.14) (2026-08-07)
 
 
