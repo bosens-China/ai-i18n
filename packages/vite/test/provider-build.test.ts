@@ -1,7 +1,7 @@
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import type { Translator } from '@ai-i18n/core';
+import { runtimeMessageId, type Translator } from '@ai-i18n/core';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { build } from 'vite';
 import { aiI18n } from '../src';
@@ -104,7 +104,10 @@ describe('@ai-i18n/vite provider build', () => {
     expect(
       await readJson(path.join(root, 'i18n/locales/en-US.json')),
     ).toMatchObject({
-      messages: { 首页: 'Home', 懒加载: 'Lazy' },
+      messages: {
+        [runtimeMessageId('src/main.ts', '首页')]: 'Home',
+        [runtimeMessageId('src/lazy.ts', '懒加载')]: 'Lazy',
+      },
     });
   });
 });

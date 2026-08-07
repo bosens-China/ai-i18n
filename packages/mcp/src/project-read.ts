@@ -98,58 +98,35 @@ export async function listOverrides(
     : undefined;
   const requestedLocales = input.locales ? new Set(input.locales) : undefined;
   const occurrences = collectOccurrences(project.extracted);
-  const filesBySource = new Map<string, Set<string>>();
-  for (const file of project.extracted) {
-    for (const message of file.messages) {
-      const files = filesBySource.get(message.source) ?? new Set<string>();
-      files.add(file.source);
-      filesBySource.set(message.source, files);
-    }
-  }
   const items: OverrideItemWithSourceFiles[] = [];
-  for (const [source, override] of Object.entries(project.overrides.messages)) {
-    const defaultFiles = [...(filesBySource.get(source) ?? [])].sort();
-    for (const [locale, value] of Object.entries(override.default ?? {})) {
+  for (const rule of project.overrides.rules) {
+    const messageId = createMessageId(rule.source, { comment: rule.comment });
+    const matching = (occurrences.get(messageId) ?? []).filter(
+      (item) =>
+        item.source === rule.source &&
+        (!rule.files || rule.files.includes(item.file)),
+    );
+    const sourceFiles = [...new Set(matching.map((item) => item.file))].sort();
+    for (const [locale, value] of Object.entries(rule.translations)) {
       appendOverride(items, {
-        target: { scope: 'default', source, locale },
+        target: {
+          source: rule.source,
+          ...(rule.comment ? { comment: rule.comment } : {}),
+          ...(rule.files ? { files: rule.files } : {}),
+          locale,
+        },
         item: {
-          scope: 'default',
-          message: { source },
+          scope: rule.files ? 'files' : 'global',
+          message: {
+            source: rule.source,
+            ...(rule.comment ? { comment: rule.comment } : {}),
+          },
+          ...(rule.files ? { files: rule.files } : {}),
           locale,
           value,
-          source_files: defaultFiles,
+          source_files: sourceFiles,
         },
       });
-    }
-    for (const [messageId, translations] of Object.entries(
-      override.byId ?? {},
-    )) {
-      const matching = (occurrences.get(messageId) ?? []).filter(
-        (item) => item.source === source,
-      );
-      const sourceFiles = [
-        ...new Set(matching.map((item) => item.file)),
-      ].sort();
-      for (const [locale, value] of Object.entries(translations)) {
-        appendOverride(items, {
-          target: {
-            scope: 'message',
-            source,
-            message_id: messageId,
-            locale,
-          },
-          item: {
-            scope: 'message',
-            message: {
-              source,
-              ...(matching[0]?.comment ? { comment: matching[0].comment } : {}),
-            },
-            locale,
-            value,
-            source_files: sourceFiles,
-          },
-        });
-      }
     }
   }
   const filtered = items
@@ -177,9 +154,9 @@ export async function listOverrides(
     RESPONSE_CHARACTER_LIMIT,
   );
   return {
-    default_override_count: filtered.filter((item) => item.scope === 'default')
+    global_override_count: filtered.filter((item) => item.scope === 'global')
       .length,
-    message_override_count: filtered.filter((item) => item.scope === 'message')
+    file_override_count: filtered.filter((item) => item.scope === 'files')
       .length,
     ...page,
   };
@@ -300,6 +277,7 @@ function withoutSourceFiles(item: OverrideItemWithSourceFiles): OverrideItem {
     override_id: item.override_id,
     scope: item.scope,
     message: item.message,
+    ...(item.files ? { files: item.files } : {}),
     locale: item.locale,
     value: item.value,
     orphaned: item.orphaned,

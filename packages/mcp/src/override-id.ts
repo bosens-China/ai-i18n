@@ -1,9 +1,9 @@
 import { fail, McpToolError } from './errors.js';
 
 export interface OverrideTarget {
-  scope: 'default' | 'message';
   source: string;
-  message_id?: string;
+  comment?: string;
+  files?: string[];
   locale: string;
 }
 
@@ -18,18 +18,25 @@ export function decodeOverrideId(value: string): OverrideTarget {
       Buffer.from(value, 'base64url').toString('utf8'),
     ) as Record<string, unknown>;
     const keys = Object.keys(target).sort().join(',');
-    const expectedKeys =
-      target.scope === 'message'
-        ? 'locale,message_id,scope,source'
-        : 'locale,scope,source';
+    const expectedKeys = [
+      ...(target.comment === undefined ? [] : ['comment']),
+      ...(target.files === undefined ? [] : ['files']),
+      'locale',
+      'source',
+    ]
+      .sort()
+      .join(',');
     if (
       keys !== expectedKeys ||
-      (target.scope !== 'default' && target.scope !== 'message') ||
       typeof target.source !== 'string' ||
       typeof target.locale !== 'string' ||
       !target.locale ||
-      (target.scope === 'message' &&
-        (typeof target.message_id !== 'string' || !target.message_id))
+      (target.comment !== undefined &&
+        (typeof target.comment !== 'string' || !target.comment.trim())) ||
+      (target.files !== undefined &&
+        (!Array.isArray(target.files) ||
+          target.files.length === 0 ||
+          target.files.some((file) => typeof file !== 'string' || !file)))
     ) {
       fail('INVALID_OVERRIDE_ID', { override_id: value });
     }
@@ -41,10 +48,10 @@ export function decodeOverrideId(value: string): OverrideTarget {
 }
 
 export function overrideTargetKey(target: OverrideTarget): string {
-  return [
-    target.scope,
+  return JSON.stringify([
     target.source,
-    target.message_id ?? '',
+    target.comment ?? null,
+    target.files ? [...new Set(target.files)].sort() : null,
     target.locale,
-  ].join('\0');
+  ]);
 }

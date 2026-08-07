@@ -11,12 +11,20 @@ import {
   overrideTargetKey,
   type OverrideTarget,
 } from './override-id.js';
-import { loadProject, type LoadedProject } from './project-files.js';
+import {
+  atomicOverrideKey,
+  atomicOverrides,
+  overridesFromAtomic,
+} from './override-rules.js';
+import {
+  findExtracted,
+  loadProject,
+  type LoadedProject,
+} from './project-files.js';
 import {
   affectedFileCount,
   deduplicateTargets,
   resolveTargets,
-  sourceFilesForSource,
   targetDetails,
   type ResolvedTarget,
 } from './project-targets.js';
@@ -25,6 +33,7 @@ import type {
   ClearTranslationsInput,
   DeleteOverridesInput,
   DeleteResult,
+  OverrideUpdate,
   SetOverridesInput,
   SetResult,
   SetTranslationsInput,
@@ -136,31 +145,18 @@ export async function setOverrides(
   input: SetOverridesInput,
 ): Promise<SetResult> {
   const project = await loadProject(input.i18n_directory);
-  const resolved = resolveTargets(project, input.updates).map((target) =>
-    target.input.scope === 'default'
-      ? {
-          ...target,
-          sourceFiles: sourceFilesForSource(project, target.message.source),
-        }
-      : target,
-  );
   const { targets, deduplicatedCount } = deduplicateTargets(
-    resolved,
+    resolveOverrideTargets(project, input.updates),
     (target) =>
-      overrideTargetKey({
-        scope: target.input.scope,
+      atomicOverrideKey({
         source: target.message.source,
-        ...(target.input.scope === 'message'
-          ? { message_id: target.message.id }
-          : {}),
+        ...(target.message.comment ? { comment: target.message.comment } : {}),
+        ...(target.input.files?.[0] ? { file: target.input.files[0] } : {}),
         locale: target.input.locale,
       }),
     (target) => target.input.value,
   );
   for (const target of targets) {
-    if (target.input.scope === 'message' && !target.message.comment) {
-      fail('MESSAGE_SCOPE_REQUIRES_COMMENT', targetDetails(target.input));
-    }
     if (!hasSameTemplateTokens(target.message.source, target.input.value)) {
       fail(
         'TEMPLATE_TOKEN_MISMATCH',
@@ -179,21 +175,28 @@ export async function setOverrides(
   await transactTranslationOverrides(
     path.join(project.directory, 'overrides.json'),
     (overrides) => {
+      const entries = atomicOverrides(overrides);
       for (const { input: update, message: extracted } of targets) {
-        const message = (overrides.messages[extracted.source] ??= {});
-        const translations =
-          update.scope === 'message'
-            ? ((message.byId ??= {})[extracted.id] ??= {})
-            : (message.default ??= {});
-        const current = translations[update.locale];
-        if (current === update.value) {
-          unchangedCount += 1;
-        } else {
-          translations[update.locale] = update.value;
-          if (current === undefined) addedCount += 1;
-          else overwrittenCount += 1;
+        for (const file of update.files ?? [undefined]) {
+          const entry = {
+            source: extracted.source,
+            ...(extracted.comment ? { comment: extracted.comment } : {}),
+            ...(file ? { file } : {}),
+            locale: update.locale,
+            value: update.value,
+          };
+          const key = atomicOverrideKey(entry);
+          const current = entries.get(key);
+          if (current?.value === update.value) {
+            unchangedCount += 1;
+          } else {
+            entries.set(key, entry);
+            if (!current) addedCount += 1;
+            else overwrittenCount += 1;
+          }
         }
       }
+      overrides.rules = overridesFromAtomic(entries.values()).rules;
     },
   );
   return setResult(
@@ -203,6 +206,30 @@ export async function setOverrides(
     unchangedCount,
     deduplicatedCount,
   );
+}
+
+function resolveOverrideTargets(
+  project: LoadedProject,
+  updates: readonly OverrideUpdate[],
+): Array<ResolvedTarget<OverrideUpdate>> {
+  return resolveTargets(project, updates).flatMap((target) => {
+    if (!target.input.files) return [target];
+    const files = [...new Set(target.input.files)].sort();
+    for (const sourceFile of files) {
+      const file = findExtracted(project, sourceFile);
+      if (!file.messages.some((message) => message.id === target.message.id)) {
+        fail('MESSAGE_NOT_FOUND_IN_SOURCE_FILE', {
+          ...targetDetails(target.input),
+          source_file: sourceFile,
+        });
+      }
+    }
+    return files.map((file) => ({
+      ...target,
+      input: { ...target.input, files: [file] },
+      sourceFiles: [file],
+    }));
+  });
 }
 
 function templateTokenMismatchDetails(
@@ -243,18 +270,19 @@ export async function deleteOverrides(
     path.join(project.directory, 'overrides.json'),
     (overrides) => {
       for (const target of targets) {
-        const message = overrides.messages[target.source];
-        const translations =
-          target.scope === 'message'
-            ? message?.byId?.[target.message_id!]
-            : message?.default;
-        if (translations?.[target.locale] === undefined) {
+        const index = overrides.rules.findIndex((rule) =>
+          matchesOverrideRule(rule, target),
+        );
+        const rule = overrides.rules[index];
+        if (!rule || rule.translations[target.locale] === undefined) {
           unchangedCount += 1;
           continue;
         }
-        delete translations[target.locale];
+        delete rule.translations[target.locale];
+        if (Object.keys(rule.translations).length === 0) {
+          overrides.rules.splice(index, 1);
+        }
         deletedCount += 1;
-        cleanupOverride(overrides.messages, target);
       }
     },
   );
@@ -262,6 +290,20 @@ export async function deleteOverrides(
     deleted_count: deletedCount,
     unchanged_count: unchangedCount,
   };
+}
+
+function matchesOverrideRule(
+  rule: LoadedProject['overrides']['rules'][number],
+  target: OverrideTarget,
+): boolean {
+  return (
+    overrideTargetKey({
+      source: rule.source,
+      ...(rule.comment ? { comment: rule.comment } : {}),
+      ...(rule.files ? { files: rule.files } : {}),
+      locale: target.locale,
+    }) === overrideTargetKey(target)
+  );
 }
 
 function lockedTranslations(
@@ -298,26 +340,6 @@ function rejectDuplicateTargets<T>(
     if (seen.has(value)) fail('DUPLICATE_TARGET', { target: value });
     seen.add(value);
   }
-}
-
-function cleanupOverride(
-  messages: LoadedProject['overrides']['messages'],
-  target: OverrideTarget,
-): void {
-  const message = messages[target.source];
-  if (!message) return;
-  if (target.scope === 'message') {
-    const byId = message.byId?.[target.message_id!];
-    if (byId && Object.keys(byId).length === 0) {
-      delete message.byId![target.message_id!];
-    }
-    if (message.byId && Object.keys(message.byId).length === 0) {
-      delete message.byId;
-    }
-  } else if (message.default && Object.keys(message.default).length === 0) {
-    delete message.default;
-  }
-  if (!message.default && !message.byId) delete messages[target.source];
 }
 
 function setResult(

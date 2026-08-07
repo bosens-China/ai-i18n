@@ -65,6 +65,8 @@ const ERROR_NEXT_ACTIONS: Record<string, string> = {
     'Call ai_i18n_list_translations with view summary and without source_files, then copy an exact returned source_file before retrying.',
   MESSAGE_NOT_FOUND:
     'Call ai_i18n_list_translations again and copy the exact returned message object before retrying.',
+  MESSAGE_NOT_FOUND_IN_SOURCE_FILE:
+    'Call ai_i18n_list_translations with include_source_files true, then choose only exact source_file values that contain this message.',
   UNKNOWN_LOCALE:
     'Choose one of available_locales and retry; do not use a display label as the locale value.',
   DUPLICATE_TARGET_CONFLICT:
@@ -74,8 +76,6 @@ const ERROR_NEXT_ACTIONS: Record<string, string> = {
     'List current translations again. Use overwrite_existing only after the user explicitly approves replacing them.',
   TEMPLATE_TOKEN_MISMATCH:
     'Add every entry from missing_tokens, remove every entry from unexpected_tokens, then retry with the corrected value.',
-  MESSAGE_SCOPE_REQUIRES_COMMENT:
-    'Use default scope, or list and select a message with a non-empty static comment before retrying.',
   INVALID_CURSOR:
     'Restart the same list call without cursor, then continue with the new next_cursor values.',
   INVALID_OVERRIDE_ID:

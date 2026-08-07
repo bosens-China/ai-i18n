@@ -1,9 +1,10 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import type {
-  TranslationBatchEvent,
-  TranslationResult,
-  Translator,
+import {
+  runtimeMessageId,
+  type TranslationBatchEvent,
+  type TranslationResult,
+  type Translator,
 } from '@ai-i18n/core';
 import { describe, expect, it, vi } from 'vitest';
 import { extractedPath } from '../src/file-store-paths';
@@ -53,22 +54,32 @@ describe('@ai-i18n/vite plugin updates', () => {
 
     const registerId = '\0virtual:ai-i18n/register?module=src%2Fprovider.ts';
     const before = await callHook<Promise<string>>(plugin.load, registerId);
-    expect(before).toContain('"en-US":{"保存":null}');
+    expect(before).toContain(
+      JSON.stringify({
+        [runtimeMessageId('src/provider.ts', '保存')]: null,
+      }),
+    );
 
     finish();
     await vi.waitFor(() => {
       expect(hotSend).toHaveBeenCalledWith('ai-i18n:update', {
         moduleId: 'src/provider.ts',
         messages: {
-          'zh-CN': { 保存: '保存' },
-          'en-US': { 保存: 'Save' },
+          'zh-CN': {
+            [runtimeMessageId('src/provider.ts', '保存')]: '保存',
+          },
+          'en-US': {
+            [runtimeMessageId('src/provider.ts', '保存')]: 'Save',
+          },
         },
       });
     });
     expect(
       await readJson(path.join(directory, 'locales/en-US.json')),
     ).toMatchObject({
-      messages: { 保存: 'Save' },
+      messages: {
+        [runtimeMessageId('src/provider.ts', '保存')]: 'Save',
+      },
     });
     const batchId = vi.mocked(translator).mock.calls[0]![0].batchId;
     expect(batchId).toEqual(expect.any(String));
@@ -131,8 +142,12 @@ describe('@ai-i18n/vite plugin updates', () => {
     expect(hotSend).toHaveBeenCalledWith('ai-i18n:update', {
       moduleId: 'src/provider.ts',
       messages: {
-        'zh-CN': { 保存: '保存' },
-        'en-US': { 保存: 'Store' },
+        'zh-CN': {
+          [runtimeMessageId('src/provider.ts', '保存')]: '保存',
+        },
+        'en-US': {
+          [runtimeMessageId('src/provider.ts', '保存')]: 'Store',
+        },
       },
     });
     expect(
@@ -144,10 +159,8 @@ describe('@ai-i18n/vite plugin updates', () => {
     const overridesFile = path.join(directory, 'overrides.json');
     const overridesContent = `${JSON.stringify(
       {
-        version: 1,
-        messages: {
-          保存: { default: { 'en-US': 'Keep' } },
-        },
+        version: 2,
+        rules: [{ source: '保存', translations: { 'en-US': 'Keep' } }],
       },
       null,
       2,
@@ -167,13 +180,21 @@ describe('@ai-i18n/vite plugin updates', () => {
     expect(hotSend).toHaveBeenCalledWith('ai-i18n:update', {
       moduleId: 'src/provider.ts',
       messages: {
-        'zh-CN': { 保存: '保存' },
-        'en-US': { 保存: 'Keep' },
+        'zh-CN': {
+          [runtimeMessageId('src/provider.ts', '保存')]: '保存',
+        },
+        'en-US': {
+          [runtimeMessageId('src/provider.ts', '保存')]: 'Keep',
+        },
       },
     });
     expect(
       await readJson(path.join(directory, 'locales/en-US.json')),
-    ).toMatchObject({ messages: { 保存: 'Keep' } });
+    ).toMatchObject({
+      messages: {
+        [runtimeMessageId('src/provider.ts', '保存')]: 'Keep',
+      },
+    });
   });
 
   it('invalidates the current environment register module on hot update', async () => {
@@ -379,7 +400,9 @@ describe('@ai-i18n/vite plugin updates', () => {
 
     expect(hotSend).toHaveBeenCalledWith('ai-i18n:locale-update', {
       locale: 'en-US',
-      messages: { 保存: 'Save' },
+      messages: {
+        [runtimeMessageId('src/lazy-hot.ts', '保存')]: 'Save',
+      },
     });
     expect(hotSend).not.toHaveBeenCalledWith(
       'ai-i18n:update',

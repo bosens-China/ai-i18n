@@ -1,5 +1,6 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { runtimeMessageId } from '@ai-i18n/core';
 import { describe, expect, it } from 'vitest';
 import { FileStore } from '../src/file-store';
 import { mergeProjectMessages } from '../src/file-store-merge';
@@ -150,7 +151,7 @@ describe('FileStore migrations', () => {
       translations: { 'zh-CN': '保存' },
     });
     expect(englishState.registration('src/main.ts')).toMatchObject({
-      'zh-CN': { Save: '保存' },
+      'zh-CN': { [runtimeMessageId('src/main.ts', 'Save')]: '保存' },
     });
     await expect(
       fs.access(path.join(root, 'i18n/locales/en-US.json')),

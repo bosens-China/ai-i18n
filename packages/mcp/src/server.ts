@@ -41,11 +41,9 @@ const TranslationUpdateSchema = TranslationTargetSchema.extend({
   value: z.string().max(100_000),
 });
 const OverrideUpdateSchema = TranslationUpdateSchema.extend({
-  scope: z
-    .enum(['default', 'message'])
-    .describe(
-      'default affects every occurrence of the source; message targets this comment-specific message.',
-    ),
+  files: SourceFilesSchema.describe(
+    'Exact normalized source_file values returned by list tools. Omit for a global review; provide one or more files for a file-scoped review.',
+  ),
 });
 const TranslationUpdatesSchema = strictBatchSchema(
   TranslationUpdateSchema,
@@ -59,7 +57,7 @@ const TranslationTargetsSchema = strictBatchSchema(
 );
 const OverrideUpdatesSchema = strictBatchSchema(
   OverrideUpdateSchema,
-  ['message', 'locale', 'value', 'scope'],
+  ['message', 'locale', 'value', 'files'],
   'updates',
 );
 const OrphanIdsSchema = z
@@ -209,7 +207,7 @@ export function createAiI18nMcpServer(): McpServer {
     {
       title: 'Set human review overrides',
       description:
-        'Atomically add or overwrite overrides.json values by message source and optional comment. default scope affects every occurrence of the same source; message scope requires a comment-specific message. Identical duplicate updates are applied once; different values for one target fail the batch.',
+        'Atomically add or overwrite overrides.json values by message source, optional comment, and optional exact files. Omit files for a global review; provide one or more list-returned source_file values for a file-scoped review. Identical duplicates are applied once; conflicting values for one target fail the batch.',
       inputSchema: z
         .object({
           i18n_directory: DirectorySchema,

@@ -60,24 +60,54 @@ Provider 或 Agent + MCP 会自动维护文件结构，适合批量补译和按�
 SQLite 模式不适合直接编辑数据库，请使用 Provider 或 Agent + MCP。少量已确认措辞仍建议写入
 `overrides.json`，这样可以提交并在不同电脑间保持一致。
 
-`overrides.json` 保存人工决定。没有语境区分的文案可以写入对应消息的 `default`：
+`overrides.json` 使用便于审查的扁平 `rules` 保存人工决定。只写 `source` 时，译文对当前 Vite
+应用内的所有同源文案生效：
 
 ```json
 {
-  "version": 1,
-  "messages": {
-    "保存": {
-      "default": {
+  "version": 2,
+  "rules": [
+    {
+      "source": "保存",
+      "translations": {
         "en-US": "Save"
       }
     }
-  }
+  ]
 }
 ```
 
-需要根据静态 `comment` 区分语境时，使用 [Agent + MCP](/guide/advanced/ai-tools) 列出现有文案，
-确认建议措辞后再写入人工审校结果。不要自行构造语境标识。生成目录 `i18n/extracted/` 和
-`i18n/locales/` 不接受人工编辑。
+同一句话只需要在部分文件采用不同译法时，为规则增加 `files`。路径必须是相对 Vite `root` 的
+标准化 POSIX 路径，并与列表工具返回的 `source_file` 完全一致；不接受绝对路径、路径片段或 glob。
+一个规则可以列出多个文件，以复用完全相同的审校决定：
+
+```json
+{
+  "version": 2,
+  "rules": [
+    {
+      "source": "保存",
+      "files": ["src/editor/actions.ts", "src/editor/toolbar.ts"],
+      "translations": {
+        "en-US": "Save file"
+      }
+    },
+    {
+      "source": "保存",
+      "comment": "保存状态",
+      "files": ["src/status/panel.ts"],
+      "translations": {
+        "en-US": "Keep"
+      }
+    }
+  ]
+}
+```
+
+`comment` 与 `files` 可以单独使用，也可以组合。最终优先级从高到低是：文件 + `comment`、全局 +
+`comment`、文件默认、全局默认、自动译文、源码回退。建议使用
+[Agent + MCP](/guide/advanced/ai-tools) 列出现有文案和精确路径，确认措辞后再写入；不要自行构造
+语境标识。生成目录 `i18n/extracted/` 和 `i18n/locales/` 不接受人工编辑。
 
 ## 提交前检查
 

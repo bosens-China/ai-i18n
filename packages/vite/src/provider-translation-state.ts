@@ -16,6 +16,7 @@ import {
 
 interface ProviderRequestsOptions {
   messages: readonly ExtractedMessage[];
+  sourceFile: string;
   locales: readonly LangOption[];
   sourceLang: string;
   overrides: TranslationOverridesFile;
@@ -42,6 +43,7 @@ export class ProviderTranslationState {
           options.overrides,
           message,
           locale.value,
+          options.sourceFile,
         );
         if (
           reviewed !== undefined ||

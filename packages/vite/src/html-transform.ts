@@ -6,6 +6,7 @@ import type {
   NormalizedHotChannel,
   ResolvedConfig,
 } from 'vite';
+import { runtimeMessageId } from '@ai-i18n/core';
 import type { DevStateTaskRunner } from './dev-state-queue.js';
 import type { FileStore } from './file-store.js';
 import {
@@ -95,11 +96,18 @@ export function createHtmlTransformHandler(
       const initialLocale = dependencies.options.loading
         ? dependencies.options.sourceLang
         : dependencies.options.defaultLang;
+      const initialMessages = Object.fromEntries(
+        result.messages.map((message) => [
+          message.id,
+          messages[initialLocale]?.[runtimeMessageId(moduleId, message.id)] ??
+            null,
+        ]),
+      );
       result = transformHtml(
         source,
         context.filename,
         extractor,
-        messages[initialLocale],
+        initialMessages,
       );
     }
 

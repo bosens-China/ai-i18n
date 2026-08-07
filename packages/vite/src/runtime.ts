@@ -1,1 +1,6 @@
-export { createI18nRuntime, formatTemplateMessage } from '@ai-i18n/core';
+export {
+  createI18nRuntime,
+  createScopedTranslate,
+  formatTemplateMessage,
+  runtimeMessageId,
+} from '@ai-i18n/core';

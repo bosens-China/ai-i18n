@@ -67,7 +67,9 @@ List items omit `source_files` by default. Keep that compact response for transl
 be prepared. When `message.comment` and project terminology do not disambiguate short copy, request
 `include_occurrences: true`, then read the nearby source lines for the returned files from the target
 workspace. Do not request occurrences for every batch by default or treat paths and locations as write
-identity. When a tool fails, follow its returned `next_action` before consulting the recovery reference.
+identity for Translation Memory. For a user-approved file-scoped human review, copy exact returned
+`source_file` values into the override update's `files`; never derive or shorten them. When a tool
+fails, follow its returned `next_action` before consulting the recovery reference.
 
 ## Report
 

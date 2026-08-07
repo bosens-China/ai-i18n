@@ -1,7 +1,7 @@
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import type { Translator } from '@ai-i18n/core';
+import { runtimeMessageId, type Translator } from '@ai-i18n/core';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { build, type Plugin } from 'vite';
 import { aiI18n, Analyzer } from '../src';
@@ -46,7 +46,9 @@ console.log(t(LABEL));`;
     try {
       await waitForBuild(watcher, 0);
       expect(lastRegistration(observations, 'src/main.ts')).toContain(
-        '"en-US":{"首页":"Home"}',
+        JSON.stringify({
+          [runtimeMessageId('src/main.ts', '首页')]: 'Home',
+        }),
       );
       expect(translator).toHaveBeenCalledTimes(1);
       addFile.mockClear();
@@ -66,7 +68,9 @@ console.log(t(LABEL));`;
         'src/texts.ts',
       ]);
       expect(lastRegistration(observations, 'src/main.ts')).toContain(
-        '"en-US":{"设置":"Settings"}',
+        JSON.stringify({
+          [runtimeMessageId('src/main.ts', '设置')]: 'Settings',
+        }),
       );
       expect(translator).toHaveBeenCalledTimes(2);
       addFile.mockClear();
@@ -98,10 +102,11 @@ console.log(t(LABEL));`;
       const memoryPath = path.join(root, 'i18n/translations.json');
       const localePath = path.join(root, 'i18n/locales/en-US.json');
       const locale = await readJson<LocaleFile>(localePath);
-      locale.messages['首页'] = 'Start';
+      const localeMessageId = runtimeMessageId('src/main.ts', '首页');
+      locale.messages[localeMessageId] = 'Start';
       await rebuild(watcher, () => writeJson(localePath, locale));
       expect(await readJson<LocaleFile>(localePath)).toMatchObject({
-        messages: { 首页: null },
+        messages: { [localeMessageId]: null },
       });
 
       const memory = await readJson<CacheFile>(memoryPath);
@@ -110,13 +115,13 @@ console.log(t(LABEL));`;
 
       expect(addFile).not.toHaveBeenCalled();
       expect(lastRegistration(observations, 'src/main.ts')).toContain(
-        '"en-US":{"首页":"Home"}',
+        JSON.stringify({ [localeMessageId]: 'Home' }),
       );
       expect(await readJson<CacheFile>(memoryPath)).toMatchObject({
         messages: { 首页: { translations: { 'en-US': 'Home' } } },
       });
       expect(await readJson<LocaleFile>(localePath)).toMatchObject({
-        messages: { 首页: 'Home' },
+        messages: { [localeMessageId]: 'Home' },
       });
       expect(JSON.stringify(await readJson(extractedPath))).not.toContain(
         'translations',

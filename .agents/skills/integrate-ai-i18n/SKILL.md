@@ -30,6 +30,8 @@ configuration. Preserve configured values.
 Use one `@ai-i18n/vite` registration, one framework mode, and one i18n directory per Vite build.
 Treat reachable local workspace source as part of the consuming build. Do not create a separate
 integration for a source-only package or rewrite CommonJS as an incidental migration.
+If an existing `overrides.json` contains file-scoped rules, preserve its exact normalized POSIX paths
+relative to this Vite root; never rewrite them to machine-specific absolute paths during integration.
 
 Do not enable optional behavior by default. Keep explicit imports and omit automatic translation,
 automatic imports, language persistence, locale loading, cache cleanup, HTML extraction, ESLint, and

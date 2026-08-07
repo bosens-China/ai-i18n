@@ -18,14 +18,16 @@ export interface TranslationMemoryFile {
   messages: Record<string, CacheMessage>;
 }
 
-export interface TranslationOverrideMessage {
-  default?: Record<string, string>;
-  byId?: Record<string, Record<string, string>>;
+export interface TranslationOverrideRule {
+  source: string;
+  comment?: string;
+  files?: string[];
+  translations: Record<string, string>;
 }
 
 export interface TranslationOverridesFile {
-  version: 1;
-  messages: Record<string, TranslationOverrideMessage>;
+  version: 2;
+  rules: TranslationOverrideRule[];
 }
 
 export interface ExtractedMessage {
@@ -85,25 +87,146 @@ export function parseTranslationOverridesFile(
   value: unknown,
 ): TranslationOverridesFile {
   const root = record(value, 'translation overrides');
-  exactKeys(root, ['version', 'messages'], 'translation overrides');
-  exactVersion(root, 'translation overrides', 1);
-  const messages = record(root.messages, 'translation overrides.messages');
+  exactVersion(root, 'translation overrides', 2);
+  exactKeys(root, ['version', 'rules'], 'translation overrides');
+  if (!Array.isArray(root.rules)) {
+    fail('translation overrides.rules', 'an array');
+  }
 
-  for (const [source, value] of Object.entries(messages)) {
-    const path = `translation overrides.messages.${source}`;
-    const message = record(value, path);
-    exactKeys(message, ['default', 'byId'], path);
-    if (message.default !== undefined) {
-      stringTranslations(message.default, `${path}.default`);
+  const rules = root.rules.map((value, index) =>
+    parseTranslationOverrideRule(value, index),
+  );
+  validateOverrideConflicts(rules);
+  rules.sort(compareOverrideRules);
+  return { version: 2, rules };
+}
+
+function parseTranslationOverrideRule(
+  value: unknown,
+  index: number,
+): TranslationOverrideRule {
+  const path = `translation overrides.rules.${index}`;
+  const rule = record(value, path);
+  exactKeys(rule, ['source', 'comment', 'files', 'translations'], path);
+  string(rule.source, `${path}.source`);
+  const source = rule.source as string;
+
+  let comment: string | undefined;
+  if (rule.comment !== undefined) {
+    string(rule.comment, `${path}.comment`);
+    comment = (rule.comment as string).trim();
+    if (!comment) fail(`${path}.comment`, 'a non-empty string');
+  }
+
+  let files: string[] | undefined;
+  if (rule.files !== undefined) {
+    if (!Array.isArray(rule.files) || rule.files.length === 0) {
+      fail(`${path}.files`, 'a non-empty array');
     }
-    if (message.byId === undefined) continue;
-    const byId = record(message.byId, `${path}.byId`);
-    for (const [id, translations] of Object.entries(byId)) {
-      if (!id.trim()) fail(`${path}.byId`, 'non-empty message IDs');
-      stringTranslations(translations, `${path}.byId.${id}`);
+    files = [
+      ...new Set(
+        rule.files.map((file, fileIndex) =>
+          parseOverrideSourceFile(file, `${path}.files.${fileIndex}`),
+        ),
+      ),
+    ].sort(compareText);
+  }
+
+  stringTranslations(rule.translations, `${path}.translations`);
+  const translations = rule.translations as Record<string, string>;
+  if (Object.keys(translations).length === 0) {
+    fail(`${path}.translations`, 'a non-empty object');
+  }
+  return {
+    source,
+    ...(comment ? { comment } : {}),
+    ...(files ? { files } : {}),
+    translations: { ...translations },
+  };
+}
+
+function parseOverrideSourceFile(value: unknown, path: string): string {
+  string(value, path);
+  const file = value as string;
+  const parts = file.split('/');
+  let enteredRoot = false;
+  if (
+    !file ||
+    file !== file.trim() ||
+    file.includes('\\') ||
+    file.startsWith('/') ||
+    /^[A-Za-z]:\//u.test(file) ||
+    parts.some((part) => {
+      if (!part || part === '.') return true;
+      if (part === '..') return enteredRoot;
+      enteredRoot = true;
+      return false;
+    }) ||
+    !enteredRoot
+  ) {
+    fail(path, 'a normalized POSIX path relative to the Vite root');
+  }
+  return file;
+}
+
+function validateOverrideConflicts(
+  rules: readonly TranslationOverrideRule[],
+): void {
+  const targets = new Map<string, string>();
+  for (const rule of rules) {
+    const files = rule.files ?? [null];
+    for (const file of files) {
+      for (const [locale, translation] of Object.entries(rule.translations)) {
+        const key = JSON.stringify([
+          rule.source,
+          rule.comment ?? null,
+          file,
+          locale,
+        ]);
+        const previous = targets.get(key);
+        if (previous !== undefined) {
+          fail(
+            'translation overrides.rules',
+            `one value for ${key}; received ${
+              previous === translation
+                ? 'a duplicate target'
+                : 'conflicting translations'
+            }`,
+          );
+        }
+        targets.set(key, translation);
+      }
     }
   }
-  return value as TranslationOverridesFile;
+}
+
+function compareOverrideRules(
+  left: TranslationOverrideRule,
+  right: TranslationOverrideRule,
+): number {
+  return (
+    compareText(left.source, right.source) ||
+    compareOptionalText(left.comment, right.comment) ||
+    compareOptionalText(left.files?.join('\0'), right.files?.join('\0')) ||
+    compareText(
+      JSON.stringify(left.translations),
+      JSON.stringify(right.translations),
+    )
+  );
+}
+
+function compareOptionalText(
+  left: string | undefined,
+  right: string | undefined,
+): number {
+  if (left === undefined || right === undefined) {
+    return left === right ? 0 : left === undefined ? -1 : 1;
+  }
+  return compareText(left, right);
+}
+
+function compareText(left: string, right: string): number {
+  return left < right ? -1 : left > right ? 1 : 0;
 }
 
 export function parseExtractedFile(value: unknown): ExtractedFile {

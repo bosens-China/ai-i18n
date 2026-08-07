@@ -24,6 +24,12 @@ export function runtimeCode(
       : framework === 'vue'
         ? `export const { t, useI18n, tRef, i18nComputed, tComputed } = createVueI18nAdapter(runtime);`
         : `export const useI18n = createReactI18n(runtime);`;
+  const scopedHook =
+    framework === 'vanilla'
+      ? `return { t };`
+      : framework === 'vue'
+        ? `return createVueI18nAdapter(runtime, t);`
+        : `return { t, useI18n: createReactI18n(runtime, t) };`;
   const runtimeT = framework === 'vue' ? '' : 'export const t = runtime.t;';
   const localeHotUpdate = options.loading
     ? `
@@ -32,21 +38,30 @@ export function runtimeCode(
   });`
     : '';
   return `
-import { createI18nRuntime, formatTemplateMessage } from '@ai-i18n/vite/runtime';
+import { createI18nRuntime, createScopedTranslate, formatTemplateMessage, runtimeMessageId } from '@ai-i18n/vite/runtime';
 ${adapter}
 const runtime = createI18nRuntime({
   ...${JSON.stringify(options)},
   localeLoaders: ${localeLoadersCode(options, build, base)},
 });
 const activeModules = new Set();
+const scopedApis = new Map();
 ${runtimeT}
 export const setLang = runtime.setLang;
 export const getLang = runtime.getLang;
 export const getLangs = runtime.getLangs;
 export const getLangLoadState = runtime.getLangLoadState;
 export const subscribe = runtime.subscribe;
-export const __translate = (messageId, source) =>
-  formatTemplateMessage(runtime.translate(messageId, source), []);
+export const __translate = (moduleId, messageId, source) =>
+  formatTemplateMessage(runtime.translate(runtimeMessageId(moduleId, messageId), source), []);
+export const __scope = (moduleId) => {
+  const current = scopedApis.get(moduleId);
+  if (current) return current;
+  const t = createScopedTranslate(runtime, moduleId);
+  const scoped = (() => { ${scopedHook} })();
+  scopedApis.set(moduleId, scoped);
+  return scoped;
+};
 export const __registerModule = (moduleId, messages) => {
   activeModules.add(moduleId);
   runtime.registerModule(moduleId, messages);
@@ -62,6 +77,36 @@ if (import.meta.hot) {
   });
 ${localeHotUpdate}
 }
+`;
+}
+
+export function scopedRuntimeCode(
+  moduleId: string,
+  framework: AiI18nFramework,
+): string {
+  const frameworkExports =
+    framework === 'vanilla'
+      ? ''
+      : framework === 'vue'
+        ? `\nexport const useI18n = scoped.useI18n;\nexport const tRef = scoped.tRef;\nexport const i18nComputed = scoped.i18nComputed;\nexport const tComputed = scoped.tComputed;`
+        : `\nexport const useI18n = scoped.useI18n;`;
+  return `
+import {
+  __registerModule,
+  __scope,
+  __translate as translate,
+  __unregisterModule,
+  getLang,
+  getLangLoadState,
+  getLangs,
+  setLang,
+  subscribe,
+} from ${JSON.stringify(AI_I18N_VIRTUAL_MODULE_ID)};
+const moduleId = ${JSON.stringify(moduleId)};
+const scoped = __scope(moduleId);
+export const t = scoped.t;
+export { __registerModule, __unregisterModule, getLang, getLangLoadState, getLangs, setLang, subscribe };
+export const __translate = (messageId, source) => translate(moduleId, messageId, source);${frameworkExports}
 `;
 }
 
@@ -97,6 +142,7 @@ export const getLangLoadState = () => idleLangLoadState;
 export const subscribe = () => () => {};
 export const __translate = (messageId, source) =>
   formatTemplateMessage(source, []);
+export const __scope = () => ({ t: runtimeT${framework === 'vue' ? ', useI18n, tRef, i18nComputed, tComputed' : framework === 'react' ? ', useI18n' : ''} });
 export const __registerModule = () => {};
 export const __unregisterModule = () => {};
 ${hook}

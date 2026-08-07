@@ -35,6 +35,19 @@ export interface I18nRuntime {
   replaceLocale(locale: string, messages: LocaleMessages): boolean;
 }
 
+export function runtimeMessageId(moduleId: string, messageId: string): string {
+  return `${moduleId}\0${messageId}`;
+}
+
+export function createScopedTranslate(
+  runtime: Pick<I18nRuntime, 'translate'>,
+  moduleId: string,
+): Translate {
+  return createTranslate((messageId, sourceFallback) =>
+    runtime.translate(runtimeMessageId(moduleId, messageId), sourceFallback),
+  );
+}
+
 export function createI18nRuntime(options: I18nRuntimeOptions): I18nRuntime {
   const locales = options.locales.map((locale) => ({ ...locale }));
   const localeValues = new Set(locales.map((locale) => locale.value));

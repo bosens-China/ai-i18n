@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createI18nRuntime } from '@ai-i18n/core';
+import { createI18nRuntime, runtimeMessageId } from '@ai-i18n/core';
 import { html, htmlBridgeCode, transformHtml } from '../src/html';
 
 describe('HTML extractor', () => {
@@ -94,8 +94,16 @@ describe('HTML extractor', () => {
     const bridge = htmlBridgeCode(
       'index.html',
       {
-        'zh-CN': { 标题: '标题', 提示: '提示', 正文: '正文' },
-        'en-US': { 标题: 'Title', 提示: 'Hint', 正文: 'Body' },
+        'zh-CN': {
+          [runtimeMessageId('index.html', '标题')]: '标题',
+          [runtimeMessageId('index.html', '提示')]: '提示',
+          [runtimeMessageId('index.html', '正文')]: '正文',
+        },
+        'en-US': {
+          [runtimeMessageId('index.html', '标题')]: 'Title',
+          [runtimeMessageId('index.html', '提示')]: 'Hint',
+          [runtimeMessageId('index.html', '正文')]: 'Body',
+        },
       },
       extracted.bindings,
     );
@@ -139,7 +147,7 @@ describe('HTML extractor', () => {
     };
     const executable = bridge
       .replace(
-        /^import \{[^}]+\} from "virtual:ai-i18n";/m,
+        /^import \{[^}]+\} from "virtual:ai-i18n\/internal";/m,
         'const { subscribe, __registerModule, __unregisterModule, __translate } = runtime;',
       )
       .replace(/if \(import\.meta\.hot\) \{[\s\S]*\}\s*$/, '');
@@ -155,7 +163,8 @@ describe('HTML extractor', () => {
         subscribe: runtime.subscribe,
         __registerModule: runtime.registerModule,
         __unregisterModule: runtime.unregisterModule,
-        __translate: runtime.translate,
+        __translate: (moduleId: string, messageId: string, source: string) =>
+          runtime.translate(runtimeMessageId(moduleId, messageId), source),
       },
       document,
       { SHOW_COMMENT: 128 },

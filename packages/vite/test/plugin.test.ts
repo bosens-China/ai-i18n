@@ -1,3 +1,4 @@
+import { runtimeMessageId } from '@ai-i18n/core';
 import { describe, expect, it, vi } from 'vitest';
 import { aiI18n, type AiI18nOptions, type Translator } from '../src/index';
 import { callHook, options, setupPlugin } from './plugin-test-utils';
@@ -69,9 +70,28 @@ describe('@ai-i18n/vite plugin', () => {
       plugin.load,
       resolved!,
     );
-    expect(registration).toContain('"zh-CN":{"保存#按钮":"保存"}');
-    expect(registration).toContain('"en-US":{"保存#按钮":null}');
+    const messageId = runtimeMessageId('src/main.ts', '保存#按钮');
+    expect(registration).toContain(JSON.stringify({ [messageId]: '保存' }));
+    expect(registration).toContain(JSON.stringify({ [messageId]: null }));
     expect(registration).toContain('import.meta.hot.dispose');
+  });
+
+  it('binds runtime imports to the importing Vite source file', async () => {
+    const { plugin } = setupPlugin();
+    const scopedId = callHook<string>(
+      plugin.resolveId,
+      'virtual:ai-i18n',
+      '/workspace/src/main.ts',
+      {},
+    );
+
+    expect(scopedId).toBe('\0virtual:ai-i18n?module=src%2Fmain.ts');
+    const scoped = await callHook<Promise<string>>(plugin.load, scopedId);
+    expect(scoped).toContain('const moduleId = "src/main.ts"');
+    expect(scoped).toContain('const scoped = __scope(moduleId)');
+    expect(scoped).toContain(
+      'export const __translate = (messageId, source) => translate(moduleId, messageId, source)',
+    );
   });
 
   it('normalizes resolved Windows IDs before loading pending static dependencies', async () => {

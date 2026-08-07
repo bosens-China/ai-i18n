@@ -51,10 +51,13 @@ export interface VueI18nAdapter {
   tComputed: TranslateComputed;
 }
 
-export function createVueI18nAdapter(runtime: I18nRuntime): VueI18nAdapter {
+export function createVueI18nAdapter(
+  runtime: I18nRuntime,
+  scopedTranslate: I18nRuntime['t'] = runtime.t,
+): VueI18nAdapter {
   const revision = shallowRef(0);
   const langs = readonly(shallowRef(runtime.getLangs()));
-  const translate = runtime.t as (
+  const translate = scopedTranslate as (
     source: unknown,
     ...values: unknown[]
   ) => unknown;

@@ -72,9 +72,18 @@ Human decisions belong in `overrides.json`, not the JSON or SQLite Translation M
 Use `ai_i18n_list_overrides` to inspect current values, including orphaned values. Use
 `ai_i18n_set_overrides` only when the user explicitly requests or approves human review wording:
 
-- `scope: "default"` affects every occurrence of the same source text.
-- `scope: "message"` affects one listed message and requires a non-empty static comment.
+- Omit `files` for a global review across the current Vite app.
+- Provide one or more exact `source_file` values in `files` for a file-scoped review. Every selected
+  file must currently contain the listed message.
+- `comment` is part of the copied public `message` object and can be combined with either global or
+  file scope. Do not add or remove it to simulate file scope.
+- File paths are normalized POSIX paths relative to the Vite root. Copy them exactly from list
+  results; never use absolute paths, substrings, or globs.
 - Setting an override is an upsert and may replace an existing human value.
+
+Resolution priority is file + comment, global + comment, file default, global default, automatic
+Translation Memory, then source fallback. File-scoped list items always include their identity
+`files`; `source_files` remains optional occurrence evidence and is returned only when requested.
 
 To remove a human value, list it first and pass the returned opaque `override_id` to
 `ai_i18n_delete_overrides`. Never construct an override ID.

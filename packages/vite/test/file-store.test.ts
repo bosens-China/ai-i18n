@@ -1,5 +1,6 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { runtimeMessageId } from '@ai-i18n/core';
 import { describe, expect, it, vi } from 'vitest';
 import { FileStore } from '../src/file-store';
 import { ProjectState } from '../src/project-state';
@@ -67,12 +68,14 @@ describe('FileStore', () => {
     await expect(
       fs.access(path.join(root, 'i18n/locales/zh-CN.json')),
     ).rejects.toMatchObject({ code: 'ENOENT' });
-    expect(targetLocale).toMatchObject({ messages: { 保存: null } });
-    expect(overrides).toEqual({ version: 1, messages: {} });
+    expect(targetLocale).toMatchObject({
+      messages: { [runtimeMessageId('src/main.ts', '保存')]: null },
+    });
+    expect(overrides).toEqual({ version: 2, rules: [] });
     expect(JSON.stringify(cache)).not.toContain(root);
   });
 
-  it('generates locales with default and exact human overrides', async () => {
+  it('generates locales with global and exact file human overrides', async () => {
     const { root, state, store } = await setup();
     const source = path.join(root, 'src/main.ts');
     await fs.writeFile(source, '');
@@ -94,13 +97,16 @@ describe('FileStore', () => {
       path.join(root, 'i18n/overrides.json'),
       `${JSON.stringify(
         {
-          version: 1,
-          messages: {
-            提交: {
-              default: { 'en-US': 'Submit' },
-              byId: { '提交#Git 操作': { 'en-US': 'Commit' } },
+          version: 2,
+          rules: [
+            { source: '提交', translations: { 'en-US': 'Submit' } },
+            {
+              source: '提交',
+              comment: 'Git 操作',
+              files: ['src/main.ts'],
+              translations: { 'en-US': 'Commit' },
             },
-          },
+          ],
         },
         null,
         2,
@@ -113,8 +119,8 @@ describe('FileStore', () => {
       await readJson(path.join(root, 'i18n/locales/en-US.json')),
     ).toMatchObject({
       messages: {
-        '提交#Git 操作': 'Commit',
-        提交: 'Submit',
+        [runtimeMessageId('src/main.ts', '提交#Git 操作')]: 'Commit',
+        [runtimeMessageId('src/main.ts', '提交')]: 'Submit',
       },
     });
   });
@@ -145,7 +151,10 @@ describe('FileStore', () => {
     expect(
       await readJson(path.join(root, 'i18n/locales/en-US.json')),
     ).toMatchObject({
-      messages: { 保存: null, 稍后加载: null },
+      messages: {
+        [runtimeMessageId('src/main.ts', '保存')]: null,
+        [runtimeMessageId('src/lazy.ts', '稍后加载')]: null,
+      },
     });
   });
 
@@ -246,7 +255,12 @@ describe('FileStore', () => {
       messages: [{ id: '保存' }],
     });
     expect(JSON.stringify(otherExtracted)).not.toContain('translations');
-    expect(targetLocale).toMatchObject({ messages: { 保存: 'Save' } });
+    expect(targetLocale).toMatchObject({
+      messages: {
+        [runtimeMessageId('src/main.ts', '保存')]: 'Save',
+        [runtimeMessageId('src/other.ts', '保存')]: 'Save',
+      },
+    });
 
     await updateTestTranslationMemory(memoryPath, (memory) => {
       memory.messages['保存']!.translations['en-US'] = 'Store';
@@ -256,7 +270,10 @@ describe('FileStore', () => {
     expect(
       await readJson(path.join(root, 'i18n/locales/en-US.json')),
     ).toMatchObject({
-      messages: { 保存: 'Store' },
+      messages: {
+        [runtimeMessageId('src/main.ts', '保存')]: 'Store',
+        [runtimeMessageId('src/other.ts', '保存')]: 'Store',
+      },
     });
 
     await fs.rm(main);
@@ -283,7 +300,7 @@ describe('FileStore', () => {
     await fs.writeFile(other, otherCode);
     state.update(otherCode, other);
     expect(state.registration('src/other.ts')).toMatchObject({
-      'en-US': { 保存: null },
+      'en-US': { [runtimeMessageId('src/other.ts', '保存')]: null },
     });
   });
 
@@ -311,7 +328,7 @@ describe('FileStore', () => {
       translations: { 'en-US': null },
     });
     expect(await readJson(localePath)).toMatchObject({
-      messages: { 保存: null },
+      messages: { [runtimeMessageId('src/main.ts', '保存')]: null },
     });
   });
 

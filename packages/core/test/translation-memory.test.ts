@@ -79,16 +79,19 @@ test('serializes concurrent translation override updates with the shared lock', 
   await Promise.all(
     Array.from({ length: 20 }, (_, index) =>
       transactTranslationOverrides(file, (overrides) => {
-        overrides.messages[`消息-${index}`] = {
-          default: { 'en-US': index === 0 ? '' : `Message ${index}` },
-        };
+        overrides.rules.push({
+          source: `消息-${index}`,
+          translations: { 'en-US': index === 0 ? '' : `Message ${index}` },
+        });
       }),
     ),
   );
 
   const overrides = await readTranslationOverrides(file);
-  expect(Object.keys(overrides.messages)).toHaveLength(20);
-  expect(overrides.messages['消息-0']?.default?.['en-US']).toBe('');
+  expect(overrides.rules).toHaveLength(20);
+  expect(
+    overrides.rules.find((rule) => rule.source === '消息-0'),
+  ).toMatchObject({ translations: { 'en-US': '' } });
 });
 
 async function temporaryDirectory(): Promise<string> {

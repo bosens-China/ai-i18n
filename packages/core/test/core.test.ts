@@ -140,33 +140,115 @@ describe('@ai-i18n/core schemas', () => {
   });
 
   it('strictly parses string-only translation overrides', () => {
+    expect(() =>
+      parseTranslationOverridesFile({ version: 1, rules: [] }),
+    ).toThrow('schema version must be 2');
+    expect(() =>
+      parseTranslationOverridesFile({ version: 1, messages: {} }),
+    ).toThrow('schema version must be 2');
     expect(
       parseTranslationOverridesFile({
-        version: 1,
-        messages: {
-          提交: {
-            default: { 'en-US': 'Submit', ja: '' },
-            byId: { 'checkout.submit': { 'en-US': 'Place order' } },
+        version: 2,
+        rules: [
+          {
+            source: '提交',
+            translations: { 'en-US': 'Submit', ja: '' },
           },
-        },
-      }).messages.提交,
-    ).toEqual({
-      default: { 'en-US': 'Submit', ja: '' },
-      byId: { 'checkout.submit': { 'en-US': 'Place order' } },
-    });
+          {
+            source: '提交',
+            comment: '结账按钮',
+            files: ['src/checkout.ts', 'src/cart.ts', 'src/cart.ts'],
+            translations: { 'en-US': 'Place order' },
+          },
+        ],
+      }).rules,
+    ).toEqual([
+      {
+        source: '提交',
+        translations: { 'en-US': 'Submit', ja: '' },
+      },
+      {
+        source: '提交',
+        comment: '结账按钮',
+        files: ['src/cart.ts', 'src/checkout.ts'],
+        translations: { 'en-US': 'Place order' },
+      },
+    ]);
     expect(() =>
       parseTranslationOverridesFile({
-        version: 1,
-        messages: { 提交: { default: { 'en-US': null } } },
+        version: 2,
+        rules: [{ source: '提交', translations: { 'en-US': null } }],
       }),
     ).toThrow('must be a string');
     expect(() =>
       parseTranslationOverridesFile({
-        version: 1,
-        messages: {},
+        version: 2,
+        rules: [],
         revision: 1,
       }),
     ).toThrow('revision is not part of the schema');
+    expect(() =>
+      parseTranslationOverridesFile({
+        version: 2,
+        rules: [
+          {
+            source: '提交',
+            files: [],
+            translations: { 'en-US': 'Submit' },
+          },
+        ],
+      }),
+    ).toThrow('files must be a non-empty array');
+    expect(() =>
+      parseTranslationOverridesFile({
+        version: 2,
+        rules: [
+          {
+            source: '提交',
+            files: ['src/../checkout.ts'],
+            translations: { 'en-US': 'Submit' },
+          },
+        ],
+      }),
+    ).toThrow('a normalized POSIX path relative to the Vite root');
+    expect(
+      parseTranslationOverridesFile({
+        version: 2,
+        rules: [
+          {
+            source: '提交',
+            files: ['../shared/checkout.ts'],
+            translations: { 'en-US': 'Submit' },
+          },
+        ],
+      }).rules[0]?.files,
+    ).toEqual(['../shared/checkout.ts']);
+    expect(() =>
+      parseTranslationOverridesFile({
+        version: 2,
+        rules: [
+          {
+            source: '提交',
+            files: ['src/cart.ts'],
+            translations: { 'en-US': 'Submit' },
+          },
+          {
+            source: '提交',
+            files: ['src/cart.ts', 'src/checkout.ts'],
+            translations: { 'en-US': 'Place order' },
+          },
+        ],
+      }),
+    ).toThrow('received conflicting translations');
+    expect(() =>
+      parseTranslationOverridesFile({
+        version: 2,
+        rules: [
+          { source: '提交', translations: { 'en-US': 'Submit' } },
+          { source: '提交', translations: { 'en-US': 'Submit' } },
+        ],
+      }),
+    ).toThrow('received a duplicate target');
   });
 
   it('distinguishes runtime and escaped literal template tokens', () => {

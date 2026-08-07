@@ -1,7 +1,7 @@
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import type { Translator } from '@ai-i18n/core';
+import { runtimeMessageId, type Translator } from '@ai-i18n/core';
 import { afterEach, describe, expect, it } from 'vitest';
 import { build, createServer, type UserConfig } from 'vite';
 import { aiI18n, type AiI18nOptions } from '../src';
@@ -245,6 +245,10 @@ globalThis.changeLanguage = setLang`,
       expect(englishWrapper?.code).not.toContain('"首页":"Home"');
 
       await server.transformRequest('/src/main.ts');
+      const homeId = runtimeMessageId('index.html', '首页');
+      const saveId = runtimeMessageId('src/main.ts', '保存');
+      const homeEntry = JSON.stringify({ [homeId]: 'Home' }).slice(1, -1);
+      const saveEntry = JSON.stringify({ [saveId]: 'Save' }).slice(1, -1);
       // 磁盘写入早于内存刷新；必须等语言文件和虚拟模块同时进入完整状态。
       await expect
         .poll(
@@ -256,12 +260,10 @@ globalThis.changeLanguage = setLang`,
               messages: Record<string, string | null>;
             }>(path.join(root, 'i18n/locales/en-US.json'));
             return {
-              home: locale.messages.首页,
-              save: locale.messages.保存,
-              moduleHasHome:
-                englishData?.code.includes('"首页":"Home"') ?? false,
-              moduleHasSave:
-                englishData?.code.includes('"保存":"Save"') ?? false,
+              home: locale.messages[homeId],
+              save: locale.messages[saveId],
+              moduleHasHome: englishData?.code.includes(homeEntry) ?? false,
+              moduleHasSave: englishData?.code.includes(saveEntry) ?? false,
             };
           },
           { timeout: 5_000, interval: 20 },
@@ -282,8 +284,8 @@ globalThis.changeLanguage = setLang`,
       expect(html).toContain('data-ai-i18n-text=');
       expect(html).toContain('>首页</title>');
       expect(html).not.toContain('ja-JP');
-      expect(englishData?.code).toContain('"首页":"Home"');
-      expect(englishData?.code).toContain('"保存":"Save"');
+      expect(englishData?.code).toContain(homeEntry);
+      expect(englishData?.code).toContain(saveEntry);
     } finally {
       await server.close();
     }

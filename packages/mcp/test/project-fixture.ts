@@ -40,7 +40,7 @@ export async function fixture(
   store.close();
   await fs.writeFile(
     path.join(directory, 'overrides.json'),
-    JSON.stringify({ version: 1, messages: {} }),
+    JSON.stringify({ version: 2, rules: [] }),
   );
   await fs.writeFile(
     path.join(directory, 'extracted/src_home.ts.json'),

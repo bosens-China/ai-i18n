@@ -182,21 +182,24 @@ test('lists missing messages by default and file summaries on request', async ()
   expect(withOccurrences.items[0]).not.toHaveProperty('source_files');
 });
 
-test('lists default, message-scoped, and orphaned human overrides', async () => {
+test('lists global, file-scoped, commented, and orphaned human overrides', async () => {
   const root = await fixture();
   const directory = path.join(root, 'apps/web/i18n');
   await addCommentedMessage(directory);
   await fs.writeFile(
     path.join(directory, 'overrides.json'),
     JSON.stringify({
-      version: 1,
-      messages: {
-        保存: {
-          default: { 'en-US': 'Keep' },
-          byId: { '保存#toolbar': { 'ja-JP': '保つ' } },
+      version: 2,
+      rules: [
+        { source: '保存', translations: { 'en-US': 'Keep' } },
+        {
+          source: '保存',
+          comment: 'toolbar',
+          files: ['src/home.ts'],
+          translations: { 'ja-JP': '保つ' },
         },
-        旧文案: { default: { 'en-US': 'Legacy' } },
-      },
+        { source: '旧文案', translations: { 'en-US': 'Legacy' } },
+      ],
     }),
   );
 
@@ -206,13 +209,13 @@ test('lists default, message-scoped, and orphaned human overrides', async () => 
   });
   expect(result).toMatchObject({
     total_count: 3,
-    default_override_count: 2,
-    message_override_count: 1,
+    global_override_count: 2,
+    file_override_count: 1,
   });
   expect(result.items).toEqual(
     expect.arrayContaining([
       expect.objectContaining({
-        scope: 'default',
+        scope: 'global',
         message: { source: '保存' },
         locale: 'en-US',
         value: 'Keep',
@@ -220,8 +223,9 @@ test('lists default, message-scoped, and orphaned human overrides', async () => 
         override_id: expect.any(String),
       }),
       expect.objectContaining({
-        scope: 'message',
+        scope: 'files',
         message: { source: '保存', comment: 'toolbar' },
+        files: ['src/home.ts'],
         locale: 'ja-JP',
         orphaned: false,
       }),

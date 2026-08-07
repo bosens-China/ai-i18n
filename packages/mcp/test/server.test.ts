@@ -70,6 +70,21 @@ test('registers eight focused tools without legacy mode or output schemas', asyn
     expect(setTranslations?.inputSchema.properties).not.toHaveProperty(
       'review_scope',
     );
+    const setOverrides = tools.tools.find(
+      (tool) => tool.name === 'ai_i18n_set_overrides',
+    );
+    expect(setOverrides?.inputSchema).toMatchObject({
+      properties: {
+        updates: {
+          items: {
+            additionalProperties: false,
+            properties: {
+              files: { maxItems: 100, minItems: 1, type: 'array' },
+            },
+          },
+        },
+      },
+    });
     const listOrphans = tools.tools.find(
       (tool) => tool.name === 'ai_i18n_list_orphan_messages',
     );

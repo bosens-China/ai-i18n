@@ -74,8 +74,17 @@
 ### 文件职责与最终值
 
 - 缺少 storage.json 表示使用默认分片 JSON；该文件只声明 SQLite。默认的 translations/ 保存可审查分片 JSON，可选 SQLite 保存到用户级全局数据库；overrides.json 保存项目人工审校；extracted/ 保存插件生成的源码结构；locales/ 是派生运行时产物。
-- 最终译文优先级固定为：comment 对应的人工值、同 source 的人工默认值、AI 翻译、source fallback。
-- 人工审校必须写入 overrides.json，不污染 AI Translation Memory。空字符串是有效人工译文。
+- `overrides.json` 使用 v2 扁平 `rules`。规则以 `source`、可选静态 `comment`、可选 `files` 和
+  `translations` 表达；缺少 `files` 表示当前 Vite 应用全局生效，存在 `files` 表示只匹配列出的
+  精确源码文件。一个规则可列出多个文件；路径必须是相对 Vite root 的标准化 POSIX 路径，不支持
+  绝对路径、路径片段或 glob。
+- 最终译文优先级固定为：文件 + comment 人工值、全局 + comment 人工值、文件默认人工值、全局
+  默认人工值、AI Translation Memory、source fallback。
+- 人工审校必须写入 overrides.json，不污染 AI Translation Memory。空字符串是有效人工译文；
+  comment 与文件范围彼此独立且可以组合。
+- Translation Memory 继续以 `source + comment` 跨文件复用；Runtime 与派生 locale 使用
+  `source file + message ID` 区分同一语义消息在不同文件中的最终人工值。该运行时身份不改变公开
+  `t()` 调用、Translation Memory 身份或 MCP 的消息对象。
 - JSON 模式提交源码、生成的类型声明、translations/ 和 overrides.json；SQLite 模式只提交 storage.json 与 overrides.json，用户级数据库不提交。extracted/ 与 locales/ 可由 Build 重建，不提交。
 - 一个 Vite build 独占一个协议目录。共享源码分别进入每个消费 build 的目录；多个 build 不能共用 directory，但 SQLite 可通过一个物理数据库中的逻辑项目绑定复用全局候选。
 

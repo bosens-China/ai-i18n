@@ -45,7 +45,6 @@ test('serializes concurrent translation and override updates', async () => {
           message: { source: '保存' },
           locale: 'en-US',
           value: 'Keep',
-          scope: 'default',
         },
       ],
     }),
@@ -56,7 +55,6 @@ test('serializes concurrent translation and override updates', async () => {
           message: { source: '退出' },
           locale: 'ja-JP',
           value: 'Leave',
-          scope: 'default',
         },
       ],
     }),
@@ -69,10 +67,11 @@ test('serializes concurrent translation and override updates', async () => {
     },
   });
   expect(await readFixtureOverrides(directory)).toMatchObject({
-    messages: {
-      保存: { default: { 'en-US': 'Keep' } },
-      退出: { default: { 'ja-JP': 'Leave' } },
-    },
+    version: 2,
+    rules: expect.arrayContaining([
+      { source: '保存', translations: { 'en-US': 'Keep' } },
+      { source: '退出', translations: { 'ja-JP': 'Leave' } },
+    ]),
   });
 });
 

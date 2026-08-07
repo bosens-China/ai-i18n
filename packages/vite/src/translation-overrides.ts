@@ -13,9 +13,10 @@ export function effectiveTranslation(
   locale: string,
   cacheMessages: Readonly<Record<string, CacheMessage>>,
   overrides: TranslationOverridesFile,
+  sourceFile?: string,
 ): TranslationValue {
   return (
-    resolveTranslationOverride(overrides, message, locale) ??
+    resolveTranslationOverride(overrides, message, locale, sourceFile) ??
     cacheMessages[message.id]?.translations[locale] ??
     null
   );
@@ -25,7 +26,11 @@ export function snapshotEffectiveModules(
   modules: ReadonlyMap<string, ExtractResult>,
   locales: readonly LangOption[],
   sourceLang: string,
-  translate: (message: ExtractedMessage, locale: string) => TranslationValue,
+  translate: (
+    message: ExtractedMessage,
+    locale: string,
+    moduleId: string,
+  ) => TranslationValue,
 ): Map<string, string> {
   return new Map(
     [...modules].map(([moduleId, module]) => [
@@ -35,7 +40,7 @@ export function snapshotEffectiveModules(
           message.id,
           locales
             .filter((locale) => locale.value !== sourceLang)
-            .map((locale) => translate(message, locale.value)),
+            .map((locale) => translate(message, locale.value, moduleId)),
         ]),
       ),
     ]),

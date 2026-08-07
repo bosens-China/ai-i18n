@@ -1,5 +1,10 @@
 import { afterEach, describe, expect, expectTypeOf, it, vi } from 'vitest';
-import { TranslationConflictError, createI18nRuntime } from '../src/index';
+import {
+  TranslationConflictError,
+  createI18nRuntime,
+  createScopedTranslate,
+  runtimeMessageId,
+} from '../src/index';
 import { locales } from './runtime-test-fixtures';
 
 afterEach(() => {
@@ -36,6 +41,29 @@ describe('@ai-i18n/core runtime', () => {
 
     expect(runtime.t('提交', { comment: '结算按钮' })).toBe('Place order');
     expect(runtime.t('保存', { comment: '按钮' })).toBe('Save');
+  });
+
+  it('keeps identical semantic messages isolated by runtime module', () => {
+    const runtime = createI18nRuntime({
+      sourceLang: 'zh-CN',
+      defaultLang: 'en-US',
+      locales,
+    });
+    runtime.registerModule('src/a.ts', {
+      'zh-CN': { [runtimeMessageId('src/a.ts', '保存')]: '保存' },
+      'en-US': { [runtimeMessageId('src/a.ts', '保存')]: 'Save file' },
+    });
+    runtime.registerModule('src/b.ts', {
+      'zh-CN': { [runtimeMessageId('src/b.ts', '保存')]: '保存' },
+      'en-US': { [runtimeMessageId('src/b.ts', '保存')]: 'Keep state' },
+    });
+
+    expect(createScopedTranslate(runtime, 'src/a.ts')('保存')).toBe(
+      'Save file',
+    );
+    expect(createScopedTranslate(runtime, 'src/b.ts')('保存')).toBe(
+      'Keep state',
+    );
   });
 
   it('translates tagged templates and lets targets reorder placeholders', () => {

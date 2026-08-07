@@ -31,6 +31,7 @@ import { loadLocaleModule, renderLocaleChunk } from './locale-module-loader.js';
 import { ProjectState } from './project-state.js';
 import { ProviderCoordinator } from './provider-coordinator.js';
 import { resolveProviderLogging } from './provider-logging.js';
+import { normalizeProjectId } from './project-paths.js';
 import { loadRegistration } from './registration-loader.js';
 import type { AiI18nOptions } from './options.js';
 import {
@@ -42,16 +43,22 @@ import {
 } from './plugin-utils.js';
 import { createSourceTransformHandler } from './source-transform.js';
 import { ssrWarningMessage } from './ssr-warning.js';
-import { runtimeCode, runtimeStubCode } from './virtual-modules.js';
+import {
+  runtimeCode,
+  runtimeStubCode,
+  scopedRuntimeCode,
+} from './virtual-modules.js';
 import { AI_I18N_VIRTUAL_MODULE_ID } from './yuku-analyzer.js';
 
 const RESOLVED_RUNTIME_ID = `\0${AI_I18N_VIRTUAL_MODULE_ID}`;
+const RESOLVED_SCOPED_RUNTIME_PREFIX = `${RESOLVED_RUNTIME_ID}?module=`;
+const INTERNAL_RUNTIME_ID = `${AI_I18N_VIRTUAL_MODULE_ID}/internal`;
 const REGISTER_PREFIX = `${AI_I18N_VIRTUAL_MODULE_ID}/register?module=`;
 const RESOLVED_REGISTER_PREFIX = `\0${REGISTER_PREFIX}`;
 const VIRTUAL_RE =
-  /^(?:virtual:ai-i18n(?:\/register\?module=.+|\/locale\/[^?]+)?|.*\/@ai-i18n\/locale\/[^?]+\.js(?:\?.*)?)$/;
+  /^(?:virtual:ai-i18n(?:\/internal|\/register\?module=.+|\/locale\/[^?]+)?|.*\/@ai-i18n\/locale\/[^?]+\.js(?:\?.*)?)$/;
 const RESOLVED_VIRTUAL_RE =
-  /^\0virtual:ai-i18n(?:\/register\?module=.+|\/locale\/[^?]+)?$/;
+  /^\0virtual:ai-i18n(?:\?module=.+|\/register\?module=.+|\/locale\/[^?]+)?$/;
 const TRANSLATION_UPDATE_EVENT = 'ai-i18n:update';
 const LOCALE_UPDATE_EVENT = 'ai-i18n:locale-update';
 
@@ -306,8 +313,22 @@ export function aiI18n(options: AiI18nOptions): Plugin {
 
     resolveId: {
       filter: { id: VIRTUAL_RE },
-      handler(id) {
-        if (id === AI_I18N_VIRTUAL_MODULE_ID) return RESOLVED_RUNTIME_ID;
+      handler(id, importer, resolveOptions) {
+        if (id === INTERNAL_RUNTIME_ID) return RESOLVED_RUNTIME_ID;
+        if (id === AI_I18N_VIRTUAL_MODULE_ID) {
+          if (
+            !resolveOptions?.ssr &&
+            importer &&
+            !importer.startsWith('\0') &&
+            config
+          ) {
+            const moduleId = normalizeProjectId(config.root, importer);
+            if (moduleId) {
+              return `${RESOLVED_SCOPED_RUNTIME_PREFIX}${encodeURIComponent(moduleId)}`;
+            }
+          }
+          return RESOLVED_RUNTIME_ID;
+        }
         if (id.startsWith(REGISTER_PREFIX)) return `\0${id}`;
         const locale = localeFromRequest(id);
         if (
@@ -343,6 +364,12 @@ export function aiI18n(options: AiI18nOptions): Plugin {
             framework,
             config?.command === 'build',
             config?.base,
+          );
+        }
+        if (id.startsWith(RESOLVED_SCOPED_RUNTIME_PREFIX)) {
+          return scopedRuntimeCode(
+            decodeURIComponent(id.slice(RESOLVED_SCOPED_RUNTIME_PREFIX.length)),
+            framework,
           );
         }
         await ready;

@@ -13,7 +13,10 @@ export interface ReactI18n {
 
 export type UseI18n = () => ReactI18n;
 
-export function createReactI18n(runtime: I18nRuntime): UseI18n {
+export function createReactI18n(
+  runtime: I18nRuntime,
+  scopedTranslate: I18nRuntime['t'] = runtime.t,
+): UseI18n {
   let runtimeRevision = 0;
   const listeners = new Set<() => void>();
   const langs = runtime.getLangs();
@@ -35,7 +38,7 @@ export function createReactI18n(runtime: I18nRuntime): UseI18n {
       () => runtimeRevision,
     );
     // React Compiler 会按函数引用缓存调用结果，语言更新时必须让 t 的引用同步变化。
-    const translate = runtime.t as (
+    const translate = scopedTranslate as (
       source: unknown,
       ...values: unknown[]
     ) => unknown;

@@ -95,8 +95,11 @@ export function sourceFilesForSource(
 export function targetDetails(
   target: TranslationTarget,
 ): Record<string, unknown> {
+  const files = (target as TranslationTarget & { files?: readonly string[] })
+    .files;
   return {
     message: target.message,
+    ...(files ? { files } : {}),
     locale: target.locale,
   };
 }

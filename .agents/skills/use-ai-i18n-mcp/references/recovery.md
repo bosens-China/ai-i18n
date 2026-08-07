@@ -20,10 +20,10 @@ server does not return that field.
 | `MESSAGE_ID_SOURCE_CONFLICT`, `MESSAGE_MISSING_FROM_TRANSLATIONS`, or `MESSAGE_METADATA_MISMATCH` | Rebuild with a clean extracted directory, then list again. Report the returned details if the error persists. |
 | `SOURCE_FILE_NOT_FOUND` | List with `view: "summary"` and without the filter, then copy an exact returned `source_file`. |
 | `MESSAGE_NOT_FOUND` | List again and copy the exact returned `message` object. |
+| `MESSAGE_NOT_FOUND_IN_SOURCE_FILE` | List again with `include_source_files: true`, then keep only exact files that contain the selected message. |
 | `DUPLICATE_TARGET_CONFLICT` | Choose one value for the repeated message and locale, then retry the batch. |
 | `TRANSLATION_CONFLICT` | Re-list current values. Set `overwrite_existing: true` only with explicit user approval. |
 | `TEMPLATE_TOKEN_MISMATCH` | Compare `expected_tokens` and `received_tokens`; add every entry from `missing_tokens`, remove every entry from `unexpected_tokens`, then retry. Repeated tokens are significant. |
-| `MESSAGE_SCOPE_REQUIRES_COMMENT` | Use message scope only for a listed message with a static comment. |
 | `UNKNOWN_LOCALE` | Use locale values from `aiI18n({ locales })`, not display labels. |
 | `INVALID_CURSOR` | Restart the corresponding list without the cursor. |
 | `INVALID_OVERRIDE_ID` | List overrides again and copy the returned ID exactly. |

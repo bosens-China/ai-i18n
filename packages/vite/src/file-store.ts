@@ -4,7 +4,6 @@ import {
   parseExtractedFile,
   type CacheMessage,
   type ExtractedFile,
-  type ExtractedMessage,
   type TranslationMemoryFile,
   type TranslationOverridesFile,
 } from '@ai-i18n/core';
@@ -247,7 +246,7 @@ export class FileStore {
       );
     }
     await this.writeLocales(
-      uniqueMessages(activeFiles),
+      activeFiles,
       cache.messages,
       await transactTranslationOverrides(
         translationOverridesPath(this.directory),
@@ -329,7 +328,7 @@ export class FileStore {
   }
 
   private async writeLocales(
-    messages: readonly ExtractedMessage[],
+    files: readonly ExtractedFile[],
     cacheMessages: Record<string, CacheMessage>,
     overrides: TranslationOverridesFile,
   ): Promise<void> {
@@ -347,7 +346,7 @@ export class FileStore {
             locale: { ...locale },
             messages: {},
           },
-          messages,
+          files,
           cacheMessages,
           overrides,
         ),
@@ -367,25 +366,4 @@ export class FileStore {
     if (content !== undefined)
       this.lastWritten.set(path.resolve(file), content);
   }
-}
-
-function uniqueMessages(files: readonly ExtractedFile[]): ExtractedMessage[] {
-  const messages = new Map<string, ExtractedMessage>();
-  for (const file of files) {
-    for (const message of file.messages) {
-      const previous = messages.get(message.id);
-      if (previous && previous.source !== message.source) {
-        throw new Error(
-          diagnosticMessage(
-            `[ai-i18n] 消息 ID“${message.id}”同时用于“${previous.source}”和“${message.source}”。`,
-            `[ai-i18n] Message ID "${message.id}" is used by both "${previous.source}" and "${message.source}".`,
-          ),
-        );
-      }
-      messages.set(message.id, message);
-    }
-  }
-  return [...messages.values()].sort((left, right) =>
-    left.id < right.id ? -1 : left.id > right.id ? 1 : 0,
-  );
 }

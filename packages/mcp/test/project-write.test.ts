@@ -175,13 +175,11 @@ test('sets and overwrites human reviews without changing translation memory', as
           message: reference('保存'),
           locale: 'en-US',
           value: 'Keep',
-          scope: 'default',
         },
         {
           message: reference('保存', 'toolbar'),
           locale: 'ja-JP',
           value: '保管',
-          scope: 'message',
         },
       ],
     }),
@@ -201,7 +199,6 @@ test('sets and overwrites human reviews without changing translation memory', as
           message: reference('保存'),
           locale: 'en-US',
           value: 'Retain',
-          scope: 'default',
         },
       ],
     }),
@@ -216,12 +213,18 @@ test('sets and overwrites human reviews without changing translation memory', as
     ],
   ).toBeNull();
   expect(await readFixtureOverrides(directory)).toMatchObject({
-    messages: {
-      保存: {
-        default: { 'en-US': 'Retain' },
-        byId: { '保存#toolbar': { 'ja-JP': '保管' } },
+    version: 2,
+    rules: expect.arrayContaining([
+      {
+        source: '保存',
+        translations: { 'en-US': 'Retain' },
       },
-    },
+      {
+        source: '保存',
+        comment: 'toolbar',
+        translations: { 'ja-JP': '保管' },
+      },
+    ]),
   });
 });
 
@@ -236,7 +239,6 @@ test('deletes exact listed override values and cleans empty containers', async (
         message: reference('保存'),
         locale: 'en-US',
         value: 'Keep',
-        scope: 'default',
       },
     ],
   });
@@ -253,8 +255,8 @@ test('deletes exact listed override values and cleans empty containers', async (
     }),
   ).resolves.toEqual({ deleted_count: 1, unchanged_count: 0 });
   expect(await readFixtureOverrides(directory)).toEqual({
-    version: 1,
-    messages: {},
+    version: 2,
+    rules: [],
   });
   await expect(
     service.deleteOverrides({
@@ -264,7 +266,7 @@ test('deletes exact listed override values and cleans empty containers', async (
   ).resolves.toEqual({ deleted_count: 0, unchanged_count: 1 });
 });
 
-test('validates message references, message scope, templates, and duplicates', async () => {
+test('validates message references, file scopes, templates, and duplicates', async () => {
   const root = await fixture();
   const directory = path.join(root, 'apps/web/i18n');
   const service = new AiI18nProjectService();
@@ -284,19 +286,23 @@ test('validates message references, message scope, templates, and duplicates', a
     code: 'MESSAGE_NOT_FOUND',
     details: { next_tool: 'ai_i18n_list_translations' },
   });
+  await addFixtureSourceFile(directory, 'src/exit.ts', {
+    id: '退出',
+    source: '退出',
+  });
   await expect(
     service.setOverrides({
       i18n_directory: directory,
       updates: [
         {
           message: reference('保存'),
+          files: ['src/exit.ts'],
           locale: 'en-US',
           value: 'Save',
-          scope: 'message',
         },
       ],
     }),
-  ).rejects.toMatchObject({ code: 'MESSAGE_SCOPE_REQUIRES_COMMENT' });
+  ).rejects.toMatchObject({ code: 'MESSAGE_NOT_FOUND_IN_SOURCE_FILE' });
   await expect(
     service.clearTranslations({
       i18n_directory: directory,
@@ -367,7 +373,6 @@ test('validates message references, message scope, templates, and duplicates', a
           message: reference('当前 {{0}} / {{1}} / {{1}}'),
           locale: 'en-US',
           value: 'Current {{0}}',
-          scope: 'default',
         },
       ],
     }),
@@ -383,8 +388,75 @@ test('validates message references, message scope, templates, and duplicates', a
       ?.translations['en-US'],
   ).toBeNull();
   expect(await readFixtureOverrides(directory)).toEqual({
-    version: 1,
-    messages: {},
+    version: 2,
+    rules: [],
+  });
+});
+
+test('groups identical file overrides and keeps file targets independent', async () => {
+  const root = await fixture();
+  const directory = path.join(root, 'apps/web/i18n');
+  await addFixtureSourceFile(directory, 'src/shared.ts', {
+    id: '保存',
+    source: '保存',
+  });
+  const service = new AiI18nProjectService();
+
+  await expect(
+    service.setOverrides({
+      i18n_directory: directory,
+      updates: [
+        {
+          message: reference('保存'),
+          files: ['src/shared.ts', 'src/home.ts'],
+          locale: 'en-US',
+          value: 'Save file',
+        },
+      ],
+    }),
+  ).resolves.toEqual({
+    added_count: 2,
+    overwritten_count: 0,
+    unchanged_count: 0,
+    deduplicated_count: 0,
+    affected_file_count: 2,
+  });
+  expect(await readFixtureOverrides(directory)).toEqual({
+    version: 2,
+    rules: [
+      {
+        source: '保存',
+        files: ['src/home.ts', 'src/shared.ts'],
+        translations: { 'en-US': 'Save file' },
+      },
+    ],
+  });
+
+  await service.setOverrides({
+    i18n_directory: directory,
+    updates: [
+      {
+        message: reference('保存'),
+        files: ['src/home.ts'],
+        locale: 'en-US',
+        value: 'Home save',
+      },
+    ],
+  });
+  expect(await readFixtureOverrides(directory)).toEqual({
+    version: 2,
+    rules: expect.arrayContaining([
+      {
+        source: '保存',
+        files: ['src/home.ts'],
+        translations: { 'en-US': 'Home save' },
+      },
+      {
+        source: '保存',
+        files: ['src/shared.ts'],
+        translations: { 'en-US': 'Save file' },
+      },
+    ]),
   });
 });
 

@@ -4,6 +4,7 @@ import {
   type TranslationOverridesFile,
   type TranslationValue,
   resolveTranslationOverride,
+  runtimeMessageId,
 } from '@ai-i18n/core';
 import {
   diagnosticMessage,
@@ -55,8 +56,8 @@ export class ProjectState {
     Map<string, TranslationValue>
   >();
   private overrides: TranslationOverridesFile = {
-    version: 1,
-    messages: {},
+    version: 2,
+    rules: [],
   };
   private readonly fingerprints = new Map<string, string>();
   private readonly locationMappers = new Map<
@@ -219,7 +220,7 @@ export class ProjectState {
     this.seen.clear();
     this.resolutions.clear();
     this.translations.clear();
-    this.overrides = { version: 1, messages: {} };
+    this.overrides = { version: 2, rules: [] };
     this.fingerprints.clear();
     this.locationMappers.clear();
     this.translationHooks.clear();
@@ -258,6 +259,7 @@ export class ProjectState {
     if (!result) return [];
     return this.providerTranslations.requests({
       messages: result.messages,
+      sourceFile: moduleId,
       locales: this.options.locales,
       sourceLang: this.options.sourceLang,
       overrides: this.overrides,
@@ -311,10 +313,10 @@ export class ProjectState {
         locale.value,
         Object.fromEntries(
           result.messages.map((message) => [
-            message.id,
+            runtimeMessageId(moduleId, message.id),
             locale.value === this.options.sourceLang
               ? message.source
-              : this.translation(message, locale.value),
+              : this.translation(message, locale.value, moduleId),
           ]),
         ),
       ]),
@@ -334,10 +336,10 @@ export class ProjectState {
       );
     }
     return Object.fromEntries(
-      [...this.modules.values()].flatMap((result) =>
+      [...this.modules].flatMap(([moduleId, result]) =>
         result.messages.map((message) => [
-          message.id,
-          this.translation(message, locale),
+          runtimeMessageId(moduleId, message.id),
+          this.translation(message, locale, moduleId),
         ]),
       ),
     );
@@ -346,9 +348,10 @@ export class ProjectState {
   private translation(
     message: Pick<ExtractedMessage, 'id' | 'source' | 'comment'>,
     locale: string,
+    sourceFile: string,
   ): TranslationValue {
     return (
-      resolveTranslationOverride(this.overrides, message, locale) ??
+      resolveTranslationOverride(this.overrides, message, locale, sourceFile) ??
       this.cachedTranslation(message.id, locale)
     );
   }
@@ -362,7 +365,8 @@ export class ProjectState {
       this.modules,
       this.options.locales,
       this.options.sourceLang,
-      (message, locale) => this.translation(message, locale),
+      (message, locale, moduleId) =>
+        this.translation(message, locale, moduleId),
     );
   }
 

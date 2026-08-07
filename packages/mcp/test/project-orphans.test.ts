@@ -76,8 +76,13 @@ test('deletes selected orphan messages without changing human overrides', async 
   await fs.writeFile(
     path.join(directory, 'overrides.json'),
     JSON.stringify({
-      version: 1,
-      messages: { 旧文案: { default: { 'en-US': 'Reviewed legacy' } } },
+      version: 2,
+      rules: [
+        {
+          source: '旧文案',
+          translations: { 'en-US': 'Reviewed legacy' },
+        },
+      ],
     }),
   );
   const service = new AiI18nProjectService();
@@ -97,7 +102,12 @@ test('deletes selected orphan messages without changing human overrides', async 
     '旧文案',
   );
   expect(await readFixtureOverrides(directory)).toMatchObject({
-    messages: { 旧文案: { default: { 'en-US': 'Reviewed legacy' } } },
+    rules: [
+      {
+        source: '旧文案',
+        translations: { 'en-US': 'Reviewed legacy' },
+      },
+    ],
   });
   await expect(
     service.deleteOrphanMessages({

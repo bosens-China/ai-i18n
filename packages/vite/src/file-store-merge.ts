@@ -1,9 +1,9 @@
 import {
   type CacheMessage,
   type ExtractedFile,
-  type ExtractedMessage,
   type LocaleFileV1,
   type TranslationOverridesFile,
+  runtimeMessageId,
 } from '@ai-i18n/core';
 import { effectiveTranslation } from './translation-overrides.js';
 
@@ -25,22 +25,25 @@ export function hydrateExtracted(extracted: ExtractedFile): ExtractedFile {
 
 export function hydrateLocale(
   locale: LocaleFileV1,
-  messages: readonly ExtractedMessage[],
+  files: readonly ExtractedFile[],
   cacheMessages: Record<string, CacheMessage>,
   overrides: TranslationOverridesFile,
 ): LocaleFileV1 {
   return {
     ...locale,
     messages: Object.fromEntries(
-      messages.map((message) => [
-        message.id,
-        effectiveTranslation(
-          message,
-          locale.locale.value,
-          cacheMessages,
-          overrides,
-        ),
-      ]),
+      files.flatMap((file) =>
+        file.messages.map((message) => [
+          runtimeMessageId(file.source, message.id),
+          effectiveTranslation(
+            message,
+            locale.locale.value,
+            cacheMessages,
+            overrides,
+            file.source,
+          ),
+        ]),
+      ),
     ),
   };
 }

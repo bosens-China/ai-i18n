@@ -54,7 +54,7 @@ export async function readTranslationOverrides(
 ): Promise<TranslationOverridesFile> {
   return readDocument(
     file,
-    () => ({ version: 1, messages: {} }),
+    () => ({ version: 2, rules: [] }),
     parseTranslationOverridesFile,
   );
 }
@@ -65,9 +65,16 @@ export async function transactTranslationOverrides(
 ): Promise<TranslationOverridesFile> {
   return transactDocument(
     file,
-    () => ({ version: 1, messages: {} }),
+    () => ({ version: 2, rules: [] }),
     parseTranslationOverridesFile,
     update,
+    {
+      beforeCompare(draft) {
+        const normalized = parseTranslationOverridesFile(draft);
+        Object.assign(draft, normalized);
+        draft.rules = normalized.rules;
+      },
+    },
   );
 }
 

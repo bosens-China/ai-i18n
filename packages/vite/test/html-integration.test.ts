@@ -1,7 +1,7 @@
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import type { Translator } from '@ai-i18n/core';
+import { runtimeMessageId, type Translator } from '@ai-i18n/core';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { build } from 'vite';
 import { aiI18n } from '../src';
@@ -100,9 +100,9 @@ describe('HTML extractor integration', () => {
       await readJson(path.join(root, 'i18n/locales/en-US.json')),
     ).toMatchObject({
       messages: {
-        首页: 'Home',
-        请输入: 'Type here',
-        '示例 {{=0}}': 'Example {{=0}}',
+        [runtimeMessageId('index.html', '首页')]: 'Home',
+        [runtimeMessageId('index.html', '请输入')]: 'Type here',
+        [runtimeMessageId('index.html', '示例 {{=0}}')]: 'Example {{=0}}',
       },
     });
   });

@@ -213,14 +213,14 @@ export function htmlBridgeCode(
     bindings.map((binding) => [binding.messageId, binding.source]),
   );
   return `
-import { subscribe, __registerModule, __unregisterModule, __translate } from ${JSON.stringify(AI_I18N_VIRTUAL_MODULE_ID)};
+import { subscribe, __registerModule, __unregisterModule, __translate } from ${JSON.stringify(`${AI_I18N_VIRTUAL_MODULE_ID}/internal`)};
 const moduleId = ${JSON.stringify(moduleId)};
 const sources = ${JSON.stringify(sources)};
 const bindings = ${JSON.stringify(bindings)};
 __registerModule(moduleId, ${JSON.stringify(messages)});
 const apply = () => {
   for (const binding of bindings) {
-    const value = __translate(binding.messageId, sources[binding.messageId]);
+    const value = __translate(moduleId, binding.messageId, sources[binding.messageId]);
     if (binding.kind === 'text') {
       document.querySelectorAll('[${TEXT_MARKER}="' + binding.marker + '"]').forEach((node) => { node.textContent = value; });
     } else if (binding.kind === 'attribute') {
@@ -232,7 +232,7 @@ const apply = () => {
   let comment;
   while ((comment = walker.nextNode())) {
     const binding = comments.get(comment.data);
-    if (binding && comment.nextSibling?.nodeType === Node.TEXT_NODE) comment.nextSibling.nodeValue = __translate(binding.messageId, binding.source);
+    if (binding && comment.nextSibling?.nodeType === Node.TEXT_NODE) comment.nextSibling.nodeValue = __translate(moduleId, binding.messageId, binding.source);
   }
 };
 apply();

@@ -25,11 +25,15 @@ export type {
   LangOption,
   LocaleFileV1,
   TranslationMemoryFile,
-  TranslationOverrideMessage,
+  TranslationOverrideRule,
   TranslationOverridesFile,
   TranslationValue,
 } from './schema.js';
-export { createI18nRuntime } from './runtime.js';
+export {
+  createI18nRuntime,
+  createScopedTranslate,
+  runtimeMessageId,
+} from './runtime.js';
 export type {
   I18nRuntime,
   I18nRuntimeOptions,

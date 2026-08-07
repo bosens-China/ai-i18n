@@ -1,4 +1,5 @@
 import path from 'node:path';
+import { runtimeMessageId } from '@ai-i18n/core';
 import { describe, expect, it } from 'vitest';
 import { ProjectState } from '../src/project-state';
 
@@ -62,7 +63,7 @@ describe('ProjectState incremental analysis', () => {
 
     expect(state.analyzer.module('src/main.ts')).toBe(analyzedMain);
     expect(state.registration('src/main.ts')).toMatchObject({
-      'zh-CN': { 设置: '设置' },
+      'zh-CN': { [runtimeMessageId('src/main.ts', '设置')]: '设置' },
     });
   });
 
@@ -109,15 +110,41 @@ describe('ProjectState incremental analysis', () => {
     });
 
     expect(state.registration('src/main.ts', 'zh-CN')).toEqual({
-      'zh-CN': { 保留: '保留' },
+      'zh-CN': { [runtimeMessageId('src/main.ts', '保留')]: '保留' },
     });
     state.retain(['/workspace/src/main.ts']);
-    expect(state.localeMessages('en-US')).toEqual({ 保留: 'Keep' });
+    expect(state.localeMessages('en-US')).toEqual({
+      [runtimeMessageId('src/main.ts', '保留')]: 'Keep',
+    });
   });
 
-  it('prefers exact human overrides, then default human overrides, then AI memory', () => {
+  it('applies file and comment override priority before AI memory', () => {
     const state = new ProjectState('/workspace', options);
     state.updateExtracted('', '/workspace/src/main.ts', [
+      {
+        id: '提交#Git 操作',
+        source: '提交',
+        comment: 'Git 操作',
+        locations: [{ line: 1, column: 0 }],
+      },
+      {
+        id: '提交',
+        source: '提交',
+        locations: [{ line: 2, column: 0 }],
+      },
+      {
+        id: '提交#确认对话框',
+        source: '提交',
+        comment: '确认对话框',
+        locations: [{ line: 3, column: 0 }],
+      },
+      {
+        id: '取消',
+        source: '取消',
+        locations: [{ line: 4, column: 0 }],
+      },
+    ]);
+    state.updateExtracted('', '/workspace/src/other.ts', [
       {
         id: '提交#Git 操作',
         source: '提交',
@@ -145,6 +172,12 @@ describe('ProjectState incremental analysis', () => {
           comment: 'Git 操作',
           translations: { 'en-US': 'AI commit' },
         },
+        '提交#确认对话框': {
+          source: '提交',
+          sourceLang: 'zh-CN',
+          comment: '确认对话框',
+          translations: { 'en-US': 'AI confirm' },
+        },
         提交: {
           source: '提交',
           sourceLang: 'zh-CN',
@@ -158,20 +191,46 @@ describe('ProjectState incremental analysis', () => {
       },
     });
     state.hydrateOverrides({
-      version: 1,
-      messages: {
-        提交: {
-          default: { 'en-US': 'Submit' },
-          byId: { '提交#Git 操作': { 'en-US': 'Commit' } },
+      version: 2,
+      rules: [
+        { source: '提交', translations: { 'en-US': 'Submit' } },
+        {
+          source: '提交',
+          files: ['src/main.ts'],
+          translations: { 'en-US': 'File submit' },
         },
-      },
+        {
+          source: '提交',
+          comment: 'Git 操作',
+          translations: { 'en-US': 'Commit' },
+        },
+        {
+          source: '提交',
+          comment: '确认对话框',
+          translations: { 'en-US': 'Confirm' },
+        },
+        {
+          source: '提交',
+          comment: 'Git 操作',
+          files: ['src/main.ts'],
+          translations: { 'en-US': 'File commit' },
+        },
+      ],
     });
 
     expect(state.registration('src/main.ts', 'en-US')).toEqual({
       'en-US': {
-        '提交#Git 操作': 'Commit',
-        提交: 'Submit',
-        取消: 'Cancel',
+        [runtimeMessageId('src/main.ts', '提交#Git 操作')]: 'File commit',
+        [runtimeMessageId('src/main.ts', '提交')]: 'File submit',
+        [runtimeMessageId('src/main.ts', '提交#确认对话框')]: 'Confirm',
+        [runtimeMessageId('src/main.ts', '取消')]: 'Cancel',
+      },
+    });
+    expect(state.registration('src/other.ts', 'en-US')).toEqual({
+      'en-US': {
+        [runtimeMessageId('src/other.ts', '提交#Git 操作')]: 'Commit',
+        [runtimeMessageId('src/other.ts', '提交')]: 'Submit',
+        [runtimeMessageId('src/other.ts', '取消')]: 'Cancel',
       },
     });
   });
@@ -244,8 +303,8 @@ describe('ProjectState incremental analysis', () => {
       state.missingTranslations('src/main.ts', { refreshCached: true }),
     ).toHaveLength(2);
     expect(state.localeMessages('en-US')).toEqual({
-      保存: 'Old save',
-      取消: 'Old cancel',
+      [runtimeMessageId('src/main.ts', '保存')]: 'Old save',
+      [runtimeMessageId('src/main.ts', '取消')]: 'Old cancel',
     });
 
     state.hydrateCache({
@@ -273,8 +332,8 @@ describe('ProjectState incremental analysis', () => {
     );
 
     expect(state.localeMessages('en-US')).toEqual({
-      保存: 'Agent save',
-      取消: 'Provider cancel',
+      [runtimeMessageId('src/main.ts', '保存')]: 'Agent save',
+      [runtimeMessageId('src/main.ts', '取消')]: 'Provider cancel',
     });
   });
 
