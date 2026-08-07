@@ -2,6 +2,16 @@
   "name": "@ai-i18n/ai-i18n",
   "private": true,
   "version": "0.0.0",
+  "description": "AI-powered internationalization toolkit for Vite applications.",
+  "keywords": [
+    "ai-i18n",
+    "i18n",
+    "internationalization",
+    "localization",
+    "translation",
+    "vite",
+    "ai"
+  ],
   "type": "module",
   "packageManager": "pnpm@11.15.1",
   "license": "MIT",

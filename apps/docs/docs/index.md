@@ -1,12 +1,12 @@
 ---
 pageType: home
 title: ai-i18n
-description: Vite AI 国际化插件
+description: 面向 Vite 的 AI 国际化插件，支持源码提取、翻译管理和多语言运行时。
 
 hero:
   name: ai-i18n
   text: Vite AI 国际化
-  tagline: 直接写中文，自动提取、翻译并生成语言包。
+  tagline: 直接编写源文案，自动提取、翻译并生成语言包。
   image:
     src: /logo.png
     alt: ai-i18n logo

@@ -1,10 +1,15 @@
 {
   "name": "@ai-i18n/mcp",
   "version": "1.0.0-alpha.13",
-  "description": "Local MCP tools for managing ai-i18n translations and human review.",
+  "description": "MCP server for inspecting, translating, and reviewing ai-i18n messages.",
   "keywords": [
+    "ai-i18n",
+    "ai",
     "i18n",
+    "internationalization",
+    "localization",
     "mcp",
+    "model-context-protocol",
     "translation"
   ],
   "license": "MIT",

@@ -1,11 +1,18 @@
 {
   "name": "@ai-i18n/vite",
   "version": "1.0.0-alpha.15",
-  "description": "Vite static extraction and browser runtime plugin for ai-i18n.",
+  "description": "AI-powered i18n plugin for Vite with source-text extraction and browser runtime localization.",
   "keywords": [
+    "ai-i18n",
+    "ai",
     "i18n",
+    "internationalization",
+    "localization",
     "translation",
-    "vite"
+    "vite",
+    "vite-plugin",
+    "vue",
+    "react"
   ],
   "license": "MIT",
   "author": "yliu",

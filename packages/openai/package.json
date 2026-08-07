@@ -1,11 +1,17 @@
 {
   "name": "@ai-i18n/openai",
   "version": "1.0.0-alpha.9",
-  "description": "LangChain-based OpenAI-compatible translation provider for ai-i18n.",
+  "description": "OpenAI-compatible AI translation provider for ai-i18n.",
   "keywords": [
+    "ai-i18n",
+    "ai",
     "i18n",
+    "internationalization",
+    "localization",
     "openai",
-    "translation"
+    "openai-compatible",
+    "translation",
+    "langchain"
   ],
   "license": "MIT",
   "author": "yliu",

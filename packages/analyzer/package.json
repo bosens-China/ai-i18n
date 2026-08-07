@@ -1,11 +1,17 @@
 {
   "name": "@ai-i18n/analyzer",
   "version": "1.0.0-alpha.13",
-  "description": "Shared Yuku-based static translation analysis for ai-i18n tooling.",
+  "description": "Static i18n message analysis for ai-i18n tooling in Vite, Vue, and React projects.",
   "keywords": [
+    "ai-i18n",
     "i18n",
+    "internationalization",
+    "localization",
     "static-analysis",
-    "translation"
+    "translation",
+    "vite",
+    "vue",
+    "react"
   ],
   "license": "MIT",
   "author": "yliu",
