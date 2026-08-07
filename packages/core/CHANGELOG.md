@@ -1,5 +1,12 @@
 # @ai-i18n/core
 
+## [1.0.0-alpha.9](https://github.com/bosens-China/ai-i18n/compare/core-v1.0.0-alpha.8...core-v1.0.0-alpha.9) (2026-08-07)
+
+
+### Bug Fixes
+
+* **core:** 打开存储时迁移旧翻译文件 ([40d33a3](https://github.com/bosens-China/ai-i18n/commit/40d33a3d3cb8b26807a425a962138ea5f2cd191b))
+
 ## [1.0.0-alpha.8](https://github.com/bosens-China/ai-i18n/compare/core-v1.0.0-alpha.7...core-v1.0.0-alpha.8) (2026-08-06)
 
 
