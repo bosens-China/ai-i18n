@@ -1,7 +1,7 @@
 # @ai-i18n/eslint-plugin
 
-用于提前报告无法被 Vite/Yuku 静态提取、不符合推荐语法，或不会随语言切换刷新的 Runtime
-用法。规则检查解析到 `virtual:ai-i18n` 的翻译与状态 API，以及 Vue/React 模式下
+用于提前报告无法被 Vite/Yuku 静态提取、内嵌静态 markup、不符合推荐语法，或不会随语言
+切换刷新的 Runtime 用法。规则检查解析到 `virtual:ai-i18n` 的翻译与状态 API，以及 Vue/React 模式下
 `useI18n()` 返回的订阅状态。其他库或局部同名函数不受影响。
 
 alpha 阶段请安装 `@ai-i18n/eslint-plugin@alpha`；peer 支持 ESLint 9 和 10。
@@ -91,7 +91,7 @@ export default [
 ];
 ```
 
-两个 Vue preset 都复用宿主的 Vue parser，并启用五条适用规则。语义分析使用
+两个 Vue preset 都复用宿主的 Vue parser，并启用六条适用规则。语义分析使用
 Vue 项目已有的 `vue/compiler-sfc` Node 入口，与 Vite 提取器复用相同分析语义和
 source-map 映射，覆盖 `<script>`、`<script setup>`、模板插值和指令表达式。Vue、
 TypeScript 与 SFC 编译相关依赖均为可选 peer，不会安装到 React/Vanilla 项目。
@@ -220,8 +220,13 @@ API 把 `...i18nComputed()` 直接展开到根 `computed`；setup、data、metho
 template 中直接调用该工厂会提示错误位置。事件处理器、action、普通工具函数和即时 console
 调用允许按需读取。规则只分析当前文件，不追踪跨文件 store 数据流。
 
-六条规则可独立启用。四条静态分析规则无法启动时，同一文件只报告一次双语错误；官方 preset 由
+七条规则可独立启用。五条静态分析规则无法启动时，同一文件只报告一次双语错误；官方 preset 由
 `t-static-args` 优先报告，避免次级规则重复提示。
+
+`ai-i18n/no-embedded-markup` 是 Vanilla、Vue 和 React 共用的 warning。它检查 Analyzer
+最终提取的 source，因此覆盖直接字符串、tagged template、静态 `const`、条件候选和文案树。
+静态 HTML/SVG 应留在翻译调用外，或作为占位符传入。规则不限制文案长度、行数或占位符数量，
+也不提供自动修复。
 
 规则与 Vite 共用静态参数语义，包括从 `useI18n()` 获得的对象成员调用
 `i18n.t()`、`i18n['t']()`、省略式 `t('source', undefined)` 和 tagged template。
@@ -334,6 +339,13 @@ export default [
     },
     plugins: { 'ai-i18n': aiI18n },
     rules: {
+      'ai-i18n/no-embedded-markup': [
+        'warn',
+        {
+          autoImport: ['t', 'tRef', 'tComputed', 'useI18n'],
+          tsconfigPath: './tsconfig.json', // 可选：覆盖自动发现入口
+        },
+      ],
       'ai-i18n/no-eager-translation': [
         'warn',
         {

@@ -85,6 +85,8 @@ t`电压：${valueHtml} V`;
 
 这条文案会提取为 `电压：{{0}} V`。翻译者可以调整语序和单位，但不需要维护 `<span>` 标签。
 传入的动态内容仍应来自可信数据或完成必要的转义；模板插值不会自动净化 HTML。
+启用 [`ai-i18n/no-embedded-markup`](/guide/quality/eslint-rules#no-embedded-markup) 后，
+ESLint 会对最终可提取 source 中的静态 HTML 或 SVG 发出 warning。
 
 需要一次得到整组译文时，可以直接传入静态纯文案树：
 

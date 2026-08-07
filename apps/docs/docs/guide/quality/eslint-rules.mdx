@@ -29,6 +29,7 @@ export default defineConfig([
 | 规则                            | 默认级别 | 范围           | 用途                                           |
 | ------------------------------- | -------- | -------------- | ---------------------------------------------- |
 | `t-static-args`                 | error    | 通用           | 拒绝无法静态提取或不推荐的翻译调用参数。       |
+| `no-embedded-markup`            | warning  | 通用           | 避免让静态 HTML/SVG 结构进入翻译源文。         |
 | `no-eager-translation`          | warning  | 通用，Vue 扩展 | 避免在初始化阶段长期保存译后字符串。           |
 | `no-unsubscribed-runtime-state` | warning  | 通用，框架扩展 | 避免缓存或渲染非响应式语言状态快照。           |
 | `no-unsubscribed-t`             | warning  | Vue、React     | 检查组件渲染和 Vue 响应式翻译 API 的生命周期。 |
@@ -42,6 +43,22 @@ export default defineConfig([
 检查 `t()`、Vue `tRef()`、`tComputed()`，以及 `useI18n()` 返回的 `t`。source 必须能在构建
 阶段确定；options 必须是仅包含 `comment` 的静态对象。动态字符串、不支持的调用形式和不推荐的
 集合成员引用会报错。
+
+### `no-embedded-markup`
+
+检查 `t()`、tagged template、Vue `tRef()`、`tComputed()` 以及 `useI18n()` 返回的
+`t`。规则分析最终可提取 source；直接字符串、静态 `const`、条件候选和文案树共用同一口径。
+
+下列写法会收到 warning：
+
+```ts
+t`<div>温度：<span style="color:${color}">${temp}℃</span></div>`;
+```
+
+处理原则、推荐写法和 HTML 插值的安全边界见
+[通用文案写法](/guide/basic/static-analysis/common#支持的参数)。规则不限制长文案、多行文案、
+占位符数量、条件候选或文案树规模，也不检查仅在插值运行时值中出现的 HTML。
+第一版不识别 JSON、URL、SQL 或 Shell，也不把纯 Markdown 语法视为 markup。
 
 ### `no-eager-translation`
 
@@ -146,6 +163,7 @@ const lazyPasswordRules = {
 {
   rules: {
     'ai-i18n/t-static-args': ['error', { autoImport: ['t'] }],
+    'ai-i18n/no-embedded-markup': ['warn', { autoImport: ['t'] }],
     'ai-i18n/no-eager-translation': ['warn', { autoImport: ['t'] }],
     'ai-i18n/no-unsubscribed-runtime-state': [
       'warn',
@@ -184,6 +202,10 @@ Vanilla 只使用通用规则。它没有组件渲染生命周期，因此 `vani
   rules: {
     'ai-i18n/t-static-args': [
       'error',
+      { autoImport: ['t', 'tRef', 'tComputed', 'useI18n'] },
+    ],
+    'ai-i18n/no-embedded-markup': [
+      'warn',
       { autoImport: ['t', 'tRef', 'tComputed', 'useI18n'] },
     ],
     'ai-i18n/no-eager-translation': [
@@ -263,6 +285,10 @@ Composition API 与 Options API 生命周期问题：
       'error',
       { autoImport: ['t', 'useI18n'] },
     ],
+    'ai-i18n/no-embedded-markup': [
+      'warn',
+      { autoImport: ['t', 'useI18n'] },
+    ],
     'ai-i18n/no-eager-translation': [
       'warn',
       { autoImport: ['t', 'useI18n'] },
@@ -312,12 +338,12 @@ React 在通用规则之外增加组件订阅检查：
 
 ## 规则选项
 
-| 选项                  | 适用规则与行为                                                                                                    |
-| --------------------- | ----------------------------------------------------------------------------------------------------------------- |
-| `autoImport`          | 五条检查规则接受布尔值或各自支持的 API 数组；`no-redundant-auto-import` 只接受非空 API 数组。                     |
-| `framework`           | `no-eager-translation` 接受 `vue`；`no-unsubscribed-t` 与 `no-unsubscribed-runtime-state` 接受 `vue` 或 `react`。 |
-| `tsconfigPath`        | 仅适用于 `t-static-args`、`no-eager-translation`、`no-unsubscribed-t` 和 `static-candidate-limit`。               |
-| `maxStaticCandidates` | 仅适用于 `static-candidate-limit`，必须是正整数。                                                                 |
+| 选项                  | 适用规则与行为                                                                                                            |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| `autoImport`          | 六条检查规则接受布尔值或各自支持的 API 数组；`no-redundant-auto-import` 只接受非空 API 数组。                             |
+| `framework`           | `no-eager-translation` 接受 `vue`；`no-unsubscribed-t` 与 `no-unsubscribed-runtime-state` 接受 `vue` 或 `react`。         |
+| `tsconfigPath`        | 仅适用于 `t-static-args`、`no-embedded-markup`、`no-eager-translation`、`no-unsubscribed-t` 和 `static-candidate-limit`。 |
+| `maxStaticCandidates` | 仅适用于 `static-candidate-limit`，必须是正整数。                                                                         |
 
 翻译调用规则中的 `autoImport: true` 是兼容性简写，只启用 `t` 与 `useI18n`，不包含 Vue 专属的
 `tRef` 和 `tComputed`。状态快照规则中的 `autoImport: true` 会启用 `getLang`、

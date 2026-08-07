@@ -10,6 +10,7 @@ import {
   validateRecommendedUsage,
   type Module,
   type ExtractWarningCode,
+  type ExtractedMessage,
   type RecommendedUsageCode,
   type AnalysisLanguage,
   type TranslationCall,
@@ -28,6 +29,7 @@ export interface StaticArgsWarning {
 export interface StaticAnalysisResult {
   warnings: StaticArgsWarning[];
   translationCalls: TranslationCall[];
+  messages: ExtractedMessage[];
 }
 
 export type AutoImportApi = 't' | 'tRef' | 'tComputed' | 'useI18n';
@@ -73,7 +75,7 @@ export function analyzeStaticSource(
   alias?: ImportAlias,
 ): StaticAnalysisResult {
   if (!hasPotentialTranslationCandidate(code)) {
-    return { warnings: [], translationCalls: [] };
+    return { warnings: [], translationCalls: [], messages: [] };
   }
   const autoImports = normalizeAutoImports(autoImport);
   const translationAutoImports = runtimeAutoImports(autoImports);
@@ -86,7 +88,7 @@ export function analyzeStaticSource(
   const entryPath = normalizeFilename(filename);
   const entry = analyzer.addFile(entryPath, code, lang ? { lang } : undefined);
   if (!hasTranslationCandidate(entry, autoImports)) {
-    return { warnings: [], translationCalls: [] };
+    return { warnings: [], translationCalls: [], messages: [] };
   }
   loadDependencies(analyzer, entry, resolve);
   analyzer.link();
@@ -97,7 +99,7 @@ export function analyzeStaticSource(
     hooks,
     translationAutoImports,
     maxStaticCandidates,
-  ).warnings;
+  );
   const recommended = validateRecommendedUsage(
     entry,
     AI_I18N_VIRTUAL_MODULE_ID,
@@ -106,13 +108,15 @@ export function analyzeStaticSource(
   );
   const warnings = recommended.length
     ? [
-        ...extraction.filter((warning) => warning.code === 'parse-error'),
-        ...extraction.filter(
+        ...extraction.warnings.filter(
+          (warning) => warning.code === 'parse-error',
+        ),
+        ...extraction.warnings.filter(
           (warning) => warning.code === 'static-candidate-limit',
         ),
         ...recommended,
       ]
-    : extraction;
+    : extraction.warnings;
   return {
     warnings: warnings.map(({ code: warningCode, line, column, message }) => ({
       code: warningCode,
@@ -126,6 +130,7 @@ export function analyzeStaticSource(
       hooks,
       translationAutoImports,
     ),
+    messages: extraction.messages,
   };
 }
 

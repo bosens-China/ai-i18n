@@ -119,6 +119,7 @@
 ### 推荐语法与 ESLint
 
 - 静态可提取与推荐写法是两个独立维度。Analyzer 尽量提取有限静态值；ESLint 负责报告动态参数、超出候选上限和不推荐的调用来源。
+- ESLint 的通用 `no-embedded-markup` 规则在最终可提取 source 含有静态 HTML/SVG 结构时发出 warning，引导开发者把结构移出翻译调用或作为占位符传入。规则不按文案长度、行数、占位符数量、条件候选或文案树规模猜测翻译单元边界，Vanilla、Vue 与 React 共用同一判定。
 - ESLint 提供译文初始化快照、Runtime 状态快照和未订阅渲染诊断，识别 Options data 与 setup 的初始化边界、tComputed() / i18nComputed() 的合法 computed 位置、自动导入的裸 `t` 与关闭自动导入时纯 Options 的显式 `methods: { t }` bridge，并报告把 `this.t` / `this.$t` 当作 ai-i18n API 的写法；这些规则只分析可可靠判断的当前文件直接调用，不承诺覆盖所有数据流。
 - 可选的冗余自动导入规则只依据显式配置的当前自动导入集合判断，不读取或猜测 Vite 配置。
 - Analyzer、ESLint 与 Vite 的开发者诊断使用同一语言策略。AI_I18N_DIAGNOSTIC_LOCALE 可固定为 zh-CN 或 en-US；auto 与未设置时按 Node 时区选择。

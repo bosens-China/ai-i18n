@@ -5,12 +5,13 @@ import {
   RUNTIME_AUTO_IMPORTS,
   VUE_AUTO_IMPORTS,
 } from './auto-imports.js';
-import { noEagerTranslation } from './rules/no-eager-translation.js';
-import { noRedundantAutoImport } from './rules/no-redundant-auto-import.js';
-import { noUnsubscribedRuntimeState } from './rules/no-unsubscribed-runtime-state.js';
-import { noUnsubscribedT } from './rules/no-unsubscribed-t.js';
-import { staticCandidateLimit } from './rules/static-candidate-limit.js';
-import { tStaticArgs } from './rules/t-static-args.js';
+import { noEagerTranslation } from './rules/common/no-eager-translation.js';
+import { noEmbeddedMarkup } from './rules/common/no-embedded-markup.js';
+import { noRedundantAutoImport } from './rules/common/no-redundant-auto-import.js';
+import { noUnsubscribedRuntimeState } from './rules/common/no-unsubscribed-runtime-state.js';
+import { noUnsubscribedT } from './rules/common/no-unsubscribed-t.js';
+import { staticCandidateLimit } from './rules/common/static-candidate-limit.js';
+import { tStaticArgs } from './rules/common/t-static-args.js';
 
 const { version } = createRequire(import.meta.url)('../package.json') as {
   version: string;
@@ -23,6 +24,7 @@ const plugin: ESLint.Plugin = {
     namespace: 'ai-i18n',
   },
   rules: {
+    'no-embedded-markup': noEmbeddedMarkup,
     'no-eager-translation': noEagerTranslation,
     'no-redundant-auto-import': noRedundantAutoImport,
     'no-unsubscribed-runtime-state': noUnsubscribedRuntimeState,
@@ -43,6 +45,7 @@ plugin.configs!.recommended = [
     },
     rules: {
       'ai-i18n/t-static-args': 'error',
+      'ai-i18n/no-embedded-markup': 'warn',
       'ai-i18n/no-eager-translation': 'warn',
       'ai-i18n/no-unsubscribed-runtime-state': 'warn',
       'ai-i18n/no-unsubscribed-t': 'warn',
@@ -60,6 +63,7 @@ plugin.configs!.vue = [
     },
     rules: {
       'ai-i18n/t-static-args': 'error',
+      'ai-i18n/no-embedded-markup': 'warn',
       'ai-i18n/no-eager-translation': ['warn', { framework: 'vue' }],
       'ai-i18n/no-unsubscribed-runtime-state': ['warn', { framework: 'vue' }],
       'ai-i18n/no-unsubscribed-t': ['warn', { framework: 'vue' }],
@@ -83,6 +87,7 @@ plugin.configs!['vanilla-auto-import'] = [
     },
     rules: {
       'ai-i18n/t-static-args': ['error', { autoImport: ['t'] }],
+      'ai-i18n/no-embedded-markup': ['warn', { autoImport: ['t'] }],
       'ai-i18n/no-eager-translation': ['warn', { autoImport: ['t'] }],
       'ai-i18n/no-unsubscribed-runtime-state': [
         'warn',
@@ -108,6 +113,10 @@ plugin.configs!['vue-auto-import'] = [
     rules: {
       'ai-i18n/t-static-args': [
         'error',
+        { autoImport: ['t', 'tRef', 'tComputed', 'useI18n'] },
+      ],
+      'ai-i18n/no-embedded-markup': [
+        'warn',
         { autoImport: ['t', 'tRef', 'tComputed', 'useI18n'] },
       ],
       'ai-i18n/no-eager-translation': [
@@ -153,6 +162,7 @@ plugin.configs!['react-auto-import'] = [
     },
     rules: {
       'ai-i18n/t-static-args': ['error', { autoImport: ['t', 'useI18n'] }],
+      'ai-i18n/no-embedded-markup': ['warn', { autoImport: ['t', 'useI18n'] }],
       'ai-i18n/no-eager-translation': [
         'warn',
         { autoImport: ['t', 'useI18n'] },
@@ -171,6 +181,7 @@ plugin.configs!['react-auto-import'] = [
 ];
 
 export {
+  noEmbeddedMarkup,
   noEagerTranslation,
   noRedundantAutoImport,
   noUnsubscribedRuntimeState,

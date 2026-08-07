@@ -7,7 +7,11 @@ import {
   type StaticAnalysisResult,
   type StaticArgsWarning,
 } from './analyze.js';
-import { diagnosticMessage, type TranslationCall } from '@ai-i18n/analyzer';
+import {
+  diagnosticMessage,
+  type ExtractedMessage,
+  type TranslationCall,
+} from '@ai-i18n/analyzer';
 import { createVueAnalysisSource } from './vue-sfc.js';
 import type { ImportAlias } from './resolve-import.js';
 
@@ -27,6 +31,7 @@ const reportedAnalysisFailures = new WeakSet<object>();
 const EMPTY_ANALYSIS: StaticAnalysisResult = {
   warnings: [],
   translationCalls: [],
+  messages: [],
 };
 
 export function analyzeRuleContext(
@@ -44,6 +49,14 @@ export function analyzeTranslationCalls(
 ): TranslationCall[] {
   return analyzeRuleContextResult(context, options, DEFAULT_CANDIDATE_LIMIT)
     .translationCalls;
+}
+
+export function analyzeTranslationMessages(
+  context: Rule.RuleContext,
+  options: RuleAnalysisOptions,
+): ExtractedMessage[] {
+  return analyzeRuleContextResult(context, options, Number.POSITIVE_INFINITY)
+    .messages;
 }
 
 export function reportAnalysisFailureOnce(
@@ -108,6 +121,13 @@ function analyzeRuleContextResult(
       translationCalls: result.translationCalls.map((call) => ({
         ...call,
         ...cached.source.mapLocation(call),
+      })),
+      messages: result.messages.map((message) => ({
+        ...message,
+        locations: message.locations.map((location) => ({
+          ...location,
+          ...cached.source.mapLocation(location),
+        })),
       })),
     };
     cached.analyses.set(key, analysis);
