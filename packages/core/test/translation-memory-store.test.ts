@@ -19,7 +19,7 @@ afterEach(async () => {
 });
 
 describe('Translation Memory stores', () => {
-  it('migrates a legacy file into deterministic JSON shards', async () => {
+  it('migrates a legacy file into deterministic JSON shards on open', async () => {
     const root = await temporaryDirectory();
     const directory = path.join(root, 'i18n');
     await fs.mkdir(directory, { recursive: true });
@@ -40,11 +40,8 @@ describe('Translation Memory stores', () => {
     );
 
     const store = await openTranslationMemoryStore({ directory });
-    const memory = await store.load();
     const files = await fs.readdir(path.join(directory, 'translations'));
 
-    expect(memory.revision).toBe(4);
-    expect(memory.messages.Save?.translations['en-US']).toBe('Save');
     expect(files).toContain('manifest.json');
     expect(
       files.filter((file) => /^[0-9a-f]{2}\.json$/.test(file)),
@@ -55,6 +52,11 @@ describe('Translation Memory stores', () => {
     await expect(
       fs.access(path.join(directory, 'storage.json')),
     ).rejects.toMatchObject({ code: 'ENOENT' });
+    expect((await store.load()).messages.Save?.translations['en-US']).toBe(
+      'Save',
+    );
+    expect((await store.load()).revision).toBe(4);
+    store.close();
   });
 
   it('recovers a complete JSON transaction journal after an interrupted shard commit', async () => {

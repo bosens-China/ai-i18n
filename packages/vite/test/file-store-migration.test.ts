@@ -12,6 +12,36 @@ import { options, readJson, setup } from './file-store-test-utils';
 import { updateTestTranslationMemory } from './translation-memory-test-utils';
 
 describe('FileStore migrations', () => {
+  it('migrates a legacy memory file when FileStore loads without changes', async () => {
+    const { root, store } = await setup();
+    const directory = path.join(root, 'i18n');
+    await fs.mkdir(directory, { recursive: true });
+    await fs.writeFile(
+      path.join(directory, 'translations.json'),
+      JSON.stringify({
+        version: 1,
+        revision: 2,
+        messages: {
+          Save: {
+            source: '保存',
+            sourceLang: 'zh-CN',
+            translations: { 'en-US': 'Save' },
+          },
+        },
+      }),
+    );
+
+    expect((await store.load()).messages.Save?.translations['en-US']).toBe(
+      'Save',
+    );
+    await expect(
+      fs.access(path.join(directory, 'translations/manifest.json')),
+    ).resolves.toBeUndefined();
+    await expect(
+      fs.access(path.join(directory, 'translations.json')),
+    ).rejects.toMatchObject({ code: 'ENOENT' });
+  });
+
   it('adds and removes configured locales without dropping cache history', async () => {
     const { root, state, store } = await setup();
     const source = path.join(root, 'src/main.ts');

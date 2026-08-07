@@ -34,6 +34,8 @@ export async function openTranslationMemoryStore(
       options.dataDirectory,
     );
     await syncMarker(directory, requested);
+    // JSON Store 在加载时恢复事务并迁移 Alpha 阶段的旧单文件。
+    await store.load();
     return store;
   }
 
