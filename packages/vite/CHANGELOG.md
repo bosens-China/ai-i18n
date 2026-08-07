@@ -1,5 +1,20 @@
 # @ai-i18n/vite
 
+## [1.0.0-alpha.16](https://github.com/bosens-China/ai-i18n/compare/vite-v1.0.0-alpha.15...vite-v1.0.0-alpha.16) (2026-08-07)
+
+
+### Bug Fixes
+
+* **core:** 打开存储时迁移旧翻译文件 ([40d33a3](https://github.com/bosens-China/ai-i18n/commit/40d33a3d3cb8b26807a425a962138ea5f2cd191b))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @ai-i18n/analyzer bumped to 1.0.0-alpha.14
+    * @ai-i18n/core bumped to 1.0.0-alpha.9
+
 ## [1.0.0-alpha.15](https://github.com/bosens-China/ai-i18n/compare/vite-v1.0.0-alpha.14...vite-v1.0.0-alpha.15) (2026-08-06)
 
 
