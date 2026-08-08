@@ -11,7 +11,7 @@
       "source": "递归解析项目引用",
       "sourceLang": "zh-CN",
       "translations": {
-        "en-US": null
+        "en-US": "Resolve project references recursively"
       }
     }
   },

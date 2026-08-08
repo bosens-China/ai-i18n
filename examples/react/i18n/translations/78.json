@@ -4,7 +4,7 @@
       "source": "自动发现 tsconfig",
       "sourceLang": "zh-CN",
       "translations": {
-        "en-US": null
+        "en-US": "Discover tsconfig automatically"
       }
     }
   },
