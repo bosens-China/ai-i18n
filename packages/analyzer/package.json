@@ -50,7 +50,7 @@
   "dependencies": {
     "@ai-i18n/core": "workspace:*",
     "source-map-js": "1.2.1",
-    "yuku-analyzer": "0.8.2"
+    "yuku-analyzer": "0.8.4"
   },
   "peerDependencies": {
     "@vue/compiler-sfc": ">=3.2.0"

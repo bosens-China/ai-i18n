@@ -44,7 +44,7 @@
   },
   "dependencies": {
     "@ai-i18n/analyzer": "workspace:*",
-    "get-tsconfig": "^4.14.0",
+    "get-tsconfig": "^4.14.1",
     "parse5": "8.0.1",
     "picomatch": "^4.0.5"
   },
