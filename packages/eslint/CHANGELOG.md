@@ -1,5 +1,19 @@
 # @ai-i18n/eslint-plugin
 
+## [1.0.0-alpha.19](https://github.com/bosens-China/ai-i18n/compare/eslint-plugin-v1.0.0-alpha.18...eslint-plugin-v1.0.0-alpha.19) (2026-08-08)
+
+
+### Bug Fixes
+
+* **deps:** 升级主流程依赖 ([f21ed32](https://github.com/bosens-China/ai-i18n/commit/f21ed3228e7c6cf5b5270c186191b823b56dad48))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @ai-i18n/analyzer bumped to 1.0.0-alpha.16
+
 ## [1.0.0-alpha.18](https://github.com/bosens-China/ai-i18n/compare/eslint-plugin-v1.0.0-alpha.17...eslint-plugin-v1.0.0-alpha.18) (2026-08-07)
 
 

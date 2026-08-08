@@ -1,5 +1,12 @@
 # @ai-i18n/openai
 
+## [1.0.0-alpha.12](https://github.com/bosens-China/ai-i18n/compare/openai-v1.0.0-alpha.11...openai-v1.0.0-alpha.12) (2026-08-08)
+
+
+### Bug Fixes
+
+* **deps:** 升级主流程依赖 ([f21ed32](https://github.com/bosens-China/ai-i18n/commit/f21ed3228e7c6cf5b5270c186191b823b56dad48))
+
 ## [1.0.0-alpha.11](https://github.com/bosens-China/ai-i18n/compare/openai-v1.0.0-alpha.10...openai-v1.0.0-alpha.11) (2026-08-07)
 
 
