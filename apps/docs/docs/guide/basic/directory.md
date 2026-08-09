@@ -47,13 +47,17 @@ logs/
 不得提交。使用自定义日志目录时也要忽略该目录。详情见
 [LLM 日志与排障](/guide/advanced/llm-logs)。
 
+默认的分片 JSON 适合团队协作。它可以随源码提交，也便于在 PR 中审查译文变化。团队成员与 CI 拉取
+同一份仓库后，可以直接复用已经提交的自动译文和人工译文。
+
 :::important
 译文文件与引用它们的源码应在同一个 PR 中提交。这样其他开发者和 CI 才能得到一致的翻译结果。
 :::
 
 选择 `translationMemory.storage: 'sqlite'` 时，全局数据库位于用户目录，不提交 Git；项目仍提交
 `storage.json` 与 `overrides.json`。SQLite 是本机缓存，新机器和 CI 需要 Provider 重新生成自动
-译文。两种存储的选择见 [Translation Memory](/guide/advanced/translation-memory)。
+译文。因此，需要跨机器共享自动译文的团队应使用默认的分片 JSON。两种存储的选择见
+[Translation Memory](/guide/advanced/translation-memory)。
 
 声明文件的作用和自定义路径见
 [TypeScript 与生成声明](/guide/quality/typescript)。

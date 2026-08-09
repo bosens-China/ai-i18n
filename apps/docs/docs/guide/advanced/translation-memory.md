@@ -9,8 +9,8 @@ Translation Memory 保存 Provider 或 Agent 产生的自动译文。人工确�
 ## 默认：分片 JSON
 
 默认配置会把自动译文写入 `i18n/translations/`。消息按稳定的 SHA-256 哈希前缀分片。新增或修改一条
-译文只会影响对应分片和清单，适合在 PR 中审查。旧版单文件 `i18n/translations.json` 会在下一次
-运行时自动迁移。
+译文只会影响对应分片和清单，适合在 PR 中审查。团队提交这些文件后，其他开发者和 CI 可以复用相同的
+自动译文。旧版单文件 `i18n/translations.json` 会在下一次运行时自动迁移。
 
 ```ts
 aiI18n({
@@ -56,8 +56,11 @@ aiI18n({
 ```
 
 数据库位于当前用户的数据目录，不会写入项目，也不需要提交 Git。项目内会保留一个小型
-`storage.json`，让 Vite 与 MCP 选择 SQLite。SQLite 只在同一原文、源语言、目标语言和
-`comment` 只有一个候选时自动跨项目复用；存在多个不同译法时保持缺失，交给 Provider 或人工审校。
+`storage.json`，让 Vite 与 MCP 选择 SQLite。
+
+当前项目已有自动译文时，SQLite 会继续使用该译文。当前项目尚无译文时，SQLite 才会查找跨项目候选。
+原文、源语言、目标语言和 `comment` 必须完全一致。只有一个候选时，SQLite 会自动复用。存在多个不同
+译法时，SQLite 会保持缺失，并交给 Provider 或人工审校。
 
 默认数据库文件为 `translation-memory.sqlite`：macOS 位于
 `~/Library/Application Support/ai-i18n/`，Linux 位于 `$XDG_DATA_HOME/ai-i18n/` 或
@@ -65,6 +68,21 @@ aiI18n({
 
 SQLite 是本机可丢弃缓存，不替代项目内的 `overrides.json`，也不是跨机器或团队同步服务。CI 或新电脑
 没有该数据库时，可以由 Provider 重新生成自动译文。
+
+## SQLite 未复用译文时如何排查
+
+按以下顺序检查：
+
+1. 检查项目内是否存在 `i18n/storage.json`。缺少该文件表示当前项目使用分片 JSON。
+2. 检查 `AI_I18N_DATA_DIR` 是否已设置。已设置时，数据库位于该目录；否则使用当前平台的默认目录。
+3. 运行一次完整 `vite build`，确认目标文案属于当前应用入口可达的模块。
+4. 核对原文、源语言、目标语言和 `comment`。其中任意一项不同，都会产生不同的候选。
+5. 确认是否存在多个不同译法。SQLite 不会从多个候选中猜测结果，因此会让该译文保持缺失。
+6. 检查项目内的 `overrides.json`。人工译文拥有最高优先级，可能遮盖 SQLite 中的自动译文。
+
+`provider.cache: 'fresh'` 会让当前 Vite 进程刷新自动译文，但不会解决候选冲突。请勿直接编辑 SQLite
+数据库。需要重置本机缓存时，请先停止正在使用该数据库的 Vite 与 MCP 进程。删除数据库会清除本机的
+自动译文缓存，后续可以由 Provider 重新生成；项目内的 `overrides.json` 不受影响。
 
 ## 模型或提示词变化后刷新一次
 

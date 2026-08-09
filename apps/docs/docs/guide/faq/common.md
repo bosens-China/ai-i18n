@@ -131,3 +131,11 @@ Translation Memory 默认复用历史结果。插件不能可靠识别自定义 
 `cache: 'fresh'`。本次 Vite 进程会主动刷新已有自动译文，并继续复用本进程新生成的结果。该选项不影响
 MCP 或 AI Agent。完成后改回默认 `reuse`。详见
 [Translation Memory](/guide/advanced/translation-memory)。
+
+## 为什么 SQLite 没有复用另一个项目的译文？
+
+SQLite 不会复用所有历史译文。当前项目尚无译文时，原文、源语言、目标语言和 `comment` 必须完全一致，
+并且只能存在一个译文候选。多个候选可能代表不同语境，ai-i18n 会保持缺失，不会自动猜测。
+
+请先确认项目内存在 `i18n/storage.json`，再按
+[SQLite 未复用译文时如何排查](/guide/advanced/translation-memory#sqlite-未复用译文时如何排查)逐项检查。
