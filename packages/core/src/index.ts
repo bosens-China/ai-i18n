@@ -11,6 +11,26 @@ export type {
   TranslatedMessageTree,
 } from './message-tree.js';
 export {
+  atomicOverrideKey,
+  atomicOverrides,
+  overridesFromAtomic,
+} from './override-rules.js';
+export type {
+  AtomicOverride,
+  AtomicOverrideTarget,
+  OverrideMessageReference,
+} from './override-rules.js';
+export type {
+  ReviewFilter,
+  ReviewLocale,
+  ReviewMessage,
+  ReviewMessageReference,
+  ReviewMutation,
+  ReviewOccurrence,
+  ReviewOverride,
+  ReviewSnapshot,
+} from './review-contracts.js';
+export {
   AiI18nSchemaError,
   TranslationConflictError,
   parseExtractedFile,

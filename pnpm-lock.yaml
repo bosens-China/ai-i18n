@@ -265,6 +265,37 @@ importers:
         specifier: ^4.0.0
         version: 4.4.3
 
+  packages/review-ui:
+    dependencies:
+      vue:
+        specifier: ^3.5.39
+        version: 3.5.40(typescript@5.9.3)
+    devDependencies:
+      '@ai-i18n/core':
+        specifier: workspace:*
+        version: link:../core
+      '@types/node':
+        specifier: ^24.13.2
+        version: 24.13.3
+      '@vitejs/plugin-vue':
+        specifier: ^6.0.8
+        version: 6.0.8(vite@8.1.5(@types/node@24.13.3)(esbuild@0.28.1)(yaml@2.9.0))(vue@3.5.40(typescript@5.9.3))
+      eslint-plugin-vue:
+        specifier: ^10.10.0
+        version: 10.10.0(@typescript-eslint/parser@8.65.0(eslint@9.39.5(supports-color@7.2.0))(supports-color@7.2.0)(typescript@5.9.3))(eslint@9.39.5(supports-color@7.2.0))(vue-eslint-parser@10.4.1(eslint@9.39.5(supports-color@7.2.0))(supports-color@7.2.0))
+      typescript:
+        specifier: ~5.9.3
+        version: 5.9.3
+      typescript-eslint:
+        specifier: ^8.65.0
+        version: 8.65.0(eslint@9.39.5(supports-color@7.2.0))(supports-color@7.2.0)(typescript@5.9.3)
+      vite:
+        specifier: ^8.1.1
+        version: 8.1.5(@types/node@24.13.3)(esbuild@0.28.1)(yaml@2.9.0)
+      vue-tsc:
+        specifier: ^3.3.7
+        version: 3.3.7(typescript@5.9.3)
+
   packages/vite:
     dependencies:
       '@ai-i18n/analyzer':
@@ -289,6 +320,9 @@ importers:
         specifier: 0.8.4
         version: 0.8.4
     devDependencies:
+      '@ai-i18n/review-ui':
+        specifier: workspace:*
+        version: link:../review-ui
       '@babel/core':
         specifier: ^7.29.7
         version: 7.29.7(supports-color@7.2.0)

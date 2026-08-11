@@ -59,7 +59,7 @@
     }
   },
   "scripts": {
-    "build": "pnpm --dir ../.. exec tsdown --filter @ai-i18n/vite",
+    "build": "pnpm --dir ../.. exec tsdown --filter @ai-i18n/vite && node scripts/copy-review-ui.mjs",
     "lint": "eslint .",
     "check": "tsc -p tsconfig.json --noEmit && pnpm lint",
     "test": "pnpm --dir ../.. exec vitest run packages/vite/test --config vitest.config.ts"
@@ -90,6 +90,7 @@
     }
   },
   "devDependencies": {
+    "@ai-i18n/review-ui": "workspace:*",
     "@babel/core": "^7.29.7",
     "@rolldown/plugin-babel": "^0.2.3",
     "@types/babel__core": "^7.20.5",

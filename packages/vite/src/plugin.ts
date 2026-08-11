@@ -31,6 +31,8 @@ import { loadLocaleModule, renderLocaleChunk } from './locale-module-loader.js';
 import { ProjectState } from './project-state.js';
 import { ProviderCoordinator } from './provider-coordinator.js';
 import { resolveProviderLogging } from './provider-logging.js';
+import { configureReviewServer } from './review-server.js';
+import { createReviewService } from './review-service.js';
 import { normalizeProjectId } from './project-paths.js';
 import { loadRegistration } from './registration-loader.js';
 import type { AiI18nOptions } from './options.js';
@@ -129,6 +131,19 @@ export function aiI18n(options: AiI18nOptions): Plugin {
     },
     translationEvent: TRANSLATION_UPDATE_EVENT,
     localeEvent: LOCALE_UPDATE_EVENT,
+  });
+
+  const reviewService = createReviewService({
+    sourceLang: normalized.sourceLang,
+    locales: normalized.locales,
+    ready: () => ready,
+    state: currentState,
+    store: currentStore,
+    runStateTask,
+    notify(affectedModuleIds, locale) {
+      if (normalized.loading) sendLocaleUpdates([locale]);
+      else sendTranslationUpdates(affectedModuleIds);
+    },
   });
 
   const buildWatch = createBuildWatchState({
@@ -298,6 +313,14 @@ export function aiI18n(options: AiI18nOptions): Plugin {
         });
       }
     },
+
+    ...(options.review === false
+      ? {}
+      : {
+          configureServer(server) {
+            configureReviewServer(server, reviewService);
+          },
+        }),
 
     async buildStart() {
       if (config?.command === 'build') {

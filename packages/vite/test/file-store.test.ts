@@ -265,7 +265,7 @@ describe('FileStore', () => {
     await updateTestTranslationMemory(memoryPath, (memory) => {
       memory.messages['保存']!.translations['en-US'] = 'Store';
     });
-    // 人工审校值即使遇到旧的 Vite 内存快照也必须优先。
+    // 人工校对值即使遇到旧的 Vite 内存快照也必须优先。
     await store.sync(state.snapshot());
     expect(
       await readJson(path.join(root, 'i18n/locales/en-US.json')),

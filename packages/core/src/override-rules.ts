@@ -2,15 +2,19 @@ import {
   parseTranslationOverridesFile,
   type TranslationOverrideRule,
   type TranslationOverridesFile,
-} from '@ai-i18n/core';
-import type { MessageReference } from './project.js';
+} from './schema.js';
 
-export interface AtomicOverrideTarget extends MessageReference {
+export interface OverrideMessageReference {
+  source: string;
+  comment?: string;
+}
+
+export interface AtomicOverrideTarget extends OverrideMessageReference {
   file?: string;
   locale: string;
 }
 
-interface AtomicOverride extends AtomicOverrideTarget {
+export interface AtomicOverride extends AtomicOverrideTarget {
   value: string;
 }
 
@@ -42,7 +46,7 @@ export function overridesFromAtomic(
   const fileTranslations = new Map<
     string,
     {
-      message: MessageReference;
+      message: OverrideMessageReference;
       file: string;
       translations: Record<string, string>;
     }

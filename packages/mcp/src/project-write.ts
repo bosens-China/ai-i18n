@@ -1,6 +1,9 @@
 import path from 'node:path';
 import {
+  atomicOverrideKey,
+  atomicOverrides,
   hasSameTemplateTokens,
+  overridesFromAtomic,
   templateTokens,
   type ExtractedMessage,
 } from '@ai-i18n/core';
@@ -11,11 +14,6 @@ import {
   overrideTargetKey,
   type OverrideTarget,
 } from './override-id.js';
-import {
-  atomicOverrideKey,
-  atomicOverrides,
-  overridesFromAtomic,
-} from './override-rules.js';
 import {
   findExtracted,
   loadProject,

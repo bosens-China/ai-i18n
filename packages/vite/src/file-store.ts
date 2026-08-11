@@ -68,6 +68,17 @@ export class FileStore {
     return readTranslationOverrides(translationOverridesPath(this.directory));
   }
 
+  async transactOverrides(
+    update: (overrides: TranslationOverridesFile) => void | Promise<void>,
+  ): Promise<TranslationOverridesFile> {
+    const file = translationOverridesPath(this.directory);
+    const overrides = await transactTranslationOverrides(file, update);
+    const content = await readText(file);
+    if (content !== undefined)
+      this.lastWritten.set(path.resolve(file), content);
+    return overrides;
+  }
+
   sync(
     snapshot: ProjectSnapshot,
     options: FileStoreLoadOptions = {},
