@@ -1,5 +1,20 @@
 # @ai-i18n/vite
 
+## [1.0.0-alpha.19](https://github.com/bosens-China/ai-i18n/compare/vite-v1.0.0-alpha.18...vite-v1.0.0-alpha.19) (2026-08-11)
+
+
+### Features
+
+* **vite:** 添加翻译校对页面 ([2dabbea](https://github.com/bosens-China/ai-i18n/commit/2dabbea82aed4f511095386b3872d814906b402d))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @ai-i18n/analyzer bumped to 1.0.0-alpha.17
+    * @ai-i18n/core bumped to 1.0.0-alpha.11
+
 ## [1.0.0-alpha.18](https://github.com/bosens-China/ai-i18n/compare/vite-v1.0.0-alpha.17...vite-v1.0.0-alpha.18) (2026-08-08)
 
 
