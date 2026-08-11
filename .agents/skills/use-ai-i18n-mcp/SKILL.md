@@ -44,6 +44,12 @@ Run the selected app's full Vite Build before first use when extraction is missi
 source, branch, or extraction configuration changes that make it stale. Do not execute Vite config
 merely to locate the directory. Never open or edit Translation Memory storage directly.
 
+The Vite Dev review console is the default interface for a person interactively choosing a small
+number of review values. This Skill remains the authority when an Agent performs batch work,
+automates writes, audits the complete extracted set, or acts on explicit user-approved wording.
+Both paths write the same `overrides.json`; do not run MCP review writes concurrently with an open
+review-console save operation.
+
 ## Execute the workflow
 
 1. List missing translations with only the resolved `i18n_directory` on the first call.

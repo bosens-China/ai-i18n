@@ -73,14 +73,14 @@
 
 ### 文件职责与最终值
 
-- 缺少 storage.json 表示使用默认分片 JSON；该文件只声明 SQLite。默认的 translations/ 保存可审查分片 JSON，可选 SQLite 保存到用户级全局数据库；overrides.json 保存项目人工审校；extracted/ 保存插件生成的源码结构；locales/ 是派生运行时产物。
+- 缺少 storage.json 表示使用默认分片 JSON；该文件只声明 SQLite。默认的 translations/ 保存可审查分片 JSON，可选 SQLite 保存到用户级全局数据库；overrides.json 保存项目人工校对结果；extracted/ 保存插件生成的源码结构；locales/ 是派生运行时产物。
 - `overrides.json` 使用 v2 扁平 `rules`。规则以 `source`、可选静态 `comment`、可选 `files` 和
   `translations` 表达；缺少 `files` 表示当前 Vite 应用全局生效，存在 `files` 表示只匹配列出的
   精确源码文件。一个规则可列出多个文件；路径必须是相对 Vite root 的标准化 POSIX 路径，不支持
   绝对路径、路径片段或 glob。
 - 最终译文优先级固定为：文件 + comment 人工值、全局 + comment 人工值、文件默认人工值、全局
   默认人工值、AI Translation Memory、source fallback。
-- 人工审校必须写入 overrides.json，不污染 AI Translation Memory。空字符串是有效人工译文；
+- 人工校对必须写入 overrides.json，不污染 AI Translation Memory。空字符串是有效人工译文；
   comment 与文件范围彼此独立且可以组合。
 - Translation Memory 继续以 `source + comment` 跨文件复用；Runtime 与派生 locale 使用
   `source file + message ID` 区分同一语义消息在不同文件中的最终人工值。该运行时身份不改变公开
@@ -110,6 +110,13 @@
 ### Vite 生命周期与 Provider
 
 - Dev 渐进处理浏览器实际请求到的模块；Build 以入口可达模块图进行完整处理；Build Watch 复用未变化的分析结果并在必要时校准活动集合。
+- Vite Dev 默认在 `/__ai-i18n/` 提供翻译校对页面并在启动地址后打印链接；`review: false`
+  可关闭。校对页面只读取当前 Dev 已访问模块，按全局或精确文件范围原子更新 `overrides.json` 并
+  触发 HMR，不注册到 Build、Build Watch、Preview 或生产产物。
+- 校对 UI 由 Vite 插件随包携带的预构建静态资源提供，与业务应用的框架和 UI 依赖隔离；内部 UI
+  workspace 包保持私有，不作为面向应用开发者的安装入口。
+- 校对页面不引入账号或 token。写接口只接受同源、`application/json` 请求并复用 overrides 的消息、
+  locale、文件归属和模板 token 校验；跨机器协作与远程暴露不属于该本地能力。
 - Vite 配置、提取规则或 schema 变化后需要重启 Watch。外部修改当前 Translation Memory 或 overrides.json 时无需重新解析未变化源码。
 - Provider 按缺失 locale 集合调度、去重、批处理并限制并发。Dev 不阻塞 transform；Build 在结束前等待当前可达模块需要的翻译。
 - 缺失译文的 Provider 请求失败时保留 null；`fresh` 刷新失败时保留已有历史值。默认报告诊断，严格模式可将失败升级为构建错误。
@@ -156,7 +163,7 @@
   不一致时整批失败，并返回期望、实际、缺失与多余 token，供 Agent 修正后重试。
 - 批量参数中重复出现的同一个未知字段合并为一条校验错误，并返回出现次数、首次位置、合法字段和
   修改动作。MCP 业务错误除稳定错误码和上下文外，始终返回 Agent 可直接执行的 next_action。
-- 孤立 Translation Memory 使用独立的只读列表与破坏性删除工具。普通补译、审校和验证不得自动
+- 孤立 Translation Memory 使用独立的只读列表与破坏性删除工具。普通补译、校对和验证不得自动
   进入该流程；用户明确要求后，Agent 先完成完整 Build 和全量审查，再取得删除授权。删除只接受
   列表返回的 opaque ID，在写入前整批复验消息仍未被源码引用，并且不联动删除人工 overrides。
 - 列表默认请求 100 条并允许提高到 500 条；响应大小保护只能减少完整记录数量，不能截断单条

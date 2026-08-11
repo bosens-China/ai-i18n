@@ -10,7 +10,7 @@ ai-i18n 提供两种补译方式：
 | 方式                                    | 适用场景                                         |
 | --------------------------------------- | ------------------------------------------------ |
 | OpenAI Provider                         | 希望在 Vite 开发或构建时自动补齐缺失译文。       |
-| [Agent + MCP](/guide/advanced/ai-tools) | 希望由 AI 编码工具在明确指令下检查、补译和审校。 |
+| [Agent + MCP](/guide/advanced/ai-tools) | 希望由 AI 编码工具在明确指令下检查、补译和校对。 |
 
 本页介绍 OpenAI-compatible Provider。未配置 Provider 时，ai-i18n 仍会提取文案和生成语言包；
 缺失译文会显示源码文案。
@@ -123,4 +123,4 @@ Translator 内部配置。需要让新配置刷新一次时，使用 `provider.c
 只要服务兼容 OpenAI API，就可以修改 `baseURL` 和 `model` 使用它。若需要接入其他 SDK，请实现
 [`Translator`](/api/vite/type-aliases/translator)。该 API 说明了输入、输出和错误处理约束。
 
-人工确认译文、处理同一句话的不同语境，以及提交规则见[补译与审校](/guide/basic/translations)。
+人工确认译文、处理同一句话的不同语境，以及提交规则见[补齐和确认译文](/guide/basic/translations)。

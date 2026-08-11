@@ -69,6 +69,11 @@ review values separately through the override tools and only with explicit appro
 
 Human decisions belong in `overrides.json`, not the JSON or SQLite Translation Memory.
 
+For interactive human editing during Vite Dev, prefer the default local review console. Use these MCP
+contracts when an Agent lists, batches, or writes approved decisions. The console and MCP share the
+same rule identity, validation, and `overrides.json` destination; serialize their writes rather than
+editing through both interfaces at once.
+
 Use `ai_i18n_list_overrides` to inspect current values, including orphaned values. Use
 `ai_i18n_set_overrides` only when the user explicitly requests or approves human review wording:
 

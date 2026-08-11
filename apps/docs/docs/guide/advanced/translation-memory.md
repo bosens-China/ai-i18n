@@ -60,7 +60,7 @@ aiI18n({
 
 当前项目已有自动译文时，SQLite 会继续使用该译文。当前项目尚无译文时，SQLite 才会查找跨项目候选。
 原文、源语言、目标语言和 `comment` 必须完全一致。只有一个候选时，SQLite 会自动复用。存在多个不同
-译法时，SQLite 会保持缺失，并交给 Provider 或人工审校。
+译法时，SQLite 会保持缺失，并交给 Provider 或人工校对。
 
 默认数据库文件为 `translation-memory.sqlite`：macOS 位于
 `~/Library/Application Support/ai-i18n/`，Linux 位于 `$XDG_DATA_HOME/ai-i18n/` 或

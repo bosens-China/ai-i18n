@@ -18,7 +18,7 @@
 
 ## 进行中需求
 
-当前没有进行中的需求。
+暂无。
 
 新需求在 `docs/work/<feature-name>/` 下创建 `PRD.md` 与 `TODO.md`：
 

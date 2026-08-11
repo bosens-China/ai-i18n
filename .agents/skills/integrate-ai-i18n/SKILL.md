@@ -39,6 +39,12 @@ test integration unless the user requests them. Do not remove an optional featur
 configured. When an optional feature is requested, read [Agent defaults for optional features](references/optional-features.md)
 and the matching public documentation page.
 
+The Vite Dev review console is core default behavior, not an optional feature. Preserve the default
+by omitting `review`; set `review: false` only when the user explicitly asks to disable it or the
+existing target configuration already disables it. Do not add tokens, authentication, or production
+routes for this local console. Its UI assets are bundled with `@ai-i18n/vite`; do not install Vue or
+a UI library into the target application solely for the review console.
+
 This Skill owns package installation, Vite configuration, Runtime source integration, and integration
 verification. Do not write translation or human review values as part of an integration-only task.
 When the user also requests Agent-assisted translation or review, complete the Build first, then use
@@ -61,8 +67,8 @@ the `use-ai-i18n-mcp` Skill and its approval rules.
 
 Run the target app's lint, type check, relevant tests, and full Vite Build in proportion to the
 change. Check installation, resolved framework mode, one Runtime translation call, generated
-declarations, and the resolved output directory. Verify optional features only when requested or
-already configured.
+declarations, the resolved output directory, and that Vite Dev prints the review URL when review is
+enabled. Verify optional features only when requested or already configured.
 
 Report the selected app, changes made, commands run, remaining unsupported scope, and any decisions
 that still need user input.

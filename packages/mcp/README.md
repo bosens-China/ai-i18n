@@ -1,6 +1,6 @@
 # @ai-i18n/mcp
 
-本地 stdio MCP server，为 Agent 提供 ai-i18n 翻译与人工审校的查询、设置和删除能力。
+本地 stdio MCP server，为 Agent 提供 ai-i18n 翻译与人工校对的查询、设置和删除能力。
 
 MCP 不扫描 workspace，也不执行 Vite 配置。Agent 必须先确认目标 Vite 应用，读取它的
 `vite.config.*` 和启动脚本，再将 Vite `root` 与 `aiI18n({ directory })`（默认 `i18n`）
@@ -52,7 +52,7 @@ server 使用 stdio 通信，标准输出专用于 MCP 协议。
   返回删除所需的 opaque `override_id`。文件级规则始终返回作为规则身份的 `files`；消息实际出现的
   `source_files` 默认省略，可用 `include_source_files: true` 显式请求。
 - `ai_i18n_set_overrides`：添加或覆盖人工值。每项使用公开 `message` 对象定位；省略 `files` 表示
-  全局审校，提供一个或多个列表返回的精确 `source_file` 表示文件级审校。`comment` 与 `files`
+  全局校对，提供一个或多个列表返回的精确 `source_file` 表示文件级校对。`comment` 与 `files`
   可以单独使用或组合。
 - `ai_i18n_delete_overrides`：使用列表返回的 `override_id` 删除具体人工值。
 
@@ -86,14 +86,14 @@ server 使用 stdio 通信，标准输出专用于 MCP 协议。
 
 ## 写入边界
 
-- 翻译工具在缺少 `storage.json` 时修改分片 JSON，存在 SQLite 标记时修改全局数据库；人工审校工具只修改 `overrides.json`。
+- 翻译工具在缺少 `storage.json` 时修改分片 JSON，存在 SQLite 标记时修改全局数据库；人工校对工具只修改 `overrides.json`。
 - MCP 不读取 Vite 的 `provider.cache`；Provider 是否刷新进程缓存，不改变 Agent 的列表、写入或清除行为。
 - MCP 不修改 `extracted/` 或 `locales/`。
 - 每批写入都取得跨进程锁，在锁内重读并校验最新文件，然后按字段原子更新。
 - 每批最多 500 个输入。相同目标与相同值重复出现时只写一次并返回
   `deduplicated_count`；同一目标出现不同值时整批以 `DUPLICATE_TARGET_CONFLICT` 失败。
 - `affected_file_count` 统计目标消息在应用中实际出现的源文件数量。写入一次即可影响
-  对应 occurrence；文件级人工审校只统计并影响显式 `files`。需要逐文件检查时，在列表调用中请求
+  对应 occurrence；文件级人工校对只统计并影响显式 `files`。需要逐文件检查时，在列表调用中请求
   `include_source_files: true`。
 - 模板占位符必须保持一致，空字符串是合法译文。不一致时整批以
   `TEMPLATE_TOKEN_MISMATCH` 失败，并返回 `expected_tokens`、`received_tokens`、
@@ -102,15 +102,15 @@ server 使用 stdio 通信，标准输出专用于 MCP 协议。
 
 写入时若 `message` 不再存在，请重新调用 `ai_i18n_list_translations`，并原样复制返回的
 `message` 对象。`source_files` 过滤器只用于缩小列表范围；响应中的同名字段仅在显式请求时返回。
-它们不属于普通 Translation Memory 写入身份。人工审校更新使用单独的 `files` 字段作为可选范围；
+它们不属于普通 Translation Memory 写入身份。人工校对更新使用单独的 `files` 字段作为可选范围；
 路径必须与列表返回的 `source_file` 完全一致。
 
-人工审校最终优先级为：文件 + `comment`、全局 + `comment`、文件默认、全局默认、自动译文、源码
+人工校对最终优先级为：文件 + `comment`、全局 + `comment`、文件默认、全局默认、自动译文、源码
 回退。`files` 是相对 Vite root 的标准化 POSIX 路径，不接受绝对路径、路径片段或 glob。
 
 ## 孤立消息清理
 
-普通补译、审校或验证任务不得自动检查或删除孤立消息。只有用户明确要求审查或清理时，Agent
+普通补译、校对或验证任务不得自动检查或删除孤立消息。只有用户明确要求审查或清理时，Agent
 才执行以下流程：
 
 1. 运行目标应用的一次完整 Vite Build。Dev 只处理已访问模块，不能作为安全清理依据。

@@ -29,7 +29,7 @@ features:
     details: 接入 TypeScript 生成声明、ESLint 静态检查和 Vitest 测试。
     link: /guide/quality/typescript
   - title: 翻译自动化
-    details: 选择应用内 Provider 或外部 Agent 补齐译文，并保留人工审校入口。
+    details: 选择应用内 Provider 或外部 Agent 补齐译文，并通过翻译校对固定关键措辞。
     link: /guide/advanced/ai-translation
   - title: 排查问题
     details: 按通用、Vue 和 React 场景定位接入与运行问题。

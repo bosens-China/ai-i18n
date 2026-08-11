@@ -39,6 +39,24 @@ aiI18n({
 });
 ```
 
+## 翻译校对
+
+Vite Dev 默认提供翻译校对页面。启动后，终端会在 Vite 地址之后打印
+`ai-i18n Review: http://.../__ai-i18n/`；先访问需要校对的业务页面，再打开该链接，即可搜索当前
+Dev 已访问模块中的文案、切换目标语言，并按全局或精确源码文件范围保存人工译文。
+
+人工译文写入 `i18n/overrides.json`，保存和删除都会通过 HMR 更新业务页面。校对页面仅存在于
+Vite Dev，不进入 Build、Preview 或生产产物；界面已作为静态资源随插件提供，业务项目不需要安装
+Vue 或其他 UI 依赖。它不使用 token，只接受同源 JSON 写入。需要关闭时：
+
+```ts
+aiI18n({
+  sourceLang: 'zh-CN',
+  locales,
+  review: false,
+});
+```
+
 ## Translation Memory
 
 默认 `translationMemory.storage: 'json'`，消息按稳定 SHA-256 前缀写入

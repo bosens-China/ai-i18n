@@ -26,6 +26,7 @@ interface AiI18nOptions {
   directory?: string;
   cleanup?: AiI18nCleanupOptions;
   html?: boolean | HtmlExtractorOptions;
+  review?: boolean;
 }
 ```
 
@@ -46,6 +47,7 @@ interface AiI18nOptions {
 | `html`              | [`boolean \| HtmlExtractorOptions`](/api/vite/interfaces/html-extractor-options)            | 否   | `false`              | 开启 `index.html` 文本和属性提取。       |
 | `translationMemory` | [`AiI18nTranslationMemoryOptions`](/api/vite/interfaces/ai-i18n-translation-memory-options) | 否   | 分片 JSON            | 选择存储方式，并按需限制历史译文容量。   |
 | `cleanup`           | [`AiI18nCleanupOptions`](/api/vite/interfaces/ai-i18n-cleanup-options)                      | 否   | 保留默认清理策略     | 控制失效提取文件和孤立消息的清理。       |
+| `review`            | `boolean`                                                                                   | 否   | `true`               | 在 Vite Dev 中提供翻译校对页面。         |
 
 ## 语言约束
 
@@ -84,9 +86,20 @@ interface AiI18nOptions {
 
 `directory` 与 `dts` 的相对路径都基于 Vite `root` 解析；传入绝对路径时直接使用该路径。
 
+## 翻译校对
+
+`review` 默认开启。运行 `vite dev` 后，终端会在 Vite 地址之后打印 `ai-i18n Review` 链接；
+打开链接即可查看当前 Dev 已访问模块中的文案，并把人工译文保存到 `overrides.json`。保存后当前页面
+会通过 HMR 更新。
+
+校对页面只注册在 Vite Dev Server，不进入 Build、Preview 或生产产物。它仅接受同源 JSON 写入，
+不提供跨机器访问所需的账号或 token。界面已随插件提供，业务项目不需要为它安装 Vue 或 UI 组件库。
+确实不需要时设置 `review: false`。
+
 ## 相关内容
 
 - [`aiI18n()`](/api/vite/functions/ai-i18n)
+- [翻译校对](/guide/basic/translation-review)
 - [语言分包与按需加载](/guide/basic/locale-loading)
 - [生成文件与 Git](/guide/basic/directory)
 - [TypeScript 与生成声明](/guide/quality/typescript)
