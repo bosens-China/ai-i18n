@@ -1,5 +1,19 @@
 # @ai-i18n/mcp
 
+## [1.0.0-alpha.16](https://github.com/bosens-China/ai-i18n/compare/mcp-v1.0.0-alpha.15...mcp-v1.0.0-alpha.16) (2026-08-11)
+
+
+### Features
+
+* **vite:** 添加翻译校对页面 ([2dabbea](https://github.com/bosens-China/ai-i18n/commit/2dabbea82aed4f511095386b3872d814906b402d))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @ai-i18n/core bumped to 1.0.0-alpha.11
+
 ## [1.0.0-alpha.15](https://github.com/bosens-China/ai-i18n/compare/mcp-v1.0.0-alpha.14...mcp-v1.0.0-alpha.15) (2026-08-07)
 
 

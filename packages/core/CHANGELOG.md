@@ -1,5 +1,12 @@
 # @ai-i18n/core
 
+## [1.0.0-alpha.11](https://github.com/bosens-China/ai-i18n/compare/core-v1.0.0-alpha.10...core-v1.0.0-alpha.11) (2026-08-11)
+
+
+### Features
+
+* **vite:** 添加翻译校对页面 ([2dabbea](https://github.com/bosens-China/ai-i18n/commit/2dabbea82aed4f511095386b3872d814906b402d))
+
 ## [1.0.0-alpha.10](https://github.com/bosens-China/ai-i18n/compare/core-v1.0.0-alpha.9...core-v1.0.0-alpha.10) (2026-08-07)
 
 
