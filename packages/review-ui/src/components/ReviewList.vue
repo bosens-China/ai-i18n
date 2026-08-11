@@ -9,11 +9,18 @@ defineProps<{
   locale: string;
   messages: ReviewMessage[];
   total: number;
+  draftFor: (message: ReviewMessage, locale: string, scope: string) => string;
   scopeFor: (message: ReviewMessage) => string;
 }>();
 
 const emit = defineEmits<{
-  mutate: [mutation: ReviewMutation, done: () => void];
+  mutate: [mutation: ReviewMutation, done: (success: boolean) => void];
+  updateDraft: [
+    message: ReviewMessage,
+    locale: string,
+    scope: string,
+    value: string,
+  ];
   updateScope: [message: ReviewMessage, scope: string];
 }>();
 </script>
@@ -24,10 +31,14 @@ const emit = defineEmits<{
       v-for="message in messages"
       :key="JSON.stringify(message.message)"
       :copy="copy"
+      :draft="draftFor(message, locale, scopeFor(message))"
       :locale="locale"
       :message="message"
       :scope="scopeFor(message)"
       @mutate="(mutation, done) => emit('mutate', mutation, done)"
+      @update-draft="
+        emit('updateDraft', message, locale, scopeFor(message), $event)
+      "
       @update-scope="emit('updateScope', message, $event)"
     />
 

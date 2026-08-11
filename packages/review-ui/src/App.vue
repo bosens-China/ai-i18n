@@ -5,34 +5,31 @@ import ReviewList from './components/ReviewList.vue';
 import ReviewToolbar from './components/ReviewToolbar.vue';
 import { reviewCopy } from './copy';
 import { useReviewConsole } from './composables/useReviewConsole';
+import { useReviewDrafts } from './composables/useReviewDrafts';
+import { messageKey } from './review-state';
 
 const copy = reviewCopy();
 const review = useReviewConsole(copy);
+const drafts = useReviewDrafts();
 const scopes = reactive(new Map<string, string>());
 
 onMounted(review.load);
 
-function messageKey(message: ReviewMessage): string {
-  return JSON.stringify([
-    message.message.source,
-    message.message.comment ?? null,
-  ]);
-}
-
 function scopeFor(message: ReviewMessage): string {
-  return scopes.get(messageKey(message)) ?? '';
+  return scopes.get(messageKey(message.message)) ?? '';
 }
 
 function updateScope(message: ReviewMessage, scope: string): void {
-  scopes.set(messageKey(message), scope);
+  scopes.set(messageKey(message.message), scope);
 }
 
 async function mutate(
   mutation: ReviewMutation,
-  done: () => void,
+  done: (success: boolean) => void,
 ): Promise<void> {
-  await review.mutate(mutation);
-  done();
+  const success = await review.mutate(mutation);
+  if (success) drafts.clearDraft(mutation);
+  done(success);
 }
 </script>
 
@@ -67,9 +64,11 @@ async function mutate(
       :loading="review.loading.value"
       :locale="review.locale.value"
       :messages="review.visibleMessages.value"
+      :draft-for="drafts.draftFor"
       :scope-for="scopeFor"
       :total="review.snapshot.value?.messages.length ?? 0"
       @mutate="mutate"
+      @update-draft="drafts.updateDraft"
       @update-scope="updateScope"
     />
   </div>

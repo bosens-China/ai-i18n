@@ -13,7 +13,7 @@ const query = defineModel<string>('query', { required: true });
 </script>
 
 <template>
-  <section class="control-room" aria-label="Review filters">
+  <section class="control-room" :aria-label="copy.filtersLabel">
     <label class="search-wrap">
       <span class="search-icon" aria-hidden="true">⌕</span>
       <span class="utility-label sr-only">{{ copy.search }}</span>
@@ -27,7 +27,7 @@ const query = defineModel<string>('query', { required: true });
     </label>
 
     <div class="control-groups">
-      <div class="segmented" aria-label="Locales">
+      <div class="segmented" :aria-label="copy.localesLabel">
         <button
           v-for="item in locales"
           :key="item.value"
@@ -40,7 +40,7 @@ const query = defineModel<string>('query', { required: true });
         </button>
       </div>
 
-      <div class="segmented" aria-label="Review status">
+      <div class="segmented" :aria-label="copy.statusLabel">
         <button
           v-for="item in [
             { value: 'all' as const, label: copy.all },

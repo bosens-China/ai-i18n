@@ -1,29 +1,53 @@
 <script setup lang="ts">
-import { computed, shallowRef, watch } from 'vue';
+import { computed, nextTick, shallowRef, useTemplateRef } from 'vue';
 import type { ReviewMessage, ReviewMutation } from '@ai-i18n/core';
 import type { ReviewCopy } from '../copy';
+import ReviewSourcePanel from './ReviewSourcePanel.vue';
+import {
+  activeOverride as findActiveOverride,
+  reviewAction,
+  reviewBaseline,
+} from '../review-state';
 
 const props = defineProps<{
   copy: ReviewCopy;
+  draft: string;
   locale: string;
   message: ReviewMessage;
   scope: string;
 }>();
 
 const emit = defineEmits<{
-  mutate: [mutation: ReviewMutation, done: () => void];
+  mutate: [mutation: ReviewMutation, done: (success: boolean) => void];
+  updateDraft: [draft: string];
   updateScope: [scope: string];
 }>();
 
 const busy = shallowRef(false);
-const draft = shallowRef('');
+const proof = useTemplateRef<HTMLElement>('proof');
 const automatic = computed(
   () => props.message.translations[props.locale] ?? null,
 );
 const activeOverride = computed(() =>
-  props.message.overrides.find(
-    (item) => item.locale === props.locale && (item.file ?? '') === props.scope,
-  ),
+  findActiveOverride(props.message, props.locale, props.scope),
+);
+const baseline = computed(() =>
+  reviewBaseline(props.message, props.locale, props.scope),
+);
+const action = computed(() =>
+  reviewAction(Boolean(activeOverride.value), props.draft, baseline.value),
+);
+const dirty = computed(() => action.value === 'save');
+const canSave = computed(() => !busy.value && action.value !== 'saved');
+const primaryLabel = computed(() => {
+  if (action.value === 'confirm') return props.copy.confirm;
+  if (action.value === 'save') return props.copy.saveChanges;
+  return props.copy.savedState;
+});
+const continueLabel = computed(() =>
+  action.value === 'confirm'
+    ? props.copy.confirmAndContinue
+    : props.copy.saveAndContinue,
 );
 const reviewed = computed(() =>
   props.message.overrides.some((item) => item.locale === props.locale),
@@ -35,53 +59,62 @@ const occurrenceCount = computed(() =>
   ),
 );
 
-watch(
-  [activeOverride, automatic, () => props.message.message.source],
-  ([override, translated, source]) => {
-    draft.value = override?.value ?? translated ?? source;
-  },
-  { immediate: true },
-);
-
 function fileLabel(sourceFile: string, line?: number): string {
   return `${sourceFile}${line ? `:${line}` : ''}`;
 }
 
-async function mutate(method: ReviewMutation['method']): Promise<void> {
+async function mutate(
+  method: ReviewMutation['method'],
+  advance = false,
+): Promise<void> {
+  if (method === 'POST' && !canSave.value) return;
+
+  const nextInput = advance
+    ? proof.value?.nextElementSibling?.querySelector<HTMLTextAreaElement>(
+        '.review-input',
+      )
+    : null;
   busy.value = true;
   const mutation: ReviewMutation = {
     message: props.message.message,
     locale: props.locale,
     method,
     ...(props.scope ? { file: props.scope } : {}),
-    ...(method === 'POST' ? { value: draft.value } : {}),
+    ...(method === 'POST' ? { value: props.draft } : {}),
   };
   try {
-    await new Promise<void>((resolve) => {
+    const success = await new Promise<boolean>((resolve) => {
       emit('mutate', mutation, resolve);
     });
+    if (success && nextInput) {
+      await nextTick();
+      nextInput.focus({ preventScroll: true });
+      nextInput.scrollIntoView({
+        behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches
+          ? 'auto'
+          : 'smooth',
+        block: 'center',
+      });
+    }
   } finally {
     busy.value = false;
   }
 }
+
+function updateDraft(event: Event): void {
+  emit('updateDraft', (event.target as HTMLTextAreaElement).value);
+}
+
+function handleSaveShortcut(event: KeyboardEvent): void {
+  if (!(event.metaKey || event.ctrlKey) || event.key !== 'Enter') return;
+  event.preventDefault();
+  void mutate('POST', true);
+}
 </script>
 
 <template>
-  <article class="proof" :class="{ reviewed }">
-    <section class="source-panel">
-      <p class="proof-label">{{ copy.source }}</p>
-      <p class="source-text">{{ message.message.source }}</p>
-      <p v-if="message.message.comment" class="comment">
-        <span class="proof-label">{{ copy.context }}</span>
-        <br />
-        {{ message.message.comment }}
-      </p>
-      <ul class="occurrences">
-        <li v-for="item in message.occurrences" :key="item.sourceFile">
-          {{ fileLabel(item.sourceFile, item.locations[0]?.line) }}
-        </li>
-      </ul>
-    </section>
+  <article ref="proof" class="proof" :class="{ reviewed }">
+    <ReviewSourcePanel :copy="copy" :message="message" />
 
     <section class="review-panel">
       <div class="machine-row">
@@ -92,12 +125,16 @@ async function mutate(method: ReviewMutation['method']): Promise<void> {
       </div>
 
       <div class="editor-head">
-        <p class="proof-label">{{ copy.final }}</p>
+        <p class="proof-label editor-label">
+          {{ copy.final }}
+          <span v-if="dirty" class="dirty-badge">{{ copy.unsaved }}</span>
+        </p>
         <label>
           <span class="utility-label">{{ copy.scope }}</span>
           <select
             class="scope-select"
             :value="scope"
+            :aria-label="`${copy.scope}：${message.message.source}`"
             @change="
               emit('updateScope', ($event.target as HTMLSelectElement).value)
             "
@@ -115,15 +152,18 @@ async function mutate(method: ReviewMutation['method']): Promise<void> {
       </div>
 
       <textarea
-        v-model="draft"
         class="review-input"
-        :aria-label="copy.final"
+        :class="{ dirty }"
+        :value="draft"
+        :aria-label="`${copy.final}：${message.message.source}`"
         spellcheck="true"
+        @input="updateDraft"
+        @keydown="handleSaveShortcut"
       />
 
       <div class="actions">
         <span class="scope-note">
-          {{ occurrenceCount }} {{ copy.occurrences }}
+          {{ occurrenceCount }} {{ copy.occurrences }} · {{ copy.shortcut }}
         </span>
         <button
           class="button button-quiet"
@@ -133,14 +173,28 @@ async function mutate(method: ReviewMutation['method']): Promise<void> {
         >
           {{ copy.remove }}
         </button>
-        <button
-          class="button button-primary"
-          type="button"
-          :disabled="busy"
-          @click="mutate('POST')"
-        >
-          {{ copy.save }}
-        </button>
+        <div class="primary-actions">
+          <button
+            class="button button-primary"
+            type="button"
+            :disabled="!canSave"
+            :aria-busy="busy"
+            @click="mutate('POST')"
+          >
+            {{ primaryLabel }}
+          </button>
+          <button
+            class="button button-primary button-continue"
+            type="button"
+            :disabled="!canSave"
+            :aria-busy="busy"
+            :aria-label="continueLabel"
+            :title="continueLabel"
+            @click="mutate('POST', true)"
+          >
+            {{ copy.continue }}
+          </button>
+        </div>
       </div>
     </section>
   </article>
@@ -170,51 +224,8 @@ async function mutate(method: ReviewMutation['method']): Promise<void> {
   background: var(--green);
 }
 
-.source-panel,
 .review-panel {
   padding: 22px 24px 22px 28px;
-}
-
-.source-panel {
-  border-right: 1px solid var(--line);
-  background: var(--wash);
-}
-
-.source-text {
-  margin: 10px 0 12px;
-  color: var(--ink);
-  font-size: 1.05rem;
-  font-weight: 680;
-  line-height: 1.55;
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-}
-
-.comment {
-  margin: 0 0 14px;
-  padding-left: 10px;
-  border-left: 2px solid var(--cyan);
-  color: var(--muted);
-  font-size: 0.88rem;
-  line-height: 1.5;
-}
-
-.occurrences {
-  display: grid;
-  gap: 6px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.occurrences li {
-  color: var(--muted);
-  font-family: var(--font-mono);
-  font-size: 0.72rem;
-  overflow-wrap: anywhere;
-}
-
-.review-panel {
   display: grid;
   gap: 14px;
 }
@@ -246,6 +257,23 @@ async function mutate(method: ReviewMutation['method']): Promise<void> {
   align-items: end;
 }
 
+.editor-label {
+  display: flex;
+  gap: 9px;
+  align-items: center;
+}
+
+.dirty-badge {
+  padding: 3px 7px;
+  border-radius: 999px;
+  color: #8a4b00;
+  background: #fff0cc;
+  font-family: var(--font-sans);
+  font-size: 0.68rem;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
 .scope-select {
   width: 100%;
   height: 38px;
@@ -274,6 +302,11 @@ async function mutate(method: ReviewMutation['method']): Promise<void> {
   background: white;
 }
 
+.review-input.dirty {
+  border-color: #d39a2f;
+  background: #fffdf7;
+}
+
 .actions {
   display: flex;
   gap: 10px;
@@ -299,6 +332,21 @@ async function mutate(method: ReviewMutation['method']): Promise<void> {
   background: var(--blue-dark);
 }
 
+.primary-actions {
+  display: flex;
+}
+
+.primary-actions .button-primary {
+  border-radius: 10px 0 0 10px;
+}
+
+.primary-actions .button-continue {
+  margin-left: 1px;
+  padding-inline: 12px;
+  border-radius: 0 10px 10px 0;
+  background: var(--blue-dark);
+}
+
 .button-quiet {
   border-color: var(--line);
   color: var(--red);
@@ -306,41 +354,18 @@ async function mutate(method: ReviewMutation['method']): Promise<void> {
 }
 
 .button:disabled {
-  cursor: wait;
+  cursor: not-allowed;
   opacity: 0.52;
+}
+
+.button[aria-busy='true'] {
+  cursor: wait;
 }
 
 .scope-note {
   margin-right: auto;
   color: var(--muted);
   font-size: 0.76rem;
-}
-
-@media (max-width: 900px) {
-  .proof {
-    grid-template-columns: 1fr;
-  }
-
-  .source-panel {
-    border-right: 0;
-    border-bottom: 1px solid var(--line);
-  }
-}
-
-@media (max-width: 580px) {
-  .source-panel,
-  .review-panel {
-    padding: 18px 18px 18px 22px;
-  }
-
-  .machine-row,
-  .editor-head {
-    grid-template-columns: 1fr;
-  }
-
-  .actions {
-    flex-wrap: wrap;
-  }
 }
 
 @media (prefers-reduced-motion: no-preference) {
