@@ -70,6 +70,7 @@
     "atomically": "2.1.1",
     "magic-string": "1.1.0",
     "parse5": "8.0.1",
+    "picocolors": "1.1.1",
     "yuku-analyzer": "0.8.4"
   },
   "peerDependencies": {

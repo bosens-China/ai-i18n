@@ -36,7 +36,7 @@ export async function readReviewAsset(
 
 function assetRoots(): string[] {
   const developmentRoot = process.env.AI_I18N_REVIEW_UI_DIR;
-  return developmentRoot ? [bundledRoot, developmentRoot] : [bundledRoot];
+  return developmentRoot ? [developmentRoot, bundledRoot] : [bundledRoot];
 }
 
 function assetPath(pathname: string): string | undefined {

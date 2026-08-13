@@ -5,6 +5,7 @@ import {
   hasSameTemplateTokens,
   overridesFromAtomic,
   type AtomicOverride,
+  type ExtractedFile,
   type LangOption,
   type ReviewMessage,
   type ReviewMessageReference,
@@ -12,6 +13,7 @@ import {
   type ReviewOccurrence,
   type ReviewOverride,
   type ReviewSnapshot,
+  type TranslationMemoryFile,
   type TranslationOverridesFile,
 } from '@ai-i18n/core';
 import type { DevStateTaskRunner } from './dev-state-queue.js';
@@ -60,6 +62,8 @@ interface ReviewServiceOptions {
   ready: () => Promise<void>;
   state: () => ProjectState;
   store: () => FileStore;
+  loadPersistedExtracted?: () => Promise<readonly ExtractedFile[]>;
+  persistedCache?: () => TranslationMemoryFile | undefined;
   runStateTask: DevStateTaskRunner;
   notify: (affectedModuleIds: string[], locale: string) => void;
 }
@@ -73,10 +77,42 @@ export interface ReviewService {
 export function createReviewService(
   options: ReviewServiceOptions,
 ): ReviewService {
+  let persistedExtracted: Promise<readonly ExtractedFile[]> | undefined;
+
+  function loadPersistedExtracted(): Promise<readonly ExtractedFile[]> {
+    return (persistedExtracted ??=
+      options.loadPersistedExtracted?.() ?? Promise.resolve([]));
+  }
+
+  async function projectSnapshot(): Promise<ProjectSnapshot> {
+    const snapshot = options.state().snapshot();
+    const persisted = await loadPersistedExtracted();
+    if (!persisted.length) return snapshot;
+
+    // 已在 Dev 转换过的模块始终以实时分析结果为准，也要遮蔽旧快照中的空提取记录。
+    const seen = new Set(snapshot.seen);
+    const extracted = Object.fromEntries(
+      persisted
+        .filter((file) => !seen.has(file.source))
+        .map((file) => [file.source, file]),
+    );
+    return {
+      ...snapshot,
+      cache: {
+        ...snapshot.cache,
+        messages: {
+          ...options.persistedCache?.()?.messages,
+          ...snapshot.cache.messages,
+        },
+      },
+      extracted: { ...extracted, ...snapshot.extracted },
+    };
+  }
+
   async function snapshot(): Promise<ReviewSnapshot> {
     await options.ready();
     return createReviewSnapshot(
-      options.state().snapshot(),
+      await projectSnapshot(),
       await options.store().loadOverrides(),
       options.sourceLang,
       options.locales,
@@ -91,7 +127,7 @@ export function createReviewService(
     return options.runStateTask(async () => {
       const project = options.state();
       const store = options.store();
-      const snapshot = project.snapshot();
+      const snapshot = await projectSnapshot();
       validateTarget(snapshot, target, options.sourceLang, options.locales);
       if (
         value !== undefined &&

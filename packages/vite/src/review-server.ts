@@ -1,9 +1,14 @@
+import fs from 'node:fs/promises';
+import path from 'node:path';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import type { ViteDevServer } from 'vite';
 import { diagnosticMessage } from '@ai-i18n/analyzer';
+import type { ReviewSnapshot } from '@ai-i18n/core';
+import colors from 'picocolors';
 import { readReviewAsset } from './review-assets.js';
 import {
   REVIEW_API_PATH,
+  REVIEW_EDITOR_PATH,
   REVIEW_OVERRIDE_PATH,
   REVIEW_PATH,
 } from './review-page.js';
@@ -13,6 +18,7 @@ import type {
   ReviewService,
 } from './review-service.js';
 import { ReviewProblem } from './review-service.js';
+import { createReviewUiDevServer } from './review-ui-dev.js';
 
 const MAX_BODY_BYTES = 64 * 1024;
 const CONTENT_SECURITY_POLICY = [
@@ -26,10 +32,12 @@ const CONTENT_SECURITY_POLICY = [
   "form-action 'none'",
 ].join('; ');
 
-export function configureReviewServer(
+export async function configureReviewServer(
   server: ViteDevServer,
   service: ReviewService,
-): void {
+): Promise<void> {
+  const reviewUiDevServer = await createReviewUiDevServer(server);
+
   server.middlewares.use(async (request, response, next) => {
     const pathname = request.url?.split('?', 1)[0];
     if (!pathname?.startsWith(REVIEW_PATH.slice(0, -1))) return next();
@@ -42,6 +50,15 @@ export function configureReviewServer(
       }
       if (request.method === 'GET' && pathname === REVIEW_API_PATH) {
         sendJson(response, 200, await service.snapshot());
+        return;
+      }
+      if (request.method === 'GET' && pathname === REVIEW_EDITOR_PATH) {
+        response.statusCode = 302;
+        response.setHeader(
+          'Location',
+          await editorLocation(request, server, await service.snapshot()),
+        );
+        response.end();
         return;
       }
       if (pathname === REVIEW_OVERRIDE_PATH) {
@@ -66,6 +83,10 @@ export function configureReviewServer(
         );
       }
       if (request.method === 'GET') {
+        if (reviewUiDevServer) {
+          reviewUiDevServer.middlewares(request, response, next);
+          return;
+        }
         const asset = await readReviewAsset(pathname);
         if (asset) {
           send(response, 200, asset.contentType, asset.body, asset.html);
@@ -102,12 +123,103 @@ export function configureReviewServer(
   });
 }
 
+interface SourceLocationTarget {
+  file: string;
+  line: number;
+  column: number;
+}
+
+async function editorLocation(
+  request: IncomingMessage,
+  server: ViteDevServer,
+  snapshot: ReviewSnapshot,
+): Promise<string> {
+  const target = parseEditorTarget(request.url);
+  if (!snapshotContainsLocation(snapshot, target)) {
+    throw problem(
+      'UNKNOWN_SOURCE_LOCATION',
+      404,
+      '该源码位置不在当前校对快照中。请刷新校对页面后重试。',
+      'This source location is not in the current review snapshot. Refresh the review page and try again.',
+    );
+  }
+
+  const root = await fs.realpath(server.config.root);
+  const sourceFile = await fs.realpath(path.resolve(root, target.file));
+  if (!isWithinRoot(root, sourceFile)) {
+    throw problem(
+      'INVALID_SOURCE_LOCATION',
+      400,
+      '源码位置不在当前 Vite 项目内。',
+      'The source location is outside the current Vite project.',
+    );
+  }
+
+  const vscode = new URL('vscode://file');
+  // VS Code 使用 1-based 列号，而提取器的 column 是 0-based。
+  vscode.pathname = `${sourceFile}:${target.line}:${target.column + 1}`;
+  return vscode.href;
+}
+
+function parseEditorTarget(url: string | undefined): SourceLocationTarget {
+  const search = new URL(url ?? '/', 'http://review.local').searchParams;
+  const file = search.get('file');
+  const line = parsePositiveInteger(search.get('line'));
+  const column = parseNonNegativeInteger(search.get('column'));
+  if (!file || line === undefined || column === undefined) {
+    throw problem(
+      'INVALID_SOURCE_LOCATION',
+      400,
+      '源码定位请求缺少合法的文件路径或位置。',
+      'The source navigation request is missing a valid file path or location.',
+    );
+  }
+  return { file, line, column };
+}
+
+function parsePositiveInteger(value: string | null): number | undefined {
+  const number = Number(value);
+  return Number.isSafeInteger(number) && number > 0 ? number : undefined;
+}
+
+function parseNonNegativeInteger(value: string | null): number | undefined {
+  const number = Number(value);
+  return Number.isSafeInteger(number) && number >= 0 ? number : undefined;
+}
+
+function snapshotContainsLocation(
+  snapshot: ReviewSnapshot,
+  target: SourceLocationTarget,
+): boolean {
+  return snapshot.messages.some((message) =>
+    message.occurrences.some(
+      (occurrence) =>
+        occurrence.sourceFile === target.file &&
+        occurrence.locations.some(
+          (location) =>
+            location.line === target.line && location.column === target.column,
+        ),
+    ),
+  );
+}
+
+function isWithinRoot(root: string, sourceFile: string): boolean {
+  const relative = path.relative(root, sourceFile);
+  return (
+    relative !== '..' &&
+    !relative.startsWith(`..${path.sep}`) &&
+    !path.isAbsolute(relative)
+  );
+}
+
 function printReviewUrl(server: ViteDevServer): void {
   const serverUrl =
     server.resolvedUrls?.local[0] ?? server.resolvedUrls?.network[0];
   if (!serverUrl) return;
   const reviewUrl = new URL(REVIEW_PATH, new URL(serverUrl).origin).href;
-  server.config.logger.info(`  ➜  ai-i18n Review: ${reviewUrl}`);
+  server.config.logger.info(
+    `  ${colors.green('➜')}  ${colors.bold('ai-i18n Review:')} ${colors.cyan(reviewUrl)}`,
+  );
 }
 
 function assertWriteRequest(request: IncomingMessage): void {

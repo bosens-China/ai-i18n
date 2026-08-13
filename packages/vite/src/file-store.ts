@@ -64,6 +64,10 @@ export class FileStore {
     return this.updateMemory();
   }
 
+  loadExtracted(): Promise<ExtractedFile[]> {
+    return this.readExtractedFiles();
+  }
+
   loadOverrides(): Promise<TranslationOverridesFile> {
     return readTranslationOverrides(translationOverridesPath(this.directory));
   }

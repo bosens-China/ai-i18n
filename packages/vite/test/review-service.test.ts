@@ -79,6 +79,53 @@ describe('review service', () => {
     ]);
   });
 
+  it('prefers an empty Dev extraction over the matching Build snapshot', async () => {
+    const root = await temporaryRoot();
+    const state = new ProjectState(root, options);
+    state.update('', path.join(root, 'src/main.ts'));
+    const store = new FileStore({
+      root,
+      sourceLang: options.sourceLang,
+      locales: options.locales,
+    });
+    const service = createReviewService({
+      sourceLang: options.sourceLang,
+      locales: options.locales,
+      ready: async () => {},
+      state: () => state,
+      store: () => store,
+      loadPersistedExtracted: async () => [
+        {
+          version: 1,
+          source: 'src/main.ts',
+          messages: [
+            {
+              id: '旧文案',
+              source: '旧文案',
+              locations: [{ line: 1, column: 0 }],
+            },
+          ],
+        },
+      ],
+      persistedCache: () => ({
+        version: 1,
+        revision: 1,
+        messages: {
+          旧文案: {
+            source: '旧文案',
+            sourceLang: 'zh-CN',
+            translations: { 'en-US': 'Old text' },
+          },
+        },
+      }),
+      runStateTask: async (task) => task(),
+      notify: () => {},
+    });
+
+    await expect(service.snapshot()).resolves.toMatchObject({ messages: [] });
+    await store.close();
+  });
+
   it('writes and deletes global and file review values atomically', async () => {
     const root = await temporaryRoot();
     const state = projectState(root);

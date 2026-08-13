@@ -3,6 +3,7 @@ import {
   type Plugin,
   type ResolvedConfig,
 } from 'vite';
+import type { TranslationMemoryFile } from '@ai-i18n/core';
 import { diagnosticMessage } from '@ai-i18n/analyzer';
 import { createBuildWatchState } from './build-watch.js';
 import { createDevUpdateSender } from './dev-updates.js';
@@ -81,6 +82,7 @@ export function aiI18n(options: AiI18nOptions): Plugin {
   let state: ProjectState | undefined;
   let store: FileStore | undefined;
   let ready: Promise<void> = Promise.resolve();
+  let reviewCache: TranslationMemoryFile | undefined;
   let coordinator: ProviderCoordinator | undefined;
   let devHot: NormalizedHotChannel | undefined;
   let warnedSsr = false;
@@ -139,6 +141,8 @@ export function aiI18n(options: AiI18nOptions): Plugin {
     ready: () => ready,
     state: currentState,
     store: currentStore,
+    loadPersistedExtracted: () => currentStore().loadExtracted(),
+    persistedCache: () => reviewCache,
     runStateTask,
     notify(affectedModuleIds, locale) {
       if (normalized.loading) sendLocaleUpdates([locale]);
@@ -262,6 +266,7 @@ export function aiI18n(options: AiI18nOptions): Plugin {
       ]).then(([cache, overrides]) => {
         currentState().hydrateCache(cache);
         currentState().hydrateOverrides(overrides);
+        reviewCache = cache;
       });
       // 部分工具只执行 configResolved 后即释放临时 root；保留 rejection 供后续 hook 抛出，
       // 同时登记观察者，避免未进入任何 hook 时产生 unhandled rejection。
@@ -318,7 +323,7 @@ export function aiI18n(options: AiI18nOptions): Plugin {
       ? {}
       : {
           configureServer(server) {
-            configureReviewServer(server, reviewService);
+            return configureReviewServer(server, reviewService);
           },
         }),
 
