@@ -66,9 +66,11 @@ function handleTabKeydown(event: KeyboardEvent, currentIndex: number): void {
 
     <aside class="runtime-bridge">
       <span class="runtime-bridge__pulse" aria-hidden="true"></span>
-      <strong data-testid="shared-runtime-label">{{
-        t('共享 Runtime')
-      }}</strong>
+      <strong
+        class="rounded bg-blue-50 px-2 py-1"
+        data-testid="shared-runtime-label"
+        >{{ t('共享 Runtime') }}</strong
+      >
       <span>{{ t('切换任一面板，另一侧同步更新。') }}</span>
     </aside>
 

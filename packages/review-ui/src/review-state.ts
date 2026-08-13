@@ -1,10 +1,17 @@
 import type {
+  ReviewFilter,
   ReviewMessage,
   ReviewMessageReference,
   ReviewOverride,
 } from '@ai-i18n/core';
 
 export type ReviewAction = 'confirm' | 'save' | 'saved';
+export type ReviewWorkbenchFilter = ReviewFilter | 'token-error';
+
+export function currentReviewFile(message: ReviewMessage): string {
+  // 左侧列表展示首个来源，因此“当前文件”与该条目的可见来源保持一致。
+  return message.occurrences[0]?.sourceFile ?? '';
+}
 
 export function messageKey(message: ReviewMessageReference): string {
   return JSON.stringify([message.source, message.comment ?? null]);
@@ -50,6 +57,6 @@ export function reviewAction(
   draft: string,
   baseline: string,
 ): ReviewAction {
-  if (draft !== baseline) return 'save';
-  return hasOverride ? 'saved' : 'confirm';
+  if (!hasOverride) return 'confirm';
+  return draft === baseline ? 'saved' : 'save';
 }

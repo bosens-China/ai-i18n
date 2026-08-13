@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { ReviewMessage } from '@ai-i18n/core';
 import {
   activeOverride,
+  currentReviewFile,
   reviewAction,
   reviewBaseline,
 } from '../src/review-state';
@@ -12,6 +13,7 @@ const message: ReviewMessage = {
   overrides: [{ locale: 'zh-CN', value: '确认', file: 'src/dialog.ts' }],
   occurrences: [
     { sourceFile: 'src/dialog.ts', locations: [{ line: 1, column: 1 }] },
+    { sourceFile: 'src/legacy-dialog.ts', locations: [{ line: 2, column: 1 }] },
   ],
 };
 
@@ -25,9 +27,14 @@ describe('review state', () => {
     );
   });
 
+  it('uses the list item source as the current file scope', () => {
+    expect(currentReviewFile(message)).toBe('src/dialog.ts');
+  });
+
   it('distinguishes confirmation, modification, and saved states', () => {
+    expect(reviewAction(false, '', '保存')).toBe('confirm');
     expect(reviewAction(false, '保存', '保存')).toBe('confirm');
-    expect(reviewAction(false, '储存', '保存')).toBe('save');
+    expect(reviewAction(false, '储存', '保存')).toBe('confirm');
     expect(reviewAction(true, '确认', '确认')).toBe('saved');
     expect(reviewAction(true, '确定', '确认')).toBe('save');
   });

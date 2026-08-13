@@ -24,12 +24,16 @@ describe('review drafts', () => {
     expect(drafts.draftFor(message, 'ja-JP', '')).toBe('セーブ');
   });
 
-  it('drops a draft after reverting or completing its mutation', () => {
+  it('starts without copying the automatic translation into a human draft', () => {
     const drafts = useReviewDrafts();
 
-    drafts.updateDraft(message, 'zh-CN', '', '保存更改');
+    expect(drafts.draftFor(message, 'zh-CN', '')).toBe('');
     drafts.updateDraft(message, 'zh-CN', '', '保存');
     expect(drafts.draftFor(message, 'zh-CN', '')).toBe('保存');
+  });
+
+  it('drops a draft after completing its mutation', () => {
+    const drafts = useReviewDrafts();
 
     drafts.updateDraft(message, 'zh-CN', '', '保存更改');
     drafts.clearDraft({
@@ -38,6 +42,6 @@ describe('review drafts', () => {
       method: 'POST',
       value: '保存更改',
     });
-    expect(drafts.draftFor(message, 'zh-CN', '')).toBe('保存');
+    expect(drafts.draftFor(message, 'zh-CN', '')).toBe('');
   });
 });

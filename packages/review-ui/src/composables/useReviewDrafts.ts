@@ -1,6 +1,6 @@
 import { reactive } from 'vue';
 import type { ReviewMessage, ReviewMutation } from '@ai-i18n/core';
-import { draftKey, reviewBaseline } from '../review-state';
+import { activeOverride, draftKey, reviewBaseline } from '../review-state';
 
 export function useReviewDrafts() {
   const drafts = reactive(new Map<string, string>());
@@ -10,9 +10,10 @@ export function useReviewDrafts() {
     locale: string,
     scope: string,
   ): string {
+    const key = draftKey(message.message, locale, scope);
+    // 没有人工覆盖时保持空白，避免把自动译文误认为人工确认内容。
     return (
-      drafts.get(draftKey(message.message, locale, scope)) ??
-      reviewBaseline(message, locale, scope)
+      drafts.get(key) ?? activeOverride(message, locale, scope)?.value ?? ''
     );
   }
 
@@ -23,7 +24,10 @@ export function useReviewDrafts() {
     value: string,
   ): void {
     const key = draftKey(message.message, locale, scope);
-    if (value === reviewBaseline(message, locale, scope)) {
+    if (
+      activeOverride(message, locale, scope) &&
+      value === reviewBaseline(message, locale, scope)
+    ) {
       drafts.delete(key);
       return;
     }

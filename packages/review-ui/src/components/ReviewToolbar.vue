@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import type { ReviewFilter, ReviewLocale } from '@ai-i18n/core';
+import type { ReviewLocale } from '@ai-i18n/core';
 import type { ReviewCopy } from '../copy';
+import type { ReviewWorkbenchFilter } from '../review-state';
 
 defineProps<{
   copy: ReviewCopy;
@@ -8,30 +9,48 @@ defineProps<{
 }>();
 
 const locale = defineModel<string>('locale', { required: true });
-const filter = defineModel<ReviewFilter>('filter', { required: true });
+const filter = defineModel<ReviewWorkbenchFilter>('filter', { required: true });
 const query = defineModel<string>('query', { required: true });
 </script>
 
 <template>
-  <section class="control-room" :aria-label="copy.filtersLabel">
-    <label class="search-wrap">
-      <span class="search-icon" aria-hidden="true">⌕</span>
-      <span class="utility-label sr-only">{{ copy.search }}</span>
+  <section
+    class="flex-none grid gap-2.5 p-3.5 border-b border-line bg-bgOverlay backdrop-blur-md sticky top-0 z-10"
+    :aria-label="copy.filtersLabel"
+  >
+    <label class="relative block">
+      <svg
+        class="absolute top-1/2 left-3 w-4 h-4 text-accent -translate-y-1/2 pointer-events-none"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        aria-hidden="true"
+      >
+        <circle cx="11" cy="11" r="8" />
+        <line x1="21" y1="21" x2="16.65" y2="16.65" />
+      </svg>
+      <span class="sr-only">{{ copy.search }}</span>
       <input
         v-model="query"
-        class="search"
+        class="review-input w-full h-9 pl-9 pr-3.5 rounded-lg border border-line bg-bgWash text-ink text-xs"
         type="search"
         :aria-label="copy.search"
         :placeholder="copy.search"
       />
     </label>
 
-    <div class="control-groups">
-      <div class="segmented" :aria-label="copy.localesLabel">
+    <div class="grid grid-cols-1 gap-2">
+      <div
+        class="flex gap-1 overflow-x-auto p-1 rounded-lg border border-line bg-bgWash scrollbar-none"
+        :aria-label="copy.localesLabel"
+      >
         <button
           v-for="item in locales"
           :key="item.value"
-          class="segment"
+          class="filter-segment"
           type="button"
           :aria-pressed="item.value === locale"
           @click="locale = item.value"
@@ -40,15 +59,19 @@ const query = defineModel<string>('query', { required: true });
         </button>
       </div>
 
-      <div class="segmented" :aria-label="copy.statusLabel">
+      <div
+        class="flex gap-1 overflow-x-auto p-1 rounded-lg border border-line bg-bgWash scrollbar-none"
+        :aria-label="copy.statusLabel"
+      >
         <button
           v-for="item in [
             { value: 'all' as const, label: copy.all },
             { value: 'unreviewed' as const, label: copy.unreviewed },
             { value: 'reviewed' as const, label: copy.reviewed },
+            { value: 'token-error' as const, label: copy.tokenError },
           ]"
           :key="item.value"
-          class="segment"
+          class="filter-segment"
           type="button"
           :aria-pressed="item.value === filter"
           @click="filter = item.value"
@@ -59,104 +82,3 @@ const query = defineModel<string>('query', { required: true });
     </div>
   </section>
 </template>
-
-<style scoped>
-.control-room {
-  position: sticky;
-  z-index: 10;
-  top: 0;
-  display: grid;
-  grid-template-columns: minmax(220px, 1fr) auto;
-  gap: 16px;
-  padding: 16px;
-  border: 1px solid var(--line);
-  border-radius: 18px;
-  background: rgb(255 255 255 / 94%);
-  box-shadow: var(--shadow);
-  backdrop-filter: blur(16px);
-}
-
-.search-wrap {
-  position: relative;
-}
-
-.search-icon {
-  position: absolute;
-  top: 50%;
-  left: 15px;
-  color: var(--blue);
-  font-size: 1.3rem;
-  transform: translateY(-55%);
-}
-
-.search {
-  width: 100%;
-  height: 44px;
-  padding: 0 16px 0 44px;
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  color: var(--ink);
-  background: var(--wash);
-}
-
-.control-groups {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  justify-content: flex-end;
-}
-
-.segmented {
-  display: flex;
-  gap: 3px;
-  padding: 3px;
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  background: var(--wash);
-}
-
-.segment {
-  min-height: 36px;
-  padding: 0 12px;
-  border: 0;
-  border-radius: 9px;
-  color: var(--muted);
-  background: transparent;
-  font-size: 0.86rem;
-  font-weight: 650;
-}
-
-.segment[aria-pressed='true'] {
-  color: white;
-  background: var(--blue);
-}
-
-@media (max-width: 900px) {
-  .control-room {
-    grid-template-columns: 1fr;
-  }
-
-  .control-groups {
-    justify-content: flex-start;
-  }
-}
-
-@media (max-width: 580px) {
-  .control-room {
-    position: static;
-  }
-
-  .control-groups,
-  .segmented {
-    width: 100%;
-  }
-
-  .segmented {
-    overflow-x: auto;
-  }
-
-  .segment {
-    flex: 1 0 auto;
-  }
-}
-</style>
