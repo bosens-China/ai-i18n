@@ -1,5 +1,12 @@
 # @ai-i18n/vite
 
+## [1.0.0-alpha.20](https://github.com/bosens-China/ai-i18n/compare/vite-v1.0.0-alpha.19...vite-v1.0.0-alpha.20) (2026-08-13)
+
+
+### Features
+
+* **vite:** 完善翻译校对开发服务 ([d3706a0](https://github.com/bosens-China/ai-i18n/commit/d3706a07a32b7366ba5c96436aae24f206f71831))
+
 ## [1.0.0-alpha.19](https://github.com/bosens-China/ai-i18n/compare/vite-v1.0.0-alpha.18...vite-v1.0.0-alpha.19) (2026-08-11)
 
 
