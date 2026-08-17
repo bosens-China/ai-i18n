@@ -1,5 +1,12 @@
 # @ai-i18n/core
 
+## [1.0.0-alpha.12](https://github.com/bosens-China/ai-i18n/compare/core-v1.0.0-alpha.11...core-v1.0.0-alpha.12) (2026-08-17)
+
+
+### Bug Fixes
+
+* **deps:** 升级 Vite 插件运行时依赖 ([f7920d4](https://github.com/bosens-China/ai-i18n/commit/f7920d42d312181690214b761fa7873287d4f693))
+
 ## [1.0.0-alpha.11](https://github.com/bosens-China/ai-i18n/compare/core-v1.0.0-alpha.10...core-v1.0.0-alpha.11) (2026-08-11)
 
 

@@ -1,5 +1,19 @@
 # @ai-i18n/analyzer
 
+## [1.0.0-alpha.18](https://github.com/bosens-China/ai-i18n/compare/analyzer-v1.0.0-alpha.17...analyzer-v1.0.0-alpha.18) (2026-08-17)
+
+
+### Bug Fixes
+
+* **deps:** 升级 Vite 插件运行时依赖 ([f7920d4](https://github.com/bosens-China/ai-i18n/commit/f7920d42d312181690214b761fa7873287d4f693))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @ai-i18n/core bumped to 1.0.0-alpha.12
+
 ## [1.0.0-alpha.17](https://github.com/bosens-China/ai-i18n/compare/analyzer-v1.0.0-alpha.16...analyzer-v1.0.0-alpha.17) (2026-08-11)
 
 
