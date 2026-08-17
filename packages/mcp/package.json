@@ -1,6 +1,6 @@
 {
   "name": "@ai-i18n/mcp",
-  "version": "1.0.0-alpha.16",
+  "version": "1.0.0-alpha.17",
   "description": "MCP server for inspecting, translating, and reviewing ai-i18n messages.",
   "keywords": [
     "ai-i18n",

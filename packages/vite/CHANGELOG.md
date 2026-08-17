@@ -1,5 +1,25 @@
 # @ai-i18n/vite
 
+## [1.0.0-alpha.21](https://github.com/bosens-China/ai-i18n/compare/vite-v1.0.0-alpha.20...vite-v1.0.0-alpha.21) (2026-08-17)
+
+
+### Features
+
+* **vite:** 优化 Dev 管线可靠性与诊断 ([0940ce0](https://github.com/bosens-China/ai-i18n/commit/0940ce02b5c6d018725804300ccd0e665d204d75))
+
+
+### Bug Fixes
+
+* **deps:** 升级 Vite 插件运行时依赖 ([f7920d4](https://github.com/bosens-China/ai-i18n/commit/f7920d42d312181690214b761fa7873287d4f693))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @ai-i18n/analyzer bumped to 1.0.0-alpha.18
+    * @ai-i18n/core bumped to 1.0.0-alpha.12
+
 ## [1.0.0-alpha.20](https://github.com/bosens-China/ai-i18n/compare/vite-v1.0.0-alpha.19...vite-v1.0.0-alpha.20) (2026-08-13)
 
 
