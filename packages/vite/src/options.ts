@@ -41,6 +41,16 @@ export interface AiI18nCleanupOptions {
   orphanMessages?: boolean;
 }
 
+export interface AiI18nTimingDiagnosticsOptions {
+  /** 只输出达到该耗时的 Dev 阶段；默认 50ms。 */
+  minDurationMs?: number;
+}
+
+export interface AiI18nDiagnosticsOptions {
+  /** 显式开启 Dev 阶段耗时诊断；默认关闭。 */
+  timing?: boolean | AiI18nTimingDiagnosticsOptions;
+}
+
 export interface AiI18nOptions {
   framework?: AiI18nFramework;
   /** 启用当前框架模式的自动导入；默认关闭。 */
@@ -61,5 +71,6 @@ export interface AiI18nOptions {
   provider?: AiI18nProviderOptions;
   directory?: string;
   cleanup?: AiI18nCleanupOptions;
+  diagnostics?: AiI18nDiagnosticsOptions;
   html?: boolean | HtmlExtractorOptions;
 }

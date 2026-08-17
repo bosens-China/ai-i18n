@@ -25,6 +25,7 @@ interface AiI18nOptions {
   provider?: AiI18nProviderOptions;
   directory?: string;
   cleanup?: AiI18nCleanupOptions;
+  diagnostics?: AiI18nDiagnosticsOptions;
   html?: boolean | HtmlExtractorOptions;
   review?: boolean;
 }
@@ -47,6 +48,7 @@ interface AiI18nOptions {
 | `html`              | [`boolean \| HtmlExtractorOptions`](/api/vite/interfaces/html-extractor-options)            | 否   | `false`              | 开启 `index.html` 文本和属性提取。       |
 | `translationMemory` | [`AiI18nTranslationMemoryOptions`](/api/vite/interfaces/ai-i18n-translation-memory-options) | 否   | 分片 JSON            | 选择存储方式，并按需限制历史译文容量。   |
 | `cleanup`           | [`AiI18nCleanupOptions`](/api/vite/interfaces/ai-i18n-cleanup-options)                      | 否   | 保留默认清理策略     | 控制失效提取文件和孤立消息的清理。       |
+| `diagnostics`       | [`AiI18nDiagnosticsOptions`](/api/vite/interfaces/ai-i18n-diagnostics-options)              | 否   | 关闭                 | 按需输出 Vite Dev 阶段耗时。             |
 | `review`            | `boolean`                                                                                   | 否   | `true`               | 在 Vite Dev 中提供翻译校对页面。         |
 
 ## 语言约束
@@ -99,6 +101,7 @@ interface AiI18nOptions {
 ## 相关内容
 
 - [`aiI18n()`](/api/vite/functions/ai-i18n)
+- [`AiI18nDiagnosticsOptions`](/api/vite/interfaces/ai-i18n-diagnostics-options)
 - [翻译校对](/guide/basic/translation-review)
 - [语言分包与按需加载](/guide/basic/locale-loading)
 - [生成文件与 Git](/guide/basic/directory)

@@ -119,6 +119,7 @@ describe('review service', () => {
         },
       }),
       runStateTask: async (task) => task(),
+      flushPersistence: async () => {},
       notify: () => {},
     });
 
@@ -145,6 +146,7 @@ describe('review service', () => {
       state: () => state,
       store: () => store,
       runStateTask: async (task) => task(),
+      flushPersistence: async () => {},
       notify,
     });
 
@@ -198,6 +200,7 @@ describe('review service', () => {
       state: () => state,
       store: () => store,
       runStateTask: async (task) => task(),
+      flushPersistence: async () => {},
       notify: () => {},
     });
 

@@ -1,6 +1,7 @@
 import { runtimeMessageId } from '@ai-i18n/core';
 import { describe, expect, it, vi } from 'vitest';
 import { aiI18n, type AiI18nOptions, type Translator } from '../src/index';
+import { FileStore } from '../src/file-store';
 import { callHook, options, setupPlugin } from './plugin-test-utils';
 
 describe('@ai-i18n/vite plugin', () => {
@@ -48,6 +49,78 @@ describe('@ai-i18n/vite plugin', () => {
         provider: {} as NonNullable<AiI18nOptions['provider']>,
       }),
     ).toThrow('[ai-i18n] provider.translator must be a function.');
+  });
+
+  it('reports opt-in Dev timing stages with normalized module IDs', async () => {
+    vi.stubEnv('AI_I18N_DIAGNOSTIC_LOCALE', 'en-US');
+    const { close, plugin, timingInfo, transform } = setupPlugin(
+      [],
+      undefined,
+      {
+        ...options,
+        diagnostics: { timing: { minDurationMs: 0 } },
+      },
+    );
+    await transform(
+      "import { t } from 'virtual:ai-i18n'; t('保存')",
+      '/workspace/src/timed.ts',
+    );
+    const registerId = callHook<string>(
+      plugin.resolveId,
+      'virtual:ai-i18n/register?module=src%2Ftimed.ts',
+    );
+    await callHook<Promise<string>>(plugin.load, registerId);
+    await close();
+
+    const messages = timingInfo.mock.calls.map(([message]) => message);
+    expect(messages).toEqual(
+      expect.arrayContaining([
+        expect.stringContaining('stage=source-transform'),
+        expect.stringContaining('stage=file-sync'),
+        expect.stringContaining('stage=registration-load'),
+      ]),
+    );
+    expect(messages.every((message) => !message.includes('/workspace'))).toBe(
+      true,
+    );
+  });
+
+  it('loads registration from memory without waiting for Dev persistence', async () => {
+    let release!: () => void;
+    const pending = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const originalSync = FileStore.prototype.sync;
+    const sync = vi
+      .spyOn(FileStore.prototype, 'sync')
+      .mockImplementationOnce(async function (
+        this: FileStore,
+        ...args: Parameters<FileStore['sync']>
+      ) {
+        await pending;
+        return originalSync.apply(this, args);
+      });
+    const { close, plugin, transform } = setupPlugin();
+
+    try {
+      await transform(
+        "import { t } from 'virtual:ai-i18n'; t('内存注册')",
+        '/workspace/src/in-memory-register.ts',
+      );
+      const registerId = callHook<string>(
+        plugin.resolveId,
+        'virtual:ai-i18n/register?module=src%2Fin-memory-register.ts',
+      );
+
+      await expect(
+        callHook<Promise<string>>(plugin.load, registerId),
+      ).resolves.toContain('内存注册');
+      expect(sync).toHaveBeenCalledTimes(1);
+    } finally {
+      release();
+      await close();
+      sync.mockRestore();
+    }
   });
 
   it('injects a stable register import after shebang and directives', async () => {

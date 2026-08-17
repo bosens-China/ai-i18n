@@ -18,6 +18,80 @@ import {
 import { updateTestTranslationMemory } from './translation-memory-test-utils';
 
 describe('@ai-i18n/vite plugin updates', () => {
+  it('reconciles a deleted managed extracted file without reading it', async () => {
+    const { plugin, directory, transform } = setupPlugin();
+    await transform(
+      "import { t } from 'virtual:ai-i18n'; t('保存')",
+      '/workspace/src/deleted-extracted.ts',
+    );
+    const extractedFile = extractedPath(directory, 'src/deleted-extracted.ts');
+    await vi.waitFor(async () => {
+      await expect(fs.stat(extractedFile)).resolves.toBeDefined();
+    });
+    await fs.rm(extractedFile);
+    const read = vi.fn<() => Promise<string>>(async () => {
+      throw new Error('delete events must not read the removed file');
+    });
+    const hotUpdate = objectHandler<
+      (
+        this: unknown,
+        options: {
+          type: 'delete';
+          file: string;
+          timestamp: number;
+          modules: unknown[];
+          read: () => Promise<string>;
+        },
+      ) => Promise<unknown[] | undefined>
+    >(plugin.hotUpdate);
+
+    await expect(
+      hotUpdate.call(
+        { environment: { name: 'client' } },
+        {
+          type: 'delete',
+          file: extractedFile,
+          timestamp: 1,
+          modules: [],
+          read,
+        },
+      ),
+    ).resolves.toEqual([]);
+    expect(read).not.toHaveBeenCalled();
+    await expect(fs.readFile(extractedFile, 'utf8')).resolves.toContain(
+      'src/deleted-extracted.ts',
+    );
+
+    const context = {
+      environment: {
+        name: 'client',
+        moduleGraph: {
+          getModuleById: () => undefined,
+          invalidateModule: vi.fn(),
+        },
+      },
+    };
+    await hotUpdate.call(context, {
+      type: 'delete',
+      file: '/workspace/src/deleted-extracted.ts',
+      timestamp: 2,
+      modules: [],
+      read,
+    });
+    await fs.rm(extractedFile);
+    await hotUpdate.call(context, {
+      type: 'delete',
+      file: extractedFile,
+      timestamp: 3,
+      modules: [],
+      read,
+    });
+    expect(read).not.toHaveBeenCalled();
+    await expect(fs.stat(extractedFile)).rejects.toMatchObject({
+      code: 'ENOENT',
+    });
+  });
+
   it('translates in the background and sends a targeted runtime update', async () => {
     let finish!: () => void;
     const translator: Translator = vi.fn<Translator>(

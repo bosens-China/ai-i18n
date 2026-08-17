@@ -8,6 +8,7 @@ import { aiI18n, type AiI18nOptions } from '../src/index';
 import { readTestTranslationMemory } from './translation-memory-test-utils';
 
 const tempDirs: string[] = [];
+const pluginClosers = new Set<() => Promise<void>>();
 
 export const options = {
   sourceLang: 'zh-CN',
@@ -20,6 +21,7 @@ export const options = {
 
 afterEach(async () => {
   vi.unstubAllEnvs();
+  await Promise.all([...pluginClosers].map((close) => close()));
   await Promise.all(
     tempDirs
       .splice(0)
@@ -39,6 +41,7 @@ export function setupPlugin(
 ) {
   const directory = mkdtempSync(path.join(os.tmpdir(), 'ai-i18n-vite-unit-'));
   tempDirs.push(directory);
+  const timingInfo = vi.fn<(message: string) => void>();
   const plugin = aiI18n({
     ...pluginOptions,
     dts: false,
@@ -52,7 +55,16 @@ export function setupPlugin(
     root,
     command: 'serve',
     plugins: vitePlugins,
+    logger: { info: timingInfo },
   } as unknown as ResolvedConfig);
+  let closed = false;
+  const close = async () => {
+    if (closed) return;
+    closed = true;
+    pluginClosers.delete(close);
+    await callHook<Promise<void>>(plugin.closeBundle);
+  };
+  pluginClosers.add(close);
   const handler = objectHandler<
     (
       this: unknown,
@@ -74,8 +86,10 @@ export function setupPlugin(
   };
   return {
     plugin,
+    close,
     directory,
     hotSend,
+    timingInfo,
     dependencyLoad,
     transform: (code: string, id: string, options?: { ssr?: boolean }) =>
       handler.call(context, code, id, options),

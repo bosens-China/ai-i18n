@@ -6,11 +6,13 @@ import {
 import type { TranslationMemoryFile } from '@ai-i18n/core';
 import { diagnosticMessage } from '@ai-i18n/analyzer';
 import { createBuildWatchState } from './build-watch.js';
+import { createDevPersistenceScheduler } from './dev-persistence.js';
 import { createDevUpdateSender } from './dev-updates.js';
 import {
   createDevStateQueue,
   type DevStateTaskRunner,
 } from './dev-state-queue.js';
+import { createDevTimingReporter } from './dev-timing.js';
 import { FileStore } from './file-store.js';
 import {
   frameworkTranslationHooks,
@@ -22,21 +24,20 @@ import {
 import { html as createHtmlExtractor, type HtmlExtractor } from './html.js';
 import { createHtmlTransformHandler } from './html-transform.js';
 import { createHotUpdateHandler } from './hot-update.js';
-import {
-  injectBuiltLocaleHints,
-  localeFromRequest,
-  RESOLVED_LOCALE_PREFIX,
-  resolvedLocaleRequestId,
-} from './locale-loading.js';
-import { loadLocaleModule, renderLocaleChunk } from './locale-module-loader.js';
+import { injectBuiltLocaleHints } from './locale-loading.js';
+import { renderLocaleChunk } from './locale-module-loader.js';
 import { ProjectState } from './project-state.js';
-import { ProviderCoordinator } from './provider-coordinator.js';
-import { resolveProviderLogging } from './provider-logging.js';
+import type { ProviderCoordinator } from './provider-coordinator.js';
 import { configureReviewServer } from './review-server.js';
 import { createReviewService } from './review-service.js';
 import { normalizeProjectId } from './project-paths.js';
-import { loadRegistration } from './registration-loader.js';
 import type { AiI18nOptions } from './options.js';
+import { createPluginProvider } from './plugin-provider.js';
+import {
+  createVirtualModuleHooks,
+  REGISTER_PREFIX,
+  RESOLVED_REGISTER_PREFIX,
+} from './plugin-virtual-hooks.js';
 import {
   normalizeOptions,
   normalizeProviderCache,
@@ -45,23 +46,6 @@ import {
   rejectRemovedOptions,
 } from './plugin-utils.js';
 import { createSourceTransformHandler } from './source-transform.js';
-import { ssrWarningMessage } from './ssr-warning.js';
-import {
-  runtimeCode,
-  runtimeStubCode,
-  scopedRuntimeCode,
-} from './virtual-modules.js';
-import { AI_I18N_VIRTUAL_MODULE_ID } from './yuku-analyzer.js';
-
-const RESOLVED_RUNTIME_ID = `\0${AI_I18N_VIRTUAL_MODULE_ID}`;
-const RESOLVED_SCOPED_RUNTIME_PREFIX = `${RESOLVED_RUNTIME_ID}?module=`;
-const INTERNAL_RUNTIME_ID = `${AI_I18N_VIRTUAL_MODULE_ID}/internal`;
-const REGISTER_PREFIX = `${AI_I18N_VIRTUAL_MODULE_ID}/register?module=`;
-const RESOLVED_REGISTER_PREFIX = `\0${REGISTER_PREFIX}`;
-const VIRTUAL_RE =
-  /^(?:virtual:ai-i18n(?:\/internal|\/register\?module=.+|\/locale\/[^?]+)?|.*\/@ai-i18n\/locale\/[^?]+\.js(?:\?.*)?)$/;
-const RESOLVED_VIRTUAL_RE =
-  /^\0virtual:ai-i18n(?:\?module=.+|\/register\?module=.+|\/locale\/[^?]+)?$/;
 const TRANSLATION_UPDATE_EVENT = 'ai-i18n:update';
 const LOCALE_UPDATE_EVENT = 'ai-i18n:locale-update';
 
@@ -87,6 +71,25 @@ export function aiI18n(options: AiI18nOptions): Plugin {
   let devHot: NormalizedHotChannel | undefined;
   let warnedSsr = false;
   const queueDevStateTask = createDevStateQueue();
+  const devTiming = createDevTimingReporter(options.diagnostics?.timing, {
+    enabled: () => config?.command === 'serve',
+    log: (message) => config?.logger.info(message),
+  });
+  const devPersistence = createDevPersistenceScheduler({
+    sync: async (snapshot) => {
+      await currentStore().sync(snapshot);
+    },
+    timing: devTiming,
+    onError(cause) {
+      const reason = cause instanceof Error ? cause.message : String(cause);
+      config?.logger.error(
+        diagnosticMessage(
+          `[ai-i18n] Dev 后台持久化失败：${reason}`,
+          `[ai-i18n] Dev background persistence failed: ${reason}`,
+        ),
+      );
+    },
+  });
 
   const runStateTask: DevStateTaskRunner = (task) =>
     config?.command === 'build'
@@ -144,6 +147,7 @@ export function aiI18n(options: AiI18nOptions): Plugin {
     loadPersistedExtracted: () => currentStore().loadExtracted(),
     persistedCache: () => reviewCache,
     runStateTask,
+    flushPersistence: () => devPersistence.flush(),
     notify(affectedModuleIds, locale) {
       if (normalized.loading) sendLocaleUpdates([locale]);
       else sendTranslationUpdates(affectedModuleIds);
@@ -171,15 +175,15 @@ export function aiI18n(options: AiI18nOptions): Plugin {
     sendTranslationUpdates,
     sendLocaleUpdates,
     requestMissingTranslations,
+    flushPersistence: () => devPersistence.flush(),
     runStateTask,
   });
 
-  const transformSource = createSourceTransformHandler({
+  const handleTransformSource = createSourceTransformHandler({
     registerPrefix: REGISTER_PREFIX,
     config: () => config,
     ready: () => ready,
     state: currentState,
-    store: currentStore,
     framework: () => framework,
     autoImport: () => autoImport,
     translationHooks: () => translationHooks,
@@ -193,7 +197,21 @@ export function aiI18n(options: AiI18nOptions): Plugin {
       warn();
     },
     runStateTask,
+    persist: (snapshot, moduleId) =>
+      devPersistence.schedule(snapshot, moduleId),
   });
+  const transformSource: typeof handleTransformSource = function (
+    code,
+    id,
+    transformOptions,
+  ) {
+    const moduleId = config
+      ? (normalizeProjectId(config.root, id) ?? '<unknown>')
+      : '<unknown>';
+    return devTiming.measure('source-transform', moduleId, () =>
+      handleTransformSource.call(this, code, id, transformOptions),
+    );
+  };
 
   const transformIndexHtml = createHtmlTransformHandler({
     ...(htmlExtractor ? { extractor: htmlExtractor } : {}),
@@ -204,10 +222,33 @@ export function aiI18n(options: AiI18nOptions): Plugin {
     store: currentStore,
     requestMissingTranslations,
     flush: () => coordinator?.flush() ?? Promise.resolve(),
+    persist: (snapshot, moduleId) =>
+      devPersistence.schedule(snapshot, moduleId),
     setDevHot(hot) {
       devHot = hot;
     },
     runStateTask,
+  });
+
+  const virtualModuleHooks = createVirtualModuleHooks({
+    normalized,
+    config: () => config,
+    framework: () => framework,
+    ready: () => ready,
+    state: currentState,
+    store: currentStore,
+    flushProvider: () => coordinator?.flush() ?? Promise.resolve(),
+    reconcile: (moduleIds, complete) =>
+      buildWatch.reconcile(moduleIds, complete),
+    runStateTask,
+    devTiming,
+    warnSsrOnce(warn) {
+      if (warnedSsr) return;
+      warnedSsr = true;
+      warn();
+    },
+    translationUpdateEvent: TRANSLATION_UPDATE_EVENT,
+    localeUpdateEvent: LOCALE_UPDATE_EVENT,
   });
 
   return {
@@ -272,49 +313,17 @@ export function aiI18n(options: AiI18nOptions): Plugin {
       // 同时登记观察者，避免未进入任何 hook 时产生 unhandled rejection。
       void ready.catch(() => undefined);
       if (options.provider) {
-        const providerOptions = { ...options.provider };
-        const { translator, logging } = providerOptions;
-        delete providerOptions.cache;
-        delete providerOptions.logging;
-        coordinator = new ProviderCoordinator(translator, {
-          ...providerOptions,
-          logging: resolveProviderLogging(
-            logging,
-            normalizeRoot(resolved.root),
-          ),
-          async onResults(results, { batchId }) {
-            await runStateTask(async () => {
-              const project = currentState();
-              currentStore().markProviderTranslations(results);
-              const affected = project.applyTranslations(results, {
-                replaceCached: providerCache === 'fresh',
-              });
-              currentStore().markProviderBatch(batchId);
-              coordinator?.reportBatchEvent({
-                batchId,
-                stage: 'state-applied',
-                resultCount: results.length,
-                affectedModules: affected.length,
-              });
-              if (config?.command !== 'build') {
-                const cache = await currentStore().sync(project.snapshot());
-                project.hydrateCache(cache);
-                project.hydrateOverrides(await currentStore().loadOverrides());
-              }
-              if (normalized.loading) {
-                if (affected.length) {
-                  sendLocaleUpdates(results.map((result) => result.locale));
-                }
-              } else {
-                sendTranslationUpdates(affected);
-              }
-            });
-          },
-          onWarning(message) {
-            const warning = `[ai-i18n] ${message}`;
-            if (resolved.logger) resolved.logger.warn(warning);
-            else console.warn(warning);
-          },
+        coordinator = createPluginProvider({
+          provider: options.provider,
+          providerCache,
+          config: resolved,
+          state: currentState,
+          store: currentStore,
+          runStateTask,
+          flushPersistence: () => devPersistence.flush(),
+          localeLoading: normalized.loading !== undefined,
+          sendTranslationUpdates,
+          sendLocaleUpdates,
         });
       }
     },
@@ -339,93 +348,7 @@ export function aiI18n(options: AiI18nOptions): Plugin {
       }
     },
 
-    resolveId: {
-      filter: { id: VIRTUAL_RE },
-      handler(id, importer, resolveOptions) {
-        if (id === INTERNAL_RUNTIME_ID) return RESOLVED_RUNTIME_ID;
-        if (id === AI_I18N_VIRTUAL_MODULE_ID) {
-          if (
-            !resolveOptions?.ssr &&
-            importer &&
-            !importer.startsWith('\0') &&
-            config
-          ) {
-            const moduleId = normalizeProjectId(config.root, importer);
-            if (moduleId) {
-              return `${RESOLVED_SCOPED_RUNTIME_PREFIX}${encodeURIComponent(moduleId)}`;
-            }
-          }
-          return RESOLVED_RUNTIME_ID;
-        }
-        if (id.startsWith(REGISTER_PREFIX)) return `\0${id}`;
-        const locale = localeFromRequest(id);
-        if (
-          locale &&
-          normalized.locales.some(
-            (option) =>
-              option.value === locale && locale !== normalized.sourceLang,
-          )
-        ) {
-          return resolvedLocaleRequestId(id, locale);
-        }
-      },
-    },
-
-    load: {
-      filter: { id: RESOLVED_VIRTUAL_RE },
-      async handler(id, loadOptions) {
-        if (loadOptions?.ssr || this.environment.name !== 'client') {
-          if (!warnedSsr) {
-            warnedSsr = true;
-            this.warn(ssrWarningMessage('injection'));
-          }
-          if (id === RESOLVED_RUNTIME_ID) return runtimeStubCode(framework);
-          return id.startsWith(RESOLVED_LOCALE_PREFIX)
-            ? 'export default {};'
-            : 'export {};';
-        }
-        if (id === RESOLVED_RUNTIME_ID) {
-          return runtimeCode(
-            normalized,
-            TRANSLATION_UPDATE_EVENT,
-            LOCALE_UPDATE_EVENT,
-            framework,
-            config?.command === 'build',
-            config?.base,
-          );
-        }
-        if (id.startsWith(RESOLVED_SCOPED_RUNTIME_PREFIX)) {
-          return scopedRuntimeCode(
-            decodeURIComponent(id.slice(RESOLVED_SCOPED_RUNTIME_PREFIX.length)),
-            framework,
-          );
-        }
-        await ready;
-        const localeModule = await loadLocaleModule(this, {
-          id,
-          build: config?.command === 'build',
-          project: currentState(),
-          store: currentStore(),
-          flush: () => coordinator?.flush() ?? Promise.resolve(),
-          reconcile: (moduleIds, complete) =>
-            buildWatch.reconcile(moduleIds, complete),
-          runStateTask,
-        });
-        if (localeModule !== undefined) return localeModule;
-        const moduleId = decodeURIComponent(
-          id.slice(RESOLVED_REGISTER_PREFIX.length),
-        );
-        return loadRegistration(this, {
-          moduleId,
-          build: config?.command === 'build',
-          project: currentState(),
-          store: currentStore(),
-          flush: () => coordinator?.flush() ?? Promise.resolve(),
-          ...(normalized.loading ? { locale: normalized.sourceLang } : {}),
-          runStateTask,
-        });
-      },
-    },
+    ...virtualModuleHooks,
 
     transform: {
       filter: { id: SOURCE_RE },
@@ -457,6 +380,7 @@ export function aiI18n(options: AiI18nOptions): Plugin {
 
     async closeBundle() {
       disposeDevUpdates();
+      await devPersistence.flush();
       if (config?.command !== 'build' || !config.build.watch) {
         await store?.close();
       }

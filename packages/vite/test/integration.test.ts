@@ -42,13 +42,12 @@ describe('Vite integration', () => {
 
     try {
       await server.transformRequest('/src/main.ts');
-      expect(await extractedSources(root)).toEqual(['src/main.ts']);
+      await expect.poll(() => extractedSources(root)).toEqual(['src/main.ts']);
 
       await server.transformRequest('/src/lazy.ts');
-      expect(await extractedSources(root)).toEqual([
-        'src/lazy.ts',
-        'src/main.ts',
-      ]);
+      await expect
+        .poll(() => extractedSources(root))
+        .toEqual(['src/lazy.ts', 'src/main.ts']);
     } finally {
       await server.close();
     }

@@ -26,6 +26,16 @@
   },
   {
     "type": "file",
+    "name": "ai-i18n-diagnostics-options",
+    "label": "AiI18nDiagnosticsOptions"
+  },
+  {
+    "type": "file",
+    "name": "ai-i18n-timing-diagnostics-options",
+    "label": "AiI18nTimingDiagnosticsOptions"
+  },
+  {
+    "type": "file",
     "name": "ai-i18n-translation-memory-options",
     "label": "AiI18nTranslationMemoryOptions"
   },

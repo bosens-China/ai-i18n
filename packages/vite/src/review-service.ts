@@ -65,6 +65,7 @@ interface ReviewServiceOptions {
   loadPersistedExtracted?: () => Promise<readonly ExtractedFile[]>;
   persistedCache?: () => TranslationMemoryFile | undefined;
   runStateTask: DevStateTaskRunner;
+  flushPersistence: () => Promise<void>;
   notify: (affectedModuleIds: string[], locale: string) => void;
 }
 
@@ -125,6 +126,7 @@ export function createReviewService(
   ): Promise<ReviewMutationResult> {
     await options.ready();
     return options.runStateTask(async () => {
+      await options.flushPersistence();
       const project = options.state();
       const store = options.store();
       const snapshot = await projectSnapshot();

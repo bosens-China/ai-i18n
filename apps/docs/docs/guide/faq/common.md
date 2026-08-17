@@ -96,6 +96,33 @@ definePagePermissions({
 
 此时标题没有进入 ai-i18n 的提取结果是正常行为，不需要调整插件顺序，也不需要声明宏白名单。
 
+## 为什么首次打开页面或懒路由很慢？
+
+浏览器显示 `304 Not Modified` 只表示缓存校验成功，不能单独说明耗时发生在网络或 ai-i18n。
+需要区分源码转换、协议写入和虚拟注册模块加载时，可临时开启 Dev 阶段耗时诊断：
+
+```ts
+aiI18n({
+  sourceLang: 'zh-CN',
+  locales,
+  diagnostics: {
+    timing: { minDurationMs: 20 },
+  },
+});
+```
+
+终端只输出达到阈值的 `source-transform`、`file-sync` 和 `registration-load`，以及相对 Vite
+root 的模块 ID。`timing: true` 使用 50ms 默认阈值；该功能默认关闭且仅在 Vite Dev 生效。
+
+先按最慢阶段定位：
+
+- `source-transform`：检查首次请求模块数量、单文件大小，以及 ai-i18n 之前是否存在改写源码的插件。
+- `file-sync`：检查 i18n 目录所在磁盘、文件监听器和其他进程是否频繁修改协议文件。
+- `registration-load`：检查首次路由是否一次请求了大量新模块，以及 Provider 是否仍有待处理结果。
+
+如果这些阶段都没有慢日志，继续检查应用自己的路由守卫、鉴权接口和挂载时机。ai-i18n 不控制
+应用何时调用 `mount()`。排查结束后关闭诊断，避免保留额外终端输出。
+
 ## 为什么切换语言后仍然显示源文案？
 
 缺失翻译或值为 `null` 时，Runtime 固定回退到 source。检查

@@ -1,6 +1,6 @@
 ---
 name: integrate-ai-i18n
-description: Integrate ai-i18n into Vite browser projects that use Vue 3, React 18+, or vanilla JavaScript and TypeScript. Use when installing or configuring @ai-i18n/vite, adding translation calls or virtual:ai-i18n imports, selecting framework mode, enabling auto imports or ESLint, configuring optional locale loading or LLM audit logs, reviewing Provider logs, or diagnosing an incomplete integration.
+description: Integrate ai-i18n into Vite browser projects that use Vue 3, React 18+, or vanilla JavaScript and TypeScript. Use when installing or configuring @ai-i18n/vite, adding translation calls or virtual:ai-i18n imports, selecting framework mode, enabling auto imports or ESLint, configuring optional locale loading, LLM audit logs, or Dev timing diagnostics, reviewing Provider logs, or diagnosing an incomplete integration.
 ---
 
 # Integrate ai-i18n
@@ -34,8 +34,8 @@ If an existing `overrides.json` contains file-scoped rules, preserve its exact n
 relative to this Vite root; never rewrite them to machine-specific absolute paths during integration.
 
 Do not enable optional behavior by default. Keep explicit imports and omit automatic translation,
-automatic imports, language persistence, locale loading, cache cleanup, HTML extraction, ESLint, and
-test integration unless the user requests them. Do not remove an optional feature that is already
+automatic imports, language persistence, locale loading, cache cleanup, HTML extraction, Dev timing
+diagnostics, ESLint, and test integration unless the user requests them. Do not remove an optional feature that is already
 configured. When an optional feature is requested, read [Agent defaults for optional features](references/optional-features.md)
 and the matching public documentation page.
 

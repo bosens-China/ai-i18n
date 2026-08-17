@@ -57,6 +57,28 @@ aiI18n({
 });
 ```
 
+## Dev 慢阶段诊断
+
+性能诊断默认关闭。首次打开页面或懒路由明显变慢时，可临时开启阶段耗时日志：
+
+```ts
+aiI18n({
+  sourceLang: 'zh-CN',
+  locales,
+  diagnostics: {
+    timing: { minDurationMs: 20 },
+  },
+});
+```
+
+日志只在 Vite Dev 中输出达到阈值的 `source-transform`、`file-sync` 和
+`registration-load`，并携带相对 Vite root 的规范化模块 ID。`timing: true` 使用 50ms
+默认阈值。日志不包含源码正文、译文或凭据，也不写入项目文件；排查结束后应关闭。
+
+Dev 转换先更新当前进程的内存状态，连续转换产生的协议写入会合并并提交最新快照，因此普通模块
+响应不等待每次完整目录同步。人工校对、Provider 结果、外部协议文件变化和 Dev Server 关闭等边界
+仍会等待待提交写入；Build 与 MCP 的文件语义不变。
+
 ## Translation Memory
 
 默认 `translationMemory.storage: 'json'`，消息按稳定 SHA-256 前缀写入

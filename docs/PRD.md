@@ -101,7 +101,10 @@
 ### 并发与兼容性
 
 - Vite 与 MCP 通过同一存储抽象读写。JSON 使用跨进程锁、锁内重读、字段级合并和可恢复原子提交；SQLite 使用同一外部锁与数据库事务。内存 ProjectState 只用于加速和 Runtime 更新，持久化存储才是写入真相。
-- 同一 Vite Dev 插件实例内，ProjectState 更新、文件同步、重新 hydrate 与 HMR 通知组成串行状态事务；虚拟模块读取必须等待在先事务完成，避免旧异步结果覆盖或读到半提交状态。
+- 同一 Vite Dev 插件实例内，ProjectState 更新、重新 hydrate 与 HMR 通知继续由状态事务排序；普通
+  source transform 的协议写入由单实例调度器串行执行并合并为最新快照，不阻塞转换响应。外部协议
+  文件变更、Provider 结果、人工校对和关闭生命周期先 flush 待写快照；虚拟注册直接读取已排序的
+  ProjectState，避免旧异步结果覆盖或为普通后台写入重复扫描目录。
 - 不保留未发布旧 schema 或旧 MCP 工具参数的兼容层；只为已存在的单文件 Translation Memory 提供一次自动迁移。
 - sourceLang 变更时，当前实现会在 comment 一致且历史候选唯一时尽力复用历史翻译；候选不唯一时保持缺失，不猜测。这是保守兼容行为，不构成公开的稳定迁移承诺。
 - Translation Memory 的容量限制与 orphan 清理只淘汰非活动历史消息，不能为满足上限而破坏当前源码仍引用的译文。
@@ -110,6 +113,11 @@
 ### Vite 生命周期与 Provider
 
 - Dev 渐进处理浏览器实际请求到的模块；Build 以入口可达模块图进行完整处理；Build Watch 复用未变化的分析结果并在必要时校准活动集合。
+- Dev 管理文件的 create/update 事件允许读取内容并识别插件自身写入；delete 事件不得读取已经消失的
+  文件。活动生成文件被外部删除时按当前内存状态恢复，已失效文件不得复活或触发 HMR 自激循环。
+- `diagnostics.timing` 是默认关闭的 Vite Dev 慢阶段诊断。`true` 使用 50ms 阈值，也可配置非负有限的
+  `minDurationMs`；只报告 source-transform、file-sync 和 registration-load 及规范化模块 ID，遵循
+  中英文诊断策略，不输出源码正文、译文、绝对机器路径或凭据，也不进入 Build 或项目文件。
 - Vite Dev 默认在 `/__ai-i18n/` 提供翻译校对页面并在启动地址后打印链接；`review: false`
   可关闭。校对页面首次读取时只读既有 `extracted/` 与 Translation Memory 快照作为初始列表，不扫描源码、
   不触发 Provider，也不写入业务 Runtime 状态；Dev 实际转换的模块始终优先，且会遮蔽同源旧记录。没有

@@ -28,6 +28,7 @@ interface HotUpdateDependencies {
   sendTranslationUpdates(moduleIds: readonly string[]): void;
   sendLocaleUpdates(locales: readonly string[]): void;
   requestMissingTranslations(moduleIds: readonly string[]): void;
+  flushPersistence(): Promise<void>;
   runStateTask: DevStateTaskRunner;
 }
 
@@ -43,14 +44,18 @@ export function createHotUpdateHandler(dependencies: HotUpdateDependencies) {
     if (this.environment.name !== 'client') return;
     await dependencies.ready();
     return dependencies.runStateTask(async () => {
+      await dependencies.flushPersistence();
       const project = dependencies.state();
       const fileStore = dependencies.store();
       const localeSnapshot = dependencies.localeLoading
         ? snapshotLocales(project)
         : undefined;
       if (fileStore.manages(options.file)) {
-        const content = await options.read();
-        if (fileStore.isOwnWrite(options.file, content)) return [];
+        // Vite 8 的 delete 事件仍会进入 hotUpdate，但此时 read() 会读取已消失的文件。
+        if (options.type !== 'delete') {
+          const content = await options.read();
+          if (fileStore.isOwnWrite(options.file, content)) return [];
+        }
         const loadOptions = await fileStore.loadOptions([options.file]);
         const affected = project.hydrateCache(await fileStore.load());
         affected.push(

@@ -7,7 +7,6 @@ import type {
 import { resolveAnalysisDependencies } from './analysis-dependencies.js';
 import type { DevStateTaskRunner } from './dev-state-queue.js';
 import type { TranslationHookBinding } from './extractor.js';
-import type { FileStore } from './file-store.js';
 import {
   extractFrameworkSource,
   frameworkAutoImports,
@@ -15,6 +14,7 @@ import {
   type AiI18nFramework,
 } from './framework.js';
 import { shouldIgnoreSource, sourceUpdateOptions } from './plugin-utils.js';
+import type { ProjectSnapshot } from './project-snapshot.js';
 import type { ProjectState } from './project-state.js';
 import { ssrWarningMessage } from './ssr-warning.js';
 import {
@@ -33,12 +33,12 @@ interface SourceTransformDependencies {
   config(): ResolvedConfig | undefined;
   ready(): Promise<void>;
   state(): ProjectState;
-  store(): FileStore;
   framework(): AiI18nFramework;
   autoImport(): boolean;
   translationHooks(): readonly TranslationHookBinding[];
   requestMissingTranslations(moduleIds: readonly string[]): void;
   runStateTask: DevStateTaskRunner;
+  persist(snapshot: ProjectSnapshot, moduleId: string): void;
   setDevHot(hot: NormalizedHotChannel): void;
   warnSsrOnce(warn: () => void): void;
 }
@@ -126,10 +126,7 @@ export function createSourceTransformHandler(
         });
       }
       if (config?.command !== 'build') {
-        const store = dependencies.store();
-        const cache = await store.sync(project.snapshot());
-        project.hydrateCache(cache);
-        project.hydrateOverrides(await store.loadOverrides());
+        dependencies.persist(project.snapshot(), moduleId);
       }
       dependencies.requestMissingTranslations(update.affectedModuleIds);
       // 只注入没有本地 symbol 的值引用，避免覆盖用户自己的同名函数或变量。
