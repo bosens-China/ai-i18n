@@ -10,6 +10,13 @@ import {
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import {
+  collectExportTargets,
+  createPublishManifest,
+  parsePublishPaths,
+  sortPackageEntries,
+  validateInternalDependencies,
+} from './release-package-metadata.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const RELEASE_CONFIG = path.join(ROOT, 'release-please-config.json');
@@ -111,40 +118,6 @@ function packPackages(packages, directory) {
   return entries;
 }
 
-export function collectExportTargets(manifest) {
-  const targets = new Set();
-  const visit = (value) => {
-    if (typeof value === 'string') {
-      if (value.startsWith('./')) targets.add(value);
-      return;
-    }
-    if (!value || typeof value !== 'object') return;
-    for (const child of Object.values(value)) visit(child);
-  };
-  visit(manifest.exports);
-  visit(manifest.main);
-  visit(manifest.types);
-  visit(manifest.bin);
-  return [...targets].sort();
-}
-
-export function validateInternalDependencies(manifest, workspaceVersions) {
-  for (const section of ['dependencies', 'optionalDependencies']) {
-    for (const [name, version] of Object.entries(manifest[section] ?? {})) {
-      const expected = workspaceVersions.get(name);
-      if (!expected) continue;
-      if (version !== expected) {
-        throw new Error(
-          bilingual(
-            `${manifest.name} 必须精确依赖 ${name}@${expected}，当前为 ${version}。`,
-            `${manifest.name} must depend exactly on ${name}@${expected}; received ${version}.`,
-          ),
-        );
-      }
-    }
-  }
-}
-
 function validateTarball(entry, workspaceVersions) {
   validateInternalDependencies(entry.manifest, workspaceVersions);
   const result = run('tar', ['-tf', entry.tarball], { capture: true });
@@ -160,47 +133,6 @@ function validateTarball(entry, workspaceVersions) {
       );
     }
   }
-}
-
-export function sortPackageEntries(entries) {
-  // 使用依赖优先的拓扑排序，避免 Analyzer 先于本批 Core 上传。
-  const byName = new Map(entries.map((entry) => [entry.manifest.name, entry]));
-  const dependencies = new Map();
-  const dependents = new Map(entries.map((entry) => [entry.manifest.name, []]));
-  for (const entry of entries) {
-    const names = Object.keys(entry.manifest.dependencies ?? {}).filter(
-      (name) => byName.has(name),
-    );
-    dependencies.set(entry.manifest.name, new Set(names));
-    for (const name of names) dependents.get(name).push(entry.manifest.name);
-  }
-
-  const ready = entries
-    .map((entry) => entry.manifest.name)
-    .filter((name) => dependencies.get(name).size === 0)
-    .sort();
-  const sorted = [];
-  while (ready.length) {
-    const name = ready.shift();
-    sorted.push(byName.get(name));
-    for (const dependent of dependents.get(name).sort()) {
-      const pending = dependencies.get(dependent);
-      pending.delete(name);
-      if (pending.size === 0) {
-        ready.push(dependent);
-        ready.sort();
-      }
-    }
-  }
-  if (sorted.length !== entries.length) {
-    throw new Error(
-      bilingual(
-        '发布包内部依赖存在循环，无法确定发布顺序。',
-        'Internal release dependencies contain a cycle; publish order is undefined.',
-      ),
-    );
-  }
-  return sorted;
 }
 
 function workspaceYaml(entries) {
@@ -281,30 +213,88 @@ function verifyEntries(entries) {
   }
 }
 
-function verifyUnpublished() {
-  const unpublished = releasePackages().filter(
-    ({ manifest }) => !isPublished(manifest),
+function selectPackages(publishPaths) {
+  const packages = releasePackages();
+  if (publishPaths === undefined) {
+    return packages.filter(({ manifest }) => !isPublished(manifest));
+  }
+  const selectedPaths = parsePublishPaths(
+    publishPaths,
+    packages.map(({ relativePath }) => relativePath),
   );
-  if (!unpublished.length) return verifyEntries([]);
+  const packageByPath = new Map(
+    packages.map((item) => [item.relativePath, item]),
+  );
+  return selectedPaths.map((relativePath) => packageByPath.get(relativePath));
+}
+
+function writePublishManifest(entries, packages, directory) {
+  const manifest = createPublishManifest(entries, packages);
+  writeFileSync(
+    path.join(directory, 'publish-manifest.json'),
+    `${JSON.stringify({ packages: manifest }, null, 2)}\n`,
+  );
+  writeFileSync(
+    path.join(directory, 'publish-order.txt'),
+    manifest.length
+      ? `${manifest.map(({ tarball }) => tarball).join('\n')}\n`
+      : '',
+  );
+}
+
+function preparePackages(directory, publishPaths) {
+  mkdirSync(directory, { recursive: true });
+  const existingTarballs = readdirSync(directory).filter((filename) =>
+    filename.endsWith('.tgz'),
+  );
+  if (existingTarballs.length) {
+    throw new Error(
+      bilingual(
+        `发布目录必须不包含已有 tarball：${directory}`,
+        `The release directory must not contain existing tarballs: ${directory}`,
+      ),
+    );
+  }
+
+  const packages = selectPackages(publishPaths);
+  if (!packages.length) {
+    verifyEntries([]);
+    writePublishManifest([], [], directory);
+    return;
+  }
+  const entries = packPackages(packages, directory);
+  verifyEntries(entries);
+  writePublishManifest(entries, packages, directory);
+}
+
+function verifyUnpublished() {
   const temporary = mkdtempSync(path.join(os.tmpdir(), 'ai-i18n-pack-'));
   try {
     const packDirectory = path.join(temporary, 'tarballs');
-    mkdirSync(packDirectory, { recursive: true });
-    verifyEntries(packPackages(unpublished, packDirectory));
+    preparePackages(packDirectory);
   } finally {
     rmSync(temporary, { force: true, recursive: true });
   }
 }
 
 function main() {
-  const [command, directory] = process.argv.slice(2);
+  const [command, argument, publishPaths] = process.argv.slice(2);
   if (command === 'verify') return verifyUnpublished();
-  if (command === 'verify-dir' && directory) {
-    return verifyEntries(tarballEntries(path.resolve(directory)));
+  if (command === 'validate-paths' && argument) {
+    return parsePublishPaths(
+      argument,
+      releasePackages().map(({ relativePath }) => relativePath),
+    );
   }
-  if (command === 'order' && directory) {
+  if (command === 'prepare-dir' && argument) {
+    return preparePackages(path.resolve(argument), publishPaths);
+  }
+  if (command === 'verify-dir' && argument) {
+    return verifyEntries(tarballEntries(path.resolve(argument)));
+  }
+  if (command === 'order' && argument) {
     for (const entry of sortPackageEntries(
-      tarballEntries(path.resolve(directory)),
+      tarballEntries(path.resolve(argument)),
     )) {
       console.log(path.basename(entry.tarball));
     }
@@ -312,8 +302,8 @@ function main() {
   }
   throw new Error(
     bilingual(
-      '用法：release-packages.mjs verify | verify-dir <目录> | order <目录>',
-      'Usage: release-packages.mjs verify | verify-dir <directory> | order <directory>',
+      '用法：release-packages.mjs verify | validate-paths <JSON> | prepare-dir <目录> [publish_paths JSON] | verify-dir <目录> | order <目录>',
+      'Usage: release-packages.mjs verify | validate-paths <JSON> | prepare-dir <directory> [publish_paths JSON] | verify-dir <directory> | order <directory>',
     ),
   );
 }

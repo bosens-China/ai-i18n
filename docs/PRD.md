@@ -215,9 +215,15 @@
 
 - Turbo 只负责 workspace 构建、检查与测试的依赖顺序和缓存；Release Please 继续负责版本、
   变更日志与 GitHub Release，npm Trusted Publishing 继续负责最终上传。
+- Release workflow 的 macOS 原生文件锁门禁与 Linux 发布候选验证并行，Release Please 只在
+  两者都成功后运行。Release Please 生成的发布合并提交由该 workflow 验证同一 SHA，不再重复
+  启动日常 CI；普通 PR 与 `main` push 的日常门禁保持不变。
 - 发布候选验证只处理 npm 上尚不存在的当前包版本，在空 workspace 中安装同批 tarball，
   其余内部依赖从真实 registry 解析，并实际导入公开入口。这样本地 workspace 不能掩盖已发布
   依赖缺少 exports 或产物的错误。
+- 通过发布候选验证的 tarball 与依赖优先顺序作为同一 workflow run 的短期 artifact 保留；
+  Release Please 创建 Release 后只从该 artifact 选择 `paths_released` 对应包上传，不重新构建或
+  打包。手动补发使用同一流程，但候选范围由已校验的 `publish_paths` 明确限定。
 - 最终 tarball 必须使用精确内部版本、包含 package.json 声明的全部文件入口，并按内部依赖
   拓扑上传。发布包的公共入口、运行行为或依赖契约变化使用 `fix` / `feat` 提交；`refactor`
   不承载需要发版的变化。

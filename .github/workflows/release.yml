@@ -13,6 +13,7 @@ on:
       - 'pnpm-workspace.yaml'
       - 'turbo.json'
       - 'tsdown.config.ts'
+      - 'scripts/release-package-metadata.mjs'
       - 'scripts/release-packages.mjs'
       - '.github/workflows/release.yml'
   workflow_dispatch:
@@ -51,41 +52,11 @@ jobs:
         with:
           node-version: 24
           cache: pnpm
-      - name: Validate manual publish paths
-        if: github.event_name == 'workflow_dispatch' && inputs.publish_paths != ''
-        env:
-          PUBLISH_PATHS: ${{ inputs.publish_paths }}
-        run: |
-          node --input-type=module <<'NODE'
-          import { readFileSync } from 'node:fs';
-
-          const config = JSON.parse(readFileSync('release-please-config.json', 'utf8'));
-          const allowed = new Set(Object.keys(config.packages));
-
-          let paths;
-          try {
-            paths = JSON.parse(process.env.PUBLISH_PATHS);
-          } catch {
-            throw new Error('publish_paths 必须是 JSON 数组 / publish_paths must be a JSON array');
-          }
-
-          if (
-            !Array.isArray(paths) ||
-            paths.length === 0 ||
-            paths.some((path) => typeof path !== 'string' || !allowed.has(path)) ||
-            new Set(paths).size !== paths.length
-          ) {
-            throw new Error(
-              `publish_paths 只能包含不重复的发布包路径 / publish_paths must contain unique release package paths: ${[...allowed].join(', ')}`,
-            );
-          }
-          NODE
       - run: pnpm install --frozen-lockfile
       - name: Verify native file locking on macOS
         run: pnpm exec vitest run packages/core/test/translation-memory.test.ts
 
   verify:
-    needs: native-lock-macos
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -95,14 +66,42 @@ jobs:
         with:
           node-version: 24
           cache: pnpm
+      - name: Validate manual publish paths
+        if: github.event_name == 'workflow_dispatch' && inputs.publish_paths != ''
+        env:
+          PUBLISH_PATHS: ${{ inputs.publish_paths }}
+        run: node scripts/release-packages.mjs validate-paths "$PUBLISH_PATHS"
       - run: pnpm install --frozen-lockfile
       # 必须在创建 GitHub Release/tag 之前验证，避免测挂后留下孤儿 release。
       - run: pnpm check
       - run: pnpm test
-      - run: pnpm release:verify
+      - name: Prepare and verify release packages
+        id: packages
+        shell: bash
+        env:
+          PUBLISH_PATHS: ${{ inputs.publish_paths }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/npm-pack"
+          if [[ -n "$PUBLISH_PATHS" ]]; then
+            node scripts/release-packages.mjs prepare-dir "$RUNNER_TEMP/npm-pack" "$PUBLISH_PATHS"
+          else
+            node scripts/release-packages.mjs prepare-dir "$RUNNER_TEMP/npm-pack"
+          fi
+          if [[ -s "$RUNNER_TEMP/npm-pack/publish-order.txt" ]]; then
+            echo "has-packages=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has-packages=false" >> "$GITHUB_OUTPUT"
+          fi
+      - uses: actions/upload-artifact@v7
+        if: steps.packages.outputs.has-packages == 'true'
+        with:
+          name: npm-packages
+          path: ${{ runner.temp }}/npm-pack
+          if-no-files-found: error
+          retention-days: 1
 
   release:
-    needs: verify
+    needs: [native-lock-macos, verify]
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -119,45 +118,13 @@ jobs:
         with:
           token: ${{ secrets.RELEASE_PLEASE_TOKEN || secrets.GITHUB_TOKEN }}
 
-  pack:
-    needs: release
-    if: >-
-      (github.event_name == 'workflow_dispatch' && inputs.publish_paths != '') ||
-      needs.release.outputs.releases_created == 'true'
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    steps:
-      - uses: actions/checkout@v7
-      - uses: pnpm/action-setup@v6
-      - uses: actions/setup-node@v7
-        with:
-          node-version: 24
-          cache: pnpm
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm build
-      - name: Pack packages
-        shell: bash
-        env:
-          RELEASED_PATHS: ${{ inputs.publish_paths != '' && inputs.publish_paths || needs.release.outputs.paths_released }}
-        run: |
-          mkdir -p "$RUNNER_TEMP/npm-pack"
-          node -e 'for (const path of JSON.parse(process.env.RELEASED_PATHS)) console.log(path)' |
-            while IFS= read -r package_path; do
-              pnpm --dir "$package_path" pack --pack-destination "$RUNNER_TEMP/npm-pack"
-            done
-      - name: Verify packed packages and publish order
-        run: |
-          node scripts/release-packages.mjs verify-dir "$RUNNER_TEMP/npm-pack"
-          node scripts/release-packages.mjs order "$RUNNER_TEMP/npm-pack" > "$RUNNER_TEMP/npm-pack/publish-order.txt"
-      - uses: actions/upload-artifact@v7
-        with:
-          name: npm-packages
-          path: ${{ runner.temp }}/npm-pack
-          if-no-files-found: error
-          retention-days: 1
-
   publish:
-    needs: pack
+    needs: [release, verify]
+    if: >-
+      needs.release.result == 'success' &&
+      needs.verify.result == 'success' &&
+      ((github.event_name == 'workflow_dispatch' && inputs.publish_paths != '') ||
+      needs.release.outputs.releases_created == 'true')
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -172,6 +139,43 @@ jobs:
         with:
           name: npm-packages
           path: ${{ runner.temp }}/npm-pack
+      - name: Select packages created by Release Please
+        env:
+          PACK_DIRECTORY: ${{ runner.temp }}/npm-pack
+          RELEASED_PATHS: ${{ inputs.publish_paths != '' && inputs.publish_paths || needs.release.outputs.paths_released }}
+        run: |
+          node --input-type=module <<'NODE'
+          import { readFileSync, writeFileSync } from 'node:fs';
+          import path from 'node:path';
+
+          const directory = process.env.PACK_DIRECTORY;
+          const requested = JSON.parse(process.env.RELEASED_PATHS);
+          if (!Array.isArray(requested)) {
+            throw new Error(
+              '发布路径必须是数组 / Released package paths must be an array.',
+            );
+          }
+          const manifest = JSON.parse(
+            readFileSync(path.join(directory, 'publish-manifest.json'), 'utf8'),
+          );
+          const requestedPaths = new Set(requested);
+          const selected = manifest.packages.filter(({ path }) => requestedPaths.has(path));
+          const selectedPaths = new Set(selected.map(({ path }) => path));
+          const missing = requested.filter((item) => !selectedPaths.has(item));
+          if (
+            requested.length === 0 ||
+            requestedPaths.size !== requested.length ||
+            missing.length > 0
+          ) {
+            throw new Error(
+              `发布包与已验证 artifact 不一致 / Released packages do not match the verified artifact: ${missing.join(', ')}`,
+            );
+          }
+          writeFileSync(
+            path.join(directory, 'publish-order.txt'),
+            `${selected.map(({ tarball }) => tarball).join('\n')}\n`,
+          );
+          NODE
       - name: Publish packages
         shell: bash
         run: |

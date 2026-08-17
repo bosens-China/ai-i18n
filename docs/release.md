@@ -6,11 +6,13 @@
 
 | 工作流        | 触发                                       | 职责                                                                                    |
 | ------------- | ------------------------------------------ | --------------------------------------------------------------------------------------- |
-| `ci.yml`      | PR、`main` push                            | 日常质量门禁，以及 npm 尚未发布版本的候选 tarball 外部安装验证                          |
+| `ci.yml`      | PR、普通 `main` push                       | 日常质量门禁，以及 npm 尚未发布版本的候选 tarball 外部安装验证                          |
 | `release.yml` | `packages/**` 等路径的 `main` push；可手动 | macOS 原生文件锁门禁、Release Please 版本 / GitHub Release，以及 npm Trusted Publishing |
 | `pages.yml`   | 文档与示例相关路径的 `main` push；可手动   | 构建并部署 GitHub Pages                                                                 |
 
-日常验证只需 `ci.yml`。发版与站点部署有独立权限与副作用，必须单独保留。
+日常验证只需 `ci.yml`。Release Please 生成的 `chore: release main` 合并提交由
+`release.yml` 对同一 SHA 执行完整门禁，因此跳过重复的日常 CI。其他 `main` push 仍执行 CI。
+发版与站点部署有独立权限与副作用，必须单独保留。
 
 ## 发版流程
 
@@ -18,20 +20,19 @@
    Agent skills 和示例站点提交本身不会触发该 workflow。后续相关路径 push 触发工作流时，
    Release Please 只处理组件范围内符合发布规则的提交；不要假设先前的纯文档提交会自动进入
    某个包的 Release PR。
-2. **先**在只读的 macOS runner 执行 Core Translation Memory 的原生文件锁并发测试，再在
-   只读的 Linux runner 执行 `pnpm check` / `pnpm test`。Turbo 依据 workspace 依赖图安排
-   发布包构建与检查；它不负责版本号和发布决策。
-3. Linux 验证随后运行 `pnpm release:verify`。脚本只选择 npm 上尚不存在的当前版本：普通
-   功能提交尚未经过 Release Please 版本提升时不会误报；Release PR 与其合并提交则会打包
-   全部候选版本，在空 pnpm workspace 中用本批 tarball 覆盖候选依赖，其余内部依赖从真实
-   npm registry 解析，并实际导入公开入口。全部通过后才运行 Release Please，禁止先打 tag
-   再测。
-4. 仅当本次确实创建 Release（或手动补发）时，只读的打包 job 才会重新构建并通过
-   `pnpm pack` 展开 `workspace:` 依赖。它再次校验最终 tarball 的内部精确版本、exports
-   目标、外部安装与入口导入，并按 tarball manifest 生成依赖优先的发布顺序。
-5. 最终发布 job 只下载 tarball 和顺序清单，由 npm CLI 按 Core、Analyzer、消费包的依赖
-   拓扑使用 OIDC Trusted Publishing 上传；它不 checkout 仓库、不安装项目依赖，也不使用
-   `NODE_AUTH_TOKEN`。
+2. 两个只读门禁并行运行：macOS runner 执行 Core Translation Memory 的原生文件锁并发测试；
+   Linux runner 执行 `pnpm check` / `pnpm test`。Turbo 依据 workspace 依赖图安排发布包构建与
+   检查；它不负责版本号和发布决策。
+3. Linux 门禁随后只选择 npm 上尚不存在的当前版本：普通功能提交尚未经过 Release Please
+   版本提升时不会误报；Release PR 与其合并提交则会打包全部候选版本，在空 pnpm workspace
+   中用本批 tarball 覆盖候选依赖，其余内部依赖从真实 npm registry 解析，并实际导入公开入口。
+   验证后的 tarball、包路径和依赖优先顺序上传为保留一天的 workflow artifact。
+4. Release Please 同时等待两个门禁；全部通过后才创建或更新 Release PR、tag 和 GitHub
+   Release，禁止先打 tag 再测。没有待发布版本时 Linux 门禁不上传空 artifact。
+5. 仅当本次确实创建 Release（或手动补发）时，最终发布 job 才下载已验证 artifact，并按
+   Release Please 返回的 `paths_released` 选择包。它不重新构建或打包，不 checkout 仓库、
+   不安装项目依赖，也不使用 `NODE_AUTH_TOKEN`，只由 npm CLI 按依赖拓扑通过 OIDC Trusted
+   Publishing 上传。
 6. 合并 Release PR 会改 `packages/**`，因此也可能触发 Pages；这是路径过滤的预期副作用。
 
 ## 手动补发

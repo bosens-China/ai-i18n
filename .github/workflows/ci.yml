@@ -14,6 +14,12 @@ permissions:
 
 jobs:
   check:
+    # Release Please 合并提交由 Release workflow 对同一 SHA 执行完整门禁，避免重复运行。
+    if: >-
+      github.event_name == 'pull_request' ||
+      github.event.head_commit.author.name != 'github-actions[bot]' ||
+      github.event.head_commit.author.email != '41898282+github-actions[bot]@users.noreply.github.com' ||
+      !startsWith(github.event.head_commit.message, 'chore: release main')
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
