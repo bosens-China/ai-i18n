@@ -68,10 +68,9 @@
     "@ai-i18n/analyzer": "workspace:*",
     "@ai-i18n/core": "workspace:*",
     "atomically": "2.1.1",
-    "magic-string": "1.1.0",
+    "magic-string": "1.2.0",
     "parse5": "8.0.1",
-    "picocolors": "1.1.1",
-    "yuku-analyzer": "0.8.4"
+    "picocolors": "1.1.1"
   },
   "peerDependencies": {
     "@vue/compiler-sfc": ">=3.2.0",
@@ -89,6 +88,9 @@
     "vue": {
       "optional": true
     }
+  },
+  "engines": {
+    "node": "^20.19.0 || >=22.12.0"
   },
   "devDependencies": {
     "@ai-i18n/review-ui": "workspace:*",
