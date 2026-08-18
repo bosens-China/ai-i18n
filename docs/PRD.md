@@ -102,7 +102,9 @@
 
 - Vite 与 MCP 通过同一存储抽象读写。JSON 使用跨进程锁、锁内重读、字段级合并和可恢复原子提交；SQLite 使用同一外部锁与数据库事务。内存 ProjectState 只用于加速和 Runtime 更新，持久化存储才是写入真相。
 - 同一 Vite Dev 插件实例内，ProjectState 更新、重新 hydrate 与 HMR 通知继续由状态事务排序；普通
-  source transform 的协议写入由单实例调度器串行执行并合并为最新快照，不阻塞转换响应。外部协议
+  source transform 只登记变化源码，协议写入由单实例调度器用短 debounce 与 max-wait 串行执行，
+  在真正写入前生成一次最新快照，不阻塞转换响应。普通 Dev 批次只更新变化源码对应的 extracted 与
+  locale 消息并保留未访问模块；依赖全量活动集合的 orphan/capacity 清理由完整同步校准。外部协议
   文件变更、Provider 结果、人工校对和关闭生命周期先 flush 待写快照；虚拟注册直接读取已排序的
   ProjectState，避免旧异步结果覆盖或为普通后台写入重复扫描目录。
 - 不保留未发布旧 schema 或旧 MCP 工具参数的兼容层；只为已存在的单文件 Translation Memory 提供一次自动迁移。
@@ -116,8 +118,16 @@
 - Dev 管理文件的 create/update 事件允许读取内容并识别插件自身写入；delete 事件不得读取已经消失的
   文件。活动生成文件被外部删除时按当前内存状态恢复，已失效文件不得复活或触发 HMR 自激循环。
 - `diagnostics.timing` 是默认关闭的 Vite Dev 慢阶段诊断。`true` 使用 50ms 阈值，也可配置非负有限的
-  `minDurationMs`；只报告 source-transform、file-sync 和 registration-load 及规范化模块 ID，遵循
-  中英文诊断策略，不输出源码正文、译文、绝对机器路径或凭据，也不进入 Build 或项目文件。
+  `minDurationMs`；除 source-transform、file-sync 和 registration-load 总阶段外，报告初始化等待、
+  分析、注册、依赖解析、状态事务、快照、extracted 扫描/写入、Translation Memory 和 locale 写入
+  子阶段。阶段允许嵌套，不能直接相加；日志遵循中英文诊断策略，不输出源码正文、译文、绝对机器路径
+  或凭据，也不进入 Build 或项目文件。
+- `dependency-resolution` 包含 Vite `resolve()` 以及尚未分析依赖的 `load()` 等待，可能覆盖子模块的
+  嵌套转换，不能把整段耗时视为插件自身的解析 CPU。当前不为单条百毫秒日志引入复杂解析缓存或并发
+  调度；只有多个真实大型项目证明它稳定处于用户可见关键路径，且能与子模块加载分离归因时才重新评估。
+- Vite Dev 配置阶段把 `@ai-i18n/vite/runtime`、`@ai-i18n/vite/vue` 与 `@ai-i18n/vite/react`
+  合并进 `optimizeDeps.exclude`，保留应用已有的 include/exclude。插件运行时入口不参与预构建，避免首次
+  动态路由访问才被 Vite 发现并触发整页重载；应用其他依赖的按需优化仍由应用和 Vite 自己管理。
 - Vite Dev 默认在 `/__ai-i18n/` 提供翻译校对页面并在启动地址后打印链接；`review: false`
   可关闭。校对页面首次读取时只读既有 `extracted/` 与 Translation Memory 快照作为初始列表，不扫描源码、
   不触发 Provider，也不写入业务 Runtime 状态；Dev 实际转换的模块始终优先，且会遮蔽同源旧记录。没有

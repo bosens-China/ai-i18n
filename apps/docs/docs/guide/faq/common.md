@@ -111,17 +111,31 @@ aiI18n({
 });
 ```
 
-终端只输出达到阈值的 `source-transform`、`file-sync` 和 `registration-load`，以及相对 Vite
-root 的模块 ID。`timing: true` 使用 50ms 默认阈值；该功能默认关闭且仅在 Vite Dev 生效。
+终端只输出达到阈值的阶段和相对 Vite root 的模块 ID。`timing: true` 使用 50ms 默认阈值；
+该功能默认关闭且仅在 Vite Dev 生效。总阶段还会细分为以下子阶段：
 
 先按最慢阶段定位：
 
-- `source-transform`：检查首次请求模块数量、单文件大小，以及 ai-i18n 之前是否存在改写源码的插件。
-- `file-sync`：检查 i18n 目录所在磁盘、文件监听器和其他进程是否频繁修改协议文件。
+- `source-transform`：完整源码转换。继续查看 `plugin-ready-wait`、`source-analysis`、
+  `source-registration`、`dependency-resolution` 和 `state-transaction`，判断慢在初始化等待、
+  单文件分析、依赖解析还是内存状态更新。`dependency-resolution` 还可能包含 Vite 加载并转换
+  尚未分析子模块的等待，不能把它全部当作插件自身的解析计算。
+- `file-sync`：一批 Dev 变化的后台持久化。继续查看 `snapshot-build`、`extracted-scan`、
+  `translation-memory-sync`、`extracted-write` 和 `locale-write`，判断慢在快照、存储事务还是文件写入。
 - `registration-load`：检查首次路由是否一次请求了大量新模块，以及 Provider 是否仍有待处理结果。
+
+总阶段包含相应子阶段，不能把所有日志耗时直接相加。普通 Dev 转换先返回模块结果，连续变化会在
+短时间内合并，后台只更新变化源码对应的提取文件和语言消息；因此 `file-sync` 日志不等于浏览器被
+同步阻塞。人工校对、Provider、外部协议文件变化、关闭 Dev Server 和完整 Build 等一致性边界仍会
+等待必要的写入。
 
 如果这些阶段都没有慢日志，继续检查应用自己的路由守卫、鉴权接口和挂载时机。ai-i18n 不控制
 应用何时调用 `mount()`。排查结束后关闭诊断，避免保留额外终端输出。
+
+插件运行时入口默认合并到 Vite 的 `optimizeDeps.exclude`，不会覆盖项目已有的 include/exclude，
+用于避免这些入口在首次打开动态路由时才触发依赖优化和整页重载。如果 Vite 的重载日志只列出
+Vue Router、组件库或其他业务依赖，说明剩余重载来自项目自己的按需依赖发现，需要在应用侧评估是否
+预构建；它不属于 ai-i18n 的文件同步耗时。
 
 ## 为什么切换语言后仍然显示源文案？
 

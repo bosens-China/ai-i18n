@@ -71,13 +71,25 @@ aiI18n({
 });
 ```
 
-日志只在 Vite Dev 中输出达到阈值的 `source-transform`、`file-sync` 和
-`registration-load`，并携带相对 Vite root 的规范化模块 ID。`timing: true` 使用 50ms
-默认阈值。日志不包含源码正文、译文或凭据，也不写入项目文件；排查结束后应关闭。
+日志只在 Vite Dev 中输出达到阈值的阶段，并携带相对 Vite root 的规范化模块 ID。
+总阶段为 `source-transform`、`file-sync` 和 `registration-load`；还会输出
+`plugin-ready-wait`、`source-analysis`、`source-registration`、`dependency-resolution`、
+`state-transaction`、`snapshot-build`、`extracted-scan`、`translation-memory-sync`、
+`extracted-write` 与 `locale-write` 子阶段。总阶段与子阶段可能嵌套，不能直接相加。
+其中 `dependency-resolution` 可能包含 Vite `resolve()`、`load()` 和子模块嵌套转换等待，
+不是纯粹的插件解析 CPU，需结合页面可见时间和子模块日志判断是否处于关键路径。
+`timing: true` 使用 50ms 默认阈值。日志不包含源码正文、译文或凭据，也不写入项目文件；
+排查结束后应关闭。
 
-Dev 转换先更新当前进程的内存状态，连续转换产生的协议写入会合并并提交最新快照，因此普通模块
-响应不等待每次完整目录同步。人工校对、Provider 结果、外部协议文件变化和 Dev Server 关闭等边界
-仍会等待待提交写入；Build 与 MCP 的文件语义不变。
+Dev 转换先更新当前进程的内存状态，只登记变化源码；连续转换会在短窗口内合并，真正写入前才生成
+一次最新快照。普通批次只更新变化源码对应的 extracted 与 locale 消息，并保留未访问模块的已有内容，
+因此普通模块响应不等待每次完整目录同步。持续变化也有最大等待时间，不会无限推迟持久化。人工校对、
+Provider 结果、外部协议文件变化和 Dev Server 关闭等边界仍会等待待提交写入；Build 与 MCP 的文件
+语义不变，完整 Build 仍负责全量活动集合与历史清理校准。
+
+插件会把 `@ai-i18n/vite/runtime`、`@ai-i18n/vite/vue` 和 `@ai-i18n/vite/react` 合并进
+Vite 的 `optimizeDeps.exclude`，并保留项目原有配置。这样可以避免插件运行时入口在首次动态路由访问时
+才被依赖优化器发现并触发页面重载；日志中其他业务依赖的延迟优化仍需按 Vite 项目本身处理。
 
 ## Translation Memory
 
