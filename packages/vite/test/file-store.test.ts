@@ -223,6 +223,76 @@ describe('FileStore', () => {
     );
   });
 
+  it('updates only dirty extracted sources while preserving unvisited locale messages', async () => {
+    const { root, state, store } = await setup();
+    const main = path.join(root, 'src/main.ts');
+    const lazy = path.join(root, 'src/lazy.ts');
+    await fs.writeFile(main, '');
+    await fs.writeFile(lazy, '');
+    state.updateExtracted('', main, [
+      { id: '保存', source: '保存', locations: [{ line: 1, column: 0 }] },
+    ]);
+    state.updateExtracted('', lazy, [
+      {
+        id: '稍后加载',
+        source: '稍后加载',
+        locations: [{ line: 1, column: 0 }],
+      },
+    ]);
+    await store.sync(state.snapshot());
+
+    state.updateExtracted('changed', main, [
+      { id: '提交', source: '提交', locations: [{ line: 1, column: 0 }] },
+    ]);
+    await store.sync(state.snapshot(), { changedSources: ['src/main.ts'] });
+
+    const locale = await readJson(path.join(root, 'i18n/locales/en-US.json'));
+    expect(locale).toMatchObject({
+      messages: {
+        [runtimeMessageId('src/main.ts', '提交')]: null,
+        [runtimeMessageId('src/lazy.ts', '稍后加载')]: null,
+      },
+    });
+    expect(locale).not.toHaveProperty(
+      `messages.${runtimeMessageId('src/main.ts', '保存')}`,
+    );
+  });
+
+  it('removes a dirty source without deleting unrelated locale messages', async () => {
+    const { root, state, store } = await setup();
+    const main = path.join(root, 'src/main.ts');
+    const lazy = path.join(root, 'src/lazy.ts');
+    await fs.writeFile(main, '');
+    await fs.writeFile(lazy, '');
+    state.updateExtracted('', main, [
+      { id: '保存', source: '保存', locations: [{ line: 1, column: 0 }] },
+    ]);
+    state.updateExtracted('', lazy, [
+      {
+        id: '稍后加载',
+        source: '稍后加载',
+        locations: [{ line: 1, column: 0 }],
+      },
+    ]);
+    await store.sync(state.snapshot());
+
+    state.remove(main);
+    await store.sync(state.snapshot(), { changedSources: ['src/main.ts'] });
+
+    await expect(
+      fs.access(extractedTestPath(root, 'src/main.ts')),
+    ).rejects.toMatchObject({ code: 'ENOENT' });
+    const locale = await readJson(path.join(root, 'i18n/locales/en-US.json'));
+    expect(locale).toMatchObject({
+      messages: {
+        [runtimeMessageId('src/lazy.ts', '稍后加载')]: null,
+      },
+    });
+    expect(locale).not.toHaveProperty(
+      `messages.${runtimeMessageId('src/main.ts', '保存')}`,
+    );
+  });
+
   it('merges memory edits, synchronizes duplicate IDs and preserves history', async () => {
     const { root, state, store } = await setup();
     const main = path.join(root, 'src/main.ts');

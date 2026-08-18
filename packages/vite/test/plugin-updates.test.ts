@@ -15,7 +15,10 @@ import {
   readJson,
   setupPlugin,
 } from './plugin-test-utils';
-import { updateTestTranslationMemory } from './translation-memory-test-utils';
+import {
+  readTestTranslationMemory,
+  updateTestTranslationMemory,
+} from './translation-memory-test-utils';
 
 describe('@ai-i18n/vite plugin updates', () => {
   it('reconciles a deleted managed extracted file without reading it', async () => {
@@ -442,6 +445,11 @@ describe('@ai-i18n/vite plugin updates', () => {
       "import { t } from 'virtual:ai-i18n'; t('保存')",
       '/workspace/src/lazy-hot.ts',
     );
+    await vi.waitFor(async () => {
+      expect(
+        (await readTestTranslationMemory(directory)).messages,
+      ).toHaveProperty('保存');
+    });
     await updateTestTranslationMemory(directory, (memory) => {
       memory.messages['保存']!.translations['en-US'] = 'Save';
     });

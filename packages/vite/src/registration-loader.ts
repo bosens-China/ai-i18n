@@ -1,3 +1,4 @@
+import fs from 'node:fs/promises';
 import { normalizePath } from 'vite';
 import type { DevStateTaskRunner } from './dev-state-queue.js';
 import type { FileStore } from './file-store.js';
@@ -17,6 +18,7 @@ interface RegistrationLoadOptions {
   flush: () => Promise<void>;
   runStateTask?: DevStateTaskRunner;
   locale?: string;
+  watchFileExists?: (file: string) => Promise<boolean>;
 }
 
 export async function loadRegistration(
@@ -39,8 +41,27 @@ export async function loadRegistration(
   for (const file of projectFiles.load) {
     await context.load({ id: normalizePath(file) });
   }
-  for (const file of store.watchFiles(moduleId)) {
-    context.addWatchFile(file);
+  const watchFileExists =
+    options.watchFileExists ??
+    (async (file: string) => {
+      try {
+        await fs.access(file);
+        return true;
+      } catch {
+        return false;
+      }
+    });
+  const storeFiles = store.watchFiles(moduleId);
+  const existingStoreFiles = options.build
+    ? storeFiles
+    : await Promise.all(
+        storeFiles.map(async (file) =>
+          (await watchFileExists(file)) ? file : null,
+        ),
+      );
+  for (const file of existingStoreFiles) {
+    // 后台增量写入尚未创建 generated file 时不能把不存在的路径挂到虚拟模块图。
+    if (file) context.addWatchFile(file);
   }
   if (options.build) {
     await options.flush();

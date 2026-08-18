@@ -5,7 +5,19 @@ import type { AiI18nTimingDiagnosticsOptions } from './options.js';
 const DEFAULT_MIN_DURATION_MS = 50;
 
 export type DevTimingStage =
-  'source-transform' | 'file-sync' | 'registration-load';
+  | 'plugin-ready-wait'
+  | 'source-analysis'
+  | 'source-registration'
+  | 'dependency-resolution'
+  | 'state-transaction'
+  | 'source-transform'
+  | 'snapshot-build'
+  | 'file-sync'
+  | 'extracted-scan'
+  | 'translation-memory-sync'
+  | 'extracted-write'
+  | 'locale-write'
+  | 'registration-load';
 
 export interface DevTimingReporter {
   measure<T>(

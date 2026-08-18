@@ -2,23 +2,16 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import {
   parseExtractedFile,
-  type CacheMessage,
   type ExtractedFile,
   type TranslationMemoryFile,
   type TranslationOverridesFile,
 } from '@ai-i18n/core';
 import { diagnosticMessage } from '@ai-i18n/analyzer';
 import {
-  openTranslationMemoryStore,
   readTranslationOverrides,
   transactTranslationOverrides,
-  type TranslationMemoryStore,
 } from '@ai-i18n/core/translation-memory';
-import { enforceCacheCapacity } from './cache-capacity.js';
-import {
-  findMissingSources,
-  removeOrphanMessages,
-} from './file-store-cleanup.js';
+import { findMissingSources } from './file-store-cleanup.js';
 import {
   extractedPath,
   localePath,
@@ -29,18 +22,21 @@ import {
   warnExtractedMismatches,
   writeProtocolJson,
 } from './file-store-io.js';
+import { hydrateExtracted, translationFieldKey } from './file-store-merge.js';
 import {
-  hydrateExtracted,
-  hydrateLocale,
-  mergeProjectMessages,
-  translationFieldKey,
-} from './file-store-merge.js';
+  loadIncrementalSyncState,
+  writeFullLocales,
+  writeIncrementalExtracted,
+  writeIncrementalLocales,
+} from './file-store-incremental.js';
+import { FileStoreMemory } from './file-store-memory.js';
 import type {
   FileStoreLoadOptions,
   FileStoreOptions,
 } from './file-store-types.js';
 import type { ProjectSnapshot } from './project-state.js';
-import { listJsonFiles, readJson, readText } from './json-files.js';
+import type { DevTimingStage } from './dev-timing.js';
+import { readJson, readText } from './json-files.js';
 
 export type {
   FileStoreLoadOptions,
@@ -51,17 +47,26 @@ export class FileStore {
   readonly directory: string;
   private queue = Promise.resolve();
   private readonly lastWritten = new Map<string, string>();
-  private memoryStore: Promise<TranslationMemoryStore> | undefined;
+  private readonly memory: FileStoreMemory;
   private readonly providerFields = new Set<string>();
   private readonly pendingProviderBatches = new Set<string>();
   private readonly translationManagedFiles = new Set<string>();
 
   constructor(private readonly options: FileStoreOptions) {
     this.directory = path.resolve(options.root, options.directory ?? 'i18n');
+    this.memory = new FileStoreMemory(
+      this.directory,
+      options,
+      this.providerFields,
+      (files) => {
+        this.translationManagedFiles.clear();
+        for (const file of files) this.translationManagedFiles.add(file);
+      },
+    );
   }
 
   async load(): Promise<TranslationMemoryFile> {
-    return this.updateMemory();
+    return this.memory.update();
   }
 
   loadExtracted(): Promise<ExtractedFile[]> {
@@ -208,27 +213,80 @@ export class FileStore {
   }
 
   async close(): Promise<void> {
-    await this.memoryStore?.then(
-      (store) => store.close(),
-      () => undefined,
-    );
+    await this.memory.close();
   }
 
   private async writeSnapshot(
     snapshot: ProjectSnapshot,
     options: FileStoreLoadOptions,
   ): Promise<TranslationMemoryFile> {
-    const allDiskExtracted = await this.readExtractedFiles();
+    if (options.changedSources?.length) {
+      const incremental = await this.measure('extracted-scan', options, () =>
+        loadIncrementalSyncState(
+          {
+            directory: this.directory,
+            sourceLang: this.options.sourceLang,
+            locales: this.options.locales,
+          },
+          snapshot,
+          options.changedSources!,
+        ),
+      );
+      if (incremental) {
+        const cache = await this.measure(
+          'translation-memory-sync',
+          options,
+          () => this.memory.update(snapshot),
+        );
+        await this.measure('extracted-write', options, () =>
+          writeIncrementalExtracted(
+            {
+              directory: this.directory,
+              sourceLang: this.options.sourceLang,
+              locales: this.options.locales,
+            },
+            incremental,
+            (file, value) => this.writeJson(file, value),
+          ),
+        );
+        await this.measure('locale-write', options, async () =>
+          writeIncrementalLocales(
+            {
+              directory: this.directory,
+              sourceLang: this.options.sourceLang,
+              locales: this.options.locales,
+            },
+            incremental,
+            cache.messages,
+            await transactTranslationOverrides(
+              translationOverridesPath(this.directory),
+              () => undefined,
+            ),
+            (file, value) => this.writeJson(file, value),
+          ),
+        );
+        return cache;
+      }
+    }
+
+    const { allDiskExtracted, missingSources } = await this.measure(
+      'extracted-scan',
+      options,
+      async () => {
+        const allDiskExtracted = await this.readExtractedFiles();
+        const missingSources = await findMissingSources(
+          this.options.root,
+          allDiskExtracted,
+          this.options.cleanupMissingSourceFiles !== false,
+        );
+        return { allDiskExtracted, missingSources };
+      },
+    );
     warnExtractedMismatches(
       allDiskExtracted,
       snapshot,
       options.preferredSources,
       this.options.onWarning,
-    );
-    const missingSources = await findMissingSources(
-      this.options.root,
-      allDiskExtracted,
-      this.options.cleanupMissingSourceFiles !== false,
     );
     const missingSet = new Set(missingSources);
     const diskExtracted = allDiskExtracted;
@@ -244,28 +302,39 @@ export class FileStore {
     const activeMessageIds = activeFiles.flatMap((file) =>
       file.messages.map((message) => message.id),
     );
-    const cache = await this.updateMemory(snapshot, activeMessageIds);
+    const cache = await this.measure('translation-memory-sync', options, () =>
+      this.memory.update(snapshot, activeMessageIds),
+    );
     const activeExtracted = new Set(Object.keys(snapshot.extracted));
     const staleSources = options.complete
       ? diskExtracted.map((file) => file.source)
       : snapshot.seen;
-    for (const source of staleSources) {
-      if (!activeExtracted.has(source)) await this.removeExtracted(source);
-    }
-    for (const source of missingSources) await this.removeExtracted(source);
-
-    for (const [source, extracted] of Object.entries(snapshot.extracted)) {
-      await this.writeJson(
-        extractedPath(this.directory, source),
-        hydrateExtracted(extracted),
-      );
-    }
-    await this.writeLocales(
-      activeFiles,
-      cache.messages,
-      await transactTranslationOverrides(
-        translationOverridesPath(this.directory),
-        () => undefined,
+    await this.measure('extracted-write', options, async () => {
+      for (const source of staleSources) {
+        if (!activeExtracted.has(source)) await this.removeExtracted(source);
+      }
+      for (const source of missingSources) await this.removeExtracted(source);
+      for (const [source, extracted] of Object.entries(snapshot.extracted)) {
+        await this.writeJson(
+          extractedPath(this.directory, source),
+          hydrateExtracted(extracted),
+        );
+      }
+    });
+    await this.measure('locale-write', options, async () =>
+      writeFullLocales(
+        {
+          directory: this.directory,
+          sourceLang: this.options.sourceLang,
+          locales: this.options.locales,
+        },
+        activeFiles,
+        cache.messages,
+        await transactTranslationOverrides(
+          translationOverridesPath(this.directory),
+          () => undefined,
+        ),
+        (file, value) => this.writeJson(file, value),
       ),
     );
     return cache;
@@ -280,98 +349,6 @@ export class FileStore {
     );
   }
 
-  private async updateMemory(
-    snapshot?: ProjectSnapshot,
-    activeMessageIds?: readonly string[],
-  ): Promise<TranslationMemoryFile> {
-    const store = await this.getMemoryStore();
-    const persistent = await store.transact((memory) => {
-      if (snapshot) {
-        memory.messages = mergeProjectMessages(
-          memory.messages,
-          snapshot.cache.messages,
-          this.providerFields,
-        );
-      }
-      this.ensureCurrentLocales(memory.messages);
-      if (activeMessageIds) {
-        removeOrphanMessages(
-          memory,
-          activeMessageIds,
-          Boolean(this.options.cleanupOrphanMessages),
-        );
-        enforceCacheCapacity(
-          memory,
-          activeMessageIds,
-          this.options.capacity,
-          this.options.onWarning,
-        );
-      }
-    });
-    await this.refreshManagedFiles(store);
-    return persistent;
-  }
-
-  private async refreshManagedFiles(
-    store: TranslationMemoryStore,
-  ): Promise<void> {
-    this.translationManagedFiles.clear();
-    for (const file of await store.watchFiles()) {
-      this.translationManagedFiles.add(path.resolve(file));
-    }
-  }
-
-  private getMemoryStore(): Promise<TranslationMemoryStore> {
-    return (this.memoryStore ??= openTranslationMemoryStore({
-      directory: this.directory,
-      storage: this.options.translationMemory?.storage ?? 'json',
-    }));
-  }
-
-  private ensureCurrentLocales(messages: Record<string, CacheMessage>): void {
-    const targetLocales = this.options.locales.filter(
-      (locale) => locale.value !== this.options.sourceLang,
-    );
-    for (const message of Object.values(messages)) {
-      for (const locale of targetLocales) {
-        if (locale.value === message.sourceLang) continue;
-        if (!(locale.value in message.translations)) {
-          message.translations[locale.value] = null;
-        }
-      }
-    }
-  }
-
-  private async writeLocales(
-    files: readonly ExtractedFile[],
-    cacheMessages: Record<string, CacheMessage>,
-    overrides: TranslationOverridesFile,
-  ): Promise<void> {
-    const directory = path.join(this.directory, 'locales');
-    const expected = new Set<string>();
-    for (const locale of this.options.locales) {
-      if (locale.value === this.options.sourceLang) continue;
-      const file = localePath(this.directory, locale.value);
-      expected.add(file);
-      await this.writeJson(
-        file,
-        hydrateLocale(
-          {
-            version: 1,
-            locale: { ...locale },
-            messages: {},
-          },
-          files,
-          cacheMessages,
-          overrides,
-        ),
-      );
-    }
-    for (const file of await listJsonFiles(directory)) {
-      if (!expected.has(file)) await fs.rm(file, { force: true });
-    }
-  }
-
   private async removeExtracted(source: string): Promise<void> {
     await fs.rm(extractedPath(this.directory, source), { force: true });
   }
@@ -380,5 +357,16 @@ export class FileStore {
     const content = await writeProtocolJson(file, value);
     if (content !== undefined)
       this.lastWritten.set(path.resolve(file), content);
+  }
+
+  private async measure<T>(
+    stage: DevTimingStage,
+    options: FileStoreLoadOptions,
+    task: () => T | PromiseLike<T>,
+  ): Promise<T> {
+    const timing = this.options.timing;
+    return timing
+      ? timing.measure(stage, options.timingModuleId ?? '<project>', task)
+      : await task();
   }
 }

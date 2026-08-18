@@ -16,7 +16,6 @@ import {
   type HtmlExtractor,
 } from './html.js';
 import { localeHintTags } from './locale-loading.js';
-import type { ProjectSnapshot } from './project-snapshot.js';
 import type { NormalizedAiI18nOptions, ProjectState } from './project-state.js';
 
 interface HtmlTransformDependencies {
@@ -28,7 +27,7 @@ interface HtmlTransformDependencies {
   store(): FileStore;
   requestMissingTranslations(moduleIds: readonly string[]): void;
   runStateTask: DevStateTaskRunner;
-  persist(snapshot: ProjectSnapshot, moduleId: string): void;
+  persist(moduleId: string): void;
   flush(): Promise<void>;
   setDevHot(hot: NormalizedHotChannel): void;
 }
@@ -73,7 +72,7 @@ export function createHtmlTransformHandler(
       );
       if (!update) return null;
       if (config?.command !== 'build') {
-        dependencies.persist(project.snapshot(), update.moduleId);
+        dependencies.persist(update.moduleId);
       }
       dependencies.requestMissingTranslations([update.moduleId]);
       if (config?.command === 'build') {

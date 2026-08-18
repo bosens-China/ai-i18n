@@ -7,6 +7,7 @@ import type { TranslationMemoryFile } from '@ai-i18n/core';
 import { diagnosticMessage } from '@ai-i18n/analyzer';
 import { createBuildWatchState } from './build-watch.js';
 import { createDevPersistenceScheduler } from './dev-persistence.js';
+import { optimizeDevRuntimeDependencies } from './dev-optimize-deps.js';
 import { createDevUpdateSender } from './dev-updates.js';
 import {
   createDevStateQueue,
@@ -76,8 +77,12 @@ export function aiI18n(options: AiI18nOptions): Plugin {
     log: (message) => config?.logger.info(message),
   });
   const devPersistence = createDevPersistenceScheduler({
-    sync: async (snapshot) => {
-      await currentStore().sync(snapshot);
+    snapshot: () => currentState().snapshot(),
+    sync: async (snapshot, context) => {
+      await currentStore().sync(snapshot, {
+        changedSources: context.changedSources,
+        timingModuleId: context.moduleId,
+      });
     },
     timing: devTiming,
     onError(cause) {
@@ -184,6 +189,11 @@ export function aiI18n(options: AiI18nOptions): Plugin {
     config: () => config,
     ready: () => ready,
     state: currentState,
+    moduleId: (id) =>
+      config
+        ? (normalizeProjectId(config.root, id) ?? '<unknown>')
+        : '<unknown>',
+    timing: devTiming,
     framework: () => framework,
     autoImport: () => autoImport,
     translationHooks: () => translationHooks,
@@ -197,8 +207,7 @@ export function aiI18n(options: AiI18nOptions): Plugin {
       warn();
     },
     runStateTask,
-    persist: (snapshot, moduleId) =>
-      devPersistence.schedule(snapshot, moduleId),
+    persist: (moduleId) => devPersistence.schedule(moduleId),
   });
   const transformSource: typeof handleTransformSource = function (
     code,
@@ -222,8 +231,7 @@ export function aiI18n(options: AiI18nOptions): Plugin {
     store: currentStore,
     requestMissingTranslations,
     flush: () => coordinator?.flush() ?? Promise.resolve(),
-    persist: (snapshot, moduleId) =>
-      devPersistence.schedule(snapshot, moduleId),
+    persist: (moduleId) => devPersistence.schedule(moduleId),
     setDevHot(hot) {
       devHot = hot;
     },
@@ -254,6 +262,8 @@ export function aiI18n(options: AiI18nOptions): Plugin {
   return {
     name: 'ai-i18n',
     enforce: 'pre',
+    config: (_userConfig, environment) =>
+      optimizeDevRuntimeDependencies(environment),
 
     configResolved(resolved) {
       if (
@@ -279,6 +289,7 @@ export function aiI18n(options: AiI18nOptions): Plugin {
         cleanupMissingSourceFiles: options.cleanup?.missingSourceFiles ?? true,
         cleanupOrphanMessages: options.cleanup?.orphanMessages ?? false,
         translationMemory,
+        timing: devTiming,
         ...(translationMemory.capacity
           ? { capacity: translationMemory.capacity }
           : {}),

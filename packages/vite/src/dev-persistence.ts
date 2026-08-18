@@ -1,36 +1,58 @@
 import type { ProjectSnapshot } from './project-snapshot.js';
 import type { DevTimingReporter } from './dev-timing.js';
 
-interface PersistenceJob {
-  snapshot: ProjectSnapshot;
+interface PersistenceJobContext {
   moduleId: string;
+  changedSources: readonly string[];
 }
 
 interface DevPersistenceOptions {
-  sync(snapshot: ProjectSnapshot): Promise<unknown>;
+  snapshot(): ProjectSnapshot;
+  sync(
+    snapshot: ProjectSnapshot,
+    context: PersistenceJobContext,
+  ): Promise<unknown>;
   timing: DevTimingReporter;
   onError(cause: unknown): void;
+  debounceMs?: number;
+  maxWaitMs?: number;
 }
 
 export interface DevPersistenceScheduler {
-  schedule(snapshot: ProjectSnapshot, moduleId: string): void;
+  schedule(moduleId: string): void;
   flush(): Promise<void>;
 }
+
+const DEFAULT_DEBOUNCE_MS = 50;
+const DEFAULT_MAX_WAIT_MS = 500;
 
 export function createDevPersistenceScheduler(
   options: DevPersistenceOptions,
 ): DevPersistenceScheduler {
-  let pending: PersistenceJob | undefined;
+  const dirtySources = new Set<string>();
+  let latestModuleId = '<unknown>';
   let running: Promise<void> | undefined;
   let failure: unknown;
+  let debounceTimer: ReturnType<typeof setTimeout> | undefined;
+  let maxWaitTimer: ReturnType<typeof setTimeout> | undefined;
+  const debounceMs = options.debounceMs ?? DEFAULT_DEBOUNCE_MS;
+  const maxWaitMs = options.maxWaitMs ?? DEFAULT_MAX_WAIT_MS;
 
   async function drain(): Promise<void> {
-    while (pending) {
-      const job = pending;
-      pending = undefined;
+    while (dirtySources.size) {
+      const context: PersistenceJobContext = {
+        moduleId: latestModuleId,
+        changedSources: [...dirtySources].sort(),
+      };
+      dirtySources.clear();
       try {
-        await options.timing.measure('file-sync', job.moduleId, () =>
-          options.sync(job.snapshot),
+        const snapshot = await options.timing.measure(
+          'snapshot-build',
+          context.moduleId,
+          options.snapshot,
+        );
+        await options.timing.measure('file-sync', context.moduleId, () =>
+          options.sync(snapshot, context),
         );
       } catch (cause) {
         failure = cause;
@@ -43,24 +65,46 @@ export function createDevPersistenceScheduler(
     }
   }
 
+  function clearTimers(): void {
+    if (debounceTimer) clearTimeout(debounceTimer);
+    if (maxWaitTimer) clearTimeout(maxWaitTimer);
+    debounceTimer = undefined;
+    maxWaitTimer = undefined;
+  }
+
   function start(): void {
-    if (running || !pending) return;
+    if (running || !dirtySources.size) return;
+    clearTimers();
     running = drain().finally(() => {
       running = undefined;
-      start();
+      if (dirtySources.size) scheduleStart();
     });
     void running.catch(() => undefined);
   }
 
+  function scheduleStart(): void {
+    if (running || !dirtySources.size) return;
+    if (debounceTimer) clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(start, debounceMs);
+    if (!maxWaitTimer) maxWaitTimer = setTimeout(start, maxWaitMs);
+    debounceTimer.unref?.();
+    maxWaitTimer.unref?.();
+  }
+
   return {
-    schedule(snapshot, moduleId) {
-      // 冷启动突发转换只需要落盘最新状态，中间快照没有外部可见价值。
-      pending = { snapshot, moduleId };
-      start();
+    schedule(moduleId) {
+      // 冷启动突发转换只记录变化来源，快照在真正写入前统一生成。
+      dirtySources.add(moduleId);
+      latestModuleId = moduleId;
+      scheduleStart();
     },
     async flush() {
+      clearTimers();
       start();
-      while (running) await running;
+      while (running || dirtySources.size) {
+        if (!running) start();
+        if (running) await running;
+      }
       if (failure !== undefined) {
         const cause = failure;
         failure = undefined;

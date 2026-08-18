@@ -75,8 +75,18 @@ describe('@ai-i18n/vite plugin', () => {
     const messages = timingInfo.mock.calls.map(([message]) => message);
     expect(messages).toEqual(
       expect.arrayContaining([
+        expect.stringContaining('stage=plugin-ready-wait'),
+        expect.stringContaining('stage=source-analysis'),
+        expect.stringContaining('stage=dependency-resolution'),
+        expect.stringContaining('stage=state-transaction'),
+        expect.stringContaining('stage=source-registration'),
         expect.stringContaining('stage=source-transform'),
+        expect.stringContaining('stage=snapshot-build'),
         expect.stringContaining('stage=file-sync'),
+        expect.stringContaining('stage=extracted-scan'),
+        expect.stringContaining('stage=translation-memory-sync'),
+        expect.stringContaining('stage=extracted-write'),
+        expect.stringContaining('stage=locale-write'),
         expect.stringContaining('stage=registration-load'),
       ]),
     );
@@ -115,10 +125,11 @@ describe('@ai-i18n/vite plugin', () => {
       await expect(
         callHook<Promise<string>>(plugin.load, registerId),
       ).resolves.toContain('内存注册');
-      expect(sync).toHaveBeenCalledTimes(1);
+      expect(sync).not.toHaveBeenCalled();
     } finally {
       release();
       await close();
+      expect(sync).toHaveBeenCalledTimes(1);
       sync.mockRestore();
     }
   });
