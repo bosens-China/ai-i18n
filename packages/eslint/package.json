@@ -1,6 +1,6 @@
 {
   "name": "@ai-i18n/eslint-plugin",
-  "version": "1.0.0-alpha.21",
+  "version": "1.0.0-alpha.22",
   "description": "ESLint rules for ai-i18n static extraction and reactive runtime usage.",
   "keywords": [
     "ai-i18n",

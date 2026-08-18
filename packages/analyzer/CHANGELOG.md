@@ -1,5 +1,12 @@
 # @ai-i18n/analyzer
 
+## [1.0.0-alpha.19](https://github.com/bosens-China/ai-i18n/compare/analyzer-v1.0.0-alpha.18...analyzer-v1.0.0-alpha.19) (2026-08-18)
+
+
+### Bug Fixes
+
+* **vite:** 优化 Dev 模块加载与状态同步 ([82f06ca](https://github.com/bosens-China/ai-i18n/commit/82f06ca42cbaf4c0fd9eed6bffc2dfc5c82040b0))
+
 ## [1.0.0-alpha.18](https://github.com/bosens-China/ai-i18n/compare/analyzer-v1.0.0-alpha.17...analyzer-v1.0.0-alpha.18) (2026-08-17)
 
 
