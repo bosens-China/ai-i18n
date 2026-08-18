@@ -1,5 +1,12 @@
 # @ai-i18n/vite
 
+## [1.0.0-alpha.22](https://github.com/bosens-China/ai-i18n/compare/vite-v1.0.0-alpha.21...vite-v1.0.0-alpha.22) (2026-08-18)
+
+
+### Bug Fixes
+
+* **vite:** 优化 Dev 持久化与冷启动链路 ([8c69c8a](https://github.com/bosens-China/ai-i18n/commit/8c69c8aef6ae24edfb2446e451a6a1e24d5749fe))
+
 ## [1.0.0-alpha.21](https://github.com/bosens-China/ai-i18n/compare/vite-v1.0.0-alpha.20...vite-v1.0.0-alpha.21) (2026-08-17)
 
 
