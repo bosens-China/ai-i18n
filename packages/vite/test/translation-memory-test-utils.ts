@@ -56,6 +56,17 @@ export async function translationShardFiles(root: string): Promise<string[]> {
     .sort();
 }
 
+export async function firstTranslationShard(
+  directory: string,
+): Promise<string> {
+  const translations = path.join(directory, 'translations');
+  const shard = (await fs.readdir(translations)).find((file) =>
+    /^[0-9a-f]{2}\.json$/.test(file),
+  );
+  if (!shard) throw new Error('translation shard not found');
+  return path.join(translations, shard);
+}
+
 function testStore(directoryOrLegacyFile: string) {
   const directory = directoryOrLegacyFile.endsWith('translations.json')
     ? path.dirname(directoryOrLegacyFile)

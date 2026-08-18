@@ -34,6 +34,7 @@ import { createReviewService } from './review-service.js';
 import { normalizeProjectId } from './project-paths.js';
 import type { AiI18nOptions } from './options.js';
 import { createPluginProvider } from './plugin-provider.js';
+import { createPluginStateAccessors } from './plugin-state-accessors.js';
 import {
   createVirtualModuleHooks,
   REGISTER_PREFIX,
@@ -70,6 +71,10 @@ export function aiI18n(options: AiI18nOptions): Plugin {
   let coordinator: ProviderCoordinator | undefined;
   let devHot: NormalizedHotChannel | undefined;
   let warnedSsr = false;
+  const { currentState, currentStore } = createPluginStateAccessors(
+    () => state,
+    () => store,
+  );
   const queueDevStateTask = createDevStateQueue();
   const devTiming = createDevTimingReporter(options.diagnostics?.timing, {
     enabled: () => config?.command === 'serve',
@@ -99,30 +104,6 @@ export function aiI18n(options: AiI18nOptions): Plugin {
     config?.command === 'build'
       ? Promise.resolve().then(task)
       : queueDevStateTask(task);
-
-  function currentState() {
-    if (!state) {
-      throw new Error(
-        diagnosticMessage(
-          '[ai-i18n] 插件在 configResolved 之前被调用。',
-          '[ai-i18n] Plugin used before configResolved.',
-        ),
-      );
-    }
-    return state;
-  }
-
-  function currentStore() {
-    if (!store) {
-      throw new Error(
-        diagnosticMessage(
-          '[ai-i18n] 文件存储在 configResolved 之前被调用。',
-          '[ai-i18n] File store used before configResolved.',
-        ),
-      );
-    }
-    return store;
-  }
 
   const {
     sendTranslationUpdates,

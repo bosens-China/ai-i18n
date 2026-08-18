@@ -12,11 +12,7 @@ import {
 } from '@ai-i18n/analyzer';
 import { Analyzer, analyzeModule, extractMessages } from './yuku-analyzer.js';
 import type { ExtractResult, ExtractedMessage } from './yuku-analyzer.js';
-import type {
-  AnalysisLanguage,
-  SourceLocation,
-  TranslationHookBinding,
-} from './extractor.js';
+import type { SourceLocation, TranslationHookBinding } from './extractor.js';
 import {
   createProjectSnapshot,
   fingerprint,
@@ -26,6 +22,7 @@ import {
 import type {
   NormalizedAiI18nOptions,
   ProjectUpdate,
+  ProjectStateUpdateOptions,
 } from './project-state-types.js';
 import {
   changedEffectiveModules,
@@ -91,14 +88,7 @@ export class ProjectState {
   update(
     code: string,
     id: string,
-    options: {
-      sourceCode?: string;
-      analysisLang?: AnalysisLanguage;
-      mapLocation?: (location: SourceLocation) => SourceLocation;
-      translationHooks?: readonly TranslationHookBinding[];
-      autoImportRuntime?: TranslationAutoImports;
-      force?: boolean;
-    } = {},
+    options: ProjectStateUpdateOptions = {},
   ): ProjectUpdate | null {
     const moduleId = this.normalizeId(id);
     if (!moduleId) return null;
