@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { t, tRef, useI18n } from 'virtual:ai-i18n';
 import { computed } from 'vue';
 
 const {
@@ -49,7 +50,7 @@ async function switchLanguage(event: Event): Promise<void> {
       <code class="api-signature">&lt;script setup lang="ts"&gt;</code>
     </header>
 
-    <p class="panel-description">autoImport t() + useI18n() + tRef()</p>
+    <p class="panel-description">explicit t() + useI18n() + tRef()</p>
 
     <label class="language-control">
       <span>{{ t('在 Composition API 中切换语言') }}</span>

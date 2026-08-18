@@ -52,10 +52,10 @@ describe('Dev timing diagnostics', () => {
       },
     );
 
-    await timing.measure('registration-load', 'src/page.ts', async () => {});
+    await timing.measure('source-registration', 'src/page.ts', async () => {});
 
     expect(log.mock.calls[0]?.[0]).toContain(
-      '阶段=registration-load 耗时=1.00ms 模块="src/page.ts"',
+      '阶段=source-registration 耗时=1.00ms 模块="src/page.ts"',
     );
   });
 

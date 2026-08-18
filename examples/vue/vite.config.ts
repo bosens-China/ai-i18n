@@ -14,7 +14,7 @@ export default defineConfig({
         { value: 'en-US', label: 'English' },
         { value: 'ja-JP', label: '日本語' },
       ],
-      autoImport: true,
+      autoImport: false,
       loading: {},
       html: true,
     }),

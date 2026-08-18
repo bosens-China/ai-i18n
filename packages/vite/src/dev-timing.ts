@@ -16,8 +16,7 @@ export type DevTimingStage =
   | 'extracted-scan'
   | 'translation-memory-sync'
   | 'extracted-write'
-  | 'locale-write'
-  | 'registration-load';
+  | 'locale-write';
 
 export interface DevTimingReporter {
   measure<T>(

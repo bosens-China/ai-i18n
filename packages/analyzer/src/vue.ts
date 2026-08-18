@@ -11,6 +11,7 @@ import {
   findDefineI18nMessagesCalls,
   type AnalysisLanguage,
   type DefineI18nMessagesCall,
+  type RuntimeImportDeclaration,
   type SourceLocation,
 } from './index.js';
 import { diagnosticMessage } from './diagnostics.js';
@@ -21,7 +22,9 @@ import {
   templateImportMetadata,
   vueCompileError,
 } from './vue-analysis-support.js';
+import { findHoistedAutoImportCandidates } from './vue-hoisted-auto-imports.js';
 import { findVueTemplateRuntimeBinding } from './vue-runtime-template-bindings.js';
+import { findVueRuntimeImports } from './vue-runtime-imports.js';
 import {
   createInlineTemplateRuntimeAnalysis,
   createOrdinarySetupTemplateAnalysis,
@@ -44,6 +47,8 @@ export interface VueAnalysisSource {
   lang: AnalysisLanguage;
   autoImportCode: string;
   autoImportLang: AnalysisLanguage;
+  hoistedAutoImportCandidates: readonly string[];
+  runtimeImports: RuntimeImportDeclaration[];
   mapLocation(location: SourceLocation): SourceLocation;
   registration: VueRegistrationInsertion;
   templateRegistration?: VueRegistrationInsertion;
@@ -71,6 +76,7 @@ export function analyzeVueSource(
   }
 
   const macroCalls = findMacroCalls(descriptor, id);
+  const runtimeImports = findVueRuntimeImports(descriptor, id);
   const registrationTarget = createRegistrationTarget(descriptor);
   const registrationMetadata = {
     registration: registrationTarget.insertion,
@@ -86,6 +92,15 @@ export function analyzeVueSource(
     autoImportLang: scriptLanguage(
       descriptor.scriptSetup?.lang ?? descriptor.script?.lang,
     ),
+    hoistedAutoImportCandidates:
+      descriptor.scriptSetup && !descriptor.scriptSetup.src
+        ? findHoistedAutoImportCandidates(
+            descriptor.scriptSetup.content,
+            id,
+            scriptLanguage(descriptor.scriptSetup.lang),
+          )
+        : [],
+    runtimeImports,
   };
 
   if (!descriptor.scriptSetup || descriptor.scriptSetup.src) {

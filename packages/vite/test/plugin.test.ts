@@ -51,25 +51,28 @@ describe('@ai-i18n/vite plugin', () => {
     ).toThrow('[ai-i18n] provider.translator must be a function.');
   });
 
+  it('watches protocol files even when the review server is disabled', () => {
+    const { directory, plugin } = setupPlugin([], undefined, {
+      ...options,
+      review: false,
+    });
+    const add = vi.fn();
+
+    callHook(plugin.configureServer, { watcher: { add } });
+
+    expect(add).toHaveBeenCalledWith(directory);
+  });
+
   it('reports opt-in Dev timing stages with normalized module IDs', async () => {
     vi.stubEnv('AI_I18N_DIAGNOSTIC_LOCALE', 'en-US');
-    const { close, plugin, timingInfo, transform } = setupPlugin(
-      [],
-      undefined,
-      {
-        ...options,
-        diagnostics: { timing: { minDurationMs: 0 } },
-      },
-    );
+    const { close, timingInfo, transform } = setupPlugin([], undefined, {
+      ...options,
+      diagnostics: { timing: { minDurationMs: 0 } },
+    });
     await transform(
       "import { t } from 'virtual:ai-i18n'; t('保存')",
       '/workspace/src/timed.ts',
     );
-    const registerId = callHook<string>(
-      plugin.resolveId,
-      'virtual:ai-i18n/register?module=src%2Ftimed.ts',
-    );
-    await callHook<Promise<string>>(plugin.load, registerId);
     await close();
 
     const messages = timingInfo.mock.calls.map(([message]) => message);
@@ -87,7 +90,6 @@ describe('@ai-i18n/vite plugin', () => {
         expect.stringContaining('stage=translation-memory-sync'),
         expect.stringContaining('stage=extracted-write'),
         expect.stringContaining('stage=locale-write'),
-        expect.stringContaining('stage=registration-load'),
       ]),
     );
     expect(messages.every((message) => !message.includes('/workspace'))).toBe(
@@ -95,7 +97,7 @@ describe('@ai-i18n/vite plugin', () => {
     );
   });
 
-  it('loads registration from memory without waiting for Dev persistence', async () => {
+  it('inlines registration from memory without waiting for Dev persistence', async () => {
     let release!: () => void;
     const pending = new Promise<void>((resolve) => {
       release = resolve;
@@ -110,21 +112,16 @@ describe('@ai-i18n/vite plugin', () => {
         await pending;
         return originalSync.apply(this, args);
       });
-    const { close, plugin, transform } = setupPlugin();
+    const { close, transform } = setupPlugin();
 
     try {
-      await transform(
+      const transformed = await transform(
         "import { t } from 'virtual:ai-i18n'; t('内存注册')",
         '/workspace/src/in-memory-register.ts',
       );
-      const registerId = callHook<string>(
-        plugin.resolveId,
-        'virtual:ai-i18n/register?module=src%2Fin-memory-register.ts',
-      );
-
-      await expect(
-        callHook<Promise<string>>(plugin.load, registerId),
-      ).resolves.toContain('内存注册');
+      expect(transformed?.code).toContain('__registerModule');
+      expect(transformed?.code).toContain('内存注册');
+      expect(transformed?.code).not.toContain('register?module=');
       expect(sync).not.toHaveBeenCalled();
     } finally {
       release();
@@ -134,30 +131,25 @@ describe('@ai-i18n/vite plugin', () => {
     }
   });
 
-  it('injects a stable register import after shebang and directives', async () => {
-    const { plugin, transform } = setupPlugin();
+  it('injects stable inline registration after shebang and directives', async () => {
+    const { transform } = setupPlugin();
     const code = `#!/usr/bin/env node\n'use strict';\nimport { t as tr } from 'virtual:ai-i18n';\nconsole.log(tr('保存', { comment: '按钮' }));`;
     const result = await transform(code, '/workspace/src/main.ts');
 
     expect(result?.code).toMatch(
-      /^#!\/usr\/bin\/env node\n'use strict';\nimport \{ t as tr \} from 'virtual:ai-i18n';\nimport "virtual:ai-i18n\/register\?module=src%2Fmain.ts";/,
+      /^#!\/usr\/bin\/env node\n'use strict';\n\nimport \* as __aiI18nPrimaryRuntime from "virtual:ai-i18n\/internal";/,
     );
+    expect(result?.code).toContain('const tr = __aiI18nPrimaryScope.t;');
     expect(result?.map).toMatchObject({
       sources: ['/workspace/src/main.ts'],
       sourcesContent: [code],
     });
 
-    const registerId = 'virtual:ai-i18n/register?module=src%2Fmain.ts';
-    const resolved = callHook<string | undefined>(plugin.resolveId, registerId);
-    expect(resolved).toBe(`\0${registerId}`);
-    const registration = await callHook<Promise<string>>(
-      plugin.load,
-      resolved!,
-    );
     const messageId = runtimeMessageId('src/main.ts', '保存#按钮');
-    expect(registration).toContain(JSON.stringify({ [messageId]: '保存' }));
-    expect(registration).toContain(JSON.stringify({ [messageId]: null }));
-    expect(registration).toContain('import.meta.hot.dispose');
+    expect(result?.code).toContain(JSON.stringify({ [messageId]: '保存' }));
+    expect(result?.code).toContain(JSON.stringify({ [messageId]: null }));
+    expect(result?.code).toContain('import.meta.hot.dispose');
+    expect(result?.code).not.toContain('register?module=');
   });
 
   it('binds runtime imports to the importing Vite source file', async () => {
@@ -227,7 +219,8 @@ t(messages.states[index])`,
 
     expect(result?.code).not.toContain('defineI18nMessages');
     expect(result?.code).toContain("const messages = ({\n  save: '保存'");
-    expect(result?.code).toContain('register?module=src%2Fmessages.ts');
+    expect(result?.code).toContain('__registerModule');
+    expect(result?.code).not.toContain('register?module=');
   });
 
   it('does not erase a local defineI18nMessages binding', async () => {
@@ -268,7 +261,7 @@ const messages = defineI18nMessages({ save: '保存' })
 
     expect(result?.code).not.toContain('defineI18nMessages');
     expect(result?.code).toContain("const messages = ({ save: '保存' })");
-    expect(result?.code).toContain('register?module=src%2FApp.vue');
+    expect(result?.code).toContain('__registerModule');
   });
 
   it('auto-imports template t when script setup contains TypeScript syntax', async () => {
@@ -288,10 +281,13 @@ const activeTab: Tab = 'setup'
     const result = await transform(source, '/workspace/src/TypedTabs.vue');
 
     expect(result?.code).toContain(
-      'import { t as __aiI18nTemplateT } from "virtual:ai-i18n";',
+      'import * as __aiI18nPrimaryRuntime from "virtual:ai-i18n/internal";',
+    );
+    expect(result?.code).toContain(
+      'const __aiI18nTemplateT = __aiI18nPrimaryScope.t;',
     );
     expect(result?.code).toContain('const t = __aiI18nTemplateT;');
-    expect(result?.code).toContain('register?module=src%2FTypedTabs.vue');
+    expect(result?.code).toContain('__registerModule');
   });
 
   it('bridges direct t into Options API templates', async () => {
@@ -310,10 +306,12 @@ export default {
     ]);
     const result = await transform(source, '/workspace/src/Options.vue');
 
-    expect(
-      result?.code.match(/import \{ t \} from ['"]virtual:ai-i18n['"];?/g),
-    ).toHaveLength(1);
-    expect(result?.code).toContain('register?module=src%2FOptions.vue');
+    expect(result?.code).not.toMatch(
+      /import \{ t \} from ['"]virtual:ai-i18n['"];?/,
+    );
+    expect(result?.code).toContain('const t = __aiI18nPrimaryScope.t;');
+    expect(result?.code).toContain('__registerModule');
+    expect(result?.code).not.toContain('register?module=');
   });
 
   it('auto-imports t exposed through Options methods', async () => {
@@ -332,9 +330,10 @@ export default {
     const result = await transform(source, '/workspace/src/AutoOptions.vue');
 
     expect(result?.code).toContain(
-      '<script lang="ts">\nimport { t } from "virtual:ai-i18n";',
+      '<script lang="ts">\nimport * as __aiI18nPrimaryRuntime from "virtual:ai-i18n/internal";',
     );
-    expect(result?.code).toContain('register?module=src%2FAutoOptions.vue');
+    expect(result?.code).toContain('const t = __aiI18nPrimaryScope.t;');
+    expect(result?.code).toContain('__registerModule');
   });
 
   it('auto-imports direct t used by a template-only SFC', async () => {
@@ -350,10 +349,13 @@ export default {
     );
 
     expect(result?.code).toContain(
-      '<script setup>\nimport { t as __aiI18nTemplateT } from "virtual:ai-i18n";',
+      '<script setup>\nimport * as __aiI18nPrimaryRuntime from "virtual:ai-i18n/internal";',
+    );
+    expect(result?.code).toContain(
+      'const __aiI18nTemplateT = __aiI18nPrimaryScope.t;',
     );
     expect(result?.code).toContain('const t = __aiI18nTemplateT;');
-    expect(result?.code).toContain('register?module=src%2FTemplateOnly.vue');
+    expect(result?.code).toContain('__registerModule');
   });
 
   it('skips Vue Router definePage submodules without skipping external scripts', async () => {

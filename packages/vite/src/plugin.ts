@@ -37,7 +37,6 @@ import { createPluginProvider } from './plugin-provider.js';
 import {
   createVirtualModuleHooks,
   REGISTER_PREFIX,
-  RESOLVED_REGISTER_PREFIX,
 } from './plugin-virtual-hooks.js';
 import {
   normalizeOptions,
@@ -169,7 +168,6 @@ export function aiI18n(options: AiI18nOptions): Plugin {
 
   const handleHotUpdate = createHotUpdateHandler({
     sourcePattern: SOURCE_RE,
-    resolvedRegisterPrefix: RESOLVED_REGISTER_PREFIX,
     ready: () => ready,
     state: currentState,
     store: currentStore,
@@ -186,6 +184,9 @@ export function aiI18n(options: AiI18nOptions): Plugin {
 
   const handleTransformSource = createSourceTransformHandler({
     registerPrefix: REGISTER_PREFIX,
+    ...(normalized.loading
+      ? { registrationLocale: normalized.sourceLang }
+      : {}),
     config: () => config,
     ready: () => ready,
     state: currentState,
@@ -249,7 +250,6 @@ export function aiI18n(options: AiI18nOptions): Plugin {
     reconcile: (moduleIds, complete) =>
       buildWatch.reconcile(moduleIds, complete),
     runStateTask,
-    devTiming,
     warnSsrOnce(warn) {
       if (warnedSsr) return;
       warnedSsr = true;
@@ -339,13 +339,15 @@ export function aiI18n(options: AiI18nOptions): Plugin {
       }
     },
 
-    ...(options.review === false
-      ? {}
-      : {
-          configureServer(server) {
-            return configureReviewServer(server, reviewService);
-          },
-        }),
+    configureServer(server) {
+      // Dev 注册不再依附虚拟注册模块，目录观察必须独立存在，才能接收 MCP 与校对页写入。
+      server.watcher.add(currentStore().directory);
+      void ready
+        .then(() => server.watcher.add(currentStore().devWatchTargets()))
+        .catch(() => undefined);
+      if (options.review !== false)
+        return configureReviewServer(server, reviewService);
+    },
 
     async buildStart() {
       if (config?.command === 'build') {

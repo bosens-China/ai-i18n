@@ -1,9 +1,11 @@
 import MagicString from 'magic-string';
+import type { ModuleMessages } from '@ai-i18n/core';
 import {
   diagnosticMessage,
   findInvalidDefineI18nMessagesReferences,
   type DefineI18nMessagesCall,
   type Module,
+  type RuntimeImportDeclaration,
 } from '@ai-i18n/analyzer';
 import type { RegistrationInsertion } from './extractor.js';
 import { registrationImportOffset } from './plugin-utils.js';
@@ -18,10 +20,22 @@ interface SourceRegistrationOptions {
   registration?: RegistrationInsertion;
   templateRegistration?: RegistrationInsertion;
   autoImports: readonly string[];
+  runtimeImports?: readonly RuntimeImportDeclaration[];
   templateImports: readonly string[];
   needsRegistration: boolean;
+  dev: boolean;
+  registrationMessages?: ModuleMessages;
+  preserveAutoImportBindings?: boolean;
   macroCalls: readonly DefineI18nMessagesCall[];
 }
+
+const SCOPED_RUNTIME_EXPORTS = new Set([
+  't',
+  'useI18n',
+  'tRef',
+  'i18nComputed',
+  'tComputed',
+]);
 
 export function assertDirectDefineI18nMessagesCalls(module: Module): void {
   if (findInvalidDefineI18nMessagesReferences(module).length) {
@@ -35,6 +49,7 @@ export function assertDirectDefineI18nMessagesCalls(module: Module): void {
 }
 
 export function sourceRegistration(options: SourceRegistrationOptions) {
+  const runtimeImports = options.runtimeImports ?? [];
   const fallbackOffset = registrationImportOffset(
     options.code,
     options.module.ast.body,
@@ -42,8 +57,19 @@ export function sourceRegistration(options: SourceRegistrationOptions) {
   const registration = options.registration ?? { offset: fallbackOffset };
   const templateRegistration = options.templateRegistration ?? registration;
   const sharesTarget = sameInsertion(registration, templateRegistration);
+  const primaryRuntimeImports = runtimeImports.filter(
+    ({ placement }) => placement !== 'setup' || sharesTarget,
+  );
+  const setupRuntimeImports = sharesTarget
+    ? []
+    : runtimeImports.filter(({ placement }) => placement === 'setup');
   const templateBindings = createTemplateBindings(
-    options.templateImports,
+    options.templateImports.filter(
+      (name) =>
+        !setupRuntimeImports.some(({ specifiers }) =>
+          specifiers.some(({ local }) => local === name),
+        ),
+    ),
     options.code,
   );
   const templateNames = new Set(templateBindings.map(({ name }) => name));
@@ -56,14 +82,34 @@ export function sourceRegistration(options: SourceRegistrationOptions) {
     ...(sharesTarget
       ? templateBindings.map(({ alias, name }) => `${name} as ${alias}`)
       : []),
+    ...runtimeImportSpecifiers(primaryRuntimeImports),
   ];
+  // Vue 编译器允许宏默认值引用 import，但会拒绝引用 setup 局部 const。
+  // 脚本自动导入继续保留为 import，模板专用绑定仍可复用共享运行时。
+  const preservePrimaryImports =
+    options.dev && options.preserveAutoImportBindings === true;
   const primaryLines = [
-    ...runtimeImportLines(primarySpecifiers),
-    ...(options.needsRegistration
+    ...(options.dev
       ? [
-          `import ${JSON.stringify(`${options.registerPrefix}${encodeURIComponent(options.moduleId)}`)};`,
+          ...(preservePrimaryImports
+            ? runtimeImportLines(primarySpecifiers)
+            : []),
+          ...sharedRuntimeLines(
+            preservePrimaryImports ? [] : primarySpecifiers,
+            options.moduleId,
+            options.registrationMessages,
+            options.code,
+            'Primary',
+          ),
         ]
-      : []),
+      : [
+          ...runtimeImportLines(primarySpecifiers),
+          ...(options.needsRegistration
+            ? [
+                `import ${JSON.stringify(`${options.registerPrefix}${encodeURIComponent(options.moduleId)}`)};`,
+              ]
+            : []),
+        ]),
     ...(sharesTarget
       ? templateBindings.map(({ alias, name }) => `const ${name} = ${alias};`)
       : []),
@@ -71,14 +117,34 @@ export function sourceRegistration(options: SourceRegistrationOptions) {
   const templateLines = sharesTarget
     ? []
     : [
-        ...runtimeImportLines(
-          templateBindings.map(({ alias, name }) => `${name} as ${alias}`),
-        ),
+        ...(options.dev
+          ? sharedRuntimeLines(
+              [
+                ...templateBindings.map(
+                  ({ alias, name }) => `${name} as ${alias}`,
+                ),
+                ...runtimeImportSpecifiers(setupRuntimeImports),
+              ],
+              options.moduleId,
+              undefined,
+              options.code,
+              'Template',
+            )
+          : runtimeImportLines(
+              templateBindings.map(({ alias, name }) => `${name} as ${alias}`),
+            )),
         ...templateBindings.map(
           ({ alias, name }) => `const ${name} = ${alias};`,
         ),
       ];
   const transformed = new MagicString(options.code, { filename: options.id });
+  for (const declaration of runtimeImports) {
+    const end =
+      options.code[declaration.end] === ';'
+        ? declaration.end + 1
+        : declaration.end;
+    transformed.remove(declaration.start, end);
+  }
   insertLines(
     transformed,
     registration,
@@ -110,6 +176,68 @@ function runtimeImportLines(specifiers: readonly string[]): string[] {
         `import { ${specifiers.join(', ')} } from ${JSON.stringify(AI_I18N_VIRTUAL_MODULE_ID)};`,
       ]
     : [];
+}
+
+function sharedRuntimeLines(
+  specifiers: readonly string[],
+  moduleId: string,
+  messages: ModuleMessages | undefined,
+  code: string,
+  label: string,
+): string[] {
+  if (!specifiers.length && !messages) return [];
+  const runtimeName = uniqueName(code, `__aiI18n${label}Runtime`);
+  const moduleName = uniqueName(code, `__aiI18n${label}ModuleId`);
+  const bindings = specifiers.map(runtimeBinding);
+  const hasScopedBinding = bindings.some(({ imported }) =>
+    SCOPED_RUNTIME_EXPORTS.has(imported),
+  );
+  const scopeName = uniqueName(code, `__aiI18n${label}Scope`);
+  const lines = [
+    `import * as ${runtimeName} from ${JSON.stringify(`${AI_I18N_VIRTUAL_MODULE_ID}/internal`)};`,
+    `const ${moduleName} = ${JSON.stringify(moduleId)};`,
+  ];
+  if (messages) {
+    lines.push(
+      `${runtimeName}.__registerModule(${moduleName}, ${JSON.stringify(messages)});`,
+      `if (import.meta.hot) import.meta.hot.dispose(() => ${runtimeName}.__unregisterModule(${moduleName}));`,
+    );
+  }
+  if (hasScopedBinding) {
+    lines.push(`const ${scopeName} = ${runtimeName}.__scope(${moduleName});`);
+  }
+  for (const { imported, local } of bindings) {
+    const owner = SCOPED_RUNTIME_EXPORTS.has(imported)
+      ? scopeName
+      : runtimeName;
+    lines.push(`const ${local} = ${owner}.${imported};`);
+  }
+  return lines;
+}
+
+function runtimeBinding(specifier: string): {
+  imported: string;
+  local: string;
+} {
+  const [imported, local] = specifier.split(' as ');
+  return { imported: imported!, local: local ?? imported! };
+}
+
+function runtimeImportSpecifiers(
+  declarations: readonly RuntimeImportDeclaration[],
+): string[] {
+  return declarations.flatMap(({ specifiers }) =>
+    specifiers.map(({ imported, local }) =>
+      imported === local ? imported : `${imported} as ${local}`,
+    ),
+  );
+}
+
+function uniqueName(code: string, base: string): string {
+  let name = base;
+  let index = 0;
+  while (code.includes(name)) name = `${base}${++index}`;
+  return name;
 }
 
 function sameInsertion(

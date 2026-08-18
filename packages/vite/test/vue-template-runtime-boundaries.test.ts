@@ -95,7 +95,7 @@ export default defineComponent({ name: 'OptionsPanel' })
     expect(extraction.templateAutoImportCandidates).toEqual(['t']);
   });
 
-  it('keeps explicit Options imports inert without a methods bridge', async () => {
+  it('inlines explicit Options imports without creating a template bridge', async () => {
     const source = `<script>
 import { t } from 'virtual:ai-i18n'
 export default {}
@@ -105,9 +105,15 @@ export default {}
       { name: 'vite:vue' },
     ]);
 
-    await expect(
-      transform(source, '/workspace/src/ExplicitOptions.vue'),
-    ).resolves.toBeNull();
+    const result = await transform(
+      source,
+      '/workspace/src/ExplicitOptions.vue',
+    );
+
+    expect(result?.code).not.toContain("from 'virtual:ai-i18n'");
+    expect(result?.code).toContain('const t = __aiI18nPrimaryScope.t;');
+    expect(result?.code).not.toContain('__aiI18nTemplateT');
+    expect(result?.code).not.toContain('__registerModule');
   });
 
   it.each([
@@ -168,12 +174,14 @@ export default defineComponent({ name: 'OptionsPanel' })
     );
 
     expect(result?.code).toContain(
-      '<script setup>\nimport { t as __aiI18nTemplateT } from "virtual:ai-i18n";',
+      '<script setup>\nimport * as __aiI18nTemplateRuntime from "virtual:ai-i18n/internal";',
+    );
+    expect(result?.code).toContain(
+      'const __aiI18nTemplateT = __aiI18nTemplateScope.t;',
     );
     expect(result?.code).toContain('const t = __aiI18nTemplateT;');
-    expect(result?.code).toContain(
-      'register?module=src%2FBareDefineComponent.vue',
-    );
+    expect(result?.code).toContain('__registerModule');
+    expect(result?.code).not.toContain('register?module=');
 
     const descriptor = parse(result!.code, {
       filename: 'BareDefineComponent.vue',
@@ -222,16 +230,96 @@ export default defineComponent({
     }).descriptor;
     const compiled = compileScript(descriptor, { id: 'options-panel' });
 
-    expect(descriptor.script?.content).toContain(
-      'import { t } from "virtual:ai-i18n";',
-    );
-    expect(descriptor.scriptSetup?.content).toContain(
-      'import { t as __aiI18nTemplateT } from "virtual:ai-i18n";',
-    );
-    expect(descriptor.scriptSetup?.content).toContain(
-      'const t = __aiI18nTemplateT;',
+    expect(result?.code).toContain('from "virtual:ai-i18n/internal";');
+    expect(result?.code).toMatch(
+      /const t = __aiI18n(?:Primary|Template)Scope\.t;/,
     );
     expect(compiled.content).toMatch(/const __returned__ = \{[^}]*\bt\b/);
+  });
+
+  it('keeps auto-imported t usable from hoisted script-setup macro defaults', async () => {
+    const source = `<script setup lang="ts">
+interface Props { searchText?: string }
+withDefaults(defineProps<Props>(), { searchText: t('查询') })
+</script>`;
+    const { transform } = setupPlugin(
+      [],
+      undefined,
+      { ...options, autoImport: true },
+      [{ name: 'vite:vue' }],
+    );
+
+    const result = await transform(source, '/workspace/src/SearchButtons.vue');
+    const descriptor = parse(result!.code, {
+      filename: 'SearchButtons.vue',
+    }).descriptor;
+
+    expect(descriptor.scriptSetup?.content).toContain(
+      'import { t } from "virtual:ai-i18n";',
+    );
+    expect(() =>
+      compileScript(descriptor, { id: 'macro-defaults' }),
+    ).not.toThrow();
+  });
+
+  it('keeps an explicit aliased import used by a hoisted macro default', async () => {
+    const source = `<script setup lang="ts">
+import { t as translate } from 'virtual:ai-i18n'
+interface Props { searchText?: string }
+withDefaults(defineProps<Props>(), { searchText: translate('查询') })
+</script>`;
+    const { transform } = setupPlugin([], undefined, options, [
+      { name: 'vite:vue' },
+    ]);
+
+    const result = await transform(
+      source,
+      '/workspace/src/ExplicitSearchButtons.vue',
+    );
+    const descriptor = parse(result!.code, {
+      filename: 'ExplicitSearchButtons.vue',
+    }).descriptor;
+
+    expect(descriptor.scriptSetup?.content).toContain(
+      "import { t as translate } from 'virtual:ai-i18n'",
+    );
+    expect(descriptor.scriptSetup?.content).not.toContain(
+      'const translate = __aiI18nPrimaryScope.t;',
+    );
+    expect(() =>
+      compileScript(descriptor, { id: 'explicit-macro-defaults' }),
+    ).not.toThrow();
+  });
+
+  it('keeps an inlined explicit import inside dual-script setup scope', async () => {
+    const source = `<script lang="ts">
+export default { name: 'DualExplicit' }
+</script>
+<script setup lang="ts">
+import { t } from 'virtual:ai-i18n'
+const label = t('脚本文案')
+</script>
+<template>{{ label }} / {{ t('模板文案') }}</template>`;
+    const { transform } = setupPlugin([], undefined, options, [
+      { name: 'vite:vue' },
+    ]);
+
+    const result = await transform(source, '/workspace/src/DualExplicit.vue');
+    const descriptor = parse(result!.code, {
+      filename: 'DualExplicit.vue',
+    }).descriptor;
+    const compiled = compileScript(descriptor, {
+      id: 'dual-explicit',
+      inlineTemplate: true,
+    });
+
+    expect(descriptor.script?.content).not.toContain(
+      'const t = __aiI18nPrimaryScope.t;',
+    );
+    expect(descriptor.scriptSetup?.content).toContain(
+      'const t = __aiI18nTemplateScope.t;',
+    );
+    expect(compiled.content).toContain("_unref(t)('模板文案')");
   });
 
   it('uses a local setup bridge for an auto-imported template t', async () => {
@@ -253,7 +341,10 @@ const ready = true
     const compiled = compileScript(descriptor, { id: 'setup' });
 
     expect(descriptor.scriptSetup?.content).toContain(
-      'import { t as __aiI18nTemplateT } from "virtual:ai-i18n";',
+      'import * as __aiI18nPrimaryRuntime from "virtual:ai-i18n/internal";',
+    );
+    expect(descriptor.scriptSetup?.content).toContain(
+      'const __aiI18nTemplateT = __aiI18nPrimaryScope.t;',
     );
     expect(descriptor.scriptSetup?.content).toContain(
       'const t = __aiI18nTemplateT;',
@@ -284,11 +375,20 @@ const setupResult = setLang('en-US')
     }).descriptor;
     const compiled = compileScript(descriptor, { id: 'dual' });
 
-    expect(descriptor.script?.content).toMatch(
-      /import \{ (?=[^}]*\bgetLang\b)(?=[^}]*\bsetLang\b)[^}]+ \} from "virtual:ai-i18n";/,
+    expect(descriptor.script?.content).toContain(
+      'import * as __aiI18nPrimaryRuntime from "virtual:ai-i18n/internal";',
+    );
+    expect(descriptor.script?.content).toContain(
+      'const setLang = __aiI18nPrimaryRuntime.setLang;',
+    );
+    expect(descriptor.script?.content).toContain(
+      'const getLang = __aiI18nPrimaryRuntime.getLang;',
     );
     expect(descriptor.scriptSetup?.content).toContain(
-      'import { t as __aiI18nTemplateT } from "virtual:ai-i18n";',
+      'import * as __aiI18nTemplateRuntime from "virtual:ai-i18n/internal";',
+    );
+    expect(descriptor.scriptSetup?.content).toContain(
+      'const __aiI18nTemplateT = __aiI18nTemplateScope.t;',
     );
     expect(descriptor.scriptSetup?.content).toContain(
       'const t = __aiI18nTemplateT;',
@@ -322,10 +422,10 @@ const setLang = (value) => value
     const compiled = compileScript(descriptor, { id: 'dual-shadow' });
 
     expect(descriptor.script?.content).toContain(
-      'import { setLang } from "virtual:ai-i18n";',
+      'const setLang = __aiI18nPrimaryRuntime.setLang;',
     );
     expect(descriptor.scriptSetup?.content).not.toContain(
-      'import { setLang } from "virtual:ai-i18n";',
+      'const setLang = __aiI18nTemplateRuntime.setLang;',
     );
     expect(compiled.content).toContain("const result = setLang('en-US')");
     expect(compiled.content).toContain('const setLang = (value) => value');

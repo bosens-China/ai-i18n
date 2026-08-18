@@ -105,7 +105,7 @@
   source transform 只登记变化源码，协议写入由单实例调度器用短 debounce 与 max-wait 串行执行，
   在真正写入前生成一次最新快照，不阻塞转换响应。普通 Dev 批次只更新变化源码对应的 extracted 与
   locale 消息并保留未访问模块；依赖全量活动集合的 orphan/capacity 清理由完整同步校准。外部协议
-  文件变更、Provider 结果、人工校对和关闭生命周期先 flush 待写快照；虚拟注册直接读取已排序的
+  文件变更、Provider 结果、人工校对和关闭生命周期先 flush 待写快照；浏览器模块注册直接读取已排序的
   ProjectState，避免旧异步结果覆盖或为普通后台写入重复扫描目录。
 - 不保留未发布旧 schema 或旧 MCP 工具参数的兼容层；只为已存在的单文件 Translation Memory 提供一次自动迁移。
 - sourceLang 变更时，当前实现会在 comment 一致且历史候选唯一时尽力复用历史翻译；候选不唯一时保持缺失，不猜测。这是保守兼容行为，不构成公开的稳定迁移承诺。
@@ -115,10 +115,17 @@
 ### Vite 生命周期与 Provider
 
 - Dev 渐进处理浏览器实际请求到的模块；Build 以入口可达模块图进行完整处理；Build Watch 复用未变化的分析结果并在必要时校准活动集合。
+- Dev 模块消息随原业务模块同步注册到共享 Runtime，不再请求每源码注册虚拟模块；普通自动导入与
+  普通静态命名的显式 `virtual:ai-i18n` import 都从共享 Runtime 创建文件 scope。Vue 编译期宏引用的
+  binding、namespace、动态 import、直接 re-export、纯副作用和混合 type/未知导出的 import 保留模块级
+  scoped 兼容路径。Build 与 Build Watch 继续使用原有静态注册链路，虚拟 scope/registration 模块必须
+  合并进业务 chunk，不能成为独立 facade 或逐源码浏览器请求。MCP、Provider 和校对写入后，由 Dev
+  独立观察 i18n 目录与 Translation Memory
+  文件并通过 HMR 更新已激活模块；完整 Build 仍是 MCP 首次使用和 orphan 审计的全量依据。
 - Dev 管理文件的 create/update 事件允许读取内容并识别插件自身写入；delete 事件不得读取已经消失的
   文件。活动生成文件被外部删除时按当前内存状态恢复，已失效文件不得复活或触发 HMR 自激循环。
 - `diagnostics.timing` 是默认关闭的 Vite Dev 慢阶段诊断。`true` 使用 50ms 阈值，也可配置非负有限的
-  `minDurationMs`；除 source-transform、file-sync 和 registration-load 总阶段外，报告初始化等待、
+  `minDurationMs`；除 source-transform 和 file-sync 总阶段外，报告初始化等待、
   分析、注册、依赖解析、状态事务、快照、extracted 扫描/写入、Translation Memory 和 locale 写入
   子阶段。阶段允许嵌套，不能直接相加；日志遵循中英文诊断策略，不输出源码正文、译文、绝对机器路径
   或凭据，也不进入 Build 或项目文件。

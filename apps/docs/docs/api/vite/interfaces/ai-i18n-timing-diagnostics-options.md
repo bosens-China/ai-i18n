@@ -23,11 +23,10 @@ interface AiI18nTimingDiagnosticsOptions {
 | --------------- | ------ | ------------------------------- |
 | `minDurationMs` | `50`   | 只输出耗时达到该值的 Dev 阶段。 |
 
-值必须是大于或等于 0 的有限数字。输出包含三个总阶段：
+值必须是大于或等于 0 的有限数字。输出包含两个总阶段：
 
 - `source-transform`：单个源码模块的完整转换。
 - `file-sync`：一批 Dev 变化的后台协议持久化。
-- `registration-load`：虚拟注册模块的生成与加载。
 
 为进一步定位瓶颈，还会输出 `plugin-ready-wait`、`source-analysis`、
 `source-registration`、`dependency-resolution`、`state-transaction`、`snapshot-build`、

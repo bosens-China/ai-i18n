@@ -5,6 +5,7 @@ export {
   extractMessages,
   findDefineI18nMessagesCalls,
   findInvalidDefineI18nMessagesReferences,
+  findRuntimeImportDeclarations,
   findUnboundCalls,
   findUnboundReferences,
 } from '@ai-i18n/analyzer';
@@ -15,4 +16,5 @@ export type {
   ExtractWarningCode,
   ExtractedMessage,
   Module,
+  RuntimeImportDeclaration,
 } from '@ai-i18n/analyzer';

@@ -276,9 +276,9 @@ describe('review server', () => {
   );
 
   it('can disable the default review server', () => {
-    expect(
-      aiI18n({ ...options, review: false }).configureServer,
-    ).toBeUndefined();
+    expect(aiI18n({ ...options, review: false }).configureServer).toBeTypeOf(
+      'function',
+    );
     expect(aiI18n(options).configureServer).toBeTypeOf('function');
   });
 });

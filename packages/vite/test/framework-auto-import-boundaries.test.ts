@@ -57,11 +57,12 @@ describe('framework auto-import boundaries', () => {
       );
 
       expect(result?.code).toContain(
-        `import { ${api} } from "virtual:ai-i18n";`,
+        'import * as __aiI18nPrimaryRuntime from "virtual:ai-i18n/internal";',
       );
       expect(result?.code).toContain(
-        'virtual:ai-i18n/register?module=src%2Fmain.ts',
+        `const ${api} = __aiI18nPrimaryScope.${api};`,
       );
+      expect(result?.code).not.toContain('register?module=');
     },
   );
 

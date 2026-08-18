@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { t } from 'virtual:ai-i18n';
 import { shallowRef } from 'vue';
 import CompositionPanel from './components/CompositionPanel.vue';
 import OptionsPanel from './components/OptionsPanel.vue';

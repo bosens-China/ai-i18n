@@ -27,9 +27,13 @@ describe('@ai-i18n/vite framework transforms', () => {
     );
 
     expect(result?.code).toContain(
-      'import { t, setLang } from "virtual:ai-i18n";',
+      'import * as __aiI18nPrimaryRuntime from "virtual:ai-i18n/internal";',
     );
-    expect(result?.code).toContain('register?module=src%2Fmain.ts');
+    expect(result?.code).toContain('const t = __aiI18nPrimaryScope.t;');
+    expect(result?.code).toContain(
+      'const setLang = __aiI18nPrimaryRuntime.setLang;',
+    );
+    expect(result?.code).not.toContain('register?module=');
   });
 
   it.each([
@@ -50,7 +54,13 @@ describe('@ai-i18n/vite framework transforms', () => {
       );
 
       expect(result?.code).toContain(
-        'import { setLang, getLang } from "virtual:ai-i18n";',
+        'import * as __aiI18nPrimaryRuntime from "virtual:ai-i18n/internal";',
+      );
+      expect(result?.code).toContain(
+        'const setLang = __aiI18nPrimaryRuntime.setLang;',
+      );
+      expect(result?.code).toContain(
+        'const getLang = __aiI18nPrimaryRuntime.getLang;',
       );
     },
   );
@@ -107,12 +117,15 @@ export const View = () => <p>{hookT('Vue JSX')}</p>`,
     );
 
     expect(vue?.code).toContain(
-      'import { useI18n, t } from "virtual:ai-i18n";',
+      'import * as __aiI18nPrimaryRuntime from "virtual:ai-i18n/internal";',
     );
-    expect(vue?.code).toContain('register?module=src%2FView.tsx');
+    expect(vue?.code).toContain(
+      'const useI18n = __aiI18nPrimaryScope.useI18n;',
+    );
+    expect(vue?.code).not.toContain('register?module=');
   });
 
-  it('keeps the explicit Hook import when auto import is disabled', async () => {
+  it('inlines an explicit Vue Hook import when auto import is disabled', async () => {
     const { transform } = setupPlugin([], undefined, options, [
       { name: 'vite:vue' },
     ]);
@@ -123,11 +136,68 @@ export const label = t('显式 Hook')`,
       '/workspace/src/useLabel.ts',
     );
 
-    expect(vue?.code).toContain("import { useI18n } from 'virtual:ai-i18n'");
-    expect(vue?.code).not.toContain(
-      'import { useI18n } from "virtual:ai-i18n";',
+    expect(vue?.code).not.toContain("from 'virtual:ai-i18n'");
+    expect(vue?.code).toContain(
+      'import * as __aiI18nPrimaryRuntime from "virtual:ai-i18n/internal";',
     );
-    expect(vue?.code).toContain('register?module=src%2FuseLabel.ts');
+    expect(vue?.code).toContain(
+      'const useI18n = __aiI18nPrimaryScope.useI18n;',
+    );
+    expect(vue?.code).toContain('__registerModule');
+    expect(vue?.code).not.toContain('register?module=');
+  });
+
+  it('inlines aliased React Runtime imports at module scope', async () => {
+    const { transform } = setupPlugin([], undefined, options, [
+      { name: 'vite:react-babel' },
+    ]);
+    const react = await transform(
+      `import { useI18n as useTranslations, setLang as switchLang } from 'virtual:ai-i18n'
+export function View() {
+  const { t } = useTranslations()
+  return <button onClick={() => switchLang('en-US')}>{t('切换语言')}</button>
+}`,
+      '/workspace/src/View.tsx',
+    );
+
+    expect(react?.code).not.toContain("from 'virtual:ai-i18n'");
+    expect(react?.code).toContain(
+      'const useTranslations = __aiI18nPrimaryScope.useI18n;',
+    );
+    expect(react?.code).toContain(
+      'const switchLang = __aiI18nPrimaryRuntime.setLang;',
+    );
+    expect(react?.code.indexOf('const useTranslations =')).toBeLessThan(
+      react!.code.indexOf('export function View'),
+    );
+  });
+
+  it('inlines a global-only explicit import without extracted messages', async () => {
+    const { transform } = setupPlugin();
+    const result = await transform(
+      "import { getLang } from 'virtual:ai-i18n'; export const lang = getLang()",
+      '/workspace/src/lang.ts',
+    );
+
+    expect(result?.code).not.toContain("from 'virtual:ai-i18n'");
+    expect(result?.code).toContain(
+      'const getLang = __aiI18nPrimaryRuntime.getLang;',
+    );
+    expect(result?.code).not.toContain('__aiI18nPrimaryScope');
+    expect(result?.code).not.toContain('__registerModule');
+  });
+
+  it('preserves mixed type imports on the scoped compatibility path', async () => {
+    const { transform } = setupPlugin();
+    const result = await transform(
+      "import { t, type RuntimeType } from 'virtual:ai-i18n'; console.log(t('混合导入'))",
+      '/workspace/src/mixed.ts',
+    );
+
+    expect(result?.code).toContain(
+      "import { t, type RuntimeType } from 'virtual:ai-i18n'",
+    );
+    expect(result?.code).toContain('__registerModule');
   });
 
   it('detects React JSX and auto-imports its Hook', async () => {
@@ -145,9 +215,12 @@ export const View = () => <p>{hookT('React JSX')}</p>`,
     );
 
     expect(react?.code).toContain(
-      'import { useI18n, t } from "virtual:ai-i18n";',
+      'import * as __aiI18nPrimaryRuntime from "virtual:ai-i18n/internal";',
     );
-    expect(react?.code).toContain('register?module=src%2FView.tsx');
+    expect(react?.code).toContain(
+      'const useI18n = __aiI18nPrimaryScope.useI18n;',
+    );
+    expect(react?.code).not.toContain('register?module=');
   });
 
   it('reports dynamic arguments with source locations', async () => {
@@ -160,7 +233,7 @@ export const View = () => <p>{hookT('React JSX')}</p>`,
       't(props.label)',
       '/workspace/src/dynamic.ts',
     );
-    expect(result?.code).toContain('import { t } from "virtual:ai-i18n";');
+    expect(result?.code).toContain('const t = __aiI18nPrimaryScope.t;');
     expect(warnings).toMatchObject([
       { id: '/workspace/src/dynamic.ts', loc: { line: 1, column: 0 } },
     ]);

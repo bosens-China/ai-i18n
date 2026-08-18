@@ -32,6 +32,8 @@ insufficient or when a tool or protocol file is unavailable.
 If more than one Vite app is plausible, ask the user which app to use before calling MCP.
 The app's framework mode and `autoImport` setting affect source integration but do not change the MCP
 directory contract. Do not add or remove Runtime imports as part of a translation-only MCP task.
+Dev may inline ordinary static named Runtime imports, while Build keeps its static registration modules;
+neither behavior changes the requirement to use a full Build for a complete extracted set.
 When package installation, Vite configuration, or Runtime source integration is incomplete or
 requested, use the `integrate-ai-i18n` Skill before starting this translation workflow.
 
@@ -43,6 +45,11 @@ Use tool-returned `source_file` values; never decode or guess a source path from
 Run the selected app's full Vite Build before first use when extraction is missing or empty, and after
 source, branch, or extraction configuration changes that make it stale. Do not execute Vite config
 merely to locate the directory. Never open or edit Translation Memory storage directly.
+
+When that app's Vite Dev Server is running, successful MCP Translation Memory or override writes are
+observed and applied to its in-memory Runtime through HMR. This convenience does not make the Dev
+catalog a complete source set: first use, complete audits, and orphan decisions still require the
+full Build above. Do not restart Dev or edit generated locale files merely to expose an MCP write.
 
 The Vite Dev review console is the default interface for a person interactively choosing a small
 number of review values. This Skill remains the authority when an Agent performs batch work,

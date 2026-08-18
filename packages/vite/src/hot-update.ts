@@ -17,7 +17,6 @@ import type { ProjectState } from './project-state.js';
 
 interface HotUpdateDependencies {
   sourcePattern: RegExp;
-  resolvedRegisterPrefix: string;
   ready(): Promise<void>;
   state(): ProjectState;
   store(): FileStore;
@@ -112,23 +111,11 @@ export function createHotUpdateHandler(dependencies: HotUpdateDependencies) {
       dependencies.requestMissingTranslations(affected);
       if (localeSnapshot) {
         dependencies.sendLocaleUpdates(changedLocales(project, localeSnapshot));
+      } else {
+        dependencies.sendTranslationUpdates(affected);
       }
-      const registers = affected
-        .map((affectedId) =>
-          this.environment.moduleGraph.getModuleById(
-            `${dependencies.resolvedRegisterPrefix}${encodeURIComponent(affectedId)}`,
-          ),
-        )
-        .filter((module) => module !== undefined);
-      for (const register of registers) {
-        this.environment.moduleGraph.invalidateModule(
-          register,
-          new Set(),
-          options.timestamp,
-          true,
-        );
-      }
-      return registers.length ? [...options.modules, ...registers] : undefined;
+      // 注册数据已经随源码模块内联；返回 undefined 让 Vite 和框架处理正常源码 HMR。
+      return undefined;
     });
   };
 }

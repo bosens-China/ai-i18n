@@ -72,7 +72,7 @@ aiI18n({
 ```
 
 日志只在 Vite Dev 中输出达到阈值的阶段，并携带相对 Vite root 的规范化模块 ID。
-总阶段为 `source-transform`、`file-sync` 和 `registration-load`；还会输出
+总阶段为 `source-transform` 和 `file-sync`；还会输出
 `plugin-ready-wait`、`source-analysis`、`source-registration`、`dependency-resolution`、
 `state-transaction`、`snapshot-build`、`extracted-scan`、`translation-memory-sync`、
 `extracted-write` 与 `locale-write` 子阶段。总阶段与子阶段可能嵌套，不能直接相加。
@@ -86,6 +86,14 @@ Dev 转换先更新当前进程的内存状态，只登记变化源码；连续�
 因此普通模块响应不等待每次完整目录同步。持续变化也有最大等待时间，不会无限推迟持久化。人工校对、
 Provider 结果、外部协议文件变化和 Dev Server 关闭等边界仍会等待待提交写入；Build 与 MCP 的文件
 语义不变，完整 Build 仍负责全量活动集合与历史清理校准。
+
+Dev 中的模块消息会随原业务模块同步注册到共享 Runtime，不再为每个源码模块请求独立注册模块。
+开启 `autoImport` 时，注入的 API 共用一个 Runtime；关闭时，普通静态命名的
+`virtual:ai-i18n` 显式 import 也会在 Dev 中内联为共享 Runtime 的文件 binding。Vue 编译宏参数引用、
+namespace、动态 import、直接 re-export、纯副作用和混合 type/未知导出的 import 保留 scoped 兼容
+路径。Build 继续使用静态虚拟模块，但这些模块被合并到业务 chunk，不会天然形成逐源码浏览器请求。
+MCP、Provider 或校对页更新 Translation Memory / `overrides.json` 后，运行中的 Dev Server 会重新
+读取存储并通过 HMR 更新已激活模块，不需要把内存注册数据写成项目实体文件。
 
 插件会把 `@ai-i18n/vite/runtime`、`@ai-i18n/vite/vue` 和 `@ai-i18n/vite/react` 合并进
 Vite 的 `optimizeDeps.exclude`，并保留项目原有配置。这样可以避免插件运行时入口在首次动态路由访问时

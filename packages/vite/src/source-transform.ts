@@ -25,11 +25,13 @@ import {
 import {
   analyzeModule,
   findDefineI18nMessagesCalls,
+  findRuntimeImportDeclarations,
   findUnboundReferences,
 } from './yuku-analyzer.js';
 
 interface SourceTransformDependencies {
   registerPrefix: string;
+  registrationLocale?: string;
   config(): ResolvedConfig | undefined;
   ready(): Promise<void>;
   state(): ProjectState;
@@ -172,6 +174,25 @@ export function createSourceTransformHandler(
         const autoImports = frameworkAutoImports(framework).filter((name) =>
           unboundReferences.has(name),
         );
+        const hoistedAutoImportCandidates = new Set(
+          extraction?.hoistedAutoImportCandidates ?? [],
+        );
+        const frameworkRuntimeImports = new Set(
+          frameworkAutoImports(framework),
+        );
+        const runtimeImports =
+          config?.command === 'serve'
+            ? (
+                extraction?.runtimeImports ??
+                findRuntimeImportDeclarations(currentModule)
+              ).filter((declaration) =>
+                declaration.specifiers.every(
+                  ({ imported, local }) =>
+                    frameworkRuntimeImports.has(imported) &&
+                    !hoistedAutoImportCandidates.has(local),
+                ),
+              )
+            : [];
         const templateImports = [
           ...(extraction?.templateImports ?? []),
           ...(autoImport
@@ -181,11 +202,19 @@ export function createSourceTransformHandler(
         const needsRegistration = Boolean(
           result.messages.length || result.pending,
         );
+        const registrationMessages =
+          config?.command === 'serve' && needsRegistration
+            ? (project.registration(
+                moduleId,
+                dependencies.registrationLocale,
+              ) ?? undefined)
+            : undefined;
         const macroCalls =
           extraction?.macroCalls ?? findDefineI18nMessagesCalls(currentModule);
         if (
           !needsRegistration &&
           !autoImports.length &&
+          !runtimeImports.length &&
           !templateImports.length &&
           !macroCalls.length
         ) {
@@ -209,8 +238,14 @@ export function createSourceTransformHandler(
                 ? { templateRegistration: extraction.templateRegistration }
                 : {}),
               autoImports,
+              runtimeImports,
               templateImports,
               needsRegistration,
+              dev: config?.command === 'serve',
+              ...(registrationMessages ? { registrationMessages } : {}),
+              preserveAutoImportBindings: autoImports.some((name) =>
+                hoistedAutoImportCandidates.has(name),
+              ),
               macroCalls,
             }),
         );

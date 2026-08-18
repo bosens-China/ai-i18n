@@ -7,8 +7,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-/// <reference path="./ai-i18n.vue.d.ts" />
-
 declare module 'virtual:ai-i18n' {
   import type { I18nRuntime } from '@ai-i18n/vite';
 
@@ -86,69 +84,3 @@ declare module 'virtual:ai-i18n' {
  * 构建时调用会被消除，类型上原样返回 T，不能当作运行时值引用。
  */
 declare const defineI18nMessages: <T>(messages: T) => T;
-/**
- * Vue composable：订阅语言和翻译更新，并返回响应式翻译 API。
- * Vue composable: subscribes to language and translation updates and returns reactive translation APIs.
- * @returns t、setLang，以及 currentLang、langs 和语言加载状态的只读 Ref。
- */
-declare const useI18n: import('@ai-i18n/vite/vue').UseI18n;
-
-/**
- * 翻译可静态提取的文案；目标译文缺失时回退到源文案。
- * Translates a statically extractable message and falls back to the source when missing.
- * 支持 t("保存")、t(messages) 和标签模板 t`你好 ${name}`。
- */
-declare const t: import('@ai-i18n/vite').I18nRuntime['t'];
-
-/**
- * 切换当前语言；按需加载启用时会等待目标语言 chunk。
- * Switches the current language and waits for its chunk when lazy loading is enabled.
- * @returns 切换完成后的 Promise；加载失败时 reject，并保留原语言。
- */
-declare const setLang: import('@ai-i18n/vite').I18nRuntime['setLang'];
-
-/**
- * 读取当前语言标识。
- * Returns the current language identifier.
- */
-declare const getLang: import('@ai-i18n/vite').I18nRuntime['getLang'];
-
-/**
- * 读取配置中的语言选项，只读且保持配置顺序。
- * Returns the configured readonly language options in configuration order.
- */
-declare const getLangs: import('@ai-i18n/vite').I18nRuntime['getLangs'];
-
-/**
- * 读取语言加载状态：idle、loading 或 error。
- * Returns the language loading state: idle, loading, or error.
- */
-declare const getLangLoadState: import('@ai-i18n/vite').I18nRuntime['getLangLoadState'];
-
-/**
- * 订阅语言、加载状态和翻译模块更新。
- * Subscribes to language, loading-state, and translation-module updates.
- * @returns 取消订阅函数。
- */
-declare const subscribe: import('@ai-i18n/vite').I18nRuntime['subscribe'];
-
-/**
- * Vue 专用：把文案或文案树转换为随语言更新的只读 ComputedRef。
- * Vue only: converts a message or message tree into a readonly ComputedRef that follows language changes.
- * 请在 setup 中创建；模板中直接读取返回值，不要在模板中调用 tRef()。
- */
-declare const tRef: import('@ai-i18n/vite/vue').TranslateRef;
-
-/**
- * Vue Options API 专用：返回可展开到 computed 的响应式语言状态 getter。
- * Vue Options API only: returns reactive language-state getters to spread into computed.
- * 包含 currentLang、langs、langLoadState、isLangLoading 与 langLoadError。
- */
-declare const i18nComputed: import('@ai-i18n/vite/vue').I18nComputed;
-
-/**
- * Vue Options API 专用：返回可直接放入 computed 的响应式翻译 getter。
- * Vue Options API only: returns a reactive translation getter for a computed option.
- * 支持字符串、标签模板和静态文案树。
- */
-declare const tComputed: import('@ai-i18n/vite/vue').TranslateComputed;

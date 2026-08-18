@@ -111,6 +111,7 @@ export function aiI18nVitest(options: AiI18nVitestOptions): Plugin {
         autoImports,
         templateImports,
         needsRegistration: false,
+        dev: false,
         macroCalls: calls,
       });
     },

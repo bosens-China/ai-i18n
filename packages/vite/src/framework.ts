@@ -111,6 +111,8 @@ export async function extractFrameworkSource(
     analysisLang: analysis.lang,
     autoImportCode: analysis.autoImportCode,
     autoImportLang: analysis.autoImportLang,
+    hoistedAutoImportCandidates: analysis.hoistedAutoImportCandidates,
+    runtimeImports: analysis.runtimeImports,
     mapLocation: analysis.mapLocation,
     registration: analysis.registration,
     templateRegistration: analysis.templateRegistration,

@@ -4,7 +4,6 @@ import type { ProjectState } from './project-state.js';
 import type { FileStore } from './file-store.js';
 import type { AiI18nFramework } from './framework.js';
 import type { DevStateTaskRunner } from './dev-state-queue.js';
-import type { DevTimingReporter } from './dev-timing.js';
 import {
   localeFromRequest,
   RESOLVED_LOCALE_PREFIX,
@@ -41,7 +40,6 @@ interface CreateVirtualModuleHooksOptions {
   flushProvider(): Promise<void>;
   reconcile(moduleIds: Iterable<string>, complete?: boolean): Promise<void>;
   runStateTask: DevStateTaskRunner;
-  devTiming: DevTimingReporter;
   warnSsrOnce(warn: () => void): void;
   translationUpdateEvent: string;
   localeUpdateEvent: string;
@@ -127,19 +125,17 @@ export function createVirtualModuleHooks(
         const moduleId = decodeURIComponent(
           id.slice(RESOLVED_REGISTER_PREFIX.length),
         );
-        return options.devTiming.measure('registration-load', moduleId, () =>
-          loadRegistration(this, {
-            moduleId,
-            build: config?.command === 'build',
-            project: options.state(),
-            store: options.store(),
-            flush: options.flushProvider,
-            ...(options.normalized.loading
-              ? { locale: options.normalized.sourceLang }
-              : {}),
-            runStateTask: options.runStateTask,
-          }),
-        );
+        return loadRegistration(this, {
+          moduleId,
+          build: config?.command === 'build',
+          project: options.state(),
+          store: options.store(),
+          flush: options.flushProvider,
+          ...(options.normalized.loading
+            ? { locale: options.normalized.sourceLang }
+            : {}),
+          runStateTask: options.runStateTask,
+        });
       },
     },
   };

@@ -14,6 +14,10 @@ ai-i18n 不会用空字符串代替缺失译文。缺译时页面会回退显示
 4. 对不满意或需要固定的译文保存人工校对结果。
 5. 再运行一次 Build，并按当前存储模式提交源码、Translation Memory 标记与 `overrides.json`。
 
+运行中的 Vite Dev 会观察 Provider、Agent + MCP 和校对页写入，并更新当前已访问页面的文案；不需要
+重启或手工编辑生成的 locale 文件。Dev 仍只包含浏览器访问过的模块，批量补译、孤立消息审计和提交前
+验证继续以完整 Build 生成的 `extracted/` 为准。
+
 ## 自动翻译与人工译文
 
 自动翻译默认写入 `i18n/translations/` 分片。人工确认的译文写入 `i18n/overrides.json`，并且始终优先

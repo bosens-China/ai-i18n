@@ -136,6 +136,10 @@ export class FileStore {
     );
   }
 
+  devWatchTargets(): string[] {
+    return [this.directory, ...this.translationManagedFiles];
+  }
+
   isOwnWrite(file: string, content: string): boolean {
     return this.lastWritten.get(path.resolve(file)) === content;
   }

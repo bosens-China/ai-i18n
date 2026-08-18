@@ -123,15 +123,14 @@ describe('@ai-i18n/vite plugin updates', () => {
       "import { t } from 'virtual:ai-i18n'; t('保存')",
       '/workspace/src/provider.ts',
     );
-    expect(transformed?.code).toContain('register?module=src%2Fprovider.ts');
+    expect(transformed?.code).toContain('__registerModule');
+    expect(transformed?.code).not.toContain('register?module=');
     expect(translator).toHaveBeenCalledTimes(1);
     expect(translator).toHaveBeenCalledWith(
       expect.objectContaining({ logging: path.resolve('/workspace/logs') }),
     );
 
-    const registerId = '\0virtual:ai-i18n/register?module=src%2Fprovider.ts';
-    const before = await callHook<Promise<string>>(plugin.load, registerId);
-    expect(before).toContain(
+    expect(transformed?.code).toContain(
       JSON.stringify({
         [runtimeMessageId('src/provider.ts', '保存')]: null,
       }),
@@ -274,13 +273,12 @@ describe('@ai-i18n/vite plugin updates', () => {
     });
   });
 
-  it('invalidates the current environment register module on hot update', async () => {
-    const { plugin, transform } = setupPlugin();
+  it('sends an inline registration update on source hot update', async () => {
+    const { plugin, transform, hotSend } = setupPlugin();
     await transform(
       "import { t } from 'virtual:ai-i18n'; t('before')",
       '/workspace/src/hot.ts',
     );
-    const register = { id: '\0virtual:ai-i18n/register?module=src%2Fhot.ts' };
     const invalidateModule = vi.fn();
     const hotUpdate = objectHandler<
       (
@@ -299,7 +297,7 @@ describe('@ai-i18n/vite plugin updates', () => {
         environment: {
           name: 'client',
           moduleGraph: {
-            getModuleById: () => register,
+            getModuleById: () => undefined,
             invalidateModule,
           },
         },
@@ -313,13 +311,15 @@ describe('@ai-i18n/vite plugin updates', () => {
       },
     );
 
-    expect(invalidateModule).toHaveBeenCalledWith(
-      register,
-      expect.any(Set),
-      1,
-      true,
-    );
-    expect(result).toEqual([register]);
+    expect(invalidateModule).not.toHaveBeenCalled();
+    expect(hotSend).toHaveBeenCalledWith('ai-i18n:update', {
+      moduleId: 'src/hot.ts',
+      messages: {
+        'zh-CN': { [runtimeMessageId('src/hot.ts', 'after')]: 'after' },
+        'en-US': { [runtimeMessageId('src/hot.ts', 'after')]: null },
+      },
+    });
+    expect(result).toBeUndefined();
   });
 
   it('keeps Vue top-level t auto-import analysis during hot updates', async () => {
@@ -374,8 +374,8 @@ describe('@ai-i18n/vite plugin updates', () => {
     expect(registration).not.toContain('"before"');
   });
 
-  it('invalidates importer registration when an imported constant changes', async () => {
-    const { plugin, transform } = setupPlugin(
+  it('pushes importer registration when an imported constant changes', async () => {
+    const { plugin, transform, hotSend } = setupPlugin(
       [],
       async (specifier, importer) =>
         specifier === './texts' && importer === '/workspace/src/main.ts'
@@ -388,7 +388,6 @@ describe('@ai-i18n/vite plugin updates', () => {
       '/workspace/src/main.ts',
     );
 
-    const register = { id: '\0virtual:ai-i18n/register?module=src%2Fmain.ts' };
     const invalidateModule = vi.fn();
     const hotUpdate = objectHandler<
       (
@@ -407,8 +406,7 @@ describe('@ai-i18n/vite plugin updates', () => {
         environment: {
           name: 'client',
           moduleGraph: {
-            getModuleById: (id: string) =>
-              id === register.id ? register : undefined,
+            getModuleById: () => undefined,
             invalidateModule,
           },
         },
@@ -422,13 +420,15 @@ describe('@ai-i18n/vite plugin updates', () => {
       },
     );
 
-    expect(invalidateModule).toHaveBeenCalledWith(
-      register,
-      expect.any(Set),
-      2,
-      true,
-    );
-    expect(result).toEqual([register]);
+    expect(invalidateModule).not.toHaveBeenCalled();
+    expect(hotSend).toHaveBeenCalledWith('ai-i18n:update', {
+      moduleId: 'src/main.ts',
+      messages: {
+        'zh-CN': { [runtimeMessageId('src/main.ts', 'after')]: 'after' },
+        'en-US': { [runtimeMessageId('src/main.ts', 'after')]: null },
+      },
+    });
+    expect(result).toBeUndefined();
   });
 
   it('sends locale-only HMR updates without requesting an unloaded locale', async () => {

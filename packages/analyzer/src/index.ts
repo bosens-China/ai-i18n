@@ -50,6 +50,11 @@ export type {
   RecommendedUsageWarning,
 } from './recommended-usage.js';
 export { findInvalidDefineI18nMessagesReferences } from './static-values.js';
+export { findRuntimeImportDeclarations } from './runtime-imports.js';
+export type {
+  RuntimeImportDeclaration,
+  RuntimeImportSpecifier,
+} from './runtime-imports.js';
 export type {
   TranslationAutoImports,
   TranslationCalleeOrigin,

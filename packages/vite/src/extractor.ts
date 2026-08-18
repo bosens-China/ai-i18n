@@ -1,6 +1,7 @@
 import type {
   AnalysisLanguage,
   DefineI18nMessagesCall,
+  RuntimeImportDeclaration,
   SourceLocation,
 } from '@ai-i18n/analyzer';
 
@@ -21,6 +22,8 @@ export interface SourceExtraction {
   analysisLang?: AnalysisLanguage;
   autoImportCode?: string;
   autoImportLang?: AnalysisLanguage;
+  hoistedAutoImportCandidates?: readonly string[];
+  runtimeImports?: readonly RuntimeImportDeclaration[];
   mapLocation(location: SourceLocation): SourceLocation;
   registration?: RegistrationInsertion;
   templateRegistration?: RegistrationInsertion;

@@ -1,4 +1,5 @@
 <script lang="ts">
+import { i18nComputed, setLang, t, tComputed } from 'virtual:ai-i18n';
 import { defineComponent } from 'vue';
 
 export default defineComponent({
@@ -45,6 +46,8 @@ export default defineComponent({
   },
 
   methods: {
+    t,
+
     async switchLanguage(event: Event): Promise<void> {
       const target = event.currentTarget;
       if (!(target instanceof HTMLSelectElement)) return;
