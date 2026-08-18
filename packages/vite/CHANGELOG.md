@@ -1,5 +1,19 @@
 # @ai-i18n/vite
 
+## [1.0.0-alpha.23](https://github.com/bosens-China/ai-i18n/compare/vite-v1.0.0-alpha.22...vite-v1.0.0-alpha.23) (2026-08-18)
+
+
+### Bug Fixes
+
+* **vite:** 优化 Dev 模块加载与状态同步 ([82f06ca](https://github.com/bosens-China/ai-i18n/commit/82f06ca42cbaf4c0fd9eed6bffc2dfc5c82040b0))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @ai-i18n/analyzer bumped to 1.0.0-alpha.19
+
 ## [1.0.0-alpha.22](https://github.com/bosens-China/ai-i18n/compare/vite-v1.0.0-alpha.21...vite-v1.0.0-alpha.22) (2026-08-18)
 
 
