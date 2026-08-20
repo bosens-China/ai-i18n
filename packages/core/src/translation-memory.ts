@@ -170,6 +170,8 @@ export {
 export type {
   OpenTranslationMemoryStoreOptions,
   TranslationMemoryStorage,
+  TranslationMemoryStorageAdapter,
+  TranslationMemoryStorageName,
   TranslationMemoryStorageMarker,
   TranslationMemoryStore,
 } from './translation-memory-store-types.js';

@@ -1,12 +1,16 @@
 const zh = {
-  eyebrow: 'ai-i18n · 开发环境',
-  title: '翻译校对',
-  description: '比较并确认最终译文。保存后，当前开发页面会立即更新。',
   search: '搜索原文、语境或文件…',
   filtersLabel: '翻译筛选',
   localesLabel: '目标语言',
   statusLabel: '确认状态',
   all: '全部',
+  browseScope: '文案范围',
+  currentPageScope: '当前页面',
+  allExtractedScope: '全部已提取',
+  locateResults: '定位结果',
+  backToBrowse: '返回文案列表',
+  candidates: '个候选',
+  locateHint: '按文件与源码位置选择准确文案，行列可区分同一行的重复内容。',
   unreviewed: '待确认',
   reviewed: '已确认',
   tokenError: 'Token 异常',
@@ -23,6 +27,7 @@ const zh = {
   final: '人工译文',
   enterTranslation: '输入人工译文后即可确认',
   scope: '作用范围',
+  currentOccurrence: '当前位置',
   currentFile: '当前文件',
   allFiles: '所有文件',
   confirm: '确认译文',
@@ -38,6 +43,9 @@ const zh = {
   noResults: '没有符合当前筛选条件的文案。',
   noMessages: '还没有提取到文案。请先在浏览器中打开需要校对的业务页面。',
   selectMessage: '从左侧选择一条文案开始校对。',
+  pickerNoMatch: '没有找到与该元素对应的已提取文案。',
+  chooseExactOccurrence:
+    '请先从上方来源列表选择准确的文件、行和列，再保存当前位置修订。',
   saved: '人工译文已保存。',
   removed: '人工译文已撤销。',
   failed: '无法读取校对数据。',
@@ -48,15 +56,19 @@ const zh = {
 } as const;
 
 const en: ReviewCopy = {
-  eyebrow: 'ai-i18n · local proof',
-  title: 'Translation review',
-  description:
-    'Compare and confirm the final translation. The active development page updates after saving.',
   search: 'Search source, context, or file…',
   filtersLabel: 'Translation filters',
   localesLabel: 'Target locales',
   statusLabel: 'Confirmation status',
   all: 'All',
+  browseScope: 'Message scope',
+  currentPageScope: 'Current page',
+  allExtractedScope: 'All extracted',
+  locateResults: 'Locate results',
+  backToBrowse: 'Back to messages',
+  candidates: 'candidates',
+  locateHint:
+    'Choose the exact file and source location. Columns distinguish repeated copy on the same line.',
   unreviewed: 'Needs confirmation',
   reviewed: 'Confirmed',
   tokenError: 'Token issue',
@@ -74,6 +86,7 @@ const en: ReviewCopy = {
   final: 'Human translation',
   enterTranslation: 'Enter a human translation to confirm',
   scope: 'Scope',
+  currentOccurrence: 'Current occurrence',
   currentFile: 'Current file',
   allFiles: 'All files',
   confirm: 'Confirm translation',
@@ -90,6 +103,9 @@ const en: ReviewCopy = {
   noMessages:
     'No messages have been extracted yet. Open the application pages you want to review first.',
   selectMessage: 'Select a message from the list to begin reviewing.',
+  pickerNoMatch: 'No extracted message matches the picked element.',
+  chooseExactOccurrence:
+    'Select the exact file, line, and column above before saving an occurrence override.',
   saved: 'Reviewed translation saved.',
   removed: 'Reviewed translation removed.',
   failed: 'The review data could not be loaded.',
@@ -103,6 +119,5 @@ export type ReviewCopy = { [Key in keyof typeof zh]: string };
 
 export function reviewCopy(): ReviewCopy {
   const chinese = navigator.language.toLowerCase().startsWith('zh');
-  document.documentElement.lang = chinese ? 'zh-CN' : 'en';
   return chinese ? zh : en;
 }

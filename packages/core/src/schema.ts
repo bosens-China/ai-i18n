@@ -22,7 +22,14 @@ export interface TranslationOverrideRule {
   source: string;
   comment?: string;
   files?: string[];
+  occurrences?: TranslationOverrideOccurrence[];
   translations: Record<string, string>;
+}
+
+export interface TranslationOverrideOccurrence {
+  file: string;
+  line: number;
+  column: number;
 }
 
 export interface TranslationOverridesFile {
@@ -107,7 +114,11 @@ function parseTranslationOverrideRule(
 ): TranslationOverrideRule {
   const path = `translation overrides.rules.${index}`;
   const rule = record(value, path);
-  exactKeys(rule, ['source', 'comment', 'files', 'translations'], path);
+  exactKeys(
+    rule,
+    ['source', 'comment', 'files', 'occurrences', 'translations'],
+    path,
+  );
   string(rule.source, `${path}.source`);
   const source = rule.source as string;
 
@@ -131,7 +142,34 @@ function parseTranslationOverrideRule(
       ),
     ].sort(compareText);
   }
-
+  let occurrences: TranslationOverrideOccurrence[] | undefined;
+  if (rule.occurrences !== undefined) {
+    if (!Array.isArray(rule.occurrences) || rule.occurrences.length === 0) {
+      fail(`${path}.occurrences`, 'a non-empty array');
+    }
+    if (files) {
+      fail(path, 'scoped by either files or occurrences, not both');
+    }
+    const unique = new Map<string, TranslationOverrideOccurrence>();
+    for (const [occurrenceIndex, value] of rule.occurrences.entries()) {
+      const occurrencePath = `${path}.occurrences.${occurrenceIndex}`;
+      const occurrence = record(value, occurrencePath);
+      exactKeys(occurrence, ['file', 'line', 'column'], occurrencePath);
+      const file = parseOverrideSourceFile(
+        occurrence.file,
+        `${occurrencePath}.file`,
+      );
+      integer(occurrence.line, `${occurrencePath}.line`, 1);
+      integer(occurrence.column, `${occurrencePath}.column`, 0);
+      const parsed = {
+        file,
+        line: occurrence.line as number,
+        column: occurrence.column as number,
+      };
+      unique.set(overrideOccurrenceKey(parsed), parsed);
+    }
+    occurrences = [...unique.values()].sort(compareOverrideOccurrences);
+  }
   stringTranslations(rule.translations, `${path}.translations`);
   const translations = rule.translations as Record<string, string>;
   if (Object.keys(translations).length === 0) {
@@ -141,6 +179,7 @@ function parseTranslationOverrideRule(
     source,
     ...(comment ? { comment } : {}),
     ...(files ? { files } : {}),
+    ...(occurrences ? { occurrences } : {}),
     translations: { ...translations },
   };
 }
@@ -174,13 +213,14 @@ function validateOverrideConflicts(
 ): void {
   const targets = new Map<string, string>();
   for (const rule of rules) {
-    const files = rule.files ?? [null];
-    for (const file of files) {
+    const scopes = rule.occurrences?.map((occurrence) => ({ occurrence })) ??
+      rule.files?.map((file) => ({ file })) ?? [{ file: null }];
+    for (const scope of scopes) {
       for (const [locale, translation] of Object.entries(rule.translations)) {
         const key = JSON.stringify([
           rule.source,
           rule.comment ?? null,
-          file,
+          'occurrence' in scope ? scope.occurrence : scope.file,
           locale,
         ]);
         const previous = targets.get(key);
@@ -208,10 +248,31 @@ function compareOverrideRules(
     compareText(left.source, right.source) ||
     compareOptionalText(left.comment, right.comment) ||
     compareOptionalText(left.files?.join('\0'), right.files?.join('\0')) ||
+    compareOptionalText(
+      left.occurrences?.map(overrideOccurrenceKey).join('\0'),
+      right.occurrences?.map(overrideOccurrenceKey).join('\0'),
+    ) ||
     compareText(
       JSON.stringify(left.translations),
       JSON.stringify(right.translations),
     )
+  );
+}
+
+function overrideOccurrenceKey(
+  occurrence: TranslationOverrideOccurrence,
+): string {
+  return JSON.stringify([occurrence.file, occurrence.line, occurrence.column]);
+}
+
+function compareOverrideOccurrences(
+  left: TranslationOverrideOccurrence,
+  right: TranslationOverrideOccurrence,
+): number {
+  return (
+    compareText(left.file, right.file) ||
+    left.line - right.line ||
+    left.column - right.column
   );
 }
 

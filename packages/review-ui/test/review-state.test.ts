@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { ReviewMessage } from '@ai-i18n/core';
 import {
   activeOverride,
-  currentReviewFile,
+  currentReviewOccurrence,
   reviewAction,
   reviewBaseline,
 } from '../src/review-state';
@@ -10,25 +10,55 @@ import {
 const message: ReviewMessage = {
   message: { source: 'Save', comment: 'button' },
   translations: { 'zh-CN': '保存' },
-  overrides: [{ locale: 'zh-CN', value: '确认', file: 'src/dialog.ts' }],
+  overrides: [
+    { locale: 'zh-CN', value: '确认', file: 'src/dialog.ts' },
+    {
+      locale: 'zh-CN',
+      value: '保存按钮',
+      file: 'src/dialog.ts',
+      location: { line: 1, column: 20 },
+    },
+  ],
   occurrences: [
-    { sourceFile: 'src/dialog.ts', locations: [{ line: 1, column: 1 }] },
+    {
+      sourceFile: 'src/dialog.ts',
+      locations: [
+        { line: 1, column: 1 },
+        { line: 1, column: 20 },
+      ],
+    },
     { sourceFile: 'src/legacy-dialog.ts', locations: [{ line: 2, column: 1 }] },
   ],
 };
 
 describe('review state', () => {
   it('resolves the baseline for the selected locale and scope', () => {
-    expect(reviewBaseline(message, 'zh-CN', '')).toBe('保存');
-    expect(reviewBaseline(message, 'zh-CN', 'src/dialog.ts')).toBe('确认');
-    expect(reviewBaseline(message, 'ja-JP', '')).toBe('Save');
-    expect(activeOverride(message, 'zh-CN', 'src/dialog.ts')?.value).toBe(
+    expect(reviewBaseline(message, 'zh-CN', {})).toBe('保存');
+    expect(reviewBaseline(message, 'zh-CN', { file: 'src/dialog.ts' })).toBe(
       '确认',
     );
+    expect(
+      reviewBaseline(message, 'zh-CN', {
+        file: 'src/dialog.ts',
+        location: { line: 1, column: 20 },
+      }),
+    ).toBe('保存按钮');
+    expect(reviewBaseline(message, 'ja-JP', {})).toBe('Save');
+    expect(
+      activeOverride(message, 'zh-CN', { file: 'src/dialog.ts' })?.value,
+    ).toBe('确认');
   });
 
-  it('uses the list item source as the current file scope', () => {
-    expect(currentReviewFile(message)).toBe('src/dialog.ts');
+  it('distinguishes same-line occurrences by column', () => {
+    expect(
+      currentReviewOccurrence(message, {
+        file: 'src/dialog.ts',
+        location: { line: 1, column: 20 },
+      }),
+    ).toEqual({
+      file: 'src/dialog.ts',
+      location: { line: 1, column: 20 },
+    });
   });
 
   it('distinguishes confirmation, modification, and saved states', () => {

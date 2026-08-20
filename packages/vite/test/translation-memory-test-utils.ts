@@ -2,6 +2,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import type { TranslationMemoryFile } from '@ai-i18n/core';
 import { openTranslationMemoryStore } from '@ai-i18n/core/translation-memory';
+import { sqlite } from '@ai-i18n/sqlite';
 
 export async function readTestTranslationMemory(
   directoryOrLegacyFile: string,
@@ -71,5 +72,5 @@ function testStore(directoryOrLegacyFile: string) {
   const directory = directoryOrLegacyFile.endsWith('translations.json')
     ? path.dirname(directoryOrLegacyFile)
     : directoryOrLegacyFile;
-  return openTranslationMemoryStore({ directory });
+  return openTranslationMemoryStore({ directory, adapters: [sqlite()] });
 }

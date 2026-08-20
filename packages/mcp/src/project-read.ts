@@ -104,7 +104,17 @@ export async function listOverrides(
     const matching = (occurrences.get(messageId) ?? []).filter(
       (item) =>
         item.source === rule.source &&
-        (!rule.files || rule.files.includes(item.file)),
+        (!rule.files || rule.files.includes(item.file)) &&
+        (!rule.occurrences ||
+          rule.occurrences.some(
+            (occurrence) =>
+              occurrence.file === item.file &&
+              item.locations.some(
+                (location) =>
+                  location.line === occurrence.line &&
+                  location.column === occurrence.column,
+              ),
+          )),
     );
     const sourceFiles = [...new Set(matching.map((item) => item.file))].sort();
     for (const [locale, value] of Object.entries(rule.translations)) {
@@ -113,15 +123,37 @@ export async function listOverrides(
           source: rule.source,
           ...(rule.comment ? { comment: rule.comment } : {}),
           ...(rule.files ? { files: rule.files } : {}),
+          ...(rule.occurrences
+            ? {
+                occurrences: rule.occurrences.map((occurrence) => ({
+                  source_file: occurrence.file,
+                  line: occurrence.line,
+                  column: occurrence.column,
+                })),
+              }
+            : {}),
           locale,
         },
         item: {
-          scope: rule.files ? 'files' : 'global',
+          scope: rule.occurrences
+            ? 'occurrences'
+            : rule.files
+              ? 'files'
+              : 'global',
           message: {
             source: rule.source,
             ...(rule.comment ? { comment: rule.comment } : {}),
           },
           ...(rule.files ? { files: rule.files } : {}),
+          ...(rule.occurrences
+            ? {
+                occurrences: rule.occurrences.map((occurrence) => ({
+                  source_file: occurrence.file,
+                  line: occurrence.line,
+                  column: occurrence.column,
+                })),
+              }
+            : {}),
           locale,
           value,
           source_files: sourceFiles,
@@ -158,6 +190,9 @@ export async function listOverrides(
       .length,
     file_override_count: filtered.filter((item) => item.scope === 'files')
       .length,
+    occurrence_override_count: filtered.filter(
+      (item) => item.scope === 'occurrences',
+    ).length,
     ...page,
   };
 }
@@ -278,6 +313,7 @@ function withoutSourceFiles(item: OverrideItemWithSourceFiles): OverrideItem {
     scope: item.scope,
     message: item.message,
     ...(item.files ? { files: item.files } : {}),
+    ...(item.occurrences ? { occurrences: item.occurrences } : {}),
     locale: item.locale,
     value: item.value,
     orphaned: item.orphaned,

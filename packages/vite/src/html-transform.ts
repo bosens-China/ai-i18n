@@ -11,6 +11,7 @@ import type { DevStateTaskRunner } from './dev-state-queue.js';
 import type { FileStore } from './file-store.js';
 import {
   htmlBridgeCode,
+  htmlBindingKey,
   isTransformedHtml,
   transformHtml,
   type HtmlExtractor,
@@ -44,10 +45,11 @@ export function createHtmlTransformHandler(
     const hintTags = config
       ? localeHintTags(config, context, dependencies.options)
       : [];
+    const pageTags = hintTags;
     const extractor = dependencies.extractor;
     // Vite Build 会对同一份 HTML 再跑一次钩子；第二轮只补最终 hash 资源提示。
     if (!extractor || isTransformedHtml(source)) {
-      return withTags(source, hintTags);
+      return withTags(source, pageTags);
     }
 
     await dependencies.ready();
@@ -88,19 +90,25 @@ export function createHtmlTransformHandler(
         messages: project.registration(update.moduleId, registrationLocale),
       };
     });
-    if (!committed) return withTags(result.code, hintTags);
+    if (!committed) return withTags(result.code, pageTags);
     const { messages, moduleId } = committed;
-    if (!messages) return withTags(result.code, hintTags);
+    if (!messages) return withTags(result.code, pageTags);
     if (config?.command === 'build') {
       const initialLocale = dependencies.options.loading
         ? dependencies.options.sourceLang
         : dependencies.options.defaultLang;
       const initialMessages = Object.fromEntries(
-        result.messages.map((message) => [
-          message.id,
-          messages[initialLocale]?.[runtimeMessageId(moduleId, message.id)] ??
-            null,
-        ]),
+        result.messages.flatMap((message) =>
+          message.locations.map((location) => {
+            const occurrence = `${location.line}:${location.column}`;
+            return [
+              htmlBindingKey(message.id, occurrence),
+              messages[initialLocale]?.[
+                runtimeMessageId(moduleId, message.id, occurrence)
+              ] ?? null,
+            ];
+          }),
+        ),
       );
       result = transformHtml(
         source,
@@ -113,7 +121,7 @@ export function createHtmlTransformHandler(
     return {
       html: result.code,
       tags: [
-        ...hintTags,
+        ...pageTags,
         {
           tag: 'script',
           attrs: { type: 'module' },

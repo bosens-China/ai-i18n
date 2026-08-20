@@ -4,6 +4,7 @@ import type { ReviewCopy } from '../copy';
 import type { ReviewWorkbenchFilter } from '../review-state';
 
 defineProps<{
+  compact: boolean;
   copy: ReviewCopy;
   locales: readonly ReviewLocale[];
 }>();
@@ -15,7 +16,8 @@ const query = defineModel<string>('query', { required: true });
 
 <template>
   <section
-    class="flex-none grid gap-2.5 p-3.5 border-b border-line bg-bgOverlay backdrop-blur-md sticky top-0 z-10"
+    class="flex-none grid border-b border-line bg-bgOverlay backdrop-blur-md sticky top-0 z-10"
+    :class="compact ? 'gap-1.5 p-2' : 'gap-2.5 p-3.5'"
     :aria-label="copy.filtersLabel"
   >
     <label class="relative block">
@@ -35,7 +37,8 @@ const query = defineModel<string>('query', { required: true });
       <span class="sr-only">{{ copy.search }}</span>
       <input
         v-model="query"
-        class="review-input w-full h-9 pl-9 pr-3.5 rounded-lg border border-line bg-bgWash text-ink text-xs"
+        class="review-input w-full pl-9 pr-3.5 rounded-md border border-line bg-bgWash text-ink text-xs"
+        :class="compact ? 'h-8' : 'h-9'"
         type="search"
         :aria-label="copy.search"
         :placeholder="copy.search"

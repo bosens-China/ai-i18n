@@ -1,15 +1,18 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import type BetterSqlite3 from 'better-sqlite3';
-import { diagnosticMessage } from './diagnostics.js';
+import { diagnosticMessage } from '@ai-i18n/core/diagnostics';
 import {
   parseTranslationMemoryFile,
   type CacheMessage,
   type TranslationMemoryFile,
-} from './schema.js';
-import { projectKey } from './translation-memory-paths.js';
-import type { TranslationMemoryStore } from './translation-memory-store-types.js';
-import { stableJson, withFileLock } from './translation-memory.js';
+} from '@ai-i18n/core';
+import {
+  stableJson,
+  withFileLock,
+  type TranslationMemoryStore,
+} from '@ai-i18n/core/translation-memory';
+import { projectKey } from './sqlite-paths.js';
 
 interface MessageRow {
   message_id: string;
@@ -61,8 +64,8 @@ export class SqliteTranslationMemoryStore implements TranslationMemoryStore {
     } catch (cause) {
       throw new Error(
         diagnosticMessage(
-          '[ai-i18n] SQLite Translation Memory 需要可选依赖 better-sqlite3。',
-          '[ai-i18n] SQLite Translation Memory requires the optional better-sqlite3 dependency.',
+          '[ai-i18n] @ai-i18n/sqlite 无法加载 better-sqlite3，请检查安装结果与当前 Node.js 平台支持。',
+          '[ai-i18n] @ai-i18n/sqlite could not load better-sqlite3; check the installation and Node.js platform support.',
         ),
         { cause },
       );

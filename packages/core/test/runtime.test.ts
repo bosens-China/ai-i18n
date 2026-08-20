@@ -66,6 +66,28 @@ describe('@ai-i18n/core runtime', () => {
     );
   });
 
+  it('keeps identical messages on the same source line isolated by column', () => {
+    const runtime = createI18nRuntime({
+      sourceLang: 'zh-CN',
+      defaultLang: 'en-US',
+      locales,
+    });
+    runtime.registerModule('src/app.ts', {
+      'zh-CN': {
+        [runtimeMessageId('src/app.ts', '保存', '3:8')]: '保存',
+        [runtimeMessageId('src/app.ts', '保存', '3:25')]: '保存',
+      },
+      'en-US': {
+        [runtimeMessageId('src/app.ts', '保存', '3:8')]: 'Save draft',
+        [runtimeMessageId('src/app.ts', '保存', '3:25')]: 'Save changes',
+      },
+    });
+    const t = createScopedTranslate(runtime, 'src/app.ts');
+
+    expect(t.__aiI18nAt('3:8')('保存')).toBe('Save draft');
+    expect(t.__aiI18nAt('3:25')('保存')).toBe('Save changes');
+  });
+
   it('translates tagged templates and lets targets reorder placeholders', () => {
     const runtime = createI18nRuntime({
       sourceLang: 'zh-CN',

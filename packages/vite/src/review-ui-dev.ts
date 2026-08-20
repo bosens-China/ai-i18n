@@ -22,7 +22,7 @@ export async function createReviewUiDevServer(
     root,
     configFile: path.join(root, 'vite.config.ts'),
     mode: 'development',
-    appType: 'spa',
+    appType: 'custom',
     clearScreen: false,
     customLogger: parent.config.logger,
     server: {

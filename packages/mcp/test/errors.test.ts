@@ -23,6 +23,12 @@ test('always returns an actionable recovery step', () => {
     error_code: 'ORPHAN_MESSAGE_REACTIVATED',
     next_action: expect.stringContaining('list orphan messages again'),
   });
+  expect(
+    errorPayload(new McpToolError('MESSAGE_NOT_FOUND_AT_SOURCE_LOCATION')),
+  ).toMatchObject({
+    error_code: 'MESSAGE_NOT_FOUND_AT_SOURCE_LOCATION',
+    next_action: expect.stringContaining('include_occurrences'),
+  });
   expect(errorPayload(new Error('internal detail'))).toEqual({
     error_code: 'UNEXPECTED_ERROR',
     next_action:

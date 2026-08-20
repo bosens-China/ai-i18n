@@ -35,16 +35,23 @@ export interface I18nRuntime {
   replaceLocale(locale: string, messages: LocaleMessages): boolean;
 }
 
-export function runtimeMessageId(moduleId: string, messageId: string): string {
-  return `${moduleId}\0${messageId}`;
+export function runtimeMessageId(
+  moduleId: string,
+  messageId: string,
+  occurrence?: string,
+): string {
+  return `${moduleId}\0${messageId}${occurrence ? `\0${occurrence}` : ''}`;
 }
 
 export function createScopedTranslate(
   runtime: Pick<I18nRuntime, 'translate'>,
   moduleId: string,
 ): Translate {
-  return createTranslate((messageId, sourceFallback) =>
-    runtime.translate(runtimeMessageId(moduleId, messageId), sourceFallback),
+  return createTranslate((messageId, sourceFallback, occurrence) =>
+    runtime.translate(
+      runtimeMessageId(moduleId, messageId, occurrence),
+      sourceFallback,
+    ),
   );
 }
 

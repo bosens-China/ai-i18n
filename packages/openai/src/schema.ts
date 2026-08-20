@@ -6,7 +6,7 @@ export interface TranslationPayload {
   translations: Array<Record<string, TranslationValue>>;
 }
 
-const DEFAULT_SYSTEM_PROMPT =
+export const FIXED_TRANSLATION_PROMPT =
   '你是一名专业的软件界面翻译助手。请把用户输入翻译为指定目标语言，并结合随正文提供的 comment 理解业务语境。保持 HTML、Markdown、ICU 语法、快捷键和产品名称不变；无法可靠翻译时返回 null。';
 
 function requiredString() {
@@ -76,7 +76,7 @@ export const openAIOptionsSchema = z.object({
   timeoutMs: positiveInteger.default(120_000),
   maxRetries: nonNegativeInteger.default(3),
   headers: headersSchema,
-  systemPrompt: requiredString().default(DEFAULT_SYSTEM_PROMPT),
+  style: optionalString(),
   langSmith: langSmithOptionsSchema.optional(),
 });
 
@@ -100,6 +100,14 @@ const providerErrorSchema = z.object({ status: z.number() });
 export type NormalizedOpenAIOptions = z.output<typeof openAIOptionsSchema>;
 
 export function parseOpenAIOptions(value: unknown): NormalizedOpenAIOptions {
+  if (typeof value === 'object' && value !== null && 'systemPrompt' in value) {
+    throw new TypeError(
+      diagnosticMessage(
+        '[ai-i18n/openai] systemPrompt 已移除；请只通过 style 配置翻译风格。',
+        '[ai-i18n/openai] systemPrompt was removed; configure translation style with style only.',
+      ),
+    );
+  }
   const result = openAIOptionsSchema.safeParse(value);
   if (result.success) return result.data;
   const chinese = result.error.issues

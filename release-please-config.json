@@ -21,6 +21,9 @@
     "packages/openai": {
       "prerelease-type": "alpha"
     },
+    "packages/sqlite": {
+      "prerelease-type": "alpha"
+    },
     "packages/vite": {
       "prerelease-type": "alpha"
     }

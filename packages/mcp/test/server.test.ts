@@ -80,6 +80,7 @@ test('registers eight focused tools without legacy mode or output schemas', asyn
             additionalProperties: false,
             properties: {
               files: { maxItems: 100, minItems: 1, type: 'array' },
+              occurrences: { maxItems: 500, minItems: 1, type: 'array' },
             },
           },
         },

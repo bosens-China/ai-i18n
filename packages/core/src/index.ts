@@ -29,6 +29,7 @@ export type {
   ReviewOccurrence,
   ReviewOverride,
   ReviewSnapshot,
+  ReviewSourceLocation,
 } from './review-contracts.js';
 export {
   AiI18nSchemaError,
@@ -46,6 +47,7 @@ export type {
   LocaleFileV1,
   TranslationMemoryFile,
   TranslationOverrideRule,
+  TranslationOverrideOccurrence,
   TranslationOverridesFile,
   TranslationValue,
 } from './schema.js';
@@ -63,7 +65,11 @@ export type {
   ModuleMessages,
 } from './runtime.js';
 export type { Translate } from './translate.js';
-export { resolveTranslationOverride } from './translation-override.js';
+export {
+  resolveTranslationOverride,
+  translationOccurrenceKey,
+} from './translation-override.js';
+export type { TranslationOccurrence } from './translation-override.js';
 export {
   createTemplateMessage,
   escapeTemplateLiteral,

@@ -127,7 +127,7 @@ describe('review service', () => {
     await store.close();
   });
 
-  it('writes and deletes global and file review values atomically', async () => {
+  it('writes and deletes global, file, and occurrence values atomically', async () => {
     const root = await temporaryRoot();
     const state = projectState(root);
     const store = new FileStore({
@@ -165,12 +165,34 @@ describe('review service', () => {
         value: 'Save file',
       }),
     ).resolves.toMatchObject({ changed: true });
+    await expect(
+      service.setOverride({
+        message: { source: '保存' },
+        locale: 'en-US',
+        file: 'src/main.ts',
+        location: { line: 1, column: 0 },
+        value: 'Save this button',
+      }),
+    ).resolves.toMatchObject({ changed: true });
 
     expect((await service.snapshot()).messages[0]?.overrides).toEqual([
       { locale: 'en-US', value: 'Save' },
       { locale: 'en-US', value: 'Save file', file: 'src/main.ts' },
+      {
+        locale: 'en-US',
+        value: 'Save this button',
+        file: 'src/main.ts',
+        location: { line: 1, column: 0 },
+      },
     ]);
-    expect(notify).toHaveBeenCalledTimes(2);
+    expect(notify).toHaveBeenCalledTimes(3);
+
+    await service.deleteOverride({
+      message: { source: '保存' },
+      locale: 'en-US',
+      file: 'src/main.ts',
+      location: { line: 1, column: 0 },
+    });
 
     await service.deleteOverride({
       message: { source: '保存' },
@@ -219,6 +241,21 @@ describe('review service', () => {
         file: 'missing.ts',
       }),
     ).rejects.toMatchObject({ code: 'UNKNOWN_SOURCE_FILE' });
+    await expect(
+      service.setOverride({
+        ...base,
+        value: 'Hello {{0}}',
+        location: { line: 1, column: 0 },
+      }),
+    ).rejects.toMatchObject({ code: 'INVALID_SOURCE_LOCATION' });
+    await expect(
+      service.setOverride({
+        ...base,
+        value: 'Hello {{0}}',
+        file: 'src/main.ts',
+        location: { line: 99, column: 0 },
+      }),
+    ).rejects.toMatchObject({ code: 'UNKNOWN_SOURCE_LOCATION' });
     await expect(
       service.setOverride({ ...base, value: 'Hello {{0}}', locale: 'fr-FR' }),
     ).rejects.toMatchObject({ code: 'UNKNOWN_LOCALE' });

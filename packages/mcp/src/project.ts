@@ -9,7 +9,7 @@ import {
 } from './project-write.js';
 
 export type TranslationView = 'summary' | 'missing' | 'all';
-export type OverrideScope = 'global' | 'files';
+export type OverrideScope = 'global' | 'files' | 'occurrences';
 
 export interface MessageReference {
   source: string;
@@ -90,6 +90,7 @@ export interface OverrideItem {
   scope: OverrideScope;
   message: MessageReference;
   files?: string[];
+  occurrences?: OverrideOccurrence[];
   locale: string;
   value: string;
   source_files?: string[];
@@ -99,6 +100,7 @@ export interface OverrideItem {
 export interface OverrideListResult extends Page<OverrideItem> {
   global_override_count: number;
   file_override_count: number;
+  occurrence_override_count: number;
 }
 
 export interface TranslationUpdate {
@@ -109,6 +111,13 @@ export interface TranslationUpdate {
 
 export interface OverrideUpdate extends TranslationUpdate {
   files?: readonly string[];
+  occurrences?: readonly OverrideOccurrence[];
+}
+
+export interface OverrideOccurrence {
+  source_file: string;
+  line: number;
+  column: number;
 }
 
 export interface TranslationTarget {

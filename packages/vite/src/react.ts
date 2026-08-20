@@ -1,5 +1,6 @@
 import type { I18nRuntime, LangLoadState } from '@ai-i18n/core';
 import { useCallback, useSyncExternalStore } from 'react';
+import { attachOccurrenceBinding } from './translation-occurrence.js';
 
 export interface ReactI18n {
   t: I18nRuntime['t'];
@@ -38,14 +39,18 @@ export function createReactI18n(
       () => runtimeRevision,
     );
     // React Compiler 会按函数引用缓存调用结果，语言更新时必须让 t 的引用同步变化。
-    const translate = scopedTranslate as (
+    const translate = scopedTranslate;
+    const invoke = translate as (
       source: unknown,
       ...values: unknown[]
     ) => unknown;
-    const t = useCallback(
+    const callback = useCallback(
       ((source: unknown, ...values: unknown[]) =>
-        translate(source, ...values)) as I18nRuntime['t'],
+        invoke(source, ...values)) as I18nRuntime['t'],
       [revision, translate],
+    );
+    const t = attachOccurrenceBinding(callback, (occurrence) =>
+      translate.__aiI18nAt(occurrence),
     );
     const langLoadState = runtime.getLangLoadState();
     return {

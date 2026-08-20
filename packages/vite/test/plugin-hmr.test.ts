@@ -116,8 +116,14 @@ describe('@ai-i18n/vite plugin HMR', () => {
     expect(hotSend).toHaveBeenCalledWith('ai-i18n:update', {
       moduleId: 'src/main.ts',
       messages: {
-        'zh-CN': { [runtimeMessageId('src/main.ts', 'after')]: 'after' },
-        'en-US': { [runtimeMessageId('src/main.ts', 'after')]: null },
+        'zh-CN': {
+          [runtimeMessageId('src/main.ts', 'after')]: 'after',
+          [runtimeMessageId('src/main.ts', 'after', '1:70')]: 'after',
+        },
+        'en-US': {
+          [runtimeMessageId('src/main.ts', 'after')]: null,
+          [runtimeMessageId('src/main.ts', 'after', '1:70')]: null,
+        },
       },
     });
     expect(result).toBeUndefined();
@@ -176,6 +182,7 @@ describe('@ai-i18n/vite plugin HMR', () => {
       locale: 'en-US',
       messages: {
         [runtimeMessageId('src/lazy-hot.ts', '保存')]: 'Save',
+        [runtimeMessageId('src/lazy-hot.ts', '保存', '1:37')]: 'Save',
       },
     });
     expect(hotSend).not.toHaveBeenCalledWith(

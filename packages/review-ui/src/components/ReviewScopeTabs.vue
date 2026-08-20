@@ -2,16 +2,18 @@
 import { computed } from 'vue';
 import type { ReviewMessage } from '@ai-i18n/core';
 import type { ReviewCopy } from '../copy';
-import { currentReviewFile } from '../review-state';
+import type { ReviewOccurrenceTarget, ReviewScope } from '../review-state';
 
 const props = defineProps<{
   copy: ReviewCopy;
   message: ReviewMessage;
-  scope: string;
+  scope: ReviewScope;
+  currentOccurrence?: ReviewOccurrenceTarget;
 }>();
 
-const emit = defineEmits<{ updateScope: [scope: string] }>();
-const currentFile = computed(() => currentReviewFile(props.message));
+const emit = defineEmits<{ updateScope: [scope: ReviewScope] }>();
+const currentFile = computed(() => props.currentOccurrence?.file ?? '');
+const isOccurrence = computed(() => Boolean(props.scope.location));
 </script>
 
 <template>
@@ -30,20 +32,30 @@ const currentFile = computed(() => currentReviewFile(props.message));
       :aria-label="copy.scope"
     >
       <button
+        v-if="currentOccurrence"
+        class="scope-segment"
+        type="button"
+        :aria-pressed="isOccurrence"
+        :title="`${currentOccurrence.file}:${currentOccurrence.location.line}:${currentOccurrence.location.column + 1}`"
+        @click="emit('updateScope', currentOccurrence)"
+      >
+        {{ copy.currentOccurrence }}
+      </button>
+      <button
         v-if="currentFile"
         class="scope-segment"
         type="button"
-        :aria-pressed="scope === currentFile"
+        :aria-pressed="Boolean(scope.file) && !scope.location"
         :title="currentFile"
-        @click="emit('updateScope', currentFile)"
+        @click="emit('updateScope', { file: currentFile })"
       >
         {{ copy.currentFile }}
       </button>
       <button
         class="scope-segment"
         type="button"
-        :aria-pressed="!scope"
-        @click="emit('updateScope', '')"
+        :aria-pressed="!scope.file"
+        @click="emit('updateScope', {})"
       >
         {{ copy.allFiles }}
       </button>

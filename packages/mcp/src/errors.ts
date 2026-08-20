@@ -67,6 +67,10 @@ const ERROR_NEXT_ACTIONS: Record<string, string> = {
     'Call ai_i18n_list_translations again and copy the exact returned message object before retrying.',
   MESSAGE_NOT_FOUND_IN_SOURCE_FILE:
     'Call ai_i18n_list_translations with include_source_files true, then choose only exact source_file values that contain this message.',
+  MESSAGE_NOT_FOUND_AT_SOURCE_LOCATION:
+    'Call ai_i18n_list_translations with include_occurrences true, copy one current exact source_file, line, and column, then obtain approval before retrying the moved target.',
+  INVALID_OVERRIDE_SCOPE:
+    'Choose exactly one override scope: omit both files and occurrences for global, provide files only, or provide occurrences only.',
   UNKNOWN_LOCALE:
     'Choose one of available_locales and retry; do not use a display label as the locale value.',
   DUPLICATE_TARGET_CONFLICT:

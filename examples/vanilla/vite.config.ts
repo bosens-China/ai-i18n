@@ -1,4 +1,5 @@
 import { aiI18n } from '@ai-i18n/vite';
+import { aiI18nReview } from '@ai-i18n/vite/review';
 import { defineConfig } from 'vite';
 
 export default defineConfig({
@@ -11,5 +12,6 @@ export default defineConfig({
       ],
       html: true,
     }),
+    aiI18nReview(),
   ],
 });

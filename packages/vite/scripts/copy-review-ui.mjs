@@ -9,6 +9,6 @@ const packageRoot = path.resolve(
 const source = path.resolve(packageRoot, '../review-ui/dist');
 const target = path.resolve(packageRoot, 'dist/review-ui');
 
-await fs.access(path.join(source, 'index.html'));
+await fs.access(path.join(source, 'review-ui.js'));
 await fs.rm(target, { recursive: true, force: true });
 await fs.cp(source, target, { recursive: true });

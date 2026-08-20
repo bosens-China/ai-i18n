@@ -1,7 +1,6 @@
 import {
   atomicOverrideKey,
   atomicOverrides,
-  createMessageId,
   hasSameTemplateTokens,
   overridesFromAtomic,
   type AtomicOverride,
@@ -9,52 +8,39 @@ import {
   type LangOption,
   type ReviewMessage,
   type ReviewMessageReference,
-  type ReviewMutation,
   type ReviewOccurrence,
   type ReviewOverride,
   type ReviewSnapshot,
+  type ReviewSourceLocation,
   type TranslationMemoryFile,
   type TranslationOverridesFile,
 } from '@ai-i18n/core';
 import type { DevStateTaskRunner } from './dev-state-queue.js';
 import type { FileStore } from './file-store.js';
 import type { ProjectSnapshot, ProjectState } from './project-state.js';
+import { ReviewProblem } from './review-problem.js';
+import {
+  sameReviewMessage,
+  validateReviewTarget,
+} from './review-target-validation.js';
 
 export interface ReviewOverrideTarget {
   message: ReviewMessageReference;
   locale: string;
   file?: string;
+  location?: ReviewSourceLocation;
 }
 
 export interface ReviewOverrideUpdate extends ReviewOverrideTarget {
   value: string;
 }
 
-type ReviewMessageLike =
-  ReviewMessageReference | AtomicOverride | ReviewMutation['message'];
-
 export interface ReviewMutationResult {
   changed: boolean;
   affectedModuleCount: number;
 }
 
-export interface ReviewProblemShape {
-  code: string;
-  status: number;
-  zh: string;
-  en: string;
-}
-
-export class ReviewProblem extends Error implements ReviewProblemShape {
-  constructor(
-    readonly code: string,
-    readonly status: number,
-    readonly zh: string,
-    readonly en: string,
-  ) {
-    super(en);
-  }
-}
+export { ReviewProblem } from './review-problem.js';
 
 interface ReviewServiceOptions {
   sourceLang: string;
@@ -130,7 +116,12 @@ export function createReviewService(
       const project = options.state();
       const store = options.store();
       const snapshot = await projectSnapshot();
-      validateTarget(snapshot, target, options.sourceLang, options.locales);
+      validateReviewTarget(
+        snapshot,
+        target,
+        options.sourceLang,
+        options.locales,
+      );
       if (
         value !== undefined &&
         !hasSameTemplateTokens(target.message.source, value)
@@ -152,6 +143,7 @@ export function createReviewService(
             ? { comment: target.message.comment }
             : {}),
           ...(target.file ? { file: target.file } : {}),
+          ...(target.location ? { location: target.location } : {}),
           locale: target.locale,
         });
         const current = entries.get(key);
@@ -164,6 +156,7 @@ export function createReviewService(
               ? { comment: target.message.comment }
               : {}),
             ...(target.file ? { file: target.file } : {}),
+            ...(target.location ? { location: target.location } : {}),
             locale: target.locale,
             value,
           });
@@ -219,8 +212,14 @@ export function createReviewSnapshot(
         overrides: overrideEntries
           .filter(
             (entry) =>
-              sameMessage(entry, message) &&
-              (!entry.file || sourceFiles.has(entry.file)),
+              sameReviewMessage(entry, message) &&
+              (!entry.file || sourceFiles.has(entry.file)) &&
+              (!entry.location ||
+                messageOccursAt(
+                  messageOccurrences,
+                  entry.file!,
+                  entry.location,
+                )),
           )
           .map(toReviewOverride)
           .sort(compareOverrides),
@@ -268,66 +267,19 @@ function collectOccurrences(
   return occurrences;
 }
 
-function validateTarget(
-  snapshot: ProjectSnapshot,
-  target: ReviewOverrideTarget,
-  sourceLang: string,
-  locales: readonly LangOption[],
-): void {
-  if (
-    !locales.some(
-      (locale) => locale.value === target.locale && locale.value !== sourceLang,
-    )
-  ) {
-    throw problem(
-      'UNKNOWN_LOCALE',
-      400,
-      `目标语言“${target.locale}”不属于当前 Vite 应用。`,
-      `Target locale "${target.locale}" does not belong to this Vite application.`,
-    );
-  }
-  const messageId = createMessageId(
-    target.message.source,
-    target.message.comment ? { comment: target.message.comment } : undefined,
-  );
-  const cache = snapshot.cache.messages[messageId];
-  if (!cache || !sameMessage(cache, target.message)) {
-    throw problem(
-      'UNKNOWN_MESSAGE',
-      404,
-      '目标文案已不存在，请刷新校对页面后重试。',
-      'The target message no longer exists. Refresh the review console and try again.',
-    );
-  }
-  if (target.file && !messageAppearsIn(snapshot, messageId, target.file)) {
-    throw problem(
-      'UNKNOWN_SOURCE_FILE',
-      400,
-      `目标文案未出现在文件“${target.file}”中。`,
-      `The target message does not occur in "${target.file}".`,
-    );
-  }
-}
-
-function messageAppearsIn(
-  snapshot: ProjectSnapshot,
-  messageId: string,
+function messageOccursAt(
+  occurrences: readonly ReviewOccurrence[],
   sourceFile: string,
+  location: ReviewSourceLocation,
 ): boolean {
-  return Boolean(
-    snapshot.extracted[sourceFile]?.messages.some(
-      (message) => message.id === messageId,
-    ),
-  );
-}
-
-function sameMessage(
-  left: ReviewMessageLike,
-  right: ReviewMessageLike,
-): boolean {
-  return (
-    left.source === right.source &&
-    (left.comment ?? undefined) === (right.comment ?? undefined)
+  return occurrences.some(
+    (occurrence) =>
+      occurrence.sourceFile === sourceFile &&
+      occurrence.locations.some(
+        (candidate) =>
+          candidate.line === location.line &&
+          candidate.column === location.column,
+      ),
   );
 }
 
@@ -336,15 +288,24 @@ function toReviewOverride(entry: AtomicOverride): ReviewOverride {
     locale: entry.locale,
     value: entry.value,
     ...(entry.file ? { file: entry.file } : {}),
+    ...(entry.location ? { location: { ...entry.location } } : {}),
   };
 }
 
 function compareOverrides(left: ReviewOverride, right: ReviewOverride): number {
-  const leftKey = JSON.stringify([left.locale, left.file ? 1 : 0, left.file]);
+  const leftKey = JSON.stringify([
+    left.locale,
+    left.location ? 2 : left.file ? 1 : 0,
+    left.file,
+    left.location?.line,
+    left.location?.column,
+  ]);
   const rightKey = JSON.stringify([
     right.locale,
-    right.file ? 1 : 0,
+    right.location ? 2 : right.file ? 1 : 0,
     right.file,
+    right.location?.line,
+    right.location?.column,
   ]);
   return leftKey < rightKey ? -1 : leftKey > rightKey ? 1 : 0;
 }

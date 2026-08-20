@@ -1,6 +1,12 @@
 import { reactive } from 'vue';
 import type { ReviewMessage, ReviewMutation } from '@ai-i18n/core';
-import { activeOverride, draftKey, reviewBaseline } from '../review-state';
+import {
+  activeOverride,
+  draftKey,
+  mutationScope,
+  reviewBaseline,
+  type ReviewScope,
+} from '../review-state';
 
 export function useReviewDrafts() {
   const drafts = reactive(new Map<string, string>());
@@ -8,7 +14,7 @@ export function useReviewDrafts() {
   function draftFor(
     message: ReviewMessage,
     locale: string,
-    scope: string,
+    scope: ReviewScope,
   ): string {
     const key = draftKey(message.message, locale, scope);
     // 没有人工覆盖时保持空白，避免把自动译文误认为人工确认内容。
@@ -20,7 +26,7 @@ export function useReviewDrafts() {
   function updateDraft(
     message: ReviewMessage,
     locale: string,
-    scope: string,
+    scope: ReviewScope,
     value: string,
   ): void {
     const key = draftKey(message.message, locale, scope);
@@ -36,7 +42,7 @@ export function useReviewDrafts() {
 
   function clearDraft(mutation: ReviewMutation): void {
     drafts.delete(
-      draftKey(mutation.message, mutation.locale, mutation.file ?? ''),
+      draftKey(mutation.message, mutation.locale, mutationScope(mutation)),
     );
   }
 

@@ -1,5 +1,6 @@
 import {
   parseTranslationOverridesFile,
+  type TranslationOverrideOccurrence,
   type TranslationOverrideRule,
   type TranslationOverridesFile,
 } from './schema.js';
@@ -11,6 +12,7 @@ export interface OverrideMessageReference {
 
 export interface AtomicOverrideTarget extends OverrideMessageReference {
   file?: string;
+  location?: Omit<TranslationOverrideOccurrence, 'file'>;
   locale: string;
 }
 
@@ -23,12 +25,17 @@ export function atomicOverrides(
 ): Map<string, AtomicOverride> {
   const entries = new Map<string, AtomicOverride>();
   for (const rule of overrides.rules) {
-    for (const file of rule.files ?? [undefined]) {
+    const scopes = rule.occurrences?.map((occurrence) => ({
+      file: occurrence.file,
+      location: { line: occurrence.line, column: occurrence.column },
+    })) ??
+      rule.files?.map((file) => ({ file })) ?? [{}];
+    for (const scope of scopes) {
       for (const [locale, value] of Object.entries(rule.translations)) {
         const entry = {
           source: rule.source,
           ...(rule.comment ? { comment: rule.comment } : {}),
-          ...(file ? { file } : {}),
+          ...scope,
           locale,
           value,
         };
@@ -51,8 +58,41 @@ export function overridesFromAtomic(
       translations: Record<string, string>;
     }
   >();
+  const occurrenceTranslations = new Map<
+    string,
+    {
+      message: OverrideMessageReference;
+      occurrence: TranslationOverrideOccurrence;
+      translations: Record<string, string>;
+    }
+  >();
   for (const entry of entries) {
     const messageKey = JSON.stringify([entry.source, entry.comment ?? null]);
+    if (entry.location) {
+      if (!entry.file) {
+        throw new TypeError(
+          'An occurrence-scoped override requires a source file.',
+        );
+      }
+      const key = JSON.stringify([
+        entry.source,
+        entry.comment ?? null,
+        entry.file,
+        entry.location.line,
+        entry.location.column,
+      ]);
+      const current = occurrenceTranslations.get(key) ?? {
+        message: {
+          source: entry.source,
+          ...(entry.comment ? { comment: entry.comment } : {}),
+        },
+        occurrence: { file: entry.file, ...entry.location },
+        translations: {},
+      };
+      current.translations[entry.locale] = entry.value;
+      occurrenceTranslations.set(key, current);
+      continue;
+    }
     if (!entry.file) {
       const rule = globalRules.get(messageKey) ?? {
         source: entry.source,
@@ -100,9 +140,33 @@ export function overridesFromAtomic(
     rule.files!.push(entry.file);
     groupedFiles.set(key, rule);
   }
+  const groupedOccurrences = new Map<string, TranslationOverrideRule>();
+  for (const entry of occurrenceTranslations.values()) {
+    const translationKey = JSON.stringify(
+      Object.entries(entry.translations).sort(([left], [right]) =>
+        left < right ? -1 : left > right ? 1 : 0,
+      ),
+    );
+    const key = JSON.stringify([
+      entry.message.source,
+      entry.message.comment ?? null,
+      translationKey,
+    ]);
+    const rule = groupedOccurrences.get(key) ?? {
+      ...entry.message,
+      occurrences: [],
+      translations: entry.translations,
+    };
+    rule.occurrences!.push(entry.occurrence);
+    groupedOccurrences.set(key, rule);
+  }
   return parseTranslationOverridesFile({
     version: 2,
-    rules: [...globalRules.values(), ...groupedFiles.values()],
+    rules: [
+      ...globalRules.values(),
+      ...groupedFiles.values(),
+      ...groupedOccurrences.values(),
+    ],
   });
 }
 
@@ -111,6 +175,8 @@ export function atomicOverrideKey(target: AtomicOverrideTarget): string {
     target.source,
     target.comment ?? null,
     target.file ?? null,
+    target.location?.line ?? null,
+    target.location?.column ?? null,
     target.locale,
   ]);
 }

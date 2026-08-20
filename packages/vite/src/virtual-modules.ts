@@ -52,8 +52,8 @@ export const getLang = runtime.getLang;
 export const getLangs = runtime.getLangs;
 export const getLangLoadState = runtime.getLangLoadState;
 export const subscribe = runtime.subscribe;
-export const __translate = (moduleId, messageId, source) =>
-  formatTemplateMessage(runtime.translate(runtimeMessageId(moduleId, messageId), source), []);
+export const __translate = (moduleId, messageId, source, occurrence) =>
+  formatTemplateMessage(runtime.translate(runtimeMessageId(moduleId, messageId, occurrence), source), []);
 export const __scope = (moduleId) => {
   const current = scopedApis.get(moduleId);
   if (current) return current;
@@ -106,7 +106,7 @@ const moduleId = ${JSON.stringify(moduleId)};
 const scoped = __scope(moduleId);
 export const t = scoped.t;
 export { __registerModule, __unregisterModule, getLang, getLangLoadState, getLangs, setLang, subscribe };
-export const __translate = (messageId, source) => translate(moduleId, messageId, source);${frameworkExports}
+export const __translate = (messageId, source, occurrence) => translate(moduleId, messageId, source, occurrence);${frameworkExports}
 `;
 }
 
@@ -133,6 +133,7 @@ const runtimeT = (source, ...values) =>
   typeof source === 'string'
     ? source
     : source.reduce((message, part, index) => message + part + (index < values.length ? String(values[index]) : ''), '');
+runtimeT.__aiI18nAt = () => runtimeT;
 ${exportedT}
 export const setLang = async () => {};
 export const getLang = () => '';

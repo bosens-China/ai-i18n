@@ -20,6 +20,19 @@ const SourceFileSchema = z.string().min(1).max(4_096);
 const LocaleSchema = z.string().min(1).max(128);
 const CursorSchema = z.string().min(1).max(4_096).optional();
 const SourceFilesSchema = z.array(SourceFileSchema).min(1).max(100).optional();
+const OverrideOccurrencesSchema = z
+  .array(
+    z
+      .object({
+        source_file: SourceFileSchema,
+        line: z.number().int().min(1),
+        column: z.number().int().min(0),
+      })
+      .strict(),
+  )
+  .min(1)
+  .max(500)
+  .optional();
 const LocalesSchema = z.array(LocaleSchema).min(1).max(100).optional();
 const LimitSchema = z.number().int().min(1).max(500).default(100);
 const MessageReferenceSchema = z
@@ -44,6 +57,11 @@ const OverrideUpdateSchema = TranslationUpdateSchema.extend({
   files: SourceFilesSchema.describe(
     'Exact normalized source_file values returned by list tools. Omit for a global review; provide one or more files for a file-scoped review.',
   ),
+  occurrences: OverrideOccurrencesSchema.describe(
+    'Exact source_file, 1-based line, and 0-based column values returned by list_translations with include_occurrences. Mutually exclusive with files.',
+  ),
+}).refine((value) => !(value.files && value.occurrences), {
+  message: 'files and occurrences are mutually exclusive',
 });
 const TranslationUpdatesSchema = strictBatchSchema(
   TranslationUpdateSchema,
@@ -57,7 +75,7 @@ const TranslationTargetsSchema = strictBatchSchema(
 );
 const OverrideUpdatesSchema = strictBatchSchema(
   OverrideUpdateSchema,
-  ['message', 'locale', 'value', 'files'],
+  ['message', 'locale', 'value', 'files', 'occurrences'],
   'updates',
 );
 const OrphanIdsSchema = z
@@ -207,7 +225,7 @@ export function createAiI18nMcpServer(): McpServer {
     {
       title: 'Set human review overrides',
       description:
-        'Atomically add or overwrite overrides.json values by message source, optional comment, and optional exact files. Omit files for a global review; provide one or more list-returned source_file values for a file-scoped review. Identical duplicates are applied once; conflicting values for one target fail the batch.',
+        'Atomically add or overwrite overrides.json values by message source, optional comment, and scope. Omit files and occurrences for a global review; provide files for file scope; or provide exact list-returned source_file, line, and column values for occurrence scope. files and occurrences are mutually exclusive. Identical duplicates are applied once; conflicting values for one target fail the batch.',
       inputSchema: z
         .object({
           i18n_directory: DirectorySchema,

@@ -192,6 +192,69 @@ test('groups identical file overrides and keeps file targets independent', async
   });
 });
 
+test('distinguishes occurrence overrides on the same source line', async () => {
+  const root = await fixture();
+  const directory = path.join(root, 'apps/web/i18n');
+  await addFixtureSourceFile(directory, 'src/actions.ts', {
+    id: '保存',
+    source: '保存',
+    locations: [
+      { line: 3, column: 8 },
+      { line: 3, column: 25 },
+    ],
+  });
+  const service = new AiI18nProjectService();
+
+  await expect(
+    service.setOverrides({
+      i18n_directory: directory,
+      updates: [
+        {
+          message: reference('保存'),
+          occurrences: [
+            { source_file: 'src/actions.ts', line: 3, column: 8 },
+            { source_file: 'src/actions.ts', line: 3, column: 25 },
+          ],
+          locale: 'en-US',
+          value: 'Save here',
+        },
+      ],
+    }),
+  ).resolves.toMatchObject({ added_count: 2, affected_file_count: 1 });
+
+  const listed = await service.listOverrides({
+    i18n_directory: directory,
+    limit: 50,
+  });
+  expect(listed).toMatchObject({
+    occurrence_override_count: 1,
+    items: [
+      expect.objectContaining({
+        scope: 'occurrences',
+        occurrences: [
+          { source_file: 'src/actions.ts', line: 3, column: 8 },
+          { source_file: 'src/actions.ts', line: 3, column: 25 },
+        ],
+        orphaned: false,
+      }),
+    ],
+  });
+
+  await expect(
+    service.setOverrides({
+      i18n_directory: directory,
+      updates: [
+        {
+          message: reference('保存'),
+          occurrences: [{ source_file: 'src/actions.ts', line: 3, column: 9 }],
+          locale: 'en-US',
+          value: 'Wrong position',
+        },
+      ],
+    }),
+  ).rejects.toMatchObject({ code: 'MESSAGE_NOT_FOUND_AT_SOURCE_LOCATION' });
+});
+
 function reference(source: string, comment?: string) {
   return { source, ...(comment ? { comment } : {}) };
 }

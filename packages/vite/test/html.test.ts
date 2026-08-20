@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { createI18nRuntime, runtimeMessageId } from '@ai-i18n/core';
-import { html, htmlBridgeCode, transformHtml } from '../src/html';
+import {
+  html,
+  htmlBindingKey,
+  htmlBridgeCode,
+  transformHtml,
+} from '../src/html';
 
 describe('HTML extractor', () => {
   it('extracts complete text nodes and whitelisted attributes with escaping', () => {
@@ -53,6 +58,20 @@ describe('HTML extractor', () => {
 
     expect(result.code).toContain('&lt;Home &amp;&gt;');
     expect(result.code).toContain('title="Say &quot;hi&quot;"');
+  });
+
+  it('distinguishes identical HTML messages on the same line by column', () => {
+    const source = `<p>t('保存')</p><p>t('保存')</p>`;
+    const extracted = transformHtml(source, '/workspace/index.html', html());
+    const [left, right] = extracted.bindings;
+    const result = transformHtml(source, '/workspace/index.html', html(), {
+      [htmlBindingKey(left!.messageId, left!.occurrence)]: 'Save left',
+      [htmlBindingKey(right!.messageId, right!.occurrence)]: 'Save right',
+    });
+
+    expect(left!.occurrence).not.toBe(right!.occurrence);
+    expect(result.code).toContain('>Save left</p><p');
+    expect(result.code).toContain('>Save right</p>');
   });
 
   it('renders placeholder-shaped HTML text literally', () => {
@@ -108,6 +127,7 @@ describe('HTML extractor', () => {
       extracted.bindings,
     );
     expect(bridge).toContain('__unregisterModule(moduleId)');
+    expect(bridge).toContain("Symbol.for('ai-i18n.review.targets')");
     const runtime = createI18nRuntime({
       sourceLang: 'zh-CN',
       defaultLang: 'en-US',
@@ -175,6 +195,16 @@ describe('HTML extractor', () => {
       'Title',
       'Hint',
       'Body',
+    ]);
+    expect(
+      (text as Record<PropertyKey, unknown>)[
+        Symbol.for('ai-i18n.review.targets')
+      ],
+    ).toEqual([
+      expect.objectContaining({
+        key: JSON.stringify(['标题', null]),
+        file: 'index.html',
+      }),
     ]);
     await runtime.setLang('zh-CN');
     expect([text.textContent, attribute.value, commentText.nodeValue]).toEqual([

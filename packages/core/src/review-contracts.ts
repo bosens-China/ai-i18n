@@ -5,13 +5,19 @@ export interface ReviewMessageReference {
 
 export interface ReviewOccurrence {
   sourceFile: string;
-  locations: Array<{ line: number; column: number }>;
+  locations: ReviewSourceLocation[];
+}
+
+export interface ReviewSourceLocation {
+  line: number;
+  column: number;
 }
 
 export interface ReviewOverride {
   locale: string;
   value: string;
   file?: string;
+  location?: ReviewSourceLocation;
 }
 
 export interface ReviewMessage {
@@ -37,6 +43,7 @@ export interface ReviewMutation {
   locale: string;
   method: 'POST' | 'DELETE';
   file?: string;
+  location?: ReviewSourceLocation;
   value?: string;
 }
 

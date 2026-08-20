@@ -98,7 +98,7 @@ describe('openAI options', () => {
       baseURL: ' https://example.com/v1/ ',
       model: ' model ',
       apiKey: ' key ',
-      systemPrompt: ' prompt ',
+      style: ' concise UI copy ',
       langSmith: {
         apiKey: ' langsmith-key ',
         project: ' ',

@@ -30,7 +30,12 @@ const SMOKE_IMPORTS = {
   '@ai-i18n/eslint-plugin': ['@ai-i18n/eslint-plugin'],
   '@ai-i18n/mcp': ['@ai-i18n/mcp'],
   '@ai-i18n/openai': ['@ai-i18n/openai'],
-  '@ai-i18n/vite': ['@ai-i18n/vite'],
+  '@ai-i18n/sqlite': ['@ai-i18n/sqlite'],
+  '@ai-i18n/vite': [
+    '@ai-i18n/vite',
+    '@ai-i18n/vite/review',
+    '@ai-i18n/vite/review/runtime',
+  ],
 };
 
 function bilingual(zh, en) {

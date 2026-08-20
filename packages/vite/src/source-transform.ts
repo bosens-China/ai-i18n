@@ -247,6 +247,9 @@ export function createSourceTransformHandler(
                 hoistedAutoImportCandidates.has(name),
               ),
               macroCalls,
+              occurrenceLocations: result.messages.flatMap(
+                (message) => message.locations,
+              ),
             }),
         );
       }),

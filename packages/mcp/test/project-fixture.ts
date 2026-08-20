@@ -1,7 +1,7 @@
 import fs from 'node:fs/promises';
-import os from 'node:os';
 import path from 'node:path';
 import { openTranslationMemoryStore } from '@ai-i18n/core/translation-memory';
+import { sqlite } from '@ai-i18n/sqlite';
 import { closeProjectMemoryStores } from '../src/project-files';
 
 const tempDirectories: string[] = [];
@@ -18,11 +18,17 @@ export async function cleanupFixtures(): Promise<void> {
 export async function fixture(
   storage: 'json' | 'sqlite' = 'json',
 ): Promise<string> {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'ai-i18n-mcp-'));
+  // 放在 MCP package 下，使 SQLite marker 能像真实消费项目一样向上解析已安装适配器。
+  const root = await fs.mkdtemp(
+    path.join(path.resolve('packages/mcp'), '.ai-i18n-mcp-'),
+  );
   tempDirectories.push(root);
   const directory = path.join(root, 'apps/web/i18n');
   await fs.mkdir(path.join(directory, 'extracted'), { recursive: true });
-  const store = await openTranslationMemoryStore({ directory, storage });
+  const store = await openTranslationMemoryStore({
+    directory,
+    storage: storage === 'sqlite' ? sqlite() : 'json',
+  });
   await store.transact((memory) => {
     memory.messages = {
       保存: {
@@ -136,7 +142,12 @@ export async function addFixtureOrphanMessage(
 export async function addFixtureSourceFile(
   directory: string,
   sourceFile: string,
-  message: { id: string; source: string; comment?: string },
+  message: {
+    id: string;
+    source: string;
+    comment?: string;
+    locations?: Array<{ line: number; column: number }>;
+  },
 ): Promise<void> {
   await fs.writeFile(
     path.join(
@@ -147,7 +158,12 @@ export async function addFixtureSourceFile(
     JSON.stringify({
       version: 1,
       source: sourceFile,
-      messages: [{ ...message, locations: [{ line: 1, column: 0 }] }],
+      messages: [
+        {
+          ...message,
+          locations: message.locations ?? [{ line: 1, column: 0 }],
+        },
+      ],
     }),
   );
 

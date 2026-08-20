@@ -1,9 +1,16 @@
 import type { TranslationMemoryFile } from './schema.js';
 
-export type TranslationMemoryStorage = 'json' | 'sqlite';
+export type TranslationMemoryStorageName = 'json' | 'sqlite';
+
+export interface TranslationMemoryStorageAdapter {
+  readonly storage: Exclude<TranslationMemoryStorageName, 'json'>;
+  open(options: { directory: string }): Promise<TranslationMemoryStore>;
+}
+
+export type TranslationMemoryStorage = 'json' | TranslationMemoryStorageAdapter;
 
 export interface TranslationMemoryStore {
-  readonly storage: TranslationMemoryStorage;
+  readonly storage: TranslationMemoryStorageName;
   readonly projectKey: string;
   load(): Promise<TranslationMemoryFile>;
   transact(
@@ -18,10 +25,11 @@ export interface TranslationMemoryStore {
 export interface OpenTranslationMemoryStoreOptions {
   directory: string;
   storage?: TranslationMemoryStorage;
-  dataDirectory?: string;
+  /** 读取现有非 JSON marker 时可供选择的已安装适配器。 */
+  adapters?: readonly TranslationMemoryStorageAdapter[];
 }
 
 export interface TranslationMemoryStorageMarker {
   version: 1;
-  storage: TranslationMemoryStorage;
+  storage: TranslationMemoryStorageName;
 }

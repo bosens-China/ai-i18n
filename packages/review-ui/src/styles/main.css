@@ -1,4 +1,4 @@
-:root {
+:host {
   color-scheme: dark;
   color: #f3f4f6;
   background: #0b0f19;
@@ -16,12 +16,12 @@
   box-sizing: border-box;
 }
 
-html,
-body {
+.review-root {
+  position: relative;
   margin: 0;
   padding: 0;
-  width: 100vw;
-  height: 100vh;
+  width: 100%;
+  height: 100%;
   overflow: hidden;
   background:
     radial-gradient(circle at 50% 0%, rgb(59 130 246 / 8%) 0%, transparent 60%),
@@ -30,6 +30,153 @@ body {
     linear-gradient(rgb(255 255 255 / 2%) 1px, transparent 1px) 0 0 / 48px 48px,
     #0b0f19;
   color: #f3f4f6;
+}
+
+.review-shell {
+  padding: 0;
+  background: #0b0f19;
+}
+
+.review-workspace {
+  grid-template-columns: minmax(220px, 32%) minmax(0, 1fr);
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.browse-scope-option {
+  appearance: none;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+  height: 30px;
+  padding: 0 9px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  color: #9ca3af;
+  background: transparent;
+  font:
+    700 11px/1 ui-sans-serif,
+    system-ui,
+    sans-serif;
+  cursor: pointer;
+}
+
+.browse-scope-option:hover {
+  color: #f3f4f6;
+  background: #162032;
+}
+
+.browse-scope-option[aria-pressed='true'] {
+  color: #dbeafe;
+  border-color: rgb(59 130 246 / 35%);
+  background: rgb(59 130 246 / 12%);
+  box-shadow: inset 2px 0 0 #3b82f6;
+}
+
+.browse-count {
+  color: #6b7280;
+  font:
+    700 10px/1 ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    monospace;
+}
+
+.browse-scope-option[aria-pressed='true'] .browse-count {
+  color: #67e8f9;
+}
+
+.locate-header {
+  background: linear-gradient(90deg, rgb(6 182 212 / 9%), transparent 70%);
+}
+
+.locate-back {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0;
+  border: 0;
+  color: #93c5fd;
+  background: transparent;
+  font:
+    700 11px/1.2 ui-sans-serif,
+    system-ui,
+    sans-serif;
+  cursor: pointer;
+}
+
+.locate-back:hover {
+  color: #67e8f9;
+}
+
+.file-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  color: #7f8ea3;
+  background: #0f1726;
+  font:
+    650 10px/1.3 ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    monospace;
+}
+
+.locate-entry {
+  appearance: none;
+  position: relative;
+  display: grid;
+  grid-template-columns: 14px minmax(0, 1fr);
+  width: 100%;
+  padding: 9px 12px 9px 10px;
+  border: 0;
+  border-bottom: 1px solid #1e293b;
+  color: inherit;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.locate-entry:hover,
+.locate-entry:focus-visible {
+  outline: none;
+  background: #162032;
+}
+
+.location-rail {
+  position: relative;
+  width: 8px;
+  height: 100%;
+}
+
+.location-rail::before,
+.location-rail::after {
+  content: '';
+  position: absolute;
+  left: 3px;
+  background: #06b6d4;
+}
+
+.location-rail::before {
+  top: -9px;
+  bottom: -9px;
+  width: 1px;
+  opacity: 0.35;
+}
+
+.location-rail::after {
+  top: 7px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  transform: translateX(-3px);
+  box-shadow: 0 0 0 3px rgb(6 182 212 / 14%);
 }
 
 /* 分段控件的选中态必须压过 hover，避免工具类生成顺序改变当前范围。 */
@@ -85,4 +232,28 @@ body {
 
 ::-webkit-scrollbar-thumb:hover {
   background: #334155;
+}
+
+@media (max-width: 767px) {
+  .review-workspace {
+    grid-template-columns: 1fr;
+    grid-template-rows: minmax(180px, 42%) minmax(0, 1fr);
+  }
+
+  .review-sidebar {
+    border-right: 0;
+    border-bottom: 1px solid #1e293b;
+  }
+}
+
+@media (min-width: 480px) {
+  .review-workspace {
+    grid-template-columns: minmax(220px, 32%) minmax(0, 1fr);
+    grid-template-rows: 1fr;
+  }
+
+  .review-sidebar {
+    border-right: 1px solid #1e293b;
+    border-bottom: 0;
+  }
 }

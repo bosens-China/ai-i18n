@@ -1,7 +1,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { REVIEW_PATH } from './review-page.js';
+import { REVIEW_BASE_PATH } from './review-page.js';
 
 export interface ReviewAsset {
   body: Buffer;
@@ -14,8 +14,7 @@ const bundledRoot = fileURLToPath(new URL('./review-ui/', import.meta.url));
 export async function readReviewAsset(
   pathname: string,
 ): Promise<ReviewAsset | undefined> {
-  const relative =
-    pathname === REVIEW_PATH ? 'index.html' : assetPath(pathname);
+  const relative = assetPath(pathname);
   if (!relative) return undefined;
 
   for (const root of assetRoots()) {
@@ -40,8 +39,8 @@ function assetRoots(): string[] {
 }
 
 function assetPath(pathname: string): string | undefined {
-  if (!pathname.startsWith(REVIEW_PATH)) return undefined;
-  const relative = pathname.slice(REVIEW_PATH.length);
+  if (!pathname.startsWith(REVIEW_BASE_PATH)) return undefined;
+  const relative = pathname.slice(REVIEW_BASE_PATH.length);
   if (!relative || relative.startsWith('api/') || relative.includes('\0')) {
     return undefined;
   }

@@ -55,8 +55,6 @@ export interface AiI18nOptions {
   framework?: AiI18nFramework;
   /** 启用当前框架模式的自动导入；默认关闭。 */
   autoImport?: boolean;
-  /** 在 Vite Dev 中提供翻译校对页面；默认启用。 */
-  review?: boolean;
   dts?: string | false;
   /** 源文案语言；用于识别 source locale，且不会生成对应的 locale 文件。 */
   sourceLang: string;

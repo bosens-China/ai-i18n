@@ -4,13 +4,12 @@ import type { IncomingMessage, ServerResponse } from 'node:http';
 import type { ViteDevServer } from 'vite';
 import { diagnosticMessage } from '@ai-i18n/analyzer';
 import type { ReviewSnapshot } from '@ai-i18n/core';
-import colors from 'picocolors';
 import { readReviewAsset } from './review-assets.js';
 import {
   REVIEW_API_PATH,
+  REVIEW_BASE_PATH,
   REVIEW_EDITOR_PATH,
   REVIEW_OVERRIDE_PATH,
-  REVIEW_PATH,
 } from './review-page.js';
 import type {
   ReviewOverrideTarget,
@@ -28,7 +27,7 @@ const CONTENT_SECURITY_POLICY = [
   "connect-src 'self'",
   "img-src 'self' data:",
   "base-uri 'none'",
-  "frame-ancestors 'none'",
+  "frame-ancestors 'self'",
   "form-action 'none'",
 ].join('; ');
 
@@ -40,12 +39,13 @@ export async function configureReviewServer(
 
   server.middlewares.use(async (request, response, next) => {
     const pathname = request.url?.split('?', 1)[0];
-    if (!pathname?.startsWith(REVIEW_PATH.slice(0, -1))) return next();
+    if (!pathname?.startsWith(REVIEW_BASE_PATH.slice(0, -1))) return next();
     try {
-      if (pathname === REVIEW_PATH.slice(0, -1)) {
-        response.statusCode = 302;
-        response.setHeader('Location', REVIEW_PATH);
-        response.end();
+      if (
+        pathname === REVIEW_BASE_PATH.slice(0, -1) ||
+        pathname === REVIEW_BASE_PATH
+      ) {
+        next();
         return;
       }
       if (request.method === 'GET' && pathname === REVIEW_API_PATH) {
@@ -116,10 +116,6 @@ export async function configureReviewServer(
         error: { code: error.code, zh: error.zh, en: error.en },
       });
     }
-  });
-
-  server.httpServer?.once('listening', () => {
-    setTimeout(() => printReviewUrl(server), 0);
   });
 }
 
@@ -212,16 +208,6 @@ function isWithinRoot(root: string, sourceFile: string): boolean {
   );
 }
 
-function printReviewUrl(server: ViteDevServer): void {
-  const serverUrl =
-    server.resolvedUrls?.local[0] ?? server.resolvedUrls?.network[0];
-  if (!serverUrl) return;
-  const reviewUrl = new URL(REVIEW_PATH, new URL(serverUrl).origin).href;
-  server.config.logger.info(
-    `  ${colors.green('➜')}  ${colors.bold('ai-i18n Review:')} ${colors.cyan(reviewUrl)}`,
-  );
-}
-
 function assertWriteRequest(request: IncomingMessage): void {
   const type = request.headers['content-type'];
   if (!type?.toLowerCase().startsWith('application/json')) {
@@ -304,7 +290,9 @@ function parseOverrideTarget(value: unknown): ReviewOverrideTarget {
       typeof value.message.comment !== 'string') ||
     typeof value.locale !== 'string' ||
     value.locale.length === 0 ||
-    (value.file !== undefined && typeof value.file !== 'string')
+    (value.file !== undefined && typeof value.file !== 'string') ||
+    (value.location !== undefined && !parseReviewLocation(value.location)) ||
+    (value.location !== undefined && !value.file)
   ) {
     throw invalidInput();
   }
@@ -315,7 +303,25 @@ function parseOverrideTarget(value: unknown): ReviewOverrideTarget {
     },
     locale: value.locale,
     ...(value.file ? { file: value.file } : {}),
+    ...(value.location
+      ? { location: parseReviewLocation(value.location)! }
+      : {}),
   };
+}
+
+function parseReviewLocation(
+  value: unknown,
+): { line: number; column: number } | undefined {
+  if (
+    !isRecord(value) ||
+    !Number.isSafeInteger(value.line) ||
+    (value.line as number) < 1 ||
+    !Number.isSafeInteger(value.column) ||
+    (value.column as number) < 0
+  ) {
+    return undefined;
+  }
+  return { line: value.line as number, column: value.column as number };
 }
 
 function invalidInput(): ReviewProblem {

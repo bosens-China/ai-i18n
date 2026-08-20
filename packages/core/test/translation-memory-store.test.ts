@@ -144,85 +144,18 @@ describe('Translation Memory stores', () => {
     store.close();
   });
 
-  it('uses no marker for JSON and keeps one only while SQLite is selected', async () => {
+  it('reports how to load the adapter for an existing SQLite marker', async () => {
     const root = await temporaryDirectory();
     const directory = path.join(root, 'i18n');
-    const dataDirectory = path.join(root, 'global');
-    const json = await openTranslationMemoryStore({ directory });
-    await json.transact((memory) => {
-      memory.messages.Save = message('保存', 'Save');
-    });
-    json.close();
-    await expect(
-      fs.access(path.join(directory, 'storage.json')),
-    ).rejects.toMatchObject({ code: 'ENOENT' });
-
-    const sqlite = await openTranslationMemoryStore({
-      directory,
-      storage: 'sqlite',
-      dataDirectory,
-    });
-    expect((await sqlite.load()).messages.Save).toBeDefined();
-    expect(
-      JSON.parse(
-        await fs.readFile(path.join(directory, 'storage.json'), 'utf8'),
-      ),
-    ).toEqual({ version: 1, storage: 'sqlite' });
-    sqlite.close();
-
-    const restoredJson = await openTranslationMemoryStore({
-      directory,
-      storage: 'json',
-      dataDirectory,
-    });
-    expect(
-      (await restoredJson.load()).messages.Save?.translations['en-US'],
-    ).toBe('Save');
-    await expect(
-      fs.access(path.join(directory, 'storage.json')),
-    ).rejects.toMatchObject({ code: 'ENOENT' });
-    restoredJson.close();
-  });
-
-  it('shares one unique SQLite candidate and refuses ambiguous reuse', async () => {
-    const root = await temporaryDirectory();
-    const dataDirectory = path.join(root, 'global');
-    const first = await sqliteStore(root, 'first', dataDirectory);
-    await first.transact((memory) => {
-      memory.messages.Save = message('保存', 'Save');
-    });
-
-    const second = await sqliteStore(root, 'second', dataDirectory);
-    const reused = await second.transact((memory) => {
-      memory.messages.Save = message('保存', null);
-    });
-    expect(reused.messages.Save?.translations['en-US']).toBe('Save');
-
-    await second.transact((memory) => {
-      memory.messages.Save!.translations['en-US'] = 'Store';
-    });
-    const third = await sqliteStore(root, 'third', dataDirectory);
-    const ambiguous = await third.transact((memory) => {
-      memory.messages.Save = message('保存', null);
-    });
-    expect(ambiguous.messages.Save?.translations['en-US']).toBeNull();
-    expect(await fs.readdir(dataDirectory)).toContain(
-      'translation-memory.sqlite',
+    await fs.mkdir(directory, { recursive: true });
+    await fs.writeFile(
+      path.join(directory, 'storage.json'),
+      stableJson({ version: 1, storage: 'sqlite' }),
     );
-    const Database = (await import('better-sqlite3')).default;
-    const database = new Database(
-      path.join(dataDirectory, 'translation-memory.sqlite'),
-      { readonly: true },
-    );
-    expect(database.pragma('user_version', { simple: true })).toBe(1);
-    database.close();
-    await expect(
-      fs.access(path.join(root, 'third', 'translation-memory.sqlite')),
-    ).rejects.toMatchObject({ code: 'ENOENT' });
 
-    first.close();
-    second.close();
-    third.close();
+    await expect(openTranslationMemoryStore({ directory })).rejects.toThrow(
+      'install @ai-i18n/sqlite',
+    );
   });
 });
 
@@ -232,16 +165,6 @@ function message(source: string, value: string | null) {
     sourceLang: 'zh-CN',
     translations: { 'en-US': value },
   };
-}
-
-async function sqliteStore(root: string, name: string, dataDirectory: string) {
-  const directory = path.join(root, name);
-  await fs.mkdir(directory, { recursive: true });
-  return openTranslationMemoryStore({
-    directory,
-    storage: 'sqlite',
-    dataDirectory,
-  });
 }
 
 async function temporaryDirectory(): Promise<string> {

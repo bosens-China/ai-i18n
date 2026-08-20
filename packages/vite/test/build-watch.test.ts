@@ -46,9 +46,7 @@ console.log(t(LABEL));`;
     try {
       await waitForBuild(watcher, 0);
       expect(lastRegistration(observations, 'src/main.ts')).toContain(
-        JSON.stringify({
-          [runtimeMessageId('src/main.ts', '首页')]: 'Home',
-        }),
+        `${JSON.stringify(runtimeMessageId('src/main.ts', '首页'))}:"Home"`,
       );
       expect(translator).toHaveBeenCalledTimes(1);
       addFile.mockClear();
@@ -68,9 +66,7 @@ console.log(t(LABEL));`;
         'src/texts.ts',
       ]);
       expect(lastRegistration(observations, 'src/main.ts')).toContain(
-        JSON.stringify({
-          [runtimeMessageId('src/main.ts', '设置')]: 'Settings',
-        }),
+        `${JSON.stringify(runtimeMessageId('src/main.ts', '设置'))}:"Settings"`,
       );
       expect(translator).toHaveBeenCalledTimes(2);
       addFile.mockClear();
@@ -115,7 +111,7 @@ console.log(t(LABEL));`;
 
       expect(addFile).not.toHaveBeenCalled();
       expect(lastRegistration(observations, 'src/main.ts')).toContain(
-        JSON.stringify({ [localeMessageId]: 'Home' }),
+        `${JSON.stringify(localeMessageId)}:"Home"`,
       );
       expect(await readJson<CacheFile>(memoryPath)).toMatchObject({
         messages: { 首页: { translations: { 'en-US': 'Home' } } },

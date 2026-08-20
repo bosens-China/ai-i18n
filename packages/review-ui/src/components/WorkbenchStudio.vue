@@ -1,22 +1,29 @@
 <script setup lang="ts">
-import { computed, shallowRef, useTemplateRef } from 'vue';
+import { computed, shallowRef, useTemplateRef, watch } from 'vue';
 import type { ReviewMessage, ReviewMutation } from '@ai-i18n/core';
 import type { ReviewCopy } from '../copy';
 import ReviewScopeTabs from './ReviewScopeTabs.vue';
 import ReviewSourcePanel from './ReviewSourcePanel.vue';
 import {
   activeOverride as findActiveOverride,
+  currentReviewOccurrence,
+  messageKey,
+  mutationScope,
   reviewAction,
   reviewBaseline,
+  type ReviewScope,
+  type ReviewOccurrenceTarget,
 } from '../review-state';
 import { extractTokens, validateTokens } from '../tokens';
 
 const props = defineProps<{
+  compact: boolean;
   copy: ReviewCopy;
   draft: string;
   locale: string;
   message: ReviewMessage;
-  scope: string;
+  requireOccurrence: boolean;
+  scope: ReviewScope;
 }>();
 
 const emit = defineEmits<{
@@ -26,16 +33,47 @@ const emit = defineEmits<{
     done: (success: boolean) => void,
   ];
   updateDraft: [draft: string];
-  updateScope: [scope: string];
+  updateScope: [scope: ReviewScope];
 }>();
 
 const busy = shallowRef(false);
+const selectedOccurrence = shallowRef<ReviewOccurrenceTarget>();
 const editor = useTemplateRef<HTMLTextAreaElement>('editor');
 const automatic = computed(
   () => props.message.translations[props.locale] ?? null,
 );
 const activeOverride = computed(() =>
   findActiveOverride(props.message, props.locale, props.scope),
+);
+const currentOccurrence = computed(
+  () =>
+    selectedOccurrence.value ??
+    (props.requireOccurrence && !props.scope.location
+      ? undefined
+      : currentReviewOccurrence(props.message, props.scope)),
+);
+watch(
+  () => messageKey(props.message.message),
+  () => {
+    selectedOccurrence.value =
+      props.requireOccurrence && !props.scope.location
+        ? undefined
+        : currentReviewOccurrence(props.message, props.scope);
+  },
+  { immediate: true },
+);
+watch(
+  [() => props.scope, () => props.requireOccurrence] as const,
+  ([scope, requireOccurrence]) => {
+    if (requireOccurrence && !scope.location) {
+      selectedOccurrence.value = undefined;
+      return;
+    }
+    if (scope.location) {
+      selectedOccurrence.value = currentReviewOccurrence(props.message, scope);
+    }
+  },
+  { deep: true },
 );
 const baseline = computed(() =>
   reviewBaseline(props.message, props.locale, props.scope),
@@ -53,6 +91,7 @@ const canSave = computed(
   () =>
     hasDraft.value &&
     !busy.value &&
+    (!props.requireOccurrence || Boolean(props.scope.location)) &&
     action.value !== 'saved' &&
     validTokens.value,
 );
@@ -78,7 +117,7 @@ async function mutate(
     message: props.message.message,
     locale: props.locale,
     method,
-    ...(props.scope ? { file: props.scope } : {}),
+    ...mutationScope(props.scope),
     ...(method === 'POST' ? { value: props.draft } : {}),
   };
   try {
@@ -108,6 +147,11 @@ function useAutomatic(): void {
   if (automatic.value !== null) emit('updateDraft', automatic.value);
 }
 
+function selectOccurrence(target: ReviewOccurrenceTarget): void {
+  selectedOccurrence.value = target;
+  emit('updateScope', target);
+}
+
 function isTokenInserted(token: string): boolean {
   return props.draft.includes(token);
 }
@@ -129,10 +173,22 @@ function insertToken(token: string): void {
 </script>
 
 <template>
-  <article class="h-full flex flex-col overflow-hidden bg-bgSurface">
-    <ReviewSourcePanel :copy="copy" :message="message" />
+  <article
+    class="h-full flex flex-col overflow-hidden bg-bgSurface"
+    :class="{ compact }"
+  >
+    <ReviewSourcePanel
+      :copy="copy"
+      :compact="compact"
+      :message="message"
+      :selected="currentOccurrence"
+      @select-occurrence="selectOccurrence"
+    />
 
-    <section class="flex-1 min-h-0 flex flex-col gap-4 p-5 overflow-y-auto">
+    <section
+      class="flex-1 min-h-0 flex flex-col overflow-y-auto"
+      :class="compact ? 'gap-2.5 p-3' : 'gap-4 p-5'"
+    >
       <div
         class="grid grid-cols-1 sm:grid-cols-[110px_1fr] gap-3.5 items-start"
       >
@@ -211,13 +267,25 @@ function insertToken(token: string): void {
         :copy="copy"
         :message="message"
         :scope="scope"
+        :current-occurrence="currentOccurrence"
         @update-scope="emit('updateScope', $event)"
       />
 
+      <p
+        v-if="requireOccurrence && !scope.location"
+        class="m-0 p-2.5 rounded-lg border border-cyan/40 bg-cyan/10 text-cyan text-xs leading-relaxed"
+        role="status"
+      >
+        {{ copy.chooseExactOccurrence }}
+      </p>
+
       <textarea
         ref="editor"
-        class="review-input w-full min-h-[140px] flex-1 resize-y p-3.5 rounded-xl border border-line bg-bgWash text-ink text-sm leading-relaxed"
-        :class="{ 'border-statusAmber bg-statusAmberBg/25': dirty }"
+        class="review-input w-full flex-1 resize-y p-3.5 rounded-lg border border-line bg-bgWash text-ink text-sm leading-relaxed"
+        :class="[
+          compact ? 'min-h-[92px]' : 'min-h-[140px]',
+          { 'border-statusAmber bg-statusAmberBg/25': dirty },
+        ]"
         :value="draft"
         :aria-label="`${copy.final}：${message.message.source}`"
         :placeholder="copy.enterTranslation"
@@ -262,6 +330,7 @@ function insertToken(token: string): void {
       </div>
 
       <div
+        v-if="!compact"
         class="flex-none flex flex-wrap gap-3.5 justify-end mt-1 text-[11px] text-dimmed"
         aria-hidden="true"
       >

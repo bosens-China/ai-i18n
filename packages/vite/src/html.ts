@@ -1,7 +1,12 @@
 import MagicString from 'magic-string';
 import { parse, type DefaultTreeAdapterTypes } from 'parse5';
 import { diagnosticMessage } from '@ai-i18n/analyzer';
-import { formatTemplateMessage, type ModuleMessages } from '@ai-i18n/core';
+import { formatTemplateMessage, translationOccurrenceKey } from '@ai-i18n/core';
+import {
+  ATTRIBUTE_MARKER_PREFIX,
+  COMMENT_MARKER_PREFIX,
+  TEXT_MARKER,
+} from './html-markers.js';
 import {
   AI_I18N_VIRTUAL_MODULE_ID,
   analyzeModule,
@@ -15,9 +20,7 @@ const DEFAULT_ATTRIBUTES = [
   'placeholder',
   'title',
 ] as const;
-const TEXT_MARKER = 'data-ai-i18n-text';
-const ATTRIBUTE_MARKER_PREFIX = 'data-ai-i18n-attr-';
-const COMMENT_MARKER_PREFIX = 'ai-i18n:';
+export { htmlBridgeCode } from './html-bridge.js';
 
 export interface HtmlExtractorOptions {
   attributes?: readonly string[];
@@ -39,6 +42,8 @@ export interface HtmlBinding {
   kind: 'text' | 'comment' | 'attribute';
   messageId: string;
   source: string;
+  comment?: string;
+  occurrence: string;
   marker: string;
   attribute?: string;
 }
@@ -98,8 +103,11 @@ export function transformHtml(
         return;
       }
       addMessage(messages, message, position);
+      const occurrence = translationOccurrenceKey(position);
       const initialValue = formatTemplateMessage(
-        initialValues?.[message.id] ?? message.source,
+        initialValues?.[htmlBindingKey(message.id, occurrence)] ??
+          initialValues?.[message.id] ??
+          message.source,
         [],
       );
       const before = node.value.slice(0, leading(node.value));
@@ -109,7 +117,9 @@ export function transformHtml(
         parent.childNodes.length === 1 &&
         parent.sourceCodeLocation?.startTag
       ) {
-        const marker = encodeURIComponent(message.id);
+        const marker = encodeURIComponent(
+          htmlBindingKey(message.id, occurrence),
+        );
         insertAttribute(
           transformed,
           source,
@@ -120,6 +130,8 @@ export function transformHtml(
           kind: 'text',
           messageId: message.id,
           source: message.source,
+          ...(message.comment ? { comment: message.comment } : {}),
+          occurrence,
           marker,
         });
         transformed.overwrite(
@@ -133,6 +145,8 @@ export function transformHtml(
           kind: 'comment',
           messageId: message.id,
           source: message.source,
+          ...(message.comment ? { comment: message.comment } : {}),
+          occurrence,
           marker,
         });
         transformed.overwrite(
@@ -169,7 +183,8 @@ export function transformHtml(
         continue;
       }
       addMessage(messages, message, position);
-      const marker = encodeURIComponent(message.id);
+      const occurrence = translationOccurrenceKey(position);
+      const marker = encodeURIComponent(htmlBindingKey(message.id, occurrence));
       insertAttribute(
         transformed,
         source,
@@ -181,7 +196,9 @@ export function transformHtml(
         valueRange.end,
         escapeAttribute(
           formatTemplateMessage(
-            initialValues?.[message.id] ?? message.source,
+            initialValues?.[htmlBindingKey(message.id, occurrence)] ??
+              initialValues?.[message.id] ??
+              message.source,
             [],
           ),
         ),
@@ -190,6 +207,8 @@ export function transformHtml(
         kind: 'attribute',
         messageId: message.id,
         source: message.source,
+        ...(message.comment ? { comment: message.comment } : {}),
+        occurrence,
         marker,
         attribute: attribute.name,
       });
@@ -204,44 +223,8 @@ export function transformHtml(
   };
 }
 
-export function htmlBridgeCode(
-  moduleId: string,
-  messages: ModuleMessages,
-  bindings: readonly HtmlBinding[],
-): string {
-  const sources = Object.fromEntries(
-    bindings.map((binding) => [binding.messageId, binding.source]),
-  );
-  return `
-import { subscribe, __registerModule, __unregisterModule, __translate } from ${JSON.stringify(`${AI_I18N_VIRTUAL_MODULE_ID}/internal`)};
-const moduleId = ${JSON.stringify(moduleId)};
-const sources = ${JSON.stringify(sources)};
-const bindings = ${JSON.stringify(bindings)};
-__registerModule(moduleId, ${JSON.stringify(messages)});
-const apply = () => {
-  for (const binding of bindings) {
-    const value = __translate(moduleId, binding.messageId, sources[binding.messageId]);
-    if (binding.kind === 'text') {
-      document.querySelectorAll('[${TEXT_MARKER}="' + binding.marker + '"]').forEach((node) => { node.textContent = value; });
-    } else if (binding.kind === 'attribute') {
-      document.querySelectorAll('[' + ${JSON.stringify(ATTRIBUTE_MARKER_PREFIX)} + binding.attribute + '="' + binding.marker + '"]').forEach((node) => { node.setAttribute(binding.attribute, value); });
-    }
-  }
-  const comments = new Map(bindings.filter((binding) => binding.kind === 'comment').map((binding) => [${JSON.stringify(COMMENT_MARKER_PREFIX)} + binding.marker, binding]));
-  const walker = document.createTreeWalker(document, NodeFilter.SHOW_COMMENT);
-  let comment;
-  while ((comment = walker.nextNode())) {
-    const binding = comments.get(comment.data);
-    if (binding && comment.nextSibling?.nodeType === Node.TEXT_NODE) comment.nextSibling.nodeValue = __translate(moduleId, binding.messageId, binding.source);
-  }
-};
-apply();
-const unsubscribe = subscribe(apply);
-if (import.meta.hot) {
-  import.meta.hot.accept();
-  import.meta.hot.dispose(() => { unsubscribe(); __unregisterModule(moduleId); });
-}
-`;
+export function htmlBindingKey(messageId: string, occurrence: string): string {
+  return `${messageId}\0${occurrence}`;
 }
 
 function extractExpression(expression: string, filename: string) {

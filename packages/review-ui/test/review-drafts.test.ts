@@ -15,33 +15,35 @@ describe('review drafts', () => {
   it('keeps independent drafts for locale and scope changes', () => {
     const drafts = useReviewDrafts();
 
-    drafts.updateDraft(message, 'zh-CN', '', '保存更改');
-    drafts.updateDraft(message, 'zh-CN', 'src/dialog.ts', '确认');
-    drafts.updateDraft(message, 'ja-JP', '', 'セーブ');
+    drafts.updateDraft(message, 'zh-CN', {}, '保存更改');
+    drafts.updateDraft(message, 'zh-CN', { file: 'src/dialog.ts' }, '确认');
+    drafts.updateDraft(message, 'ja-JP', {}, 'セーブ');
 
-    expect(drafts.draftFor(message, 'zh-CN', '')).toBe('保存更改');
-    expect(drafts.draftFor(message, 'zh-CN', 'src/dialog.ts')).toBe('确认');
-    expect(drafts.draftFor(message, 'ja-JP', '')).toBe('セーブ');
+    expect(drafts.draftFor(message, 'zh-CN', {})).toBe('保存更改');
+    expect(drafts.draftFor(message, 'zh-CN', { file: 'src/dialog.ts' })).toBe(
+      '确认',
+    );
+    expect(drafts.draftFor(message, 'ja-JP', {})).toBe('セーブ');
   });
 
   it('starts without copying the automatic translation into a human draft', () => {
     const drafts = useReviewDrafts();
 
-    expect(drafts.draftFor(message, 'zh-CN', '')).toBe('');
-    drafts.updateDraft(message, 'zh-CN', '', '保存');
-    expect(drafts.draftFor(message, 'zh-CN', '')).toBe('保存');
+    expect(drafts.draftFor(message, 'zh-CN', {})).toBe('');
+    drafts.updateDraft(message, 'zh-CN', {}, '保存');
+    expect(drafts.draftFor(message, 'zh-CN', {})).toBe('保存');
   });
 
   it('drops a draft after completing its mutation', () => {
     const drafts = useReviewDrafts();
 
-    drafts.updateDraft(message, 'zh-CN', '', '保存更改');
+    drafts.updateDraft(message, 'zh-CN', {}, '保存更改');
     drafts.clearDraft({
       message: message.message,
       locale: 'zh-CN',
       method: 'POST',
       value: '保存更改',
     });
-    expect(drafts.draftFor(message, 'zh-CN', '')).toBe('');
+    expect(drafts.draftFor(message, 'zh-CN', {})).toBe('');
   });
 });

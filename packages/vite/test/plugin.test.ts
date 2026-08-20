@@ -1,68 +1,9 @@
 import { runtimeMessageId } from '@ai-i18n/core';
 import { describe, expect, it, vi } from 'vitest';
-import { aiI18n, type AiI18nOptions, type Translator } from '../src/index';
 import { FileStore } from '../src/file-store';
 import { callHook, options, setupPlugin } from './plugin-test-utils';
 
 describe('@ai-i18n/vite plugin', () => {
-  it('validates locale and persistence options', () => {
-    const base = { sourceLang: 'zh-CN', locales: options.locales };
-
-    expect(() => aiI18n({ ...base, locales: [] })).toThrow(
-      'locales must not be empty',
-    );
-    expect(() =>
-      aiI18n({ ...base, locales: [options.locales[0]!, options.locales[0]!] }),
-    ).toThrow('locale values must be unique');
-    expect(() => aiI18n({ ...base, sourceLang: 'ja-JP' })).toThrow(
-      'sourceLang must match a value in locales',
-    );
-    expect(() => aiI18n({ ...base, defaultLang: 'ja-JP' })).toThrow(
-      'defaultLang must match a value in locales',
-    );
-    expect(() => aiI18n({ ...base, persist: { key: ' ' } })).toThrow(
-      'persist.key must not be empty',
-    );
-    expect(() =>
-      aiI18n({
-        ...base,
-        translationMemory: { storage: 'remote' as 'json' },
-      }),
-    ).toThrow('translationMemory.storage must be "json" or "sqlite"');
-    expect(() =>
-      aiI18n({
-        ...base,
-        provider: {
-          translator: vi.fn<Translator>(),
-          cache: 'always' as 'reuse',
-        },
-      }),
-    ).toThrow('provider.cache must be "reuse" or "fresh"');
-  });
-
-  it('rejects a provider without a translator during config resolution', () => {
-    vi.stubEnv('AI_I18N_DIAGNOSTIC_LOCALE', 'en-US');
-
-    expect(() =>
-      setupPlugin([], undefined, {
-        ...options,
-        provider: {} as NonNullable<AiI18nOptions['provider']>,
-      }),
-    ).toThrow('[ai-i18n] provider.translator must be a function.');
-  });
-
-  it('watches protocol files even when the review server is disabled', () => {
-    const { directory, plugin } = setupPlugin([], undefined, {
-      ...options,
-      review: false,
-    });
-    const add = vi.fn();
-
-    callHook(plugin.configureServer, { watcher: { add } });
-
-    expect(add).toHaveBeenCalledWith(directory);
-  });
-
   it('reports opt-in Dev timing stages with normalized module IDs', async () => {
     vi.stubEnv('AI_I18N_DIAGNOSTIC_LOCALE', 'en-US');
     const { close, timingInfo, transform } = setupPlugin([], undefined, {
@@ -146,8 +87,8 @@ describe('@ai-i18n/vite plugin', () => {
     });
 
     const messageId = runtimeMessageId('src/main.ts', '保存#按钮');
-    expect(result?.code).toContain(JSON.stringify({ [messageId]: '保存' }));
-    expect(result?.code).toContain(JSON.stringify({ [messageId]: null }));
+    expect(result?.code).toContain(`${JSON.stringify(messageId)}:"保存"`);
+    expect(result?.code).toContain(`${JSON.stringify(messageId)}:null`);
     expect(result?.code).toContain('import.meta.hot.dispose');
     expect(result?.code).not.toContain('register?module=');
   });
@@ -166,7 +107,7 @@ describe('@ai-i18n/vite plugin', () => {
     expect(scoped).toContain('const moduleId = "src/main.ts"');
     expect(scoped).toContain('const scoped = __scope(moduleId)');
     expect(scoped).toContain(
-      'export const __translate = (messageId, source) => translate(moduleId, messageId, source)',
+      'export const __translate = (messageId, source, occurrence) => translate(moduleId, messageId, source, occurrence)',
     );
   });
 

@@ -160,12 +160,29 @@ describe('@ai-i18n/core schemas', () => {
             files: ['src/checkout.ts', 'src/cart.ts', 'src/cart.ts'],
             translations: { 'en-US': 'Place order' },
           },
+          {
+            source: '提交',
+            occurrences: [
+              { file: 'src/cart.ts', line: 3, column: 25 },
+              { file: 'src/cart.ts', line: 3, column: 8 },
+              { file: 'src/cart.ts', line: 3, column: 8 },
+            ],
+            translations: { 'en-US': 'Submit cart' },
+          },
         ],
       }).rules,
     ).toEqual([
       {
         source: '提交',
         translations: { 'en-US': 'Submit', ja: '' },
+      },
+      {
+        source: '提交',
+        occurrences: [
+          { file: 'src/cart.ts', line: 3, column: 8 },
+          { file: 'src/cart.ts', line: 3, column: 25 },
+        ],
+        translations: { 'en-US': 'Submit cart' },
       },
       {
         source: '提交',
@@ -199,6 +216,31 @@ describe('@ai-i18n/core schemas', () => {
         ],
       }),
     ).toThrow('files must be a non-empty array');
+    expect(() =>
+      parseTranslationOverridesFile({
+        version: 2,
+        rules: [
+          {
+            source: '提交',
+            files: ['src/cart.ts'],
+            occurrences: [{ file: 'src/cart.ts', line: 1, column: 0 }],
+            translations: { 'en-US': 'Submit' },
+          },
+        ],
+      }),
+    ).toThrow('scoped by either files or occurrences, not both');
+    expect(() =>
+      parseTranslationOverridesFile({
+        version: 2,
+        rules: [
+          {
+            source: '提交',
+            occurrences: [{ file: 'src/cart.ts', line: 0, column: 0 }],
+            translations: { 'en-US': 'Submit' },
+          },
+        ],
+      }),
+    ).toThrow('line must be an integer >= 1');
     expect(() =>
       parseTranslationOverridesFile({
         version: 2,

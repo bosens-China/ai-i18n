@@ -1,9 +1,42 @@
-import { createI18nRuntime } from '@ai-i18n/core';
+import {
+  createI18nRuntime,
+  createScopedTranslate,
+  runtimeMessageId,
+} from '@ai-i18n/core';
 import { computed, isReadonly, ref, watch } from 'vue';
 import { describe, expect, it } from 'vitest';
 import { createVueI18n, createVueI18nAdapter } from '../src/vue';
 
 describe('Vue runtime adapter', () => {
+  it('keeps occurrence binding through tracked translation helpers', () => {
+    const runtime = createI18nRuntime({
+      sourceLang: 'zh-CN',
+      defaultLang: 'en-US',
+      locales: [
+        { value: 'zh-CN', label: '中文' },
+        { value: 'en-US', label: 'English' },
+      ],
+    });
+    runtime.registerModule('App.vue', {
+      'zh-CN': {},
+      'en-US': {
+        [runtimeMessageId('App.vue', '保存', '2:10')]: 'Save this button',
+      },
+    });
+    const adapter = createVueI18nAdapter(
+      runtime,
+      createScopedTranslate(runtime, 'App.vue'),
+    );
+
+    expect(adapter.t.__aiI18nAt('2:10')('保存')).toBe('Save this button');
+    expect(adapter.tRef.__aiI18nAt('2:10')('保存').value).toBe(
+      'Save this button',
+    );
+    expect(adapter.tComputed.__aiI18nAt('2:10')('保存')()).toBe(
+      'Save this button',
+    );
+  });
+
   it('updates computed language and translated text', async () => {
     const runtime = createI18nRuntime({
       sourceLang: 'zh-CN',

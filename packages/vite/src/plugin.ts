@@ -29,11 +29,14 @@ import { injectBuiltLocaleHints } from './locale-loading.js';
 import { renderLocaleChunk } from './locale-module-loader.js';
 import { ProjectState } from './project-state.js';
 import type { ProviderCoordinator } from './provider-coordinator.js';
-import { configureReviewServer } from './review-server.js';
-import { createReviewService } from './review-service.js';
 import { normalizeProjectId } from './project-paths.js';
 import type { AiI18nOptions } from './options.js';
 import { createPluginProvider } from './plugin-provider.js';
+import {
+  AI_I18N_PLUGIN_API,
+  type AiI18nPlugin,
+  type AiI18nPluginApi,
+} from './plugin-api.js';
 import { createPluginStateAccessors } from './plugin-state-accessors.js';
 import {
   createVirtualModuleHooks,
@@ -121,22 +124,6 @@ export function aiI18n(options: AiI18nOptions): Plugin {
     },
     translationEvent: TRANSLATION_UPDATE_EVENT,
     localeEvent: LOCALE_UPDATE_EVENT,
-  });
-
-  const reviewService = createReviewService({
-    sourceLang: normalized.sourceLang,
-    locales: normalized.locales,
-    ready: () => ready,
-    state: currentState,
-    store: currentStore,
-    loadPersistedExtracted: () => currentStore().loadExtracted(),
-    persistedCache: () => reviewCache,
-    runStateTask,
-    flushPersistence: () => devPersistence.flush(),
-    notify(affectedModuleIds, locale) {
-      if (normalized.loading) sendLocaleUpdates([locale]);
-      else sendTranslationUpdates(affectedModuleIds);
-    },
   });
 
   const buildWatch = createBuildWatchState({
@@ -240,7 +227,21 @@ export function aiI18n(options: AiI18nOptions): Plugin {
     localeUpdateEvent: LOCALE_UPDATE_EVENT,
   });
 
-  return {
+  const api: AiI18nPluginApi = {
+    options: normalized,
+    ready: () => ready,
+    state: currentState,
+    store: currentStore,
+    persistedCache: () => reviewCache,
+    runStateTask,
+    flushPersistence: () => devPersistence.flush(),
+    notify(affectedModuleIds, locale) {
+      if (normalized.loading) sendLocaleUpdates([locale]);
+      else sendTranslationUpdates(affectedModuleIds);
+    },
+  };
+
+  const plugin: AiI18nPlugin = {
     name: 'ai-i18n',
     enforce: 'pre',
     config: (_userConfig, environment) =>
@@ -326,8 +327,6 @@ export function aiI18n(options: AiI18nOptions): Plugin {
       void ready
         .then(() => server.watcher.add(currentStore().devWatchTargets()))
         .catch(() => undefined);
-      if (options.review !== false)
-        return configureReviewServer(server, reviewService);
     },
 
     async buildStart() {
@@ -379,5 +378,7 @@ export function aiI18n(options: AiI18nOptions): Plugin {
         await store?.close();
       }
     },
+    [AI_I18N_PLUGIN_API]: api,
   };
+  return plugin;
 }

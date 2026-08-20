@@ -4,7 +4,6 @@ import {
   type TranslationOverridesFile,
   type TranslationValue,
   resolveTranslationOverride,
-  runtimeMessageId,
 } from '@ai-i18n/core';
 import {
   diagnosticMessage,
@@ -32,6 +31,7 @@ import type { ProviderResult } from './provider-coordinator.js';
 import type { ProviderRequest } from './provider-coordinator.js';
 import { ProviderTranslationState } from './provider-translation-state.js';
 import { normalizeProjectId, resolutionKey } from './project-paths.js';
+import { occurrenceMessageEntries } from './occurrence-registration.js';
 import {
   registrationLoadFiles,
   registrationWatchFiles,
@@ -302,12 +302,13 @@ export class ProjectState {
       locales.map((locale) => [
         locale.value,
         Object.fromEntries(
-          result.messages.map((message) => [
-            runtimeMessageId(moduleId, message.id),
-            locale.value === this.options.sourceLang
-              ? message.source
-              : this.translation(message, locale.value, moduleId),
-          ]),
+          result.messages.flatMap((message) =>
+            occurrenceMessageEntries(moduleId, message, (location) =>
+              locale.value === this.options.sourceLang
+                ? message.source
+                : this.translation(message, locale.value, moduleId, location),
+            ),
+          ),
         ),
       ]),
     );
@@ -327,10 +328,11 @@ export class ProjectState {
     }
     return Object.fromEntries(
       [...this.modules].flatMap(([moduleId, result]) =>
-        result.messages.map((message) => [
-          runtimeMessageId(moduleId, message.id),
-          this.translation(message, locale, moduleId),
-        ]),
+        result.messages.flatMap((message) =>
+          occurrenceMessageEntries(moduleId, message, (location) =>
+            this.translation(message, locale, moduleId, location),
+          ),
+        ),
       ),
     );
   }
@@ -339,10 +341,16 @@ export class ProjectState {
     message: Pick<ExtractedMessage, 'id' | 'source' | 'comment'>,
     locale: string,
     sourceFile: string,
+    occurrence?: SourceLocation,
   ): TranslationValue {
     return (
-      resolveTranslationOverride(this.overrides, message, locale, sourceFile) ??
-      this.cachedTranslation(message.id, locale)
+      resolveTranslationOverride(
+        this.overrides,
+        message,
+        locale,
+        sourceFile,
+        occurrence,
+      ) ?? this.cachedTranslation(message.id, locale)
     );
   }
 

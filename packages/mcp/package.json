@@ -49,6 +49,9 @@
     "@modelcontextprotocol/sdk": "^1.30.0",
     "zod": "^4.0.0"
   },
+  "devDependencies": {
+    "@ai-i18n/sqlite": "workspace:*"
+  },
   "engines": {
     "node": "^20.19.0 || >=22.12.0"
   },

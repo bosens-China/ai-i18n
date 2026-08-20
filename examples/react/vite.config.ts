@@ -1,5 +1,6 @@
 import { defineConfig } from 'vite';
 import { aiI18n } from '@ai-i18n/vite';
+import { aiI18nReview } from '@ai-i18n/vite/review';
 import react from '@vitejs/plugin-react';
 
 export default defineConfig({
@@ -17,6 +18,7 @@ export default defineConfig({
       autoImport: true,
       html: true,
     }),
+    aiI18nReview(),
     react(),
   ],
 });

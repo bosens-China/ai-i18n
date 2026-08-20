@@ -11,7 +11,7 @@ const props = defineProps<{
   selected: boolean;
 }>();
 
-const preview = computed(() => reviewBaseline(props.message, props.locale, ''));
+const preview = computed(() => reviewBaseline(props.message, props.locale, {}));
 const reviewed = computed(() =>
   props.message.overrides.some((item) => item.locale === props.locale),
 );

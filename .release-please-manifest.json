@@ -4,5 +4,6 @@
   "packages/eslint": "1.0.0-alpha.22",
   "packages/mcp": "1.0.0-alpha.17",
   "packages/openai": "1.0.0-alpha.14",
+  "packages/sqlite": "1.0.0-alpha.1",
   "packages/vite": "1.0.0-alpha.23"
 }

@@ -85,7 +85,9 @@ const label = t('脚本文案')
     expect(descriptor.scriptSetup?.content).toContain(
       'const t = __aiI18nTemplateScope.t;',
     );
-    expect(compiled.content).toContain("_unref(t)('模板文案')");
+    expect(compiled.content).toContain(
+      '_unref(t).__aiI18nAt("8:27")(\'模板文案\')',
+    );
   });
 
   it('uses a local setup bridge for an auto-imported template t', async () => {

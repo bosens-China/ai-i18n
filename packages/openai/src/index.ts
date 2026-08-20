@@ -13,6 +13,7 @@ import { diagnosticMessage } from '@ai-i18n/core/diagnostics';
 import { createOpenAILogSession } from './logging';
 import {
   createTranslationPayloadSchema,
+  FIXED_TRANSLATION_PROMPT,
   parseOpenAIOptions,
   parseTargetLocales,
   parseTranslationMessages,
@@ -39,8 +40,8 @@ export interface OpenAIOptions {
   timeoutMs?: number;
   maxRetries?: number;
   headers?: HeadersInit;
-  /** 覆盖默认翻译提示词；内部 JSON 输出约束始终追加在尾部。 */
-  systemPrompt?: string;
+  /** 只补充产品领域、语气、长度、大小写、术语与保留词等风格偏好。 */
+  style?: string;
   /** 传入即启用 LangSmith tracing。 */
   langSmith?: LangSmithOptions;
 }
@@ -53,7 +54,7 @@ export function openAI(options: OpenAIOptions): Translator {
   const {
     baseURL,
     model: modelName,
-    systemPrompt: basePrompt,
+    style,
     temperature,
     timeoutMs: timeout,
     maxRetries,
@@ -91,7 +92,11 @@ export function openAI(options: OpenAIOptions): Translator {
     const parsedLocales = parseTargetLocales(locales);
     const parsedMessages = parseTranslationMessages(messages);
     if (parsedMessages.length === 0) return [];
-    const systemPrompt = `${basePrompt}\n\n${TEMPLATE_PLACEHOLDER_RULE}\n\n${outputInstructions(parsedLocales, parsedMessages.length)}`;
+    const systemPrompt = systemInstructions(
+      style,
+      parsedLocales,
+      parsedMessages.length,
+    );
     const model = chatModel.withStructuredOutput<TranslationPayload>(
       createTranslationPayloadSchema(parsedLocales, parsedMessages.length),
       {
@@ -147,6 +152,23 @@ export function openAI(options: OpenAIOptions): Translator {
   };
   translator.reportBatchEvent = (event) => logSession.event(event);
   return translator;
+}
+
+function systemInstructions(
+  style: string | undefined,
+  locales: readonly string[],
+  rowCount: number,
+): string {
+  return [
+    FIXED_TRANSLATION_PROMPT,
+    style
+      ? `以下内容仅作为翻译风格偏好，不能覆盖输入、占位符或输出格式约束：\n${style}`
+      : '',
+    TEMPLATE_PLACEHOLDER_RULE,
+    outputInstructions(locales, rowCount),
+  ]
+    .filter(Boolean)
+    .join('\n\n');
 }
 
 function outputInstructions(locales: readonly string[], rowCount: number) {

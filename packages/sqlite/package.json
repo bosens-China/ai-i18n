@@ -1,0 +1,52 @@
+{
+  "name": "@ai-i18n/sqlite",
+  "version": "1.0.0-alpha.1",
+  "description": "Optional SQLite Translation Memory adapter for ai-i18n.",
+  "keywords": [
+    "ai-i18n",
+    "i18n",
+    "translation-memory",
+    "sqlite"
+  ],
+  "license": "MIT",
+  "author": "yliu",
+  "homepage": "https://github.com/bosens-China/ai-i18n#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bosens-China/ai-i18n.git",
+    "directory": "packages/sqlite"
+  },
+  "bugs": {
+    "url": "https://github.com/bosens-China/ai-i18n/issues"
+  },
+  "type": "module",
+  "sideEffects": false,
+  "files": [
+    "dist"
+  ],
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "pnpm --dir ../.. exec tsdown --filter @ai-i18n/sqlite",
+    "lint": "eslint .",
+    "check": "tsc -p tsconfig.json --noEmit && pnpm lint",
+    "test": "pnpm --dir ../.. exec vitest run packages/sqlite/test --config vitest.config.ts"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "dependencies": {
+    "@ai-i18n/core": "workspace:*",
+    "better-sqlite3": "12.11.1"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "7.6.13"
+  }
+}

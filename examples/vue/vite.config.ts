@@ -1,4 +1,5 @@
 import { aiI18n } from '@ai-i18n/vite';
+import { aiI18nReview } from '@ai-i18n/vite/review';
 import { defineConfig } from 'vite';
 import UnoCSS from 'unocss/vite';
 import vue from '@vitejs/plugin-vue';
@@ -18,6 +19,7 @@ export default defineConfig({
       loading: {},
       html: true,
     }),
+    aiI18nReview(),
     vue(),
     UnoCSS({ inspector: true }),
   ],

@@ -2,6 +2,8 @@ import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import type { TranslationBatchEvent, Translator } from '@ai-i18n/core';
+import type { TranslationMemoryStorage } from '@ai-i18n/core/translation-memory';
+import { sqlite } from '@ai-i18n/sqlite';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { build } from 'vite';
 import { aiI18n } from '../src';
@@ -84,9 +86,9 @@ describe('Translation Memory Vite storage', () => {
     await createSources(secondRoot);
 
     const provider = translator('Save');
-    await buildProject(firstRoot, provider, { storage: 'sqlite' });
+    await buildProject(firstRoot, provider, { storage: sqlite() });
     expect(provider).toHaveBeenCalledTimes(1);
-    await buildProject(secondRoot, undefined, { storage: 'sqlite' });
+    await buildProject(secondRoot, undefined, { storage: sqlite() });
 
     expect(
       (await readTestTranslationMemory(path.join(secondRoot, 'i18n'))).messages[
@@ -120,7 +122,7 @@ async function buildProject(
   root: string,
   provider?: Translator,
   options?: {
-    storage?: 'json' | 'sqlite';
+    storage?: TranslationMemoryStorage;
     providerCache?: 'reuse' | 'fresh';
     logging?: boolean | string;
   },

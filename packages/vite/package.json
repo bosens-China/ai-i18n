@@ -37,6 +37,14 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
     },
+    "./review": {
+      "types": "./dist/review.d.ts",
+      "import": "./dist/review.js"
+    },
+    "./review/runtime": {
+      "types": "./dist/review-runtime.d.ts",
+      "import": "./dist/review-runtime.js"
+    },
     "./client": {
       "types": "./dist/client.d.ts",
       "import": "./dist/client.js"
@@ -69,8 +77,7 @@
     "@ai-i18n/core": "workspace:*",
     "atomically": "2.1.1",
     "magic-string": "1.2.0",
-    "parse5": "8.0.1",
-    "picocolors": "1.1.1"
+    "parse5": "8.0.1"
   },
   "peerDependencies": {
     "@vue/compiler-sfc": ">=3.2.0",
@@ -93,6 +100,7 @@
     "node": "^20.19.0 || >=22.12.0"
   },
   "devDependencies": {
+    "@ai-i18n/sqlite": "workspace:*",
     "@ai-i18n/review-ui": "workspace:*",
     "@babel/core": "^7.29.7",
     "@rolldown/plugin-babel": "^0.2.3",

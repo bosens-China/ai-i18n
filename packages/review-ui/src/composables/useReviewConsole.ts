@@ -110,6 +110,7 @@ export function useReviewConsole(copy: ReviewCopy) {
           message: mutation.message,
           locale: mutation.locale,
           ...(mutation.file ? { file: mutation.file } : {}),
+          ...(mutation.location ? { location: mutation.location } : {}),
           ...(mutation.method === 'POST' ? { value: mutation.value } : {}),
         }),
       });
@@ -143,7 +144,7 @@ export function useReviewConsole(copy: ReviewCopy) {
   }
 
   function apiError(payload: { error?: Record<string, string> }): Error {
-    const language = document.documentElement.lang.startsWith('zh')
+    const language = navigator.language.toLowerCase().startsWith('zh')
       ? 'zh'
       : 'en';
     return new Error(

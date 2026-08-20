@@ -54,11 +54,5 @@
   "dependencies": {
     "atomically": "2.1.1",
     "fs-native-extensions": "1.5.0"
-  },
-  "optionalDependencies": {
-    "better-sqlite3": "12.11.1"
-  },
-  "devDependencies": {
-    "@types/better-sqlite3": "7.6.13"
   }
 }

@@ -8,6 +8,8 @@ import {
   type RuntimeImportDeclaration,
 } from '@ai-i18n/analyzer';
 import type { RegistrationInsertion } from './extractor.js';
+import type { SourceLocation } from './extractor.js';
+import { instrumentTranslationOccurrences } from './occurrence-instrumentation.js';
 import { registrationImportOffset } from './plugin-utils.js';
 import { AI_I18N_VIRTUAL_MODULE_ID } from './yuku-analyzer.js';
 
@@ -27,6 +29,7 @@ interface SourceRegistrationOptions {
   registrationMessages?: ModuleMessages;
   preserveAutoImportBindings?: boolean;
   macroCalls: readonly DefineI18nMessagesCall[];
+  occurrenceLocations?: readonly SourceLocation[];
 }
 
 const SCOPED_RUNTIME_EXPORTS = new Set([
@@ -153,6 +156,11 @@ export function sourceRegistration(options: SourceRegistrationOptions) {
   );
   insertLines(transformed, templateRegistration, templateLines, false);
   eraseDefineI18nMessages(transformed, options.code, options.macroCalls);
+  instrumentTranslationOccurrences(
+    transformed,
+    options.code,
+    options.occurrenceLocations ?? [],
+  );
   return transformedResult(transformed, options.id);
 }
 

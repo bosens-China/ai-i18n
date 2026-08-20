@@ -130,9 +130,7 @@ describe('@ai-i18n/vite plugin updates', () => {
     );
 
     expect(transformed?.code).toContain(
-      JSON.stringify({
-        [runtimeMessageId('src/provider.ts', '保存')]: null,
-      }),
+      `${JSON.stringify(runtimeMessageId('src/provider.ts', '保存'))}:null`,
     );
 
     finish();
@@ -142,9 +140,11 @@ describe('@ai-i18n/vite plugin updates', () => {
         messages: {
           'zh-CN': {
             [runtimeMessageId('src/provider.ts', '保存')]: '保存',
+            [runtimeMessageId('src/provider.ts', '保存', '1:37')]: '保存',
           },
           'en-US': {
             [runtimeMessageId('src/provider.ts', '保存')]: 'Save',
+            [runtimeMessageId('src/provider.ts', '保存', '1:37')]: 'Save',
           },
         },
       });
@@ -219,9 +219,11 @@ describe('@ai-i18n/vite plugin updates', () => {
       messages: {
         'zh-CN': {
           [runtimeMessageId('src/provider.ts', '保存')]: '保存',
+          [runtimeMessageId('src/provider.ts', '保存', '1:37')]: '保存',
         },
         'en-US': {
           [runtimeMessageId('src/provider.ts', '保存')]: 'Store',
+          [runtimeMessageId('src/provider.ts', '保存', '1:37')]: 'Store',
         },
       },
     });
@@ -257,9 +259,11 @@ describe('@ai-i18n/vite plugin updates', () => {
       messages: {
         'zh-CN': {
           [runtimeMessageId('src/provider.ts', '保存')]: '保存',
+          [runtimeMessageId('src/provider.ts', '保存', '1:37')]: '保存',
         },
         'en-US': {
           [runtimeMessageId('src/provider.ts', '保存')]: 'Keep',
+          [runtimeMessageId('src/provider.ts', '保存', '1:37')]: 'Keep',
         },
       },
     });
@@ -314,8 +318,14 @@ describe('@ai-i18n/vite plugin updates', () => {
     expect(hotSend).toHaveBeenCalledWith('ai-i18n:update', {
       moduleId: 'src/hot.ts',
       messages: {
-        'zh-CN': { [runtimeMessageId('src/hot.ts', 'after')]: 'after' },
-        'en-US': { [runtimeMessageId('src/hot.ts', 'after')]: null },
+        'zh-CN': {
+          [runtimeMessageId('src/hot.ts', 'after')]: 'after',
+          [runtimeMessageId('src/hot.ts', 'after', '1:37')]: 'after',
+        },
+        'en-US': {
+          [runtimeMessageId('src/hot.ts', 'after')]: null,
+          [runtimeMessageId('src/hot.ts', 'after', '1:37')]: null,
+        },
       },
     });
     expect(result).toBeUndefined();

@@ -10,17 +10,27 @@ import type {
   AiI18nTranslationMemoryCapacityOptions,
   AiI18nTranslationMemoryOptions,
 } from './options.js';
+import type { TranslationMemoryStorage } from '@ai-i18n/core/translation-memory';
 import type { NormalizedAiI18nOptions } from './project-state.js';
 import type { SourceExtraction, TranslationHookBinding } from './extractor.js';
 
 export function rejectRemovedOptions(options: object): void {
-  if (!('cache' in options)) return;
-  throw new TypeError(
-    diagnosticMessage(
-      '[ai-i18n] 顶层 cache 已移除，请改用 translationMemory.capacity。',
-      '[ai-i18n] Top-level cache has been removed; use translationMemory.capacity instead.',
-    ),
-  );
+  if ('cache' in options) {
+    throw new TypeError(
+      diagnosticMessage(
+        '[ai-i18n] 顶层 cache 已移除，请改用 translationMemory.capacity。',
+        '[ai-i18n] Top-level cache has been removed; use translationMemory.capacity instead.',
+      ),
+    );
+  }
+  if ('review' in options) {
+    throw new TypeError(
+      diagnosticMessage(
+        '[ai-i18n] review 配置已移除，请在 Vite plugins 中单独注册 aiI18nReview()。',
+        '[ai-i18n] The review option has been removed; register aiI18nReview() separately in Vite plugins.',
+      ),
+    );
+  }
 }
 
 export function normalizeOptions(options: {
@@ -81,15 +91,31 @@ export function normalizeOptions(options: {
 export function normalizeTranslationMemory(
   options: AiI18nTranslationMemoryOptions | undefined,
 ): {
-  storage: 'json' | 'sqlite';
+  storage: TranslationMemoryStorage;
   capacity?: AiI18nTranslationMemoryCapacityOptions;
 } {
-  const storage = options?.storage ?? 'json';
-  if (storage !== 'json' && storage !== 'sqlite') {
+  const storage: unknown = options?.storage ?? 'json';
+  if (storage === 'sqlite') {
     throw new Error(
       diagnosticMessage(
-        '[ai-i18n] translationMemory.storage 必须是“json”或“sqlite”。',
-        '[ai-i18n] translationMemory.storage must be "json" or "sqlite".',
+        '[ai-i18n] 字符串 storage: “sqlite” 已移除；请安装 @ai-i18n/sqlite 并注入 sqlite()。',
+        '[ai-i18n] String storage: "sqlite" was removed; install @ai-i18n/sqlite and inject sqlite().',
+      ),
+    );
+  }
+  if (
+    storage !== 'json' &&
+    (!storage ||
+      typeof storage !== 'object' ||
+      !('storage' in storage) ||
+      storage.storage !== 'sqlite' ||
+      !('open' in storage) ||
+      typeof storage.open !== 'function')
+  ) {
+    throw new Error(
+      diagnosticMessage(
+        '[ai-i18n] translationMemory.storage 必须是“json”或合法的存储适配器。',
+        '[ai-i18n] translationMemory.storage must be "json" or a valid storage adapter.',
       ),
     );
   }
@@ -102,7 +128,10 @@ export function normalizeTranslationMemory(
     'translationMemory.capacity.maxBytes',
     capacity?.maxBytes,
   );
-  return { storage, ...(capacity ? { capacity } : {}) };
+  return {
+    storage: storage as TranslationMemoryStorage,
+    ...(capacity ? { capacity } : {}),
+  };
 }
 
 export function normalizeProviderCache(

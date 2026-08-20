@@ -110,11 +110,15 @@ describe('ProjectState incremental analysis', () => {
     });
 
     expect(state.registration('src/main.ts', 'zh-CN')).toEqual({
-      'zh-CN': { [runtimeMessageId('src/main.ts', '保留')]: '保留' },
+      'zh-CN': {
+        [runtimeMessageId('src/main.ts', '保留')]: '保留',
+        [runtimeMessageId('src/main.ts', '保留', '1:37')]: '保留',
+      },
     });
     state.retain(['/workspace/src/main.ts']);
     expect(state.localeMessages('en-US')).toEqual({
       [runtimeMessageId('src/main.ts', '保留')]: 'Keep',
+      [runtimeMessageId('src/main.ts', '保留', '1:37')]: 'Keep',
     });
   });
 
@@ -215,22 +219,37 @@ describe('ProjectState incremental analysis', () => {
           files: ['src/main.ts'],
           translations: { 'en-US': 'File commit' },
         },
+        {
+          source: '提交',
+          comment: '确认对话框',
+          occurrences: [{ file: 'src/main.ts', line: 3, column: 0 }],
+          translations: { 'en-US': 'Occurrence confirm' },
+        },
       ],
     });
 
     expect(state.registration('src/main.ts', 'en-US')).toEqual({
       'en-US': {
         [runtimeMessageId('src/main.ts', '提交#Git 操作')]: 'File commit',
+        [runtimeMessageId('src/main.ts', '提交#Git 操作', '1:0')]:
+          'File commit',
         [runtimeMessageId('src/main.ts', '提交')]: 'File submit',
-        [runtimeMessageId('src/main.ts', '提交#确认对话框')]: 'Confirm',
+        [runtimeMessageId('src/main.ts', '提交', '2:0')]: 'File submit',
+        [runtimeMessageId('src/main.ts', '提交#确认对话框')]: 'File submit',
+        [runtimeMessageId('src/main.ts', '提交#确认对话框', '3:0')]:
+          'Occurrence confirm',
         [runtimeMessageId('src/main.ts', '取消')]: 'Cancel',
+        [runtimeMessageId('src/main.ts', '取消', '4:0')]: 'Cancel',
       },
     });
     expect(state.registration('src/other.ts', 'en-US')).toEqual({
       'en-US': {
         [runtimeMessageId('src/other.ts', '提交#Git 操作')]: 'Commit',
+        [runtimeMessageId('src/other.ts', '提交#Git 操作', '1:0')]: 'Commit',
         [runtimeMessageId('src/other.ts', '提交')]: 'Submit',
+        [runtimeMessageId('src/other.ts', '提交', '2:0')]: 'Submit',
         [runtimeMessageId('src/other.ts', '取消')]: 'Cancel',
+        [runtimeMessageId('src/other.ts', '取消', '3:0')]: 'Cancel',
       },
     });
   });
@@ -304,7 +323,9 @@ describe('ProjectState incremental analysis', () => {
     ).toHaveLength(2);
     expect(state.localeMessages('en-US')).toEqual({
       [runtimeMessageId('src/main.ts', '保存')]: 'Old save',
+      [runtimeMessageId('src/main.ts', '保存', '1:0')]: 'Old save',
       [runtimeMessageId('src/main.ts', '取消')]: 'Old cancel',
+      [runtimeMessageId('src/main.ts', '取消', '2:0')]: 'Old cancel',
     });
 
     state.hydrateCache({
@@ -333,7 +354,9 @@ describe('ProjectState incremental analysis', () => {
 
     expect(state.localeMessages('en-US')).toEqual({
       [runtimeMessageId('src/main.ts', '保存')]: 'Agent save',
+      [runtimeMessageId('src/main.ts', '保存', '1:0')]: 'Agent save',
       [runtimeMessageId('src/main.ts', '取消')]: 'Provider cancel',
+      [runtimeMessageId('src/main.ts', '取消', '2:0')]: 'Provider cancel',
     });
   });
 
