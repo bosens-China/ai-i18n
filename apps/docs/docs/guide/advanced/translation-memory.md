@@ -45,18 +45,29 @@ translationMemory: {
 
 希望同一台电脑上的多个项目共享自动译文时，可以选择 SQLite：
 
+先安装可选适配器：
+
+```bash
+pnpm add -D @ai-i18n/sqlite@alpha
+```
+
 ```ts
+import { sqlite } from '@ai-i18n/sqlite';
+
 aiI18n({
   sourceLang: 'zh-CN',
   locales,
   translationMemory: {
-    storage: 'sqlite',
+    storage: sqlite(),
   },
 });
 ```
 
 数据库位于当前用户的数据目录，不会写入项目，也不需要提交 Git。项目内会保留一个小型
 `storage.json`，让 Vite 与 MCP 选择 SQLite。
+
+`better-sqlite3` 只属于 `@ai-i18n/sqlite`。继续使用默认 JSON 的项目不需要安装该包，也不会因为
+安装 `@ai-i18n/core` 或 `@ai-i18n/vite` 而获得原生 SQLite 依赖。
 
 当前项目已有自动译文时，SQLite 会继续使用该译文。当前项目尚无译文时，SQLite 才会查找跨项目候选。
 原文、源语言、目标语言和 `comment` 必须完全一致。只有一个候选时，SQLite 会自动复用。存在多个不同
@@ -74,11 +85,13 @@ SQLite 是本机可丢弃缓存，不替代项目内的 `overrides.json`，也�
 按以下顺序检查：
 
 1. 检查项目内是否存在 `i18n/storage.json`。缺少该文件表示当前项目使用分片 JSON。
-2. 检查 `AI_I18N_DATA_DIR` 是否已设置。已设置时，数据库位于该目录；否则使用当前平台的默认目录。
-3. 运行一次完整 `vite build`，确认目标文案属于当前应用入口可达的模块。
-4. 核对原文、源语言、目标语言和 `comment`。其中任意一项不同，都会产生不同的候选。
-5. 确认是否存在多个不同译法。SQLite 不会从多个候选中猜测结果，因此会让该译文保持缺失。
-6. 检查项目内的 `overrides.json`。人工译文拥有最高优先级，可能遮盖 SQLite 中的自动译文。
+2. 确认当前项目安装了 `@ai-i18n/sqlite`，且 Vite 配置注入了 `sqlite()`。MCP 会根据 marker 从项目
+   依赖中解析同一个包。
+3. 检查 `AI_I18N_DATA_DIR` 是否已设置。已设置时，数据库位于该目录；否则使用当前平台的默认目录。
+4. 运行一次完整 `vite build`，确认目标文案属于当前应用入口可达的模块。
+5. 核对原文、源语言、目标语言和 `comment`。其中任意一项不同，都会产生不同的候选。
+6. 确认是否存在多个不同译法。SQLite 不会从多个候选中猜测结果，因此会让该译文保持缺失。
+7. 检查项目内的 `overrides.json`。人工译文拥有最高优先级，可能遮盖 SQLite 中的自动译文。
 
 `provider.cache: 'fresh'` 会让当前 Vite 进程刷新自动译文，但不会解决候选冲突。请勿直接编辑 SQLite
 数据库。需要重置本机缓存时，请先停止正在使用该数据库的 Vite 与 MCP 进程。删除数据库会清除本机的
@@ -113,8 +126,9 @@ Provider 请求覆盖。`fresh` 也不会删除或覆盖人工 `overrides`。若
 
 ## 切换存储
 
-修改 `storage` 后，插件会迁移当前项目的 Translation Memory。切换到 SQLite 时创建
-`storage.json`，切回 JSON 时删除该文件。切换前请停止其他正在写入该项目的 Vite 或 MCP 进程，
+把 `storage` 从默认 JSON 改为 `sqlite()` 后，插件会迁移当前项目的 Translation Memory 并创建
+`storage.json`。切回 JSON 时移除 `storage` 或设置为 `'json'`，插件会在仍能解析已安装 SQLite
+适配器的情况下迁移并删除 marker。切换前请停止其他正在写入该项目的 Vite 或 MCP 进程，
 完成后检查生成文件和关键页面。
 
 全局数据库目录可以通过 `AI_I18N_DATA_DIR` 覆盖，主要用于隔离 CI、容器或测试环境。不要把该目录

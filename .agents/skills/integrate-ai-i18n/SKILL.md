@@ -30,8 +30,9 @@ configuration. Preserve configured values.
 Use one `@ai-i18n/vite` registration, one framework mode, and one i18n directory per Vite build.
 Treat reachable local workspace source as part of the consuming build. Do not create a separate
 integration for a source-only package or rewrite CommonJS as an incidental migration.
-If an existing `overrides.json` contains file-scoped rules, preserve its exact normalized POSIX paths
-relative to this Vite root; never rewrite them to machine-specific absolute paths during integration.
+If an existing `overrides.json` contains file- or occurrence-scoped rules, preserve its exact
+normalized POSIX paths and occurrence line/column values relative to this Vite root; never rewrite
+them to machine-specific absolute paths or guess moved locations during integration.
 
 Do not enable optional behavior by default. Keep explicit imports and omit automatic translation,
 automatic imports, language persistence, locale loading, cache cleanup, HTML extraction, Dev timing
@@ -39,11 +40,19 @@ diagnostics, ESLint, and test integration unless the user requests them. Do not 
 configured. When an optional feature is requested, read [Agent defaults for optional features](references/optional-features.md)
 and the matching public documentation page.
 
-The Vite Dev review console is core default behavior, not an optional feature. Preserve the default
-by omitting `review`; set `review: false` only when the user explicitly asks to disable it or the
-existing target configuration already disables it. Do not add tokens, authentication, or production
-routes for this local console. Its UI assets are bundled with `@ai-i18n/vite`; do not install Vue or
-a UI library into the target application solely for the review console.
+The Vite Dev review console is an optional, separately registered plugin. Do not add it unless the user
+requests interactive review or the target already registers it. When requested, import `aiI18nReview`
+from `@ai-i18n/vite/review` and add one `aiI18nReview()` beside the single core `aiI18n()` instance;
+never restore the removed `review` core option. Do not add tokens, authentication, or production routes.
+Its UI assets and internal Vue implementation are bundled with `@ai-i18n/vite`; do not install Vue or a
+UI library into the target solely for Review. The host is a Web Component with Shadow DOM, and its
+UnoCSS must stay inside that root rather than being added to the application's global CSS pipeline.
+In Dev, verify the bottom launcher on a real business page, all three docks, the default current-page
+scope, switching to all extracted copy, and the absence of the launcher when the Review plugin is
+removed. Dock and size preferences are browser-local UI state and must not enter Vite config. When
+element picking returns multiple messages or occurrences, preserve every candidate in the locate
+hierarchy and let the user select the exact file, line, and column; never choose the first candidate.
+The workbench has no standalone user-facing URL; open and verify it only through the active page.
 
 This Skill owns package installation, Vite configuration, Runtime source integration, and integration
 verification. Do not write translation or human review values as part of an integration-only task.
@@ -67,8 +76,9 @@ the `use-ai-i18n-mcp` Skill and its approval rules.
 
 Run the target app's lint, type check, relevant tests, and full Vite Build in proportion to the
 change. Check installation, resolved framework mode, one Runtime translation call, generated
-declarations, the resolved output directory, and that Vite Dev prints the review URL when review is
-enabled. Verify optional features only when requested or already configured.
+declarations, and the resolved output directory. Verify the in-page launcher, Shadow DOM workbench,
+scope switch and Build exclusion only when Review was requested or already configured. Verify other
+optional features only when requested or already configured.
 
 Report the selected app, changes made, commands run, remaining unsupported scope, and any decisions
 that still need user input.

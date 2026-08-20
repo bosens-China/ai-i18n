@@ -54,7 +54,7 @@ logs/
 译文文件与引用它们的源码应在同一个 PR 中提交。这样其他开发者和 CI 才能得到一致的翻译结果。
 :::
 
-选择 `translationMemory.storage: 'sqlite'` 时，全局数据库位于用户目录，不提交 Git；项目仍提交
+安装 `@ai-i18n/sqlite` 并配置 `translationMemory.storage: sqlite()` 时，全局数据库位于用户目录，不提交 Git；项目仍提交
 `storage.json` 与 `overrides.json`。SQLite 是本机缓存，新机器和 CI 需要 Provider 重新生成自动
 译文。因此，需要跨机器共享自动译文的团队应使用默认的分片 JSON。两种存储的选择见
 [Translation Memory](/guide/advanced/translation-memory)。

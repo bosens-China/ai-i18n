@@ -21,6 +21,8 @@ server does not return that field.
 | `SOURCE_FILE_NOT_FOUND` | List with `view: "summary"` and without the filter, then copy an exact returned `source_file`. |
 | `MESSAGE_NOT_FOUND` | List again and copy the exact returned `message` object. |
 | `MESSAGE_NOT_FOUND_IN_SOURCE_FILE` | List again with `include_source_files: true`, then keep only exact files that contain the selected message. |
+| `MESSAGE_NOT_FOUND_AT_SOURCE_LOCATION` | List again with `include_occurrences: true`; copy a current exact location and obtain approval rather than guessing a moved call. |
+| `INVALID_OVERRIDE_SCOPE` | Retry with exactly one scope: global, `files`, or `occurrences`; never send `files` and `occurrences` together. |
 | `DUPLICATE_TARGET_CONFLICT` | Choose one value for the repeated message and locale, then retry the batch. |
 | `TRANSLATION_CONFLICT` | Re-list current values. Set `overwrite_existing: true` only with explicit user approval. |
 | `TEMPLATE_TOKEN_MISMATCH` | Compare `expected_tokens` and `received_tokens`; add every entry from `missing_tokens`, remove every entry from `unexpected_tokens`, then retry. Repeated tokens are significant. |
@@ -31,6 +33,10 @@ server does not return that field.
 | `ORPHAN_MESSAGE_REACTIVATED` | Do not retry deletion from the stale list. Run a full Build, re-list, show the changed result, and request approval again. |
 | `ORPHAN_ID_CONFLICT` | Stop cleanup and report the returned error details; do not retry deletion. |
 | `DUPLICATE_TARGET` | Remove repeated targets and retry. |
+
+If storage opening reports that `@ai-i18n/sqlite` is missing, confirm the selected app intentionally
+uses SQLite, install the adapter in that app only with user authorization, and run the same operation
+again. Do not install `better-sqlite3` directly into `@ai-i18n/core`, `@ai-i18n/vite`, or the MCP package.
 
 ## Tool unavailable
 

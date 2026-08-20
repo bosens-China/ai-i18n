@@ -55,11 +55,10 @@ export default defineConfig(({ mode }) => {
             baseURL: required(env.AI_BASE_URL, 'AI_BASE_URL'),
             model: required(env.AI_MODEL, 'AI_MODEL'),
             apiKey: env.AI_API_KEY,
-            systemPrompt: `
-你负责翻译面向开发者的 Web 产品界面。
+            style: `
+- 面向开发者的 Web 产品界面。
 - 使用自然、简洁的目标语言，按钮优先使用动词。
 - 保留 ai-i18n、Vite、Vue、React、代码、URL、变量名和占位符。
-- 结合 comment 判断文案语境。
             `.trim(),
           }),
         },
@@ -90,9 +89,9 @@ AI_API_KEY=replace-me
 如何开关、逐块阅读、定位失败、交给 AI Agent 分析，以及 Git 忽略和安全边界，见
 [LLM 日志与排障](/guide/advanced/llm-logs)。
 
-## 编写翻译提示词
+## 编写翻译风格
 
-提示词只需说明产品语境、语气和固定术语。推荐使用短规则：
+`style` 只需说明产品语境、语气和固定术语。推荐使用短规则：
 
 - 说明产品面向谁，例如开发者工具、消费应用或后台系统；
 - 规定按钮、错误提示和帮助文案的语言风格；
@@ -100,8 +99,11 @@ AI_API_KEY=replace-me
 - 列出团队已确认的术语；
 - 要求优先参考 `comment` 消除歧义。
 
-不要在提示词中放入 API 密钥、内部地址或会频繁变化的业务信息。文案本身的具体语境应写在
-`t(source, { comment })` 中。
+不要在 `style` 中放入 API 密钥、内部地址或会频繁变化的业务信息，也不要重复 JSON 字段、数组长度、
+目标语言或占位符协议。文案本身的具体语境应写在 `t(source, { comment })` 中。
+
+Provider 会固定维护翻译职责、`comment` 用法、不可改内容、占位符、输入输出行对应关系和严格 JSON
+结构。旧的 `systemPrompt` 已移除，不能再整体覆盖这些约束。
 
 ## 验证结果与失败处理
 
@@ -113,7 +115,7 @@ Build，并检查关键页面和固定术语。
 重试与超时由具体 Translator 或 Provider SDK 配置；OpenAI-compatible Provider 的字段见
 [`OpenAIOptions`](/api/openai/interfaces/open-ai-options)。
 
-Provider 的模型、`baseURL`、温度或提示词变化时，插件默认继续复用历史自动译文，不会尝试分析
+Provider 的模型、`baseURL`、温度或 `style` 变化时，插件默认继续复用历史自动译文，不会尝试分析
 Translator 内部配置。需要让新配置刷新一次时，使用 `provider.cache: 'fresh'`；本进程生成的新结果仍会
 立即缓存，因此 Dev/HMR 不会重复请求。该选项只影响 Provider，不影响 MCP 或 AI Agent。完整配置见
 [Translation Memory](/guide/advanced/translation-memory)。

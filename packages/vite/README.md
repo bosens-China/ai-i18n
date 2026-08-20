@@ -41,21 +41,33 @@ aiI18n({
 
 ## 翻译校对
 
-Vite Dev 默认提供翻译校对页面。启动后，终端会在 Vite 地址之后打印
-`ai-i18n Review: http://.../__ai-i18n/`；先访问需要校对的业务页面，再打开该链接，即可搜索当前
-Dev 已访问模块中的文案、切换目标语言，并按全局或精确源码文件范围保存人工译文。
-
-人工译文写入 `i18n/overrides.json`，保存和删除都会通过 HMR 更新业务页面。校对页面仅存在于
-Vite Dev，不进入 Build、Preview 或生产产物；界面已作为静态资源随插件提供，业务项目不需要安装
-Vue 或其他 UI 依赖。它不使用 token，只接受同源 JSON 写入。需要关闭时：
+翻译校对通过独立 Vite 插件显式启用：
 
 ```ts
-aiI18n({
-  sourceLang: 'zh-CN',
-  locales,
-  review: false,
+import { aiI18n } from '@ai-i18n/vite';
+import { aiI18nReview } from '@ai-i18n/vite/review';
+
+export default defineConfig({
+  plugins: [aiI18n({ sourceLang: 'zh-CN', locales }), aiI18nReview()],
 });
 ```
+
+注册后，Vite Dev 在业务页面底部注入翻译校对图标。点击后会在当前页面内打开类似 DevTools 的校对工作台，
+默认停靠在页面底部，也可以切换到右侧或全屏。底部高度和右侧宽度支持拖拽调整，停靠位置与尺寸会
+保存在当前浏览器中。工作台只通过业务页面内的图标打开，不提供独立审查地址。
+
+嵌入工作台默认只列出当前 DOM 中实际出现的文案，也可以切换到全部已提取文案。选择“点选页面文案”后再点击业务元素，可以直接定位对应文案；静态 HTML
+能够携带精确源码位置，Vue、React 或普通运行时字符串无法唯一还原时会显示全部候选文件、行和列，
+左侧会进入可返回的定位结果层级，不会猜测第一项。
+
+人工译文可按全局、精确源码文件或精确文件行列位置保存。同一行的多个相同调用通过各自的列号区分；
+作用范围优先级为位置、文件、全局。
+
+人工译文写入 `i18n/overrides.json`，保存和删除都会通过 HMR 更新业务页面。宿主使用 Web Component
+和 Shadow DOM，UnoCSS 与 reset 只加载到 Shadow Root。校对页面仅存在于
+Vite Dev，不进入 Build、Preview 或生产产物；界面已作为静态资源随插件提供，业务项目不需要安装
+Vue 或其他 UI 依赖。它不使用 token，只接受同源 JSON 写入。不注册 `aiI18nReview()` 时，不会注入
+入口、Review API 或工作台资源。
 
 ## Dev 慢阶段诊断
 
@@ -108,12 +120,17 @@ Vite 的 `optimizeDeps.exclude`，并保留项目原有配置。这样可以避�
 需要在同一台电脑的项目间共享自动译文时，可改用用户级全局 SQLite：
 
 ```ts
+import { sqlite } from '@ai-i18n/sqlite';
+
 aiI18n({
   sourceLang: 'zh-CN',
   locales,
-  translationMemory: { storage: 'sqlite' },
+  translationMemory: { storage: sqlite() },
 });
 ```
+
+SQLite 是独立可选包。只使用默认 JSON 的项目不安装 `@ai-i18n/sqlite`，依赖图中也不会包含
+`better-sqlite3`。
 
 数据库默认位于系统用户数据目录，可用 `AI_I18N_DATA_DIR` 覆盖，不写入项目也不提交 Git。
 项目内的 `storage.json` 只声明 SQLite，应与 `overrides.json` 一起提交。

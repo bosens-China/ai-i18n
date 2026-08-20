@@ -3,5 +3,10 @@
     "type": "file",
     "name": "ai-i18n",
     "label": "aiI18n()"
+  },
+  {
+    "type": "file",
+    "name": "ai-i18n-review",
+    "label": "aiI18nReview()"
   }
 ]

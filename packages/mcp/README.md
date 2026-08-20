@@ -49,11 +49,12 @@ server 使用 stdio 通信，标准输出专用于 MCP 协议。
 - `ai_i18n_delete_orphan_messages`：用户审查列表并明确批准后，按 `orphan_id` 原子删除孤立
   Translation Memory。删除前会整批复验；任一消息重新被源码引用时，整批失败且不修改文件。
 - `ai_i18n_list_overrides`：逐 locale 列出 `overrides.json` 中的人工值，包括 orphan，并
-  返回删除所需的 opaque `override_id`。文件级规则始终返回作为规则身份的 `files`；消息实际出现的
+  返回删除所需的 opaque `override_id`。文件级和位置级规则分别返回作为规则身份的 `files` 与
+  `occurrences`；消息实际出现的
   `source_files` 默认省略，可用 `include_source_files: true` 显式请求。
-- `ai_i18n_set_overrides`：添加或覆盖人工值。每项使用公开 `message` 对象定位；省略 `files` 表示
-  全局校对，提供一个或多个列表返回的精确 `source_file` 表示文件级校对。`comment` 与 `files`
-  可以单独使用或组合。
+- `ai_i18n_set_overrides`：添加或覆盖人工值。每项使用公开 `message` 对象定位；省略 `files` 和
+  `occurrences` 表示全局校对，提供精确 `source_file` 表示文件级校对，提供列表返回的
+  `source_file + line + column` 表示位置级校对。`files` 与 `occurrences` 互斥。
 - `ai_i18n_delete_overrides`：使用列表返回的 `override_id` 删除具体人工值。
 
 列表默认请求 100 条，`limit` 可在 1 到 500 之间调整。响应仍会保护在约 100,000 个字符内，
@@ -93,7 +94,7 @@ server 使用 stdio 通信，标准输出专用于 MCP 协议。
 - 每批最多 500 个输入。相同目标与相同值重复出现时只写一次并返回
   `deduplicated_count`；同一目标出现不同值时整批以 `DUPLICATE_TARGET_CONFLICT` 失败。
 - `affected_file_count` 统计目标消息在应用中实际出现的源文件数量。写入一次即可影响
-  对应 occurrence；文件级人工校对只统计并影响显式 `files`。需要逐文件检查时，在列表调用中请求
+  对应 occurrence；文件级和位置级人工校对只统计并影响显式范围。需要逐文件检查时，在列表调用中请求
   `include_source_files: true`。
 - 模板占位符必须保持一致，空字符串是合法译文。不一致时整批以
   `TEMPLATE_TOKEN_MISMATCH` 失败，并返回 `expected_tokens`、`received_tokens`、
@@ -102,11 +103,12 @@ server 使用 stdio 通信，标准输出专用于 MCP 协议。
 
 写入时若 `message` 不再存在，请重新调用 `ai_i18n_list_translations`，并原样复制返回的
 `message` 对象。`source_files` 过滤器只用于缩小列表范围；响应中的同名字段仅在显式请求时返回。
-它们不属于普通 Translation Memory 写入身份。人工校对更新使用单独的 `files` 字段作为可选范围；
-路径必须与列表返回的 `source_file` 完全一致。
+它们不属于普通 Translation Memory 写入身份。人工校对更新使用 `files` 或 `occurrences` 作为可选
+范围；路径与行列位置必须从列表结果原样复制。
 
-人工校对最终优先级为：文件 + `comment`、全局 + `comment`、文件默认、全局默认、自动译文、源码
-回退。`files` 是相对 Vite root 的标准化 POSIX 路径，不接受绝对路径、路径片段或 glob。
+人工校对最终优先级为：位置 + `comment`、位置默认、文件 + `comment`、文件默认、全局 +
+`comment`、全局默认、自动译文、源码回退。位置使用 1-based `line` 与 0-based `column`；源码移动后
+旧位置规则作为 orphan 保留，不自动猜测新位置。
 
 ## 孤立消息清理
 

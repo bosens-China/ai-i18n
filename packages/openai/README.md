@@ -18,7 +18,7 @@ const translator = openAI({
   baseURL: process.env.AI_BASE_URL!,
   apiKey: process.env.AI_API_KEY,
   model: process.env.AI_MODEL!,
-  systemPrompt: '按请求 locale 翻译输入文案并保持产品术语一致。',
+  style: '使用简洁的界面语气，保持 ai-i18n、Vite 与产品术语不变。',
   temperature: 1,
   maxTokens: 4096,
   timeoutMs: 120_000,
@@ -43,8 +43,9 @@ aiI18n({
 ```
 
 `temperature`、`timeoutMs`、`maxRetries` 默认分别为 `1`、`120_000`、`3`；`maxTokens`
-不设置时交给模型决定。Provider 使用 OpenAI-compatible JSON mode，并在用户提示词尾部固定
-追加纯 JSON 约束和最小示例。目标语言与批次长度生成的 Zod Schema 同时提供给 LangChain
+不设置时交给模型决定。用户只能通过 `style` 补充领域、语气、长度、大小写、术语和保留词偏好；
+翻译职责、`comment` 语义、占位符、目标语言、输入输出行对应关系与 JSON 格式由 Provider 固定维护，
+不能通过配置整体替换。Provider 使用 OpenAI-compatible JSON mode。目标语言与批次长度生成的 Zod Schema 同时提供给 LangChain
 structured output 并校验实际响应，顶层字段、输入下标、目标语言和值类型必须精确匹配；占位符
 一致性随后按 source 与译文单独校验。配置、目标语言与消息结构也会在请求前通过 Zod 校验。传入
 `langSmith` 即启用 tracing，不传则不会创建 LangSmith client。

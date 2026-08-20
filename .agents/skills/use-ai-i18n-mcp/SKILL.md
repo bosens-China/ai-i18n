@@ -51,10 +51,15 @@ observed and applied to its in-memory Runtime through HMR. This convenience does
 catalog a complete source set: first use, complete audits, and orphan decisions still require the
 full Build above. Do not restart Dev or edit generated locale files merely to expose an MCP write.
 
-The Vite Dev review console is the default interface for a person interactively choosing a small
-number of review values. This Skill remains the authority when an Agent performs batch work,
+When the target explicitly registers `aiI18nReview()`, its Vite Dev console is the preferred interface
+for a person interactively choosing a small number of review values. It is opened only from the launcher on the active business page; do not
+send the user to an internal review URL. Its in-page picker may resolve a static HTML element directly
+to one occurrence; when runtime-rendered copy has multiple candidates, the person must choose the
+exact file, line, and column rather than accepting an inferred first match. This Skill remains the
+authority when an Agent performs batch work,
 automates writes, audits the complete extracted set, or acts on explicit user-approved wording.
-Both paths write the same `overrides.json`; do not run MCP review writes concurrently with an open
+The default current-page scope can be switched to all extracted copy. Multiple picker matches enter a
+file and occurrence locate hierarchy instead of selecting the first result. Both paths write the same `overrides.json`; do not run MCP review writes concurrently with an open
 review-console save operation.
 
 ## Execute the workflow
@@ -81,7 +86,9 @@ be prepared. When `message.comment` and project terminology do not disambiguate 
 `include_occurrences: true`, then read the nearby source lines for the returned files from the target
 workspace. Do not request occurrences for every batch by default or treat paths and locations as write
 identity for Translation Memory. For a user-approved file-scoped human review, copy exact returned
-`source_file` values into the override update's `files`; never derive or shorten them. When a tool
+`source_file` values into the override update's `files`. For an occurrence-scoped review, copy the
+exact `source_file`, 1-based `line`, and 0-based `column` into `occurrences`; this is the only scope
+that distinguishes repeated calls on one line. Never derive, shorten, or guess these values. When a tool
 fails, follow its returned `next_action` before consulting the recovery reference.
 
 ## Report

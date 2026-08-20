@@ -74,16 +74,17 @@
 ### 文件职责与最终值
 
 - 缺少 storage.json 表示使用默认分片 JSON；该文件只声明 SQLite。默认的 translations/ 保存可审查分片 JSON，可选 SQLite 保存到用户级全局数据库；overrides.json 保存项目人工校对结果；extracted/ 保存插件生成的源码结构；locales/ 是派生运行时产物。
-- `overrides.json` 使用 v2 扁平 `rules`。规则以 `source`、可选静态 `comment`、可选 `files` 和
-  `translations` 表达；缺少 `files` 表示当前 Vite 应用全局生效，存在 `files` 表示只匹配列出的
-  精确源码文件。一个规则可列出多个文件；路径必须是相对 Vite root 的标准化 POSIX 路径，不支持
-  绝对路径、路径片段或 glob。
-- 最终译文优先级固定为：文件 + comment 人工值、全局 + comment 人工值、文件默认人工值、全局
-  默认人工值、AI Translation Memory、source fallback。
+- `overrides.json` 使用 v2 扁平 `rules`。规则以 `source`、可选静态 `comment`、可选 `files`、可选
+  `occurrences` 和 `translations` 表达。`files` 与 `occurrences` 互斥；缺少两者表示当前 Vite 应用
+  全局生效，`files` 匹配精确源码文件，`occurrences` 以相对 Vite root 的标准化 POSIX 文件路径、
+  1-based 行号与 0-based 列号匹配精确调用位置。一个规则可复用多个同类范围，不支持绝对路径、
+  路径片段或 glob。
+- 最终译文优先级固定为：出现位置 + comment、出现位置默认、文件 + comment、文件默认、全局 +
+  comment、全局默认、AI Translation Memory、source fallback；更精确范围始终覆盖较宽范围。
 - 人工校对必须写入 overrides.json，不污染 AI Translation Memory。空字符串是有效人工译文；
   comment 与文件范围彼此独立且可以组合。
 - Translation Memory 继续以 `source + comment` 跨文件复用；Runtime 与派生 locale 使用
-  `source file + message ID` 区分同一语义消息在不同文件中的最终人工值。该运行时身份不改变公开
+  `source file + message ID + occurrence` 区分同一语义消息在不同文件、同一行不同列的最终人工值。该运行时身份不改变公开
   `t()` 调用、Translation Memory 身份或 MCP 的消息对象。
 - JSON 模式提交源码、生成的类型声明、translations/ 和 overrides.json；SQLite 模式只提交 storage.json 与 overrides.json，用户级数据库不提交。extracted/ 与 locales/ 可由 Build 重建，不提交。
 - 一个 Vite build 独占一个协议目录。共享源码分别进入每个消费 build 的目录；多个 build 不能共用 directory，但 SQLite 可通过一个物理数据库中的逻辑项目绑定复用全局候选。
@@ -94,6 +95,11 @@
 - Alpha 阶段将单文件 translations.json 自动迁移为分片 JSON，迁移后删除旧权威来源；首个非 prerelease 稳定版本不再保留该兼容层，也不保留其他未发布旧协议的长期兼容层。
 - Alpha 阶段会接受并删除旧的 JSON 模式 storage.json；稳定版只接受 SQLite 标记，缺少标记直接表示 JSON。
 - SQLite 使用平台用户数据目录中的单个全局数据库，并允许 AI_I18N_DATA_DIR 覆盖；项目目录只记录驱动，不记录数据库路径、源码绝对路径、Provider 配置或密钥。
+- JSON 驱动内置于 core 并保持默认。SQLite 实现和 better-sqlite3 只存在于独立
+  `@ai-i18n/sqlite` 包；Vite 通过 `translationMemory.storage: sqlite()` 注入适配器，不接受新的
+  字符串 `storage: 'sqlite'` 配置。默认 JSON 项目不安装、解析或加载 SQLite 包。
+- 既有 SQLite marker 保持可读。未显式传入适配器的 MCP 等读取方，仅在 marker 指向 SQLite 时从
+  消费项目解析 `@ai-i18n/sqlite`；未安装时给出中英文恢复提示。
 - SQLite 项目身份由 realpath 后的 i18n 目录 hash 派生。候选身份包含 sourceLang、targetLang、source 与 comment；项目已有绑定优先，无绑定时只自动复用唯一候选，多个不同候选保持缺失。
 - SQLite 是本机可丢弃缓存，不提供跨机器或团队同步。数据库丢失后由 Provider 重新生成，项目人工 overrides 不受影响。
 - SQLite 引擎使用 better-sqlite3，并采用参数化固定查询、SQLite 事务、约束、索引和显式 user_version 迁移。当前四张内部缓存表不引入 ORM；出现复杂动态查询、多模块关系映射或大量 schema 迁移时优先重新评估 Drizzle。
@@ -135,17 +141,33 @@
 - Vite Dev 配置阶段把 `@ai-i18n/vite/runtime`、`@ai-i18n/vite/vue` 与 `@ai-i18n/vite/react`
   合并进 `optimizeDeps.exclude`，保留应用已有的 include/exclude。插件运行时入口不参与预构建，避免首次
   动态路由访问才被 Vite 发现并触发整页重载；应用其他依赖的按需优化仍由应用和 Vite 自己管理。
-- Vite Dev 默认在 `/__ai-i18n/` 提供翻译校对页面并在启动地址后打印链接；`review: false`
-  可关闭。校对页面首次读取时只读既有 `extracted/` 与 Translation Memory 快照作为初始列表，不扫描源码、
+- 显式注册 Review 时，`@ai-i18n/vite/review/runtime` 同样加入 `optimizeDeps.exclude`，避免首次打开
+  懒加载工作台时触发依赖优化重载。
+- Review 由 `@ai-i18n/vite/review` 的 `aiI18nReview()` 独立注册，不再属于 `aiI18n()` 默认行为或
+  `review` 选项。未注册时核心插件不注入入口、不挂载 Review API、不提供 Review 虚拟模块；Review
+  插件只在 `serve` 生效，不进入 Build、Preview、SSR 或生产产物。`/__ai-i18n/` 不作为独立页面入口。
+- Review 宿主使用 Web Component 与开放 Shadow DOM。入口壳随页面注入，完整工作台 JS 与编译后的
+  UnoCSS 在首次打开时才加载到 Shadow Root；不使用 iframe 或 postMessage，也不把 reset 或工作台
+  样式注入业务 `document.head`。内部 UI 可以使用私有 Vue workspace，但业务应用无需 Vue 或 UI 依赖。
+  页面内工作台默认
+  底部停靠，支持右侧和全屏；底部高度、右侧宽度与停靠位置作为浏览器本地 UI 偏好保存，不进入项目配置。
+- 嵌入工作台默认按当前业务 DOM 中实际渲染的文本与可翻译属性匹配原文、自动译文和人工译文，不按
+  已加载模块推断 SPA 当前页；用户可以显式切换到全部已提取文案。运行时插值按占位符模板匹配。点选
+  静态 HTML 时由 bridge 的内部 occurrence 元数据直接得到文件、行、列；Vue、React 或普通运行时
+  字符串无法唯一映射时，左侧进入可返回的定位结果层级，按文件和 occurrence 展示全部候选。在用户
+  选择位置前不得保存点选修订或静默采用第一项，退出定位层级后恢复此前的浏览范围。
+- 校对页面首次读取时只读既有 `extracted/` 与 Translation Memory 快照作为初始列表，不扫描源码、
   不触发 Provider，也不写入业务 Runtime 状态；Dev 实际转换的模块始终优先，且会遮蔽同源旧记录。没有
-  既有快照时，列表只随当前 Dev 已访问模块渐进增长。校对操作按全局或精确文件范围原子更新
+  既有快照时，列表只随当前 Dev 已访问模块渐进增长。校对操作按全局、精确文件或精确出现位置范围原子更新
   `overrides.json` 并触发 HMR，不注册到 Build、Build Watch、Preview 或生产产物。
 - 校对 UI 在发布包中由 Vite 插件携带预构建静态资源，与业务应用的框架和 UI 依赖隔离；仓库本地
   Dev 会自动把私有 review-ui workspace 挂到业务 Vite Server，并通过独立 HMR 通道刷新源码改动，
   无需先构建或复制。内部 UI workspace 包保持私有，不作为面向应用开发者的安装入口。
-- 校对页面面向笔记本和桌面浏览器，采用左侧虚拟化消息列表和右侧编辑工作台；手机布局不作为产品
+- 校对插件面向笔记本和桌面浏览器，采用左侧虚拟化消息列表和右侧编辑工作台；工作台采用紧凑
+  DevTools 布局，根据停靠宽度调整分栏比例，小视口自动全屏。手机布局不作为产品
   验收目标。左侧搜索原文、自动译文、人工译文、comment 与源码路径；目标语言和状态筛选始终单行
-  横向滚动，不因语言数增加挤压消息列表。列表和来源清单显示相对源码路径，来源位置可安全跳转到
+  横向滚动，不因语言数增加挤压消息列表。列表和来源清单显示每一个相对源码路径与行列位置；同一行
+  多次相同调用通过列号区分，选择某个位置即切换到该位置范围。来源位置可安全跳转到
   当前 Vite root 内的 VS Code 文件。静默快照刷新不得改变用户的列表滚动位置；只有选中消息真实
   变化或容器尺寸变化时才自动滚动以保持选中项可见，列表末尾必须稳定停留并显示最后一条文案。
 - 语言、状态与作用范围使用同一紧凑分段控件规格，保持 28px 高和 12px 字号；作用范围按内容紧凑
@@ -153,8 +175,8 @@
 - 搜索框和人工译文框使用一致的柔和焦点反馈：边框、背景和低透明度微光在约 200ms 内渐变，不通过
   缩放或位移改变布局；系统启用减少动态效果时关闭过渡，同时保留清晰的静态焦点状态。
 - 未保存输入在当前页面会话内按消息、目标语言和作用范围隔离，切换筛选、搜索、语言或范围不会
-  丢失；关闭或刷新页面不承诺保留。作用范围固定为“当前文件”和“所有文件”两个 Tabs；当前文件
-  与左侧条目展示的首个来源路径一致。
+  丢失；关闭或刷新页面不承诺保留。作用范围固定为“当前位置”“当前文件”和“所有文件”三个 Tabs；
+  当前文件取自当前选中的出现位置。源码移动后旧位置规则不自动猜测或迁移，而作为 orphan 等待审查。
 - 无当前人工覆盖时，人工输入框默认留空；自动译文只作为可显式填入的参考。仅非空且模板 Token
   有效的人工输入可以确认；已有人工覆盖按“保存修改”和“已保存”区分。支持 `Command/Ctrl + Enter`
   保存、`Command/Ctrl + Shift + Enter` 保存并继续、`Alt + A` 填入自动译文，以及在非文本输入焦点下
@@ -173,6 +195,10 @@
 - 实现 reportBatchEvent 的 Translator 始终接收 scheduled、state-applied、persisted、failed 事件；事件按 stage 使用判别联合类型并始终携带规范化 logging。关闭日志只禁止写入日志文件，不禁止事件派发。
 - OpenAI 审查日志完整保留实际 messages、每个 choice 的 assistant message、思考、回复、usage、重试、错误和校验结果，过滤未设置参数、SDK runtime 字段与常规传输 Header；未知 message 扩展字段不能因格式化丢失。
 - OpenAI Provider 直接使用 Zod 4 统一解析配置、批次输入和安全错误状态；按目标 locale 与批次长度生成的动态 Zod Schema 同时交给 LangChain structured output 并校验响应，不能再并行维护手写 JSON Schema 与对象结构判断。占位符一致性等跨 source/translation 的业务不变量保留专用校验；SDK 日志格式化为兼容未知扩展字段保持宽松读取。
+- OpenAI Provider 的公开提示词配置只保留 `style`，用于领域、语气、长度、大小写、术语与保留词偏好；
+  `systemPrompt` 不再接受。翻译职责、comment 语义、不可改内容、模板占位符、目标语言、输入输出行映射
+  与 JSON 结构全部由 Provider 固定维护。模型 user message 仍只包含当前 Coordinator 调度的缺失消息
+  JSON 批次，style 变化不自动成为 Translation Memory 缓存指纹。
 - OpenAI 日志必须脱敏显式 API key 与常见认证 Header。日志可能包含业务文案与模型输出，仓库和接入文档必须忽略 `logs/`、`*.log` 与自定义日志目录；日志写入失败或追踪接收器异常不能改变翻译、提取、缓存或 Build 结果。
 - Vite 为每次实际 Translator 批次分配诊断 `batchId`；OpenAI 日志用同一 ID 串联调度、REQUEST、RESPONSE、VALIDATION、状态应用、持久化与失败事件，并发批次不得串号。`batchId` 不进入模型提示词、消息身份、缓存键或 Translation Memory 协议；追踪接收器失败不能改变翻译与 Build。
 
@@ -202,9 +228,10 @@
 - MCP 读取目标 build 的完整 extracted 集合，因此同一目录同时包含应用源码和它实际消费的本地 workspace 源码；纯源码子包不是独立 MCP 目标。
 - MCP 的公开消息身份是 source 与可选静态 comment 组成的对象；内部编码后的 message ID
   不暴露给调用方，source_file 也不参与写入身份。
-- 相同消息跨文件共享一份翻译。列表按消息聚合，默认省略 source_files 与 occurrence；显式请求时
-  可返回完整共享文件范围，或返回每个文件与完整行列位置。路径与位置只用于读取附近源码语境，
-  MCP 不读取源码片段，也不把上下文加入写入身份。相同目标和值的批量重复输入只执行一次，同一目标的不同值必须失败，不能由工具猜测。
+- 相同消息跨文件共享一份自动翻译。列表按消息聚合，默认省略 source_files 与 occurrence；显式请求时
+  可返回完整共享文件范围，或返回每个文件与完整行列位置。路径与位置不参与 Translation Memory
+  身份，但可原样复制为人工覆盖的 `files` 或 `occurrences` 范围；MCP 不读取源码片段。相同目标和值的
+  批量重复输入只执行一次，同一目标的不同值必须失败，不能由工具猜测。
 - 自动译文与人工覆盖写入都必须在修改存储前校验模板 token。缺失、多出、改变编号或重复次数
   不一致时整批失败，并返回期望、实际、缺失与多余 token，供 Agent 修正后重试。
 - 批量参数中重复出现的同一个未知字段合并为一条校验错误，并返回出现次数、首次位置、合法字段和

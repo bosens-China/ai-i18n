@@ -39,8 +39,8 @@ t('保存', { comment: '保存状态' });
 
 ## 使用翻译校对页面
 
-Vite Dev 默认提供翻译校对页面。它会显示原文、静态 `comment`、自动译文、出现文件和已有人工
-译文。保存后，业务页面会通过 HMR 立即使用新结果。
+在 Vite 配置中注册 `aiI18nReview()` 后，Vite Dev 会提供翻译校对工作台。它会显示原文、静态
+`comment`、自动译文、出现文件和已有人工译文。保存后，业务页面会通过 HMR 立即使用新结果。
 
 打开方式、筛选功能、作用范围与常见问题见[翻译校对](/guide/basic/translation-review)。
 
@@ -115,8 +115,21 @@ SQLite 模式不适合直接编辑数据库，请使用 Provider 或 Agent + MCP
 }
 ```
 
-`comment` 与 `files` 可以单独使用，也可以组合。最终优先级从高到低是：文件 + `comment`、全局 +
-`comment`、文件默认、全局默认、自动译文、源码回退。建议使用
+`comment` 与 `files` 可以单独使用，也可以组合。
+
+同一文件甚至同一行的多次调用需要不同译法时，使用 `occurrences` 保存精确位置。`file` 是相对 Vite
+`root` 的标准化路径，`line` 从 1 开始，`column` 从 0 开始；`occurrences` 与 `files` 不能同时出现：
+
+```json
+{
+  "source": "保存",
+  "occurrences": [{ "file": "src/editor/actions.ts", "line": 12, "column": 8 }],
+  "translations": { "en-US": "Save this action" }
+}
+```
+
+完整优先级为：出现位置 + `comment`、出现位置默认、文件 + `comment`、文件默认、全局 + `comment`、
+全局默认、自动译文、源码回退。源码移动后旧位置不会模糊匹配到其他调用。建议使用
 [Agent + MCP](/guide/advanced/ai-tools) 列出现有文案和精确路径，确认措辞后再写入；不要自行构造
 语境标识。生成目录 `i18n/extracted/` 和 `i18n/locales/` 不接受人工编辑。
 

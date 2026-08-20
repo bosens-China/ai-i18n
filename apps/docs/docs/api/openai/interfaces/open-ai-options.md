@@ -21,27 +21,27 @@ interface OpenAIOptions {
   timeoutMs?: number;
   maxRetries?: number;
   headers?: HeadersInit;
-  systemPrompt?: string;
+  style?: string;
   langSmith?: LangSmithOptions;
 }
 ```
 
 ## 字段
 
-| 字段           | 类型                                                          | 必填 | 默认值             | 约束      | 作用                                 |
-| -------------- | ------------------------------------------------------------- | ---- | ------------------ | --------- | ------------------------------------ |
-| `baseURL`      | `string`                                                      | 是   | 无                 | 非空      | OpenAI-compatible API 根地址。       |
-| `model`        | `string`                                                      | 是   | 无                 | 非空      | 显式选择模型。                       |
-| `apiKey`       | `string`                                                      | 否   | 本地服务使用占位值 | 无        | 请求认证密钥。                       |
-| `temperature`  | `number`                                                      | 否   | `1`                | ≥ 0       | 传给模型的 temperature。             |
-| `maxTokens`    | `number`                                                      | 否   | 由模型决定         | 整数；> 0 | 单次响应 token 上限。                |
-| `timeoutMs`    | `number`                                                      | 否   | `120000`           | 整数；> 0 | 单次请求超时，单位为毫秒。           |
-| `maxRetries`   | `number`                                                      | 否   | `3`                | 整数；≥ 0 | LangChain 层的最大重试次数。         |
-| `headers`      | `HeadersInit`                                                 | 否   | 无                 | 无        | 追加到 Provider 请求的 HTTP Header。 |
-| `systemPrompt` | `string`                                                      | 否   | 内置翻译提示词     | 非空      | 覆盖产品领域、术语和风格要求。       |
-| `langSmith`    | [LangSmithOptions](/api/openai/interfaces/lang-smith-options) | 否   | 不启用             | 无        | 启用 LangSmith tracing。             |
+| 字段          | 类型                                                          | 必填 | 默认值             | 约束         | 作用                                 |
+| ------------- | ------------------------------------------------------------- | ---- | ------------------ | ------------ | ------------------------------------ |
+| `baseURL`     | `string`                                                      | 是   | 无                 | 非空         | OpenAI-compatible API 根地址。       |
+| `model`       | `string`                                                      | 是   | 无                 | 非空         | 显式选择模型。                       |
+| `apiKey`      | `string`                                                      | 否   | 本地服务使用占位值 | 无           | 请求认证密钥。                       |
+| `temperature` | `number`                                                      | 否   | `1`                | ≥ 0          | 传给模型的 temperature。             |
+| `maxTokens`   | `number`                                                      | 否   | 由模型决定         | 整数；> 0    | 单次响应 token 上限。                |
+| `timeoutMs`   | `number`                                                      | 否   | `120000`           | 整数；> 0    | 单次请求超时，单位为毫秒。           |
+| `maxRetries`  | `number`                                                      | 否   | `3`                | 整数；≥ 0    | LangChain 层的最大重试次数。         |
+| `headers`     | `HeadersInit`                                                 | 否   | 无                 | 无           | 追加到 Provider 请求的 HTTP Header。 |
+| `style`       | `string`                                                      | 否   | 无                 | 空白视为省略 | 补充产品领域、术语和语言风格偏好。   |
+| `langSmith`   | [LangSmithOptions](/api/openai/interfaces/lang-smith-options) | 否   | 不启用             | 无           | 启用 LangSmith tracing。             |
 
-`baseURL`、`model` 和显式传入的 `systemPrompt` 去除首尾空白后不能为空。`temperature` 必须
+`baseURL` 和 `model` 去除首尾空白后不能为空；`style` 会去除首尾空白，空白值等同于省略。`temperature` 必须
 大于或等于 `0`；`maxTokens` 与 `timeoutMs` 必须是正整数；`maxRetries` 必须是非负整数。
 `headers` 会按标准 `HeadersInit` 解析并规范化。所有配置在创建 Provider 时一次性校验；任一字段
 无效都会在模型请求发出前报告具体字段，不会等到 Dev 或 Build 的首个翻译批次才失败。
@@ -68,10 +68,11 @@ Build 的结果。
 
 完整阅读与排障方法见 [LLM 日志与排障](/guide/advanced/llm-logs)。
 
-## systemPrompt
+## style
 
-`systemPrompt` 只需要描述翻译要求。Provider 会追加目标语言、`source` / `comment` 输入约定、
-占位符规则和固定 JSON 输出约束。
+`style` 只描述团队希望调整的翻译风格。Provider 固定维护专业翻译职责、目标语言、`source` /
+`comment` 输入约定、不可改内容、占位符规则、输入输出行对应关系和 JSON 输出约束。`style` 不能替换
+这些规则；旧的 `systemPrompt` 已移除，传入时会在模型请求前报错。
 
 推荐说明：
 
@@ -81,5 +82,5 @@ Build 的结果。
 - 固定术语及其目标语言写法；
 - 如何利用 `comment` 消除歧义。
 
-不要在自定义提示词中重复定义返回 JSON 的字段。完整示例见
-[AI 翻译](/guide/advanced/ai-translation#如何编写-systemprompt)。
+不要在 `style` 中重复定义返回 JSON 的字段、数组长度或占位符协议。完整示例见
+[AI 翻译](/guide/advanced/ai-translation#编写翻译风格)。
