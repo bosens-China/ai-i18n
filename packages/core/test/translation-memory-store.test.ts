@@ -1,7 +1,10 @@
+import { execFile } from 'node:child_process';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
+import { pathToFileURL } from 'node:url';
+import { promisify } from 'node:util';
 import { afterEach, describe, expect, it } from 'vitest';
 import {
   openTranslationMemoryStore,
@@ -9,6 +12,7 @@ import {
 } from '../src/translation-memory';
 
 const tempDirectories: string[] = [];
+const execFileAsync = promisify(execFile);
 
 afterEach(async () => {
   await Promise.all(
@@ -153,9 +157,30 @@ describe('Translation Memory stores', () => {
       stableJson({ version: 1, storage: 'sqlite' }),
     );
 
-    await expect(openTranslationMemoryStore({ directory })).rejects.toThrow(
-      'install @ai-i18n/sqlite',
+    const entry = pathToFileURL(
+      path.resolve(import.meta.dirname, '../dist/translation-memory.js'),
+    ).href;
+    const script = `
+      import { openTranslationMemoryStore } from ${JSON.stringify(entry)};
+
+      try {
+        const store = await openTranslationMemoryStore({ directory: process.argv[1] });
+        store.close();
+        process.stdout.write('resolved');
+      } catch (error) {
+        process.stdout.write(error instanceof Error ? error.message : String(error));
+      }
+    `;
+    const env = { ...process.env };
+    // pnpm 的 Vitest shim 会注入 workspace NODE_PATH；子进程需模拟真实的未安装消费项目。
+    delete env.NODE_PATH;
+
+    const { stdout } = await execFileAsync(
+      process.execPath,
+      ['--input-type=module', '--eval', script, directory],
+      { env },
     );
+    expect(stdout).toContain('install @ai-i18n/sqlite');
   });
 });
 
