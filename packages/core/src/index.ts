@@ -32,6 +32,19 @@ export type {
   ReviewSourceLocation,
 } from './review-contracts.js';
 export {
+  REVIEW_UI_THEME_CHANGE_EVENT,
+  REVIEW_UI_THEME_STORAGE_KEY,
+  parseReviewUiThemePreference,
+  readResolvedReviewUiTheme,
+  readReviewUiThemePreference,
+  resolveReviewUiTheme,
+  saveReviewUiThemePreference,
+} from './review-ui-theme.js';
+export type {
+  ReviewUiTheme,
+  ReviewUiThemePreference,
+} from './review-ui-theme.js';
+export {
   AiI18nSchemaError,
   TranslationConflictError,
   parseExtractedFile,
