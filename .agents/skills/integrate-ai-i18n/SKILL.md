@@ -47,11 +47,18 @@ never restore the removed `review` core option. Do not add tokens, authenticatio
 Its UI assets and internal Vue implementation are bundled with `@ai-i18n/vite`; do not install Vue or a
 UI library into the target solely for Review. The host is a Web Component with Shadow DOM, and its
 UnoCSS must stay inside that root rather than being added to the application's global CSS pipeline.
-In Dev, verify the bottom launcher on a real business page, all three docks, the default current-page
-scope, switching to all extracted copy, and the absence of the launcher when the Review plugin is
-removed. Dock and size preferences are browser-local UI state and must not enter Vite config. When
+In Dev, verify the bottom launcher on a real business page, the workbench flush with the viewport
+bottom, the default current-page scope, switching to all extracted copy, and the absence of the
+launcher when the Review plugin is removed. The height preference is browser-local UI state and must
+not enter Vite config. For multiple target locales, verify the locale rail precedes search and status
+controls in the all-page filters, and stays beside the message list in current-page view. Verify the
+file-type filter lists only suffixes present in extracted source files and composes with the other
+filters. Source locations and editor links belong to message rows rather than the editor detail. When
 element picking returns multiple messages or occurrences, preserve every candidate in the locate
 hierarchy and let the user select the exact file, line, and column; never choose the first candidate.
+Verify that pointer movement shows a visible DOM locator before selection.
+Click a current-page message in either main scope and verify the business page scrolls the first visible
+match above the fixed panel. An all-page message absent from the current DOM must only update selection.
 The workbench has no standalone user-facing URL; open and verify it only through the active page.
 
 This Skill owns package installation, Vite configuration, Runtime source integration, and integration
