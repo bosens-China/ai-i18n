@@ -19,6 +19,7 @@ import {
 } from './file-store-paths.js';
 import {
   readGeneratedJsonFiles,
+  type GeneratedJsonFile,
   warnExtractedMismatches,
   writeProtocolJson,
 } from './file-store-io.js';
@@ -273,19 +274,17 @@ export class FileStore {
       }
     }
 
-    const { allDiskExtracted, missingSources } = await this.measure(
-      'extracted-scan',
-      options,
-      async () => {
-        const allDiskExtracted = await this.readExtractedFiles();
+    const { allDiskEntries, allDiskExtracted, missingSources } =
+      await this.measure('extracted-scan', options, async () => {
+        const allDiskEntries = await this.readExtractedFileEntries();
+        const allDiskExtracted = allDiskEntries.map((entry) => entry.value);
         const missingSources = await findMissingSources(
           this.options.root,
           allDiskExtracted,
           this.options.cleanupMissingSourceFiles !== false,
         );
-        return { allDiskExtracted, missingSources };
-      },
-    );
+        return { allDiskEntries, allDiskExtracted, missingSources };
+      });
     warnExtractedMismatches(
       allDiskExtracted,
       snapshot,
@@ -314,6 +313,17 @@ export class FileStore {
       ? diskExtracted.map((file) => file.source)
       : snapshot.seen;
     await this.measure('extracted-write', options, async () => {
+      if (options.complete) {
+        // 完整 Build 的 snapshot 是全量真相，可以安全移除旧命名 generated 文件。
+        for (const entry of allDiskEntries) {
+          if (
+            path.resolve(entry.file) !==
+            path.resolve(extractedPath(this.directory, entry.value.source))
+          ) {
+            await fs.rm(entry.file, { force: true });
+          }
+        }
+      }
       for (const source of staleSources) {
         if (!activeExtracted.has(source)) await this.removeExtracted(source);
       }
@@ -345,6 +355,12 @@ export class FileStore {
   }
 
   private async readExtractedFiles(): Promise<ExtractedFile[]> {
+    return (await this.readExtractedFileEntries()).map((entry) => entry.value);
+  }
+
+  private readExtractedFileEntries(): Promise<
+    Array<GeneratedJsonFile<ExtractedFile>>
+  > {
     return readGeneratedJsonFiles(
       path.join(this.directory, 'extracted'),
       'extracted',

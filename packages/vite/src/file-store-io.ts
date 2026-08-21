@@ -4,16 +4,21 @@ import { writeFile } from 'atomically';
 import { listJsonFiles, readJson, readText, stableJson } from './json-files.js';
 import type { ProjectSnapshot } from './project-state.js';
 
+export interface GeneratedJsonFile<T> {
+  file: string;
+  value: T;
+}
+
 export async function readGeneratedJsonFiles<T>(
   directory: string,
   kind: string,
   parse: (value: unknown) => T,
   onWarning?: (message: string) => void,
-): Promise<T[]> {
-  const values: T[] = [];
+): Promise<Array<GeneratedJsonFile<T>>> {
+  const values: Array<GeneratedJsonFile<T>> = [];
   for (const file of await listJsonFiles(directory)) {
     const value = await readJson(file);
-    if (value !== undefined) values.push(parse(value));
+    if (value !== undefined) values.push({ file, value: parse(value) });
     else
       onWarning?.(
         diagnosticMessage(

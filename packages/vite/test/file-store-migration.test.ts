@@ -13,6 +13,27 @@ import { options, readJson, setup } from './file-store-test-utils';
 import { updateTestTranslationMemory } from './translation-memory-test-utils';
 
 describe('FileStore migrations', () => {
+  it('removes legacy extracted filenames during a complete sync', async () => {
+    const { root, state, store } = await setup();
+    const source = path.join(root, 'src/main.ts');
+    const code = "import { t } from 'virtual:ai-i18n'; t('保存')";
+    await fs.writeFile(source, code);
+    state.update(code, source);
+    await store.sync(state.snapshot());
+
+    const canonical = extractedTestPath(root, 'src/main.ts');
+    const legacy = path.join(root, 'i18n/extracted/src_main.ts.json');
+    await fs.copyFile(canonical, legacy);
+
+    await store.sync(state.snapshot());
+    await expect(fs.access(legacy)).resolves.toBeUndefined();
+
+    await store.sync(state.snapshot(), { complete: true });
+
+    await expect(fs.access(canonical)).resolves.toBeUndefined();
+    await expect(fs.access(legacy)).rejects.toMatchObject({ code: 'ENOENT' });
+  });
+
   it('migrates a legacy memory file when FileStore loads without changes', async () => {
     const { root, store } = await setup();
     const directory = path.join(root, 'i18n');
