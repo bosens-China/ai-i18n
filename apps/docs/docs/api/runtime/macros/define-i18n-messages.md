@@ -23,6 +23,9 @@ t(messages.save);
 t(messages.states[index]);
 ```
 
+集合可以放在独立 ESM 源码中导出，再通过相对路径、Vite alias 或 tsconfig paths 导入；无需为了
+静态分析把集合移动到调用文件，也不需要在首次打开页面前手工预热依赖。
+
 宏用于“先定义集合，再把其中某个成员交给 `t()`”的写法。如果需要一次翻译整棵纯文案对象
 或数组，可以直接写 `t(messages)`；Vue setup 中可以写 `tRef(messages)`。这两种整树调用
 不需要宏，也不要求 `as const`：

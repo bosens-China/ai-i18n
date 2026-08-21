@@ -135,9 +135,10 @@
   分析、注册、依赖解析、状态事务、快照、extracted 扫描/写入、Translation Memory 和 locale 写入
   子阶段。阶段允许嵌套，不能直接相加；日志遵循中英文诊断策略，不输出源码正文、译文、绝对机器路径
   或凭据，也不进入 Build 或项目文件。
-- `dependency-resolution` 包含 Vite `resolve()` 以及尚未分析依赖的 `load()` 等待，可能覆盖子模块的
-  嵌套转换，不能把整段耗时视为插件自身的解析 CPU。当前不为单条百毫秒日志引入复杂解析缓存或并发
-  调度；只有多个真实大型项目证明它稳定处于用户可见关键路径，且能与子模块加载分离归因时才重新评估。
+- `dependency-resolution` 包含 Vite `resolve()`、尚未分析本地依赖的 Dev Environment 完整转换或
+  Build `load()` 等待，可能覆盖子模块的嵌套转换。Dev 必须在 importer 首次返回前完成依赖分析并刷新
+  当前注册，避免合法跨文件静态值只更新内存状态却留下缓存的错误产物。不能把整段耗时视为插件自身的
+  解析 CPU；只有多个真实大型项目证明它稳定处于用户可见关键路径，且能与子模块加载分离归因时才重新评估。
 - Vite Dev 配置阶段把 `@ai-i18n/vite/runtime`、`@ai-i18n/vite/vue` 与 `@ai-i18n/vite/react`
   合并进 `optimizeDeps.exclude`，保留应用已有的 include/exclude。插件运行时入口不参与预构建，避免首次
   动态路由访问才被 Vite 发现并触发整页重载；应用其他依赖的按需优化仍由应用和 Vite 自己管理。

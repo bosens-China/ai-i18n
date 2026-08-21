@@ -2,7 +2,7 @@ import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
-import { build, createServer } from 'vite';
+import { build, createLogger, createServer } from 'vite';
 import { aiI18n } from '../src/index';
 import { ProjectState } from '../src/project-state';
 import { extractedTestPath } from './extracted-test-path';
@@ -48,6 +48,117 @@ describe('Vite integration', () => {
       await expect
         .poll(() => extractedSources(root))
         .toEqual(['src/lazy.ts', 'src/main.ts']);
+    } finally {
+      await server.close();
+    }
+  });
+
+  it('finishes aliased cross-file analysis before the first dev transform returns', async () => {
+    const root = await fixtureRoot();
+    await write(
+      root,
+      'src/main.ts',
+      [
+        "import { t } from 'virtual:ai-i18n'",
+        "import { messages } from '@/messages'",
+        'declare const index: number',
+        'console.log(t(messages.status), t(messages.steps[index]))',
+      ].join('\n'),
+    );
+    await write(
+      root,
+      'src/messages.ts',
+      [
+        'export const messages = defineI18nMessages({',
+        "  status: '跨文件状态',",
+        "  steps: ['第一步', '第二步'],",
+        '})',
+      ].join('\n'),
+    );
+    const warnings: string[] = [];
+    const logger = createLogger('silent');
+    logger.warn = (message) => warnings.push(message);
+    const server = await createServer({
+      root,
+      configFile: false,
+      appType: 'custom',
+      customLogger: logger,
+      server: { middlewareMode: true },
+      resolve: {
+        alias: {
+          '@': path.join(root, 'src'),
+          '@ai-i18n/vite/runtime': runtimeEntry,
+        },
+      },
+      plugins: [plugin()],
+    });
+
+    try {
+      const first = await server.transformRequest('/src/main.ts');
+      expect(first?.code).toContain('跨文件状态');
+      expect(first?.code).toContain('第一步');
+      expect(first?.code).toContain('第二步');
+      expect(first?.code).toContain('t.__aiI18nAt');
+      expect(
+        warnings.filter(
+          (message) =>
+            message.includes('statically extractable') ||
+            message.includes('静态提取'),
+        ),
+      ).toEqual([]);
+
+      await server.transformRequest('/src/messages.ts');
+      const cached = await server.transformRequest('/src/main.ts');
+      expect(cached?.code).toBe(first?.code);
+      await expect
+        .poll(() => extractedMessageIds(root, 'src/main.ts'))
+        .toEqual(['第一步', '第二步', '跨文件状态']);
+    } finally {
+      await server.close();
+    }
+  });
+
+  it('does not recursively wait on cyclic cross-file analysis', async () => {
+    const root = await fixtureRoot();
+    await write(
+      root,
+      'src/main.ts',
+      [
+        "import { t } from 'virtual:ai-i18n'",
+        "import { childMessage } from './messages'",
+        "export const parentMessage = '父级循环文案'",
+        'console.log(t(childMessage))',
+      ].join('\n'),
+    );
+    await write(
+      root,
+      'src/messages.ts',
+      [
+        "import { t } from 'virtual:ai-i18n'",
+        "import { parentMessage } from './main'",
+        "export const childMessage = '子级循环文案'",
+        'console.log(t(parentMessage))',
+      ].join('\n'),
+    );
+    const server = await createServer({
+      root,
+      configFile: false,
+      appType: 'custom',
+      logLevel: 'silent',
+      server: { middlewareMode: true },
+      resolve: { alias: { '@ai-i18n/vite/runtime': runtimeEntry } },
+      plugins: [plugin()],
+    });
+
+    try {
+      const result = await server.transformRequest('/src/main.ts');
+      expect(result?.code).toContain('子级循环文案');
+      await expect
+        .poll(() => extractedMessageIds(root, 'src/main.ts'))
+        .toEqual(['子级循环文案']);
+      await expect
+        .poll(() => extractedMessageIds(root, 'src/messages.ts'))
+        .toEqual(['父级循环文案']);
     } finally {
       await server.close();
     }
@@ -202,6 +313,13 @@ async function extractedSources(root: string) {
     }),
   );
   return sources.sort();
+}
+
+async function extractedMessageIds(root: string, source: string) {
+  const extracted = await readJson<ExtractedFile>(
+    extractedTestPath(root, source),
+  );
+  return extracted.messages.map(({ id }) => id).sort();
 }
 
 async function readJson<T>(filename: string): Promise<T> {

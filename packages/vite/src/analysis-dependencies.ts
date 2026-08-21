@@ -1,8 +1,9 @@
-import { normalizePath } from 'vite';
+import { normalizePath, type Environment } from 'vite';
 import type { DevStateTaskRunner } from './dev-state-queue.js';
 import type { ProjectState } from './project-state.js';
 
 interface AnalysisPluginContext {
+  environment: Environment;
   resolve(
     source: string,
     importer: string,
@@ -43,7 +44,12 @@ export async function resolveAnalysisDependencies(
       () => pending && Boolean(targetId && !project.analyzer.module(targetId)),
     );
     if (shouldLoad) {
-      await context.load({ id: resolvedId });
+      // Dev 必须走完整环境转换管线，确保依赖在 importer 返回前进入 Analyzer。
+      if (context.environment.mode === 'dev') {
+        await context.environment.transformRequest(resolvedId);
+      } else {
+        await context.load({ id: resolvedId });
+      }
       changed = true;
     }
   }

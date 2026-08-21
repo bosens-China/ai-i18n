@@ -88,7 +88,8 @@ aiI18n({
 `plugin-ready-wait`、`source-analysis`、`source-registration`、`dependency-resolution`、
 `state-transaction`、`snapshot-build`、`extracted-scan`、`translation-memory-sync`、
 `extracted-write` 与 `locale-write` 子阶段。总阶段与子阶段可能嵌套，不能直接相加。
-其中 `dependency-resolution` 可能包含 Vite `resolve()`、`load()` 和子模块嵌套转换等待，
+其中 `dependency-resolution` 可能包含 Vite `resolve()`、Dev Environment 完整转换或 Build
+`load()`，以及子模块嵌套转换等待，
 不是纯粹的插件解析 CPU，需结合页面可见时间和子模块日志判断是否处于关键路径。
 `timing: true` 使用 50ms 默认阈值。日志不包含源码正文、译文或凭据，也不写入项目文件；
 排查结束后应关闭。
@@ -182,6 +183,9 @@ const messages = defineI18nMessages({
 });
 t(messages.states[index]);
 ```
+
+消息集合可以从独立 ESM 源码导入；Dev 首次请求会先按 Vite 的最终解析结果转换尚未分析的本地
+依赖，因此相对路径、alias、tsconfig paths 与 resolver plugin 不需要预热或手工刷新。
 
 宏只能直接调用，不能赋值或传递；它在客户端、SSR transform 与 `aiI18nVitest()` 中消除为
 原参数，不提供冻结或运行时校验。生成的 `ai-i18n.d.ts` 始终包含它的全局类型。
