@@ -17,6 +17,13 @@ export interface ReviewWorkbenchController {
   destroy(): void;
 }
 
+export interface ReviewWorkbenchOptions {
+  onLocateMessage?: (messageKey: string) => void;
+}
+
 export interface ReviewWorkbenchModule {
-  mountReviewWorkbench(container: HTMLElement): ReviewWorkbenchController;
+  mountReviewWorkbench(
+    container: HTMLElement,
+    options?: ReviewWorkbenchOptions,
+  ): ReviewWorkbenchController;
 }

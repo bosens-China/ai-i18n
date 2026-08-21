@@ -8,6 +8,13 @@ import unoConfig from './uno.config.ts';
 
 const REVIEW_STYLE_ID = '/review-ui.css';
 const RESOLVED_REVIEW_STYLE_ID = '\0ai-i18n:review-ui.css';
+const REVIEW_STYLE_FILES = [
+  'theme.css',
+  'layout.css',
+  'list.css',
+  'studio.css',
+  'main.css',
+] as const;
 
 function shadowStyles(): Plugin {
   return {
@@ -21,17 +28,21 @@ function shadowStyles(): Plugin {
     async load(id) {
       if (id.split('?', 1)[0] !== RESOLVED_REVIEW_STYLE_ID) return;
       const root = fileURLToPath(new URL('.', import.meta.url));
-      const [reset, main, sources] = await Promise.all([
+      const [reset, styles, sources] = await Promise.all([
         fs.readFile(
           fileURLToPath(import.meta.resolve('@unocss/reset/tailwind.css')),
           'utf8',
         ),
-        fs.readFile(path.join(root, 'src/styles/main.css'), 'utf8'),
+        Promise.all(
+          REVIEW_STYLE_FILES.map((file) =>
+            fs.readFile(path.join(root, 'src/styles', file), 'utf8'),
+          ),
+        ),
         readSources(path.join(root, 'src')),
       ]);
       const generator = await createGenerator(unoConfig);
       const generated = await generator.generate(sources);
-      return `${reset}\n${generated.css}\n${main}`;
+      return `${reset}\n${generated.css}\n${styles.join('\n')}`;
     },
   };
 }

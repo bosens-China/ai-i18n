@@ -1,43 +1,30 @@
-export type ReviewPanelDock = 'bottom' | 'right' | 'full';
-
 export interface ReviewPanelPreferences {
-  dock: ReviewPanelDock;
-  bottomSize: number;
-  rightSize: number;
+  height: number;
 }
 
 export interface ReviewViewport {
-  width: number;
   height: number;
 }
 
 export const DEFAULT_REVIEW_PANEL_PREFERENCES: ReviewPanelPreferences = {
-  dock: 'bottom',
-  bottomSize: 420,
-  rightSize: 560,
+  height: 420,
 };
 
-const PANEL_GUTTER = 12;
+const PANEL_TOP_GUTTER = 12;
 const PANEL_MIN_BOTTOM = 280;
-const PANEL_MIN_RIGHT = 520;
-
 export function parseReviewPanelPreferences(
   value: string | null,
 ): ReviewPanelPreferences {
   if (!value) return { ...DEFAULT_REVIEW_PANEL_PREFERENCES };
   try {
-    const parsed = JSON.parse(value) as Partial<ReviewPanelPreferences>;
+    const parsed = JSON.parse(value) as Partial<ReviewPanelPreferences> & {
+      bottomSize?: unknown;
+    };
     return {
-      dock: isReviewPanelDock(parsed.dock)
-        ? parsed.dock
-        : DEFAULT_REVIEW_PANEL_PREFERENCES.dock,
-      bottomSize: finiteSize(
-        parsed.bottomSize,
-        DEFAULT_REVIEW_PANEL_PREFERENCES.bottomSize,
-      ),
-      rightSize: finiteSize(
-        parsed.rightSize,
-        DEFAULT_REVIEW_PANEL_PREFERENCES.rightSize,
+      // 兼容读取旧版本保存的底部高度，停靠方向和右侧宽度不再生效。
+      height: finiteSize(
+        parsed.height ?? parsed.bottomSize,
+        DEFAULT_REVIEW_PANEL_PREFERENCES.height,
       ),
     };
   } catch {
@@ -45,41 +32,30 @@ export function parseReviewPanelPreferences(
   }
 }
 
-export function reviewPanelSize(
+export function reviewPanelHeight(
   preferences: ReviewPanelPreferences,
-  dock: Exclude<ReviewPanelDock, 'full'>,
   viewport: ReviewViewport,
 ): number {
-  const requested =
-    dock === 'bottom' ? preferences.bottomSize : preferences.rightSize;
-  const minimum = dock === 'bottom' ? PANEL_MIN_BOTTOM : PANEL_MIN_RIGHT;
-  const available =
-    (dock === 'bottom' ? viewport.height : viewport.width) - PANEL_GUTTER * 2;
-  return clamp(requested, Math.min(minimum, available), available);
+  const available = Math.max(0, viewport.height - PANEL_TOP_GUTTER);
+  return clamp(
+    preferences.height,
+    Math.min(PANEL_MIN_BOTTOM, available),
+    available,
+  );
 }
 
-export function resizeReviewPanel(
-  preferences: ReviewPanelPreferences,
-  dock: Exclude<ReviewPanelDock, 'full'>,
-  pointer: { x: number; y: number },
+export function resizeReviewPanelHeight(
+  pointerY: number,
   viewport: ReviewViewport,
 ): ReviewPanelPreferences {
-  const requested =
-    dock === 'bottom'
-      ? viewport.height - pointer.y - PANEL_GUTTER
-      : viewport.width - pointer.x - PANEL_GUTTER;
-  const next = { ...preferences };
-  const minimum = dock === 'bottom' ? PANEL_MIN_BOTTOM : PANEL_MIN_RIGHT;
-  const available =
-    (dock === 'bottom' ? viewport.height : viewport.width) - PANEL_GUTTER * 2;
-  const size = clamp(requested, Math.min(minimum, available), available);
-  if (dock === 'bottom') next.bottomSize = size;
-  else next.rightSize = size;
-  return next;
-}
-
-function isReviewPanelDock(value: unknown): value is ReviewPanelDock {
-  return value === 'bottom' || value === 'right' || value === 'full';
+  const available = Math.max(0, viewport.height - PANEL_TOP_GUTTER);
+  return {
+    height: clamp(
+      viewport.height - pointerY,
+      Math.min(PANEL_MIN_BOTTOM, available),
+      available,
+    ),
+  };
 }
 
 function finiteSize(value: unknown, fallback: number): number {

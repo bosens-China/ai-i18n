@@ -1,0 +1,58 @@
+.review-main-tabs {
+  box-shadow: inset 0 -1px 0 var(--review-grid-line);
+}
+
+/* 布局由工作台容器宽度决定，避免依赖业务页面的 viewport 断点。 */
+.review-workspace[data-layout='page'] {
+  grid-template-columns: minmax(220px, 36%) minmax(0, 1fr);
+}
+
+.review-workspace[data-layout='all-wide'] {
+  grid-template-columns: minmax(176px, 20%) minmax(240px, 32%) minmax(0, 1fr);
+}
+
+.review-workspace[data-layout='all-wide'] > .review-filters {
+  grid-column: 1;
+  grid-row: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.review-workspace[data-layout='all-wide'] > .review-sidebar {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+.review-workspace[data-layout='all-wide'] > .review-studio {
+  grid-column: 3;
+  grid-row: 1;
+}
+
+.review-workspace[data-layout='all-compact'] {
+  grid-template-columns: minmax(240px, 42%) minmax(0, 1fr);
+}
+
+.review-workspace[data-layout='all-stacked'] {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto minmax(140px, 36%) minmax(0, 1fr);
+}
+
+.review-workspace[data-layout='all-stacked'] .review-filters-stacked {
+  grid-column: 1;
+  grid-row: 1;
+  border-right: 0;
+  border-bottom: 1px solid var(--review-line);
+}
+
+.review-workspace[data-layout='all-stacked'] .review-sidebar {
+  grid-column: 1;
+  grid-row: 2;
+  border-right: 0;
+  border-bottom: 1px solid var(--review-line);
+}
+
+.review-workspace[data-layout='all-stacked'] .review-studio {
+  grid-column: 1;
+  grid-row: 3;
+  border-left: 0;
+}

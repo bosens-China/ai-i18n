@@ -1,0 +1,106 @@
+.review-root,
+.review-root[data-theme='dark'] {
+  color-scheme: dark;
+
+  --review-bg-base: #0a0e17;
+  --review-bg-surface: #111827;
+  --review-bg-overlay: #1a2332;
+  --review-bg-wash: #151d2c;
+  --review-bg-wash-hover: #1c2738;
+  --review-ink: #f3f4f6;
+  --review-muted: #94a3b8;
+  --review-dimmed: #64748b;
+  --review-line: #243044;
+  --review-line-focus: #334155;
+  --review-accent: #3b82f6;
+  --review-accent-dark: #2563eb;
+  --review-accent-soft: rgb(59 130 246 / 12%);
+  --review-cyan: #22d3ee;
+  --review-status-green: #34d399;
+  --review-status-green-bg: rgb(6 78 59 / 45%);
+  --review-status-amber: #fbbf24;
+  --review-status-amber-bg: rgb(69 26 3 / 55%);
+  --review-status-red: #f87171;
+  --review-status-red-bg: rgb(76 5 25 / 55%);
+  --review-shell-bg: #111827;
+  --review-shell-toolbar: #1a2332;
+  --review-shell-border: #243044;
+  --review-shell-text: #e5edf8;
+  --review-shell-muted: #7f8ea3;
+  --review-shell-accent: #67e8f9;
+  --review-highlight-border: #22d3ee;
+  --review-highlight-bg: rgb(34 211 238 / 7%);
+  --review-shadow-soft: 0 16px 48px rgb(2 6 23 / 45%);
+  --review-shadow-panel: 0 22px 72px rgb(2 6 23 / 58%);
+  --review-grid-line: rgb(255 255 255 / 2%);
+  --review-grid-glow: rgb(59 130 246 / 8%);
+}
+
+.review-root[data-theme='light'] {
+  color-scheme: light;
+
+  --review-bg-base: #eef2f7;
+  --review-bg-surface: #ffffff;
+  --review-bg-overlay: #f8fafc;
+  --review-bg-wash: #f1f5f9;
+  --review-bg-wash-hover: #e8eef5;
+  --review-ink: #0f172a;
+  --review-muted: #64748b;
+  --review-dimmed: #94a3b8;
+  --review-line: #dbe3ee;
+  --review-line-focus: #cbd5e1;
+  --review-accent: #2563eb;
+  --review-accent-dark: #1d4ed8;
+  --review-accent-soft: rgb(37 99 235 / 10%);
+  --review-cyan: #0891b2;
+  --review-status-green: #059669;
+  --review-status-green-bg: rgb(209 250 229 / 85%);
+  --review-status-amber: #d97706;
+  --review-status-amber-bg: rgb(254 243 199 / 85%);
+  --review-status-red: #dc2626;
+  --review-status-red-bg: rgb(254 226 226 / 85%);
+  --review-shell-bg: #ffffff;
+  --review-shell-toolbar: #f8fafc;
+  --review-shell-border: #dbe3ee;
+  --review-shell-text: #0f172a;
+  --review-shell-muted: #64748b;
+  --review-shell-accent: #0891b2;
+  --review-highlight-border: #0891b2;
+  --review-highlight-bg: rgb(8 145 178 / 8%);
+  --review-shadow-soft: 0 12px 36px rgb(15 23 42 / 10%);
+  --review-shadow-panel: 0 20px 56px rgb(15 23 42 / 14%);
+  --review-grid-line: rgb(15 23 42 / 4%);
+  --review-grid-glow: rgb(37 99 235 / 6%);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+.review-root {
+  position: relative;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  color: var(--review-ink);
+  background: var(--review-bg-surface);
+  font-family:
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    'PingFang SC',
+    'Hiragino Sans GB',
+    'Microsoft YaHei UI',
+    'Microsoft YaHei',
+    'Noto Sans CJK SC',
+    'Source Han Sans SC',
+    sans-serif;
+}
+
+.review-shell {
+  padding: 0;
+  background: var(--review-bg-surface);
+}

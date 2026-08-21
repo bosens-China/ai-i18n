@@ -20,6 +20,12 @@ export async function createReviewUiDevServer(
 
   const child = await createServer({
     root,
+    // 多个业务 Dev Server 会各自创建 review-ui 子服务，必须隔离依赖优化缓存，
+    // 否则它们会并发提交同一个 node_modules/.vite/deps 目录。
+    cacheDir: reviewUiCacheDirectory(
+      parent.config.root,
+      parent.config.cacheDir,
+    ),
     configFile: path.join(root, 'vite.config.ts'),
     mode: 'development',
     appType: 'custom',
@@ -36,6 +42,16 @@ export async function createReviewUiDevServer(
     void child.close();
   });
   return child;
+}
+
+export function reviewUiCacheDirectory(
+  parentRoot: string,
+  parentCacheDirectory: string,
+): string {
+  return path.join(
+    path.resolve(parentRoot, parentCacheDirectory),
+    'ai-i18n-review-ui',
+  );
 }
 
 export async function findLocalReviewUiRoot(): Promise<string | undefined> {

@@ -1,18 +1,15 @@
 <script setup lang="ts">
-import { computed, shallowRef, useTemplateRef, watch } from 'vue';
+import { computed, shallowRef, useTemplateRef } from 'vue';
 import type { ReviewMessage, ReviewMutation } from '@ai-i18n/core';
 import type { ReviewCopy } from '../copy';
 import ReviewScopeTabs from './ReviewScopeTabs.vue';
-import ReviewSourcePanel from './ReviewSourcePanel.vue';
 import {
   activeOverride as findActiveOverride,
   currentReviewOccurrence,
-  messageKey,
   mutationScope,
   reviewAction,
   reviewBaseline,
   type ReviewScope,
-  type ReviewOccurrenceTarget,
 } from '../review-state';
 import { extractTokens, validateTokens } from '../tokens';
 
@@ -37,7 +34,6 @@ const emit = defineEmits<{
 }>();
 
 const busy = shallowRef(false);
-const selectedOccurrence = shallowRef<ReviewOccurrenceTarget>();
 const editor = useTemplateRef<HTMLTextAreaElement>('editor');
 const automatic = computed(
   () => props.message.translations[props.locale] ?? null,
@@ -45,35 +41,10 @@ const automatic = computed(
 const activeOverride = computed(() =>
   findActiveOverride(props.message, props.locale, props.scope),
 );
-const currentOccurrence = computed(
-  () =>
-    selectedOccurrence.value ??
-    (props.requireOccurrence && !props.scope.location
-      ? undefined
-      : currentReviewOccurrence(props.message, props.scope)),
-);
-watch(
-  () => messageKey(props.message.message),
-  () => {
-    selectedOccurrence.value =
-      props.requireOccurrence && !props.scope.location
-        ? undefined
-        : currentReviewOccurrence(props.message, props.scope);
-  },
-  { immediate: true },
-);
-watch(
-  [() => props.scope, () => props.requireOccurrence] as const,
-  ([scope, requireOccurrence]) => {
-    if (requireOccurrence && !scope.location) {
-      selectedOccurrence.value = undefined;
-      return;
-    }
-    if (scope.location) {
-      selectedOccurrence.value = currentReviewOccurrence(props.message, scope);
-    }
-  },
-  { deep: true },
+const currentOccurrence = computed(() =>
+  props.requireOccurrence && !props.scope.location
+    ? undefined
+    : currentReviewOccurrence(props.message, props.scope),
 );
 const baseline = computed(() =>
   reviewBaseline(props.message, props.locale, props.scope),
@@ -147,11 +118,6 @@ function useAutomatic(): void {
   if (automatic.value !== null) emit('updateDraft', automatic.value);
 }
 
-function selectOccurrence(target: ReviewOccurrenceTarget): void {
-  selectedOccurrence.value = target;
-  emit('updateScope', target);
-}
-
 function isTokenInserted(token: string): boolean {
   return props.draft.includes(token);
 }
@@ -174,16 +140,17 @@ function insertToken(token: string): void {
 
 <template>
   <article
-    class="h-full flex flex-col overflow-hidden bg-bgSurface"
+    class="review-editor-card flex h-full flex-col overflow-hidden rounded-[10px] border border-lineFocus bg-bgSurface"
     :class="{ compact }"
   >
-    <ReviewSourcePanel
-      :copy="copy"
-      :compact="compact"
-      :message="message"
-      :selected="currentOccurrence"
-      @select-occurrence="selectOccurrence"
-    />
+    <header
+      class="flex min-h-9.5 flex-none items-center justify-between gap-3 border-b border-line bg-bgOverlay px-3 text-xs text-ink"
+    >
+      <strong>{{ copy.reviewTitle }}</strong>
+      <span :class="activeOverride ? 'badge-reviewed' : 'badge-unreviewed'">
+        {{ activeOverride ? copy.reviewed : copy.unreviewed }}
+      </span>
+    </header>
 
     <section
       class="flex-1 min-h-0 flex flex-col overflow-y-auto"
@@ -192,9 +159,7 @@ function insertToken(token: string): void {
       <div
         class="grid grid-cols-1 sm:grid-cols-[110px_1fr] gap-3.5 items-start"
       >
-        <p
-          class="m-0 text-accent font-mono text-[11px] font-bold tracking-wider uppercase"
-        >
+        <p class="m-0 text-accent text-[11px] font-semibold tracking-[0.02em]">
           {{ copy.machine }}
         </p>
         <div>
@@ -219,9 +184,7 @@ function insertToken(token: string): void {
         v-if="tokens.length"
         class="grid grid-cols-1 sm:grid-cols-[110px_1fr] gap-3.5 items-center"
       >
-        <p
-          class="m-0 text-accent font-mono text-[11px] font-bold tracking-wider uppercase"
-        >
+        <p class="m-0 text-accent text-[11px] font-semibold tracking-[0.02em]">
           {{ copy.tokens }}
         </p>
         <div class="flex flex-wrap gap-1.5">
@@ -256,7 +219,7 @@ function insertToken(token: string): void {
 
       <div class="flex items-center">
         <p
-          class="m-0 flex items-center gap-2 text-accent font-mono text-[11px] font-bold tracking-wider uppercase"
+          class="m-0 flex items-center gap-2 text-accent text-[11px] font-semibold tracking-[0.02em]"
         >
           {{ copy.final }}
           <span v-if="dirty" class="badge-dirty">{{ copy.unsaved }}</span>
@@ -330,8 +293,7 @@ function insertToken(token: string): void {
       </div>
 
       <div
-        v-if="!compact"
-        class="flex-none flex flex-wrap gap-3.5 justify-end mt-1 text-[11px] text-dimmed"
+        class="flex-none flex flex-wrap gap-2.5 justify-end mt-1 text-[10px] text-dimmed"
         aria-hidden="true"
       >
         <span

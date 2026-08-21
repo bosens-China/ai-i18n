@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest';
 import {
   DEFAULT_REVIEW_PANEL_PREFERENCES,
   parseReviewPanelPreferences,
-  resizeReviewPanel,
-  reviewPanelSize,
+  resizeReviewPanelHeight,
+  reviewPanelHeight,
 } from '../src/review-client-layout';
 
 describe('review client panel layout', () => {
@@ -15,27 +15,21 @@ describe('review client panel layout', () => {
       parseReviewPanelPreferences(
         JSON.stringify({ dock: 'floating', bottomSize: -1, rightSize: 640 }),
       ),
-    ).toEqual({ dock: 'bottom', bottomSize: 420, rightSize: 640 });
+    ).toEqual({ height: 420 });
+    expect(
+      parseReviewPanelPreferences(
+        JSON.stringify({ dock: 'right', bottomSize: 360, rightSize: 640 }),
+      ),
+    ).toEqual({ height: 360 });
   });
 
-  it('clamps stored sizes to the current viewport', () => {
-    expect(
-      reviewPanelSize(
-        { dock: 'bottom', bottomSize: 900, rightSize: 560 },
-        'bottom',
-        { width: 1280, height: 800 },
-      ),
-    ).toBe(776);
+  it('clamps the stored height to the current viewport', () => {
+    expect(reviewPanelHeight({ height: 900 }, { height: 800 })).toBe(788);
   });
 
-  it('resizes the active dock without changing the other remembered size', () => {
-    expect(
-      resizeReviewPanel(
-        DEFAULT_REVIEW_PANEL_PREFERENCES,
-        'right',
-        { x: 700, y: 0 },
-        { width: 1280, height: 800 },
-      ),
-    ).toEqual({ dock: 'bottom', bottomSize: 420, rightSize: 568 });
+  it('resizes the bottom panel from its top edge', () => {
+    expect(resizeReviewPanelHeight(300, { height: 800 })).toEqual({
+      height: 500,
+    });
   });
 });

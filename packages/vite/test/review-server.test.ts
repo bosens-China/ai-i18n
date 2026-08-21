@@ -44,6 +44,14 @@ describe('review server', () => {
       expect(reviewClient.status, reviewClientCode).toBe(200);
       expect(reviewClientCode).toContain('mountReviewOverlay');
 
+      const panelSource = await fs.readFile(
+        path.resolve('packages/vite/src/review-client-panel.ts'),
+        'utf8',
+      );
+      expect(panelSource).toContain('PingFang SC');
+      expect(panelSource).toContain('Microsoft YaHei UI');
+      expect(panelSource).not.toContain('font-family:Inter');
+
       const module = await fetch(`${origin}${REVIEW_WORKBENCH_MODULE_PATH}`);
       const code = await module.text();
       expect(module.status, code).toBe(200);

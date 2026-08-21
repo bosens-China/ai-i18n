@@ -45,7 +45,11 @@ const groups = computed(() => {
 <template>
   <section class="locate-results flex-1 min-h-0 flex flex-col bg-bgSurface">
     <header class="locate-header flex-none px-3 py-2.5 border-b border-cyan/25">
-      <button class="locate-back" type="button" @click="emit('back')">
+      <button
+        class="inline-flex cursor-pointer items-center gap-1.5 border-0 bg-transparent p-0 text-[11px] leading-[1.2] font-bold text-accent hover:text-cyan"
+        type="button"
+        @click="emit('back')"
+      >
         <span aria-hidden="true">←</span>
         {{ copy.backToBrowse }}
       </button>
@@ -62,18 +66,24 @@ const groups = computed(() => {
 
     <div v-if="groups.length" class="flex-1 min-h-0 overflow-y-auto py-1.5">
       <section v-for="group in groups" :key="group.file" class="file-group">
-        <div class="file-label" :title="group.file">
+        <div
+          class="flex items-center gap-1.5 bg-bgWash px-3 py-1.5 font-mono text-[10px] leading-[1.3] font-semibold text-dimmed"
+          :title="group.file"
+        >
           <span aria-hidden="true">▾</span>
           <span class="truncate">{{ group.file }}</span>
         </div>
         <button
           v-for="entry in group.entries"
           :key="`${messageKey(entry.message.message)}:${entry.target.location.line}:${entry.target.location.column}`"
-          class="locate-entry"
+          class="locate-entry relative grid w-full cursor-pointer grid-cols-[14px_minmax(0,1fr)] border-0 border-b border-line bg-transparent py-2.25 pr-3 pl-2.5 text-left text-inherit hover:bg-bgWashHover focus-visible:bg-bgWashHover focus-visible:outline-none"
           type="button"
           @click="emit('select', entry.message, entry.target)"
         >
-          <span class="location-rail" aria-hidden="true"></span>
+          <span
+            class="location-rail relative h-full w-2"
+            aria-hidden="true"
+          ></span>
           <span class="min-w-0">
             <span class="block text-xs font-bold text-ink truncate">
               {{ entry.message.message.source }}

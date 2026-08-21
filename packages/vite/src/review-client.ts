@@ -6,6 +6,7 @@ import {
   type ReviewClientTarget,
 } from './review-client-matcher.js';
 import { createReviewPanelShell } from './review-client-panel.js';
+import { reviewLocateScrollDelta } from './review-client-locate.js';
 import type { ReviewWorkbenchSelection } from './review-workbench.js';
 
 const REVIEW_TARGETS = Symbol.for('ai-i18n.review.targets');
@@ -41,11 +42,13 @@ function mountReadyOverlay(options: MountReviewOverlayOptions): void {
   if (!body) return;
   if (document.querySelector('ai-i18n-review')) return;
   let refreshTimer: number | undefined;
+  let highlightTimer: number | undefined;
   let picking = false;
   let previousCursor = '';
   const shell = createReviewPanelShell({
     workbenchModule: options.workbenchModule,
     onDestroy: cleanup,
+    onLocateMessage: locateMessage,
     onOpen: () => void refreshContext(),
     onPick: startPicking,
   });
@@ -79,10 +82,16 @@ function mountReadyOverlay(options: MountReviewOverlayOptions): void {
     refreshTimer = window.setTimeout(() => void refreshContext(), 180);
   }
 
-  function stopPicking(): void {
+  function clearHighlight(): void {
+    window.clearTimeout(highlightTimer);
+    highlightTimer = undefined;
+    shell.clearHighlight();
+  }
+
+  function stopPicking(clear = true): void {
+    if (clear) clearHighlight();
     if (!picking) return;
     picking = false;
-    shell.clearHighlight();
     document.documentElement.style.cursor = previousCursor;
     document.removeEventListener('pointermove', highlightTarget, true);
     document.removeEventListener('click', selectTarget, true);
@@ -91,6 +100,7 @@ function mountReadyOverlay(options: MountReviewOverlayOptions): void {
 
   function startPicking(): void {
     if (picking) return;
+    clearHighlight();
     picking = true;
     previousCursor = document.documentElement.style.cursor;
     document.documentElement.style.cursor = 'crosshair';
@@ -101,7 +111,7 @@ function mountReadyOverlay(options: MountReviewOverlayOptions): void {
   }
 
   function highlightTarget(event: PointerEvent): void {
-    const target = businessTarget(event.target, host);
+    const target = businessTargetAtPoint(event.clientX, event.clientY, host);
     if (!target) {
       shell.clearHighlight();
       return;
@@ -110,14 +120,45 @@ function mountReadyOverlay(options: MountReviewOverlayOptions): void {
   }
 
   function selectTarget(event: MouseEvent): void {
-    const target = businessTarget(event.target, host);
+    const target = businessTargetAtPoint(event.clientX, event.clientY, host);
     if (!target) return;
+    const rect = target.getBoundingClientRect();
     event.preventDefault();
     event.stopImmediatePropagation();
     const selection = selectionForElement(target, snapshot);
-    stopPicking();
+    stopPicking(false);
     shell.open();
     shell.setSelection(selection);
+    // 点击后短暂保留描边，让用户明确看到工作台定位到的页面元素。
+    shell.highlight(rect);
+    highlightTimer = window.setTimeout(clearHighlight, 1_600);
+  }
+
+  function locateMessage(messageKey: string): void {
+    if (!snapshot) return;
+    const target = pageElementForMessage(snapshot, messageKey, host);
+    if (!target) return;
+    clearHighlight();
+    const reducedMotion = globalThis.matchMedia?.(
+      '(prefers-reduced-motion: reduce)',
+    ).matches;
+    const delta = reviewLocateScrollDelta(
+      target.getBoundingClientRect(),
+      shell.pageViewportBottom(),
+    );
+    if (Math.abs(delta) > 1) {
+      window.scrollBy({
+        top: delta,
+        behavior: reducedMotion ? 'auto' : 'smooth',
+      });
+    }
+    highlightTimer = window.setTimeout(
+      () => {
+        shell.highlight(target.getBoundingClientRect());
+        highlightTimer = window.setTimeout(clearHighlight, 1_600);
+      },
+      reducedMotion ? 0 : 360,
+    );
   }
 
   function cancelPicker(event: KeyboardEvent): void {
@@ -128,6 +169,7 @@ function mountReadyOverlay(options: MountReviewOverlayOptions): void {
 
   function cleanup(): void {
     window.clearTimeout(refreshTimer);
+    clearHighlight();
     observer.disconnect();
     stopPicking();
   }
@@ -152,6 +194,25 @@ function scanPageMessageKeys(
     for (const key of matchReviewValue(index, fragment.value)) keys.add(key);
   }
   return [...keys];
+}
+
+function pageElementForMessage(
+  snapshot: ReviewSnapshot,
+  messageKey: string,
+  host: HTMLElement,
+): Element | undefined {
+  const index = createReviewValueIndex(snapshot);
+  for (const fragment of reviewFragments(document, host)) {
+    if (
+      elementReviewTargets(fragment.element).some(
+        (target) => target.key === messageKey,
+      ) ||
+      matchReviewValue(index, fragment.value).includes(messageKey)
+    ) {
+      return fragment.element;
+    }
+  }
+  return undefined;
 }
 
 function selectionForElement(
@@ -258,11 +319,13 @@ function elementReviewTargets(element: Element): ReviewClientTarget[] {
   return targets;
 }
 
-function businessTarget(
-  value: EventTarget | null,
+function businessTargetAtPoint(
+  clientX: number,
+  clientY: number,
   host: HTMLElement,
 ): Element | undefined {
-  return value instanceof Element && value !== host && !host.contains(value)
-    ? value
-    : undefined;
+  // 用实时命中测试而不是事件 target，避免 Shadow DOM 或业务事件层把目标重定向后丢失描边。
+  return document
+    .elementsFromPoint(clientX, clientY)
+    .find((element) => element !== host && !host.contains(element));
 }

@@ -21,9 +21,7 @@ const isOccurrence = computed(() => Boolean(props.scope.location));
     class="grid grid-cols-1 sm:grid-cols-[110px_1fr] gap-3.5 items-center"
     :aria-label="copy.scope"
   >
-    <p
-      class="m-0 text-accent font-mono text-[11px] font-bold tracking-wider uppercase"
-    >
+    <p class="m-0 text-accent text-[11px] font-semibold tracking-[0.02em]">
       {{ copy.scope }}
     </p>
     <div

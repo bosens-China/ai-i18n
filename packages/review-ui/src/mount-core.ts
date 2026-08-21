@@ -1,4 +1,5 @@
 import { createApp, reactive } from 'vue';
+import { readResolvedReviewUiTheme } from '@ai-i18n/core';
 import App from './App.vue';
 import type { ReviewHostSelection, ReviewHostState } from './host-state';
 
@@ -8,8 +9,13 @@ export interface ReviewWorkbenchController {
   destroy(): void;
 }
 
+export interface ReviewWorkbenchOptions {
+  onLocateMessage?: (messageKey: string) => void;
+}
+
 export function mountReviewWorkbench(
   container: HTMLElement,
+  options: ReviewWorkbenchOptions = {},
 ): ReviewWorkbenchController {
   const state = reactive<ReviewHostState>({
     pageMessageKeys: [],
@@ -17,8 +23,13 @@ export function mountReviewWorkbench(
   });
   const root = document.createElement('div');
   root.className = 'review-root';
+  root.dataset.theme = readResolvedReviewUiTheme();
   container.replaceChildren(root);
-  const app = createApp(App, { host: state });
+  const app = createApp(App, {
+    host: state,
+    root,
+    onLocateMessage: options.onLocateMessage,
+  });
   app.mount(root);
 
   return {

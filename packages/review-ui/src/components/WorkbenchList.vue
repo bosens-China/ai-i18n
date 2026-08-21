@@ -23,10 +23,12 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{ select: [message: ReviewMessage] }>();
+// 虚拟列表高度必须与 WorkbenchListItem 的固定高度保持一致。
+const ITEM_HEIGHT = 92;
 const viewport = useTemplateRef<HTMLElement>('viewport');
 const { range, visibleItems, updateViewport } = useVirtualList(
   () => props.messages,
-  { itemHeight: 84 },
+  { itemHeight: ITEM_HEIGHT },
 );
 let observer: ResizeObserver | undefined;
 
@@ -40,7 +42,7 @@ function revealSelected(): void {
     index,
     props.messages.length,
     { height: element.clientHeight, scrollTop: element.scrollTop },
-    84,
+    ITEM_HEIGHT,
   );
   if (scrollTop !== element.scrollTop) element.scrollTop = scrollTop;
   updateViewport({ height: element.clientHeight, scrollTop });
@@ -86,7 +88,7 @@ function updateScroll(event: Event): void {
   <div
     ref="viewport"
     class="flex-1 min-h-0 overflow-y-auto border-t border-line"
-    role="listbox"
+    role="list"
     @scroll="updateScroll"
   >
     <div class="relative" :style="{ height: `${range.totalHeight}px` }">
@@ -103,7 +105,7 @@ function updateScroll(event: Event): void {
           :selected="selectedKey === messageKey(item.message)"
           :aria-posinset="index + 1"
           :aria-setsize="messages.length"
-          @click="emit('select', item)"
+          @select="emit('select', item)"
         />
       </div>
     </div>

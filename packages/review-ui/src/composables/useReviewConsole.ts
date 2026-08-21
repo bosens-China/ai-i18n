@@ -5,6 +5,7 @@ import type {
   ReviewSnapshot,
 } from '@ai-i18n/core';
 import type { ReviewCopy } from '../copy';
+import { matchesReviewFileSuffix, reviewFileSuffixes } from '../review-files';
 import type { ReviewWorkbenchFilter } from '../review-state';
 import { validateTokens } from '../tokens';
 
@@ -23,6 +24,7 @@ export function useReviewConsole(copy: ReviewCopy) {
   const snapshot = shallowRef<ReviewSnapshot | null>(null);
   const locale = shallowRef('');
   const filter = shallowRef<ReviewWorkbenchFilter>('all');
+  const fileSuffix = shallowRef('');
   const query = shallowRef('');
   const loading = shallowRef(true);
   const toast = shallowRef<ToastState | null>(null);
@@ -50,6 +52,9 @@ export function useReviewConsole(copy: ReviewCopy) {
       .filter(({ message, searchText }) => matches(message, searchText))
       .map(({ message }) => message),
   );
+  const fileSuffixes = computed(() =>
+    reviewFileSuffixes(snapshot.value?.messages ?? []),
+  );
   const confirmedCount = computed(
     () =>
       (snapshot.value?.messages ?? []).filter((message) =>
@@ -72,6 +77,9 @@ export function useReviewConsole(copy: ReviewCopy) {
       if (!response.ok) throw apiError(payload);
       if (request !== requestSequence) return;
       snapshot.value = payload;
+      if (fileSuffix.value && !fileSuffixes.value.includes(fileSuffix.value)) {
+        fileSuffix.value = '';
+      }
       if (!payload.locales.some((item) => item.value === locale.value)) {
         locale.value = payload.locales[0]?.value ?? '';
       }
@@ -139,6 +147,7 @@ export function useReviewConsole(copy: ReviewCopy) {
     ) {
       return false;
     }
+    if (!matchesReviewFileSuffix(message, fileSuffix.value)) return false;
     const normalizedQuery = query.value.trim().toLocaleLowerCase();
     return !normalizedQuery || searchText.includes(normalizedQuery);
   }
@@ -164,10 +173,12 @@ export function useReviewConsole(copy: ReviewCopy) {
     snapshot: readonly(snapshot),
     locale,
     filter,
+    fileSuffix,
     query,
     loading: readonly(loading),
     toast: readonly(toast),
     visibleMessages,
+    fileSuffixes,
     confirmedCount,
     load,
     startAutoRefresh,

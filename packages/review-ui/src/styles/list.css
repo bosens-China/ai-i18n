@@ -1,0 +1,68 @@
+/* 选中层级依赖主题色混合，保留为语义状态而不是拆散到模板。 */
+.review-locale-option[aria-pressed='true'] {
+  border-color: color-mix(in srgb, var(--review-accent) 42%, transparent);
+  color: #fff;
+  background: var(--review-accent);
+  box-shadow: 0 3px 10px var(--review-accent-soft);
+}
+
+.workbench-list-item {
+  transition:
+    background-color 180ms ease,
+    box-shadow 180ms ease;
+}
+
+.workbench-list-item:hover {
+  background: color-mix(
+    in srgb,
+    var(--review-accent) 3%,
+    var(--review-bg-surface)
+  );
+}
+
+.workbench-list-location {
+  color: color-mix(in srgb, var(--review-cyan) 64%, var(--review-muted));
+}
+
+.workbench-list-vscode {
+  border-color: color-mix(in srgb, #1f9cf0 38%, var(--review-line));
+  color: #1f9cf0;
+  background: color-mix(in srgb, #1f9cf0 8%, transparent);
+}
+
+.workbench-list-vscode:hover {
+  border-color: #1f9cf0;
+  color: #fff;
+  background: #1685c9;
+}
+
+.workbench-list-select:focus-visible,
+.workbench-list-vscode:focus-visible,
+.review-locale-option:focus-visible {
+  outline: 2px solid var(--review-accent);
+  outline-offset: -2px;
+}
+
+.workbench-list-item.selected {
+  background: color-mix(
+    in srgb,
+    var(--review-accent) 7%,
+    var(--review-bg-surface)
+  );
+  box-shadow: inset 2px 0 0
+    color-mix(in srgb, var(--review-accent) 72%, transparent);
+}
+
+.workbench-list-item.selected:hover {
+  background: color-mix(
+    in srgb,
+    var(--review-accent) 9%,
+    var(--review-bg-surface)
+  );
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .workbench-list-item {
+    transition: none;
+  }
+}

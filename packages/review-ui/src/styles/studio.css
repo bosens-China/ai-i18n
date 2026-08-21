@@ -1,0 +1,6 @@
+/* 卡片阴影同时包含外投影和内高光，作为完整视觉效果集中维护。 */
+.review-editor-card {
+  box-shadow:
+    0 10px 30px rgb(2 6 23 / 16%),
+    inset 0 1px 0 var(--review-grid-line);
+}

@@ -12,8 +12,15 @@ describe('review UI build', () => {
     expect(client.byteLength).toBeGreaterThan(10_000);
     expect(source).toContain('mountReviewWorkbench');
     expect(source).toContain('.review-root');
-    expect(source).toMatch(/\.review-root\{[^}]*color-scheme:dark/);
-    expect(source).not.toMatch(/:host\{[^}]*color-scheme:dark/);
+    expect(source).toContain('.review-editor-card');
+    expect(source).toContain('.review-tab');
+    expect(source).toContain('.locale-option');
+    expect(source).toContain('PingFang SC');
+    expect(source).toContain('Microsoft YaHei UI');
+    expect(source).not.toContain('font-family:Inter');
+    expect(source).not.toContain('.browse-scope-option');
+    expect(source).toMatch(/\.review-root\[data-theme=dark\]/);
+    expect(source).toMatch(/\.review-root\[data-theme=light\]/);
     expect(files).not.toContain('review-ui.css');
     expect(files).not.toContain('index.html');
   });

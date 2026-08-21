@@ -1,8 +1,14 @@
 import {
+  REVIEW_UI_THEME_CHANGE_EVENT,
+  readResolvedReviewUiTheme,
+  readReviewUiThemePreference,
+  resolveReviewUiTheme,
+  type ReviewUiTheme,
+} from '@ai-i18n/core';
+import {
   parseReviewPanelPreferences,
-  resizeReviewPanel,
-  reviewPanelSize,
-  type ReviewPanelDock,
+  resizeReviewPanelHeight,
+  reviewPanelHeight,
   type ReviewPanelPreferences,
 } from './review-client-layout.js';
 import type {
@@ -17,6 +23,7 @@ const ELEMENT_NAME = 'ai-i18n-review';
 interface ReviewPanelOptions {
   workbenchModule: string;
   onDestroy?: () => void;
+  onLocateMessage: (messageKey: string) => void;
   onOpen: () => void;
   onPick: () => void;
 }
@@ -34,6 +41,7 @@ export interface ReviewPanelShell {
   hide(): void;
   highlight(rect: DOMRect): void;
   open(): void;
+  pageViewportBottom(): number;
   setPageMessageKeys(messageKeys: readonly string[]): void;
   setSelection(selection: ReviewWorkbenchSelection): void;
   showLauncher(): void;
@@ -43,11 +51,8 @@ export interface ReviewPanelShell {
 interface OverlayCopy {
   close: string;
   currentPage: string;
-  dockBottom: string;
-  dockRight: string;
   failed: string;
   frame: string;
-  full: string;
   loading: string;
   open: string;
   pick: string;
@@ -80,31 +85,43 @@ export function createReviewPanelShell(
   let pageMessageKeys: readonly string[] = [];
   let selection: ReviewWorkbenchSelection | undefined;
   let destroyed = false;
+  let themeMedia: MediaQueryList | undefined;
 
-  function applyLayout(): void {
-    panel.dataset.dock = preferences.dock;
-    panel.style.setProperty(
-      '--review-bottom-size',
-      `${reviewPanelSize(preferences, 'bottom', viewport())}px`,
-    );
-    panel.style.setProperty(
-      '--review-right-size',
-      `${reviewPanelSize(preferences, 'right', viewport())}px`,
-    );
-    for (const button of Array.from(
-      shadow.querySelectorAll<HTMLButtonElement>('[data-dock]'),
-    )) {
-      button.setAttribute(
-        'aria-pressed',
-        String(button.dataset.dock === preferences.dock),
+  function applyTheme(theme: ReviewUiTheme): void {
+    host.dataset.theme = theme;
+  }
+
+  function syncTheme(): void {
+    applyTheme(readResolvedReviewUiTheme());
+  }
+
+  function onThemeChange(event: Event): void {
+    const detail = (event as CustomEvent<{ theme?: ReviewUiTheme }>).detail;
+    applyTheme(detail?.theme ?? readResolvedReviewUiTheme());
+  }
+
+  function onSystemThemeChange(): void {
+    if (readReviewUiThemePreference() === 'system') {
+      applyTheme(
+        resolveReviewUiTheme(
+          'system',
+          themeMedia?.matches ?? readResolvedReviewUiTheme() === 'dark',
+        ),
       );
     }
   }
 
-  function setDock(dock: ReviewPanelDock): void {
-    preferences = { ...preferences, dock };
-    applyLayout();
-    savePreferences(preferences);
+  syncTheme();
+  document.addEventListener(REVIEW_UI_THEME_CHANGE_EVENT, onThemeChange);
+  if (typeof globalThis.matchMedia === 'function') {
+    themeMedia = globalThis.matchMedia('(prefers-color-scheme: dark)');
+    themeMedia.addEventListener('change', onSystemThemeChange);
+  }
+
+  function applyLayout(): void {
+    const height = reviewPanelHeight(preferences, viewport());
+    panel.style.setProperty('--review-panel-height', `${height}px`);
+    resizer.setAttribute('aria-valuenow', String(height));
   }
 
   async function loadWorkbench(): Promise<ReviewWorkbenchController> {
@@ -117,7 +134,9 @@ export function createReviewPanelShell(
           throw new TypeError('Missing mountReviewWorkbench export.');
         }
         if (destroyed) throw new Error('Review host was removed.');
-        controller = module.mountReviewWorkbench(workbench);
+        controller = module.mountReviewWorkbench(workbench, {
+          onLocateMessage: options.onLocateMessage,
+        });
         controller.setPageMessageKeys(pageMessageKeys);
         if (selection) controller.setSelection(selection);
         loading.hidden = true;
@@ -153,25 +172,29 @@ export function createReviewPanelShell(
   }
 
   function startResize(event: PointerEvent): void {
-    if (preferences.dock === 'full') return;
     resizing = true;
     previousCursor = document.documentElement.style.cursor;
     previousUserSelect = document.documentElement.style.userSelect;
-    document.documentElement.style.cursor =
-      preferences.dock === 'bottom' ? 'ns-resize' : 'ew-resize';
+    document.documentElement.style.cursor = 'ns-resize';
     document.documentElement.style.userSelect = 'none';
     resizer.setPointerCapture(event.pointerId);
   }
 
   function resize(event: PointerEvent): void {
-    if (!resizing || preferences.dock === 'full') return;
-    preferences = resizeReviewPanel(
-      preferences,
-      preferences.dock,
-      { x: event.clientX, y: event.clientY },
-      viewport(),
-    );
+    if (!resizing) return;
+    preferences = resizeReviewPanelHeight(event.clientY, viewport());
     applyLayout();
+  }
+
+  function resizeWithKeyboard(event: KeyboardEvent): void {
+    if (event.key !== 'ArrowUp' && event.key !== 'ArrowDown') return;
+    event.preventDefault();
+    const currentHeight = reviewPanelHeight(preferences, viewport());
+    preferences = {
+      height: currentHeight + (event.key === 'ArrowUp' ? 24 : -24),
+    };
+    applyLayout();
+    savePreferences(preferences);
   }
 
   function stopResize(): void {
@@ -185,6 +208,8 @@ export function createReviewPanelShell(
   function destroy(removeHost = true): void {
     if (destroyed) return;
     destroyed = true;
+    document.removeEventListener(REVIEW_UI_THEME_CHANGE_EVENT, onThemeChange);
+    themeMedia?.removeEventListener('change', onSystemThemeChange);
     controller?.destroy();
     options.onDestroy?.();
     window.removeEventListener('resize', applyLayout);
@@ -205,20 +230,11 @@ export function createReviewPanelShell(
     'click',
     close,
   );
-  for (const button of Array.from(
-    shadow.querySelectorAll<HTMLButtonElement>('[data-dock]'),
-  )) {
-    button.addEventListener('click', () => {
-      const dock = button.dataset.dock;
-      if (dock === 'bottom' || dock === 'right' || dock === 'full') {
-        setDock(dock);
-      }
-    });
-  }
   resizer.addEventListener('pointerdown', startResize);
   resizer.addEventListener('pointermove', resize);
   resizer.addEventListener('pointerup', stopResize);
   resizer.addEventListener('pointercancel', stopResize);
+  resizer.addEventListener('keydown', resizeWithKeyboard);
   window.addEventListener('resize', applyLayout);
   host.reviewCleanup = () => destroy(false);
   applyLayout();
@@ -241,6 +257,7 @@ export function createReviewPanelShell(
       highlighter.hidden = false;
     },
     open,
+    pageViewportBottom: () => panel.getBoundingClientRect().top,
     setPageMessageKeys(messageKeys) {
       pageMessageKeys = [...messageKeys];
       controller?.setPageMessageKeys(pageMessageKeys);
@@ -290,7 +307,7 @@ function savePreferences(preferences: ReviewPanelPreferences): void {
 }
 
 function viewport() {
-  return { width: window.innerWidth, height: window.innerHeight };
+  return { height: window.innerHeight };
 }
 
 function requiredElement<T extends Element>(
@@ -308,67 +325,62 @@ function overlayCopy(): OverlayCopy {
     ? {
         close: '关闭工作台',
         currentPage: '当前页',
-        dockBottom: '停靠到底部',
-        dockRight: '停靠到右侧',
         failed: '工作台加载失败，请查看 Vite 控制台后重试。',
         frame: '翻译校对工作台',
-        full: '全屏工作台',
         loading: '正在加载翻译校对工作台…',
         open: '打开翻译校对',
-        pick: '点选页面文案',
-        resize: '调整工作台尺寸',
+        pick: '页面取词',
+        resize: '调整工作台高度',
         title: '翻译校对',
       }
     : {
         close: 'Close workbench',
         currentPage: 'Page',
-        dockBottom: 'Dock to bottom',
-        dockRight: 'Dock to right',
         failed:
           'Failed to load the workbench. Check the Vite console and retry.',
         frame: 'Translation review workbench',
-        full: 'Full-screen workbench',
         loading: 'Loading translation review workbench…',
         open: 'Open translation review',
-        pick: 'Pick page copy',
-        resize: 'Resize workbench',
+        pick: 'Pick from page',
+        resize: 'Resize workbench height',
         title: 'Translation review',
       };
 }
 
 function overlayMarkup(copy: OverlayCopy): string {
   return `<style>
-    :host{all:initial;position:fixed;inset:0;z-index:2147483646;pointer-events:none;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#e5edf8}
+    :host{all:initial;display:block;position:fixed;inset:0;z-index:2147483647;pointer-events:none;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei UI","Microsoft YaHei","Noto Sans CJK SC","Source Han Sans SC",sans-serif;color:var(--review-shell-text);color-scheme:dark;--review-shell-bg:#111827;--review-shell-toolbar:#172033;--review-shell-border:#2f3d52;--review-shell-text:#e5edf8;--review-shell-muted:#8fa0b6;--review-shell-accent:#67e8f9;--review-shell-accent-soft:rgb(6 182 212 / 12%);--review-shell-primary:#60a5fa;--review-shell-primary-soft:rgb(59 130 246 / 12%);--review-shell-hover:#1c2738;--review-shell-danger-bg:rgb(127 29 29 / 24%);--review-shell-danger-text:#fca5a5;--review-highlight-border:#22d3ee;--review-highlight-bg:rgb(34 211 238 / 9%);--review-launcher-bg:#111827;--review-launcher-hover:#172033;--review-launcher-border:#40506a;--review-shadow-launcher:0 14px 40px rgb(2 6 23 / 52%),0 0 0 3px rgb(99 102 241 / 14%);--review-shadow-panel:0 22px 72px rgb(2 6 23 / 58%)}
+    :host([data-theme='light']){color-scheme:light;--review-shell-bg:#fff;--review-shell-toolbar:#f1f5f9;--review-shell-border:#cbd5e1;--review-shell-text:#0f172a;--review-shell-muted:#64748b;--review-shell-accent:#0891b2;--review-shell-accent-soft:rgb(8 145 178 / 10%);--review-shell-primary:#2563eb;--review-shell-primary-soft:rgb(37 99 235 / 9%);--review-shell-hover:#e8eef5;--review-shell-danger-bg:rgb(254 226 226 / 85%);--review-shell-danger-text:#dc2626;--review-highlight-border:#0891b2;--review-highlight-bg:rgb(8 145 178 / 10%);--review-launcher-bg:#fff;--review-launcher-hover:#f8fafc;--review-launcher-border:#cbd5e1;--review-shadow-launcher:0 12px 32px rgb(37 99 235 / 20%),0 0 0 3px rgb(99 102 241 / 10%);--review-shadow-panel:0 20px 56px rgb(15 23 42 / 14%)}
     *{box-sizing:border-box}button{font:inherit}
-    #launcher{pointer-events:auto;position:fixed;right:16px;bottom:16px;width:44px;height:44px;border:1px solid #334155;border-radius:12px;color:#dff8ff;background:#111827;box-shadow:0 12px 36px rgb(2 6 23/.42),inset 0 1px rgb(255 255 255/.08);cursor:pointer;display:grid;place-items:center;transition:transform .16s ease,border-color .16s ease,background .16s ease}
-    #launcher:hover{transform:translateY(-2px);border-color:#22d3ee;background:#162032}#launcher:focus-visible,.tool:focus-visible{outline:2px solid #22d3ee;outline-offset:2px}
-    #launcher-mark{font-size:16px;font-weight:850;line-height:1;color:#f8fafc}#launcher-dot{position:absolute;width:7px;height:7px;right:7px;top:7px;border:2px solid #111827;border-radius:50%;background:#22d3ee}
-    #panel{pointer-events:auto;position:fixed;overflow:hidden;border:1px solid #334155;border-radius:11px;background:#0b0f19;box-shadow:0 22px 72px rgb(2 6 23/.58)}
-    #panel[data-dock="bottom"]{left:12px;right:12px;bottom:12px;height:var(--review-bottom-size)}#panel[data-dock="right"]{top:12px;right:12px;bottom:12px;width:var(--review-right-size)}#panel[data-dock="full"]{inset:12px}
-    #toolbar{height:34px;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:0 7px 0 10px;border-bottom:1px solid #1e293b;background:#111827;user-select:none}
+    #launcher{pointer-events:auto;position:fixed;z-index:3;right:16px;bottom:16px;width:50px;height:50px;padding:5px;border:1px solid var(--review-launcher-border);border-radius:15px;color:#fff;background:var(--review-launcher-bg);box-shadow:var(--review-shadow-launcher),inset 0 1px rgb(255 255 255 / 12%);cursor:pointer;display:grid;place-items:center;transition:transform .16s ease,box-shadow .16s ease,background .16s ease}
+    #launcher:hover{transform:translateY(-2px) scale(1.03);background:var(--review-launcher-hover)}#launcher:focus-visible,.tool:focus-visible{outline:2px solid var(--review-shell-accent);outline-offset:3px}
+    .brand-icon{display:block;width:100%;height:100%}#launcher-icon{filter:drop-shadow(0 3px 5px rgb(59 130 246 / 25%))}
+    #panel{pointer-events:auto;position:fixed;z-index:3;left:12px;right:12px;bottom:0;width:auto;height:var(--review-panel-height);overflow:visible;border:1px solid var(--review-shell-border);border-bottom:0;border-radius:11px 11px 0 0;background:var(--review-shell-bg);box-shadow:var(--review-shadow-panel)}
+    #toolbar{height:36px;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:0 8px 0 10px;border-bottom:1px solid var(--review-shell-border);background:var(--review-shell-bg);box-shadow:inset 0 -1px rgb(15 23 42 / 10%);user-select:none}
     #identity,#tools{display:flex;align-items:center;min-width:0}#identity{gap:8px}#tools{gap:2px}
-    #brand{display:grid;place-items:center;width:19px;height:19px;border:1px solid rgb(34 211 238/.5);border-radius:5px;color:#67e8f9;background:rgb(6 182 212/.08);font-size:10px;font-weight:850}
-    #title{font-size:11px;font-weight:750;letter-spacing:.01em;color:#e5edf8;white-space:nowrap}#page-count{padding-left:8px;border-left:1px solid #334155;color:#7f8ea3;font:600 10px/1 ui-monospace,SFMono-Regular,Menlo,monospace;white-space:nowrap}
-    .tool{appearance:none;display:grid;place-items:center;min-width:26px;height:24px;padding:0 7px;border:1px solid transparent;border-radius:5px;color:#91a0b5;background:transparent;cursor:pointer;font-size:12px;line-height:1}.tool:hover{color:#f8fafc;background:#1e293b}.tool[aria-pressed="true"]{color:#67e8f9;border-color:rgb(34 211 238/.28);background:rgb(6 182 212/.09)}#pick{gap:5px;grid-auto-flow:column;width:auto;color:#bfdbfe}#close:hover{color:#fca5a5;background:rgb(127 29 29/.24)}
-    #workbench{display:block;width:100%;height:calc(100% - 34px);overflow:hidden;background:#0b0f19}#loading{height:100%;display:grid;place-items:center;padding:24px;color:#7f8ea3;font:600 12px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace}#loading[data-error]{color:#fca5a5}
-    #resizer{position:absolute;z-index:2}#panel[data-dock="bottom"] #resizer{left:16px;right:16px;top:-4px;height:9px;cursor:ns-resize}#panel[data-dock="right"] #resizer{top:16px;bottom:16px;left:-4px;width:9px;cursor:ew-resize}#panel[data-dock="full"] #resizer{display:none}
-    #highlighter{position:fixed;pointer-events:none;border:2px solid #22d3ee;border-radius:5px;background:rgb(34 211 238/.07);box-shadow:0 0 0 3px rgb(6 182 212/.16),0 0 24px rgb(34 211 238/.2)}
-    [hidden]{display:none!important}@media(prefers-reduced-motion:reduce){#launcher{transition:none}}@media(max-width:720px),(max-height:520px){#panel{inset:0!important;width:100vw!important;height:100vh!important;border:0;border-radius:0}#resizer,.tool[data-dock]{display:none!important}}
+    #brand{display:grid;place-items:center;width:21px;height:21px;padding:1px}
+    #title{font-size:11px;font-weight:700;letter-spacing:.01em;color:var(--review-shell-text);white-space:nowrap}#page-count{padding-left:8px;border-left:1px solid var(--review-shell-border);color:var(--review-shell-muted);font:600 10px/1 ui-monospace,SFMono-Regular,Menlo,monospace;white-space:nowrap}
+    .tool{appearance:none;display:grid;place-items:center;min-width:26px;height:24px;padding:0 7px;border:1px solid transparent;border-radius:5px;color:var(--review-shell-muted);background:transparent;cursor:pointer;font-size:12px;line-height:1;transition:color .18s ease,border-color .18s ease,background-color .18s ease}.tool:hover{color:var(--review-shell-text);background:var(--review-shell-hover)}#pick{gap:5px;grid-auto-flow:column;width:auto;border-color:color-mix(in srgb,var(--review-shell-primary) 24%,transparent);color:var(--review-shell-primary);background:var(--review-shell-primary-soft)}#pick:hover{border-color:color-mix(in srgb,var(--review-shell-primary) 42%,transparent);color:var(--review-shell-primary);background:color-mix(in srgb,var(--review-shell-primary) 17%,transparent)}#close:hover{color:var(--review-shell-danger-text);background:var(--review-shell-danger-bg)}
+    #workbench{display:block;width:100%;height:calc(100% - 36px);overflow:hidden;background:var(--review-shell-bg)}#loading{height:100%;display:grid;place-items:center;padding:24px;color:var(--review-shell-muted);font-size:12px;font-weight:600;line-height:1.5}#loading[data-error]{color:var(--review-shell-danger-text)}
+    #resizer{position:absolute;z-index:2;left:16px;right:16px;top:-6px;height:12px;cursor:ns-resize;touch-action:none}#resizer::after{content:"";position:absolute;left:50%;top:4px;width:44px;height:3px;border-radius:999px;background:var(--review-shell-border);transform:translateX(-50%);transition:background .16s ease}#resizer:hover::after,#resizer:focus-visible::after{background:var(--review-shell-accent)}#resizer:focus-visible{outline:none}
+    #highlighter{position:fixed;z-index:4;pointer-events:none;border:2px solid var(--review-highlight-border);border-radius:4px;background:var(--review-highlight-bg);outline:1px solid color-mix(in srgb,var(--review-highlight-border) 38%,transparent);outline-offset:2px;box-shadow:0 0 0 3px color-mix(in srgb,var(--review-highlight-border) 18%,transparent),0 0 28px color-mix(in srgb,var(--review-highlight-border) 28%,transparent);transform:translateZ(0)}#highlighter::before,#highlighter::after{content:"";position:absolute;width:7px;height:7px;border:2px solid var(--review-highlight-border);background:var(--review-shell-bg)}#highlighter::before{left:-5px;top:-5px}#highlighter::after{right:-5px;bottom:-5px}#highlighter:not([hidden]){animation:review-locate-pulse .72s ease-out 2}@keyframes review-locate-pulse{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--review-highlight-border) 42%,transparent),0 0 12px color-mix(in srgb,var(--review-highlight-border) 14%,transparent)}100%{box-shadow:0 0 0 8px transparent,0 0 32px color-mix(in srgb,var(--review-highlight-border) 30%,transparent)}}
+    [hidden]{display:none!important}@media(prefers-reduced-motion:reduce){#launcher,.tool,#resizer::after{transition:none}#highlighter:not([hidden]){animation:none}}
   </style>
-  <button id="launcher" type="button" aria-label="${copy.open}" title="${copy.open}"><span id="launcher-mark">译</span><span id="launcher-dot"></span></button>
-  <section id="panel" hidden data-dock="bottom" aria-label="${copy.frame}">
-    <div id="resizer" role="separator" aria-label="${copy.resize}"></div>
+  <button id="launcher" type="button" aria-label="${copy.open}" title="${copy.open}">${brandIconMarkup('launcher-icon')}</button>
+  <section id="panel" hidden aria-label="${copy.frame}">
+    <div id="resizer" role="separator" tabindex="0" aria-orientation="horizontal" aria-label="${copy.resize}"></div>
     <header id="toolbar">
-      <div id="identity"><span id="brand">译</span><span id="title">${copy.title}</span><span id="page-count">${copy.currentPage} 0</span></div>
+      <div id="identity"><span id="brand">${brandIconMarkup('toolbar-icon')}</span><span id="title">${copy.title}</span><span id="page-count">${copy.currentPage} 0</span></div>
       <nav id="tools" aria-label="${copy.frame}">
         <button class="tool" id="pick" type="button" title="${copy.pick}"><span aria-hidden="true">◎</span><span>${copy.pick}</span></button>
-        <button class="tool" type="button" data-dock="bottom" title="${copy.dockBottom}" aria-label="${copy.dockBottom}">▰</button>
-        <button class="tool" type="button" data-dock="right" title="${copy.dockRight}" aria-label="${copy.dockRight}">▮</button>
-        <button class="tool" type="button" data-dock="full" title="${copy.full}" aria-label="${copy.full}">□</button>
         <button class="tool" id="close" type="button" title="${copy.close}" aria-label="${copy.close}">×</button>
       </nav>
     </header>
     <div id="workbench"><div id="loading" role="status">${copy.loading}</div></div>
   </section>
   <div id="highlighter" hidden></div>`;
+}
+
+function brandIconMarkup(id: string): string {
+  return `<svg id="${id}" class="brand-icon" viewBox="0 0 64 64" role="presentation" aria-hidden="true"><path fill="#7047eb" d="M24 7H13L3 32l10 25h11L14 32 24 7Z"/><path fill="#168bff" d="M40 7h11l10 25-10 25H40l10-25L40 7Z"/><circle cx="32" cy="32" r="15" fill="none" stroke="#5655ef" stroke-width="4"/><path fill="none" stroke="#5655ef" stroke-width="3" d="M18 32h28M32 17c-5 5-7 10-7 15s2 10 7 15m0-30c5 5 7 10 7 15s-2 10-7 15"/><path fill="#fbbf24" d="m34 13-12 23h9l-3 17 14-25h-9l1-15Z"/></svg>`;
 }
