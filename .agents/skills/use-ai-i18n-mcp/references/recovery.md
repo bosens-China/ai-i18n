@@ -16,13 +16,15 @@ server does not return that field.
 | `I18N_DIRECTORY_NOT_FOUND` or `I18N_DIRECTORY_NOT_ABSOLUTE` | Recompute Vite root plus `aiI18n.directory`, then use an absolute path. |
 | `REQUIRED_PROTOCOL_FILE_MISSING` or `REQUIRED_PROTOCOL_DIRECTORY_MISSING` | Run one full Build for the same app and retry once. |
 | `INVALID_PROTOCOL_JSON`, `INVALID_PROTOCOL_FILE`, or `PROTOCOL_PATH_NOT_DIRECTORY` | Restore or repair the reported protocol path, run one full Build, then retry. |
-| `DUPLICATE_EXTRACTED_SOURCE` | Remove the duplicate extracted JSON files for the reported source, run one full Build, then retry. |
+| `DUPLICATE_EXTRACTED_SOURCE` | Run one full Build so Vite migrates legacy filenames, then retry. If it persists, report `conflicting_files`; MCP must not delete them. |
 | `MESSAGE_ID_SOURCE_CONFLICT`, `MESSAGE_MISSING_FROM_TRANSLATIONS`, or `MESSAGE_METADATA_MISMATCH` | Rebuild with a clean extracted directory, then list again. Report the returned details if the error persists. |
 | `SOURCE_FILE_NOT_FOUND` | List with `view: "summary"` and without the filter, then copy an exact returned `source_file`. |
-| `MESSAGE_NOT_FOUND` | List again and copy the exact returned `message` object. |
+| `MESSAGE_NOT_FOUND` | Inspect returned `suggestions`; copy a complete candidate only if its source and comment match the intended message. Otherwise list again and copy the exact returned `message` object. |
 | `MESSAGE_NOT_FOUND_IN_SOURCE_FILE` | List again with `include_source_files: true`, then keep only exact files that contain the selected message. |
 | `MESSAGE_NOT_FOUND_AT_SOURCE_LOCATION` | List again with `include_occurrences: true`; copy a current exact location and obtain approval rather than guessing a moved call. |
 | `INVALID_OVERRIDE_SCOPE` | Retry with exactly one scope: global, `files`, or `occurrences`; never send `files` and `occurrences` together. |
+| `INVALID_BATCH_LOCALE` | Either provide `default_locale` once and omit every item locale, or omit it and provide locale in every item. |
+| `INVALID_TRANSLATION_FILTER` | Use text filters only with the `missing` or `all` translation view. |
 | `DUPLICATE_TARGET_CONFLICT` | Choose one value for the repeated message and locale, then retry the batch. |
 | `TRANSLATION_CONFLICT` | Re-list current values. Set `overwrite_existing: true` only with explicit user approval. |
 | `TEMPLATE_TOKEN_MISMATCH` | Compare `expected_tokens` and `received_tokens`; add every entry from `missing_tokens`, remove every entry from `unexpected_tokens`, then retry. Repeated tokens are significant. |

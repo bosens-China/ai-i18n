@@ -26,7 +26,7 @@
 - 基础 Vite 包保持框架中立。Vue 与 React 适配器按最终框架模式按需启用，不把框架运行时带入 Vanilla 项目。
 - 浏览器源码提取仅支持 ESM。Vanilla 支持 `.js`、`.mjs`、`.ts`、`.mts`；Vue 与 React 额外支持 `.jsx`、`.tsx`，Vue 额外支持 `.vue`。`.cjs`、`.cts`、`require()` 与 `module.exports` 不在支持范围内；Vite 对配置文件和 CommonJS 依赖的兼容不会扩大插件的源码提取范围。
 - 每个 Vite build 处理其入口可达的本地源码，包括 Vite root 外由 Vite 解析的 workspace 源码；协议中的 source 始终是相对当前 Vite root 的 POSIX 路径，不保存机器绝对路径。`node_modules` 中的预构建依赖不属于该范围。
-- `extracted/` 物理文件名固定为标准化 source 的 SHA-256；JSON 内的 source 是查找权威，文件监听与 MCP 不从 hash 反推路径。
+- `extracted/` 物理文件名固定为标准化 source 的 SHA-256；JSON 内的 source 是查找权威，文件监听与 MCP 不从 hash 反推路径。完整 Build 以全量 snapshot 清理旧版本遗留的非规范物理文件并重新生成当前格式，Dev 增量流程不据此扩大删除范围。
 - Vue SFC 可以在 `<script>`、`<script setup>`、Options API 的 `computed` / `methods` 与 HTML template 中直接调用 `t()`；Pug 等预处理 template 暂不分析。开启自动导入时，Vite 分别向 script 词法作用域和 template 可见的 setup 作用域注入真实 binding，并生成独立的 Vue template 类型桥；纯 Options template 不需要 `methods: { t }`。关闭自动导入时，`<script setup>` 的显式 import 可直接供 template 使用，纯 Options template 仍通过 `methods: { t }` 暴露显式导入。组件已有同名 binding 继续优先，改名导入映射同样支持；`this.t`、`this.$t`、mixin 与 `globalProperties` 不属于 ai-i18n 支持的静态提取写法。
 - 服务端渲染不在支持范围内。浏览器 Runtime 使用应用级状态，服务端共享会造成跨请求状态污染。
 - 解析器采用 Yuku。它已经通过正确性、性能和跨平台准入；不把解析器选择暴露为公共配置，避免形成无收益的兼容面。
@@ -237,6 +237,13 @@
   不一致时整批失败，并返回期望、实际、缺失与多余 token，供 Agent 修正后重试。
 - 批量参数中重复出现的同一个未知字段合并为一条校验错误，并返回出现次数、首次位置、合法字段和
   修改动作。MCP 业务错误除稳定错误码和上下文外，始终返回 Agent 可直接执行的 next_action。
+- 单语言翻译、清空和人工覆盖批次可以声明一个批次默认 locale 并省略逐项目标语言；批次默认值与
+  逐项 locale 互斥，混合语言批次继续逐项声明，避免同一写入存在两个 locale 权威来源。
+- 翻译消息视图支持在分页前按原文或所选 locale 的非空译文做大小写不敏感的定向过滤；过滤只改变
+  页面结果，应用与文件级进度统计继续描述完整选择范围，summary 不接受消息文本过滤。
+- 精确消息身份不存在时，MCP 可以返回少量只读候选，优先相同 source 的不同 comment、规范化等价
+  和有限编辑距离；候选不能自动授权或替代写入目标。重复 extracted source 错误返回全部冲突物理
+  文件供诊断，实际迁移由完整 Build 完成，MCP 仍不修改 extracted。
 - 孤立 Translation Memory 使用独立的只读列表与破坏性删除工具。普通补译、校对和验证不得自动
   进入该流程；用户明确要求后，Agent 先完成完整 Build 和全量审查，再取得删除授权。删除只接受
   列表返回的 opaque ID，在写入前整批复验消息仍未被源码引用，并且不联动删除人工 overrides。

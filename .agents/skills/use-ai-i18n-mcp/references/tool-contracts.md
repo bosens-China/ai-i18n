@@ -9,6 +9,10 @@ discovers source files and returns writable missing entries.
 - Lists request 100 records by default and accept `limit` up to 500. A size-limited page may contain
   fewer records; continue with `next_cursor`.
 - Use `view: "summary"` for progress counts and `view: "all"` only when existing values are required.
+- For a targeted `missing` or `all` query, use `source_contains` or `translation_contains`. Both are
+  case-insensitive substring filters applied before pagination. `translation_contains` checks only
+  non-null values in the selected `locales`. Do not combine either filter with `summary`. Page
+  `total_count` reflects matches; the progress counters continue to describe the selected files and locales.
 - Use `message.source` as translation input and `message.comment` as author context.
 - Use `missing_locales` as the default target locale set.
 - Copy the complete `message` object into write tools. Internal message IDs are not public inputs.
@@ -33,7 +37,9 @@ from a hash filename.
 ## Automatic translations
 
 Use `ai_i18n_set_translations` for ordinary translation work. Each update contains
-`message: { source, comment? }`, `locale`, and `value`.
+`message: { source, comment? }` and `value`. For a single-locale batch, set `default_locale` once and
+omit every item `locale`. Otherwise omit `default_locale` and provide `locale` in every item. Never
+mix the two forms in one call. Apply the same locale rule to clear targets and override updates.
 
 - Each batch accepts at most 500 inputs.
 - Leave `overwrite_existing` unset or false unless the user explicitly requests replacement.
@@ -110,6 +116,9 @@ To remove a human value, list it first and pass the returned opaque `override_id
   action when the selected cache lacks current message metadata.
 - Human review tools modify only `overrides.json`.
 - MCP does not modify `extracted/` or `locales/`.
+- `MESSAGE_NOT_FOUND` may include up to five exact public message candidates. Treat them as read-only
+  navigation help; choose and copy a complete candidate only when it matches the intended source and
+  comment. Never let similarity authorize a write.
 - Preserve every template token before writing.
 - On `TEMPLATE_TOKEN_MISMATCH`, compare `expected_tokens` with `received_tokens`, insert every entry
   from `missing_tokens`, remove every entry from `unexpected_tokens`, and retry the corrected whole

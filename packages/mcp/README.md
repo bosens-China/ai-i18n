@@ -38,11 +38,15 @@ server 使用 stdio 通信，标准输出专用于 MCP 协议。
   文件汇总或全部消息。首次调用省略 `source_files` 以扫描整个应用。相同 `source + comment`
   无论出现在哪些文件都只返回一条。响应默认省略出现文件；需要检查完整共享范围时显式传
   `include_source_files: true`。短文案需要源码语境时，可传 `include_occurrences: true`，取得
-  每个 `source_file` 对应的完整 `locations`；MCP 不读取或返回源码片段。
+  每个 `source_file` 对应的完整 `locations`；MCP 不读取或返回源码片段。`missing` 与 `all`
+  视图还可使用大小写不敏感的 `source_contains` 和 `translation_contains` 在分页前筛选消息；
+  后者只检查 `locales` 选中的非空译文。
 - `ai_i18n_set_translations`：默认只填充 `null`；显式传
   `overwrite_existing: true` 时允许覆盖非空译文。写入目标使用列表返回的
-  `message: { source, comment? }`，调用方不接触内部 message ID。
-- `ai_i18n_clear_translations`：把指定译文重置为 `null`，不删除消息或 locale。
+  `message: { source, comment? }`，调用方不接触内部 message ID。单语言批次可在顶层提供
+  `default_locale` 并省略每项的 `locale`；否则每项必须提供 `locale`。
+- `ai_i18n_clear_translations`：把指定译文重置为 `null`，不删除消息或 locale；同样支持批次
+  `default_locale`。
 - `ai_i18n_list_orphan_messages`：只在用户明确要求审查或清理时调用。完整 Build 后，列出
   Translation Memory 中已不再被 `extracted/` 引用的消息，并返回删除所需的 opaque
   `orphan_id`。
@@ -54,7 +58,8 @@ server 使用 stdio 通信，标准输出专用于 MCP 协议。
   `source_files` 默认省略，可用 `include_source_files: true` 显式请求。
 - `ai_i18n_set_overrides`：添加或覆盖人工值。每项使用公开 `message` 对象定位；省略 `files` 和
   `occurrences` 表示全局校对，提供精确 `source_file` 表示文件级校对，提供列表返回的
-  `source_file + line + column` 表示位置级校对。`files` 与 `occurrences` 互斥。
+  `source_file + line + column` 表示位置级校对。`files` 与 `occurrences` 互斥，也支持批次
+  `default_locale`。
 - `ai_i18n_delete_overrides`：使用列表返回的 `override_id` 删除具体人工值。
 
 列表默认请求 100 条，`limit` 可在 1 到 500 之间调整。响应仍会保护在约 100,000 个字符内，
@@ -72,13 +77,13 @@ server 使用 stdio 通信，标准输出专用于 MCP 协议。
 ```json
 {
   "i18n_directory": "/absolute/path/to/i18n",
+  "default_locale": "en-US",
   "updates": [
     {
       "message": {
         "source": "#pack",
         "comment": "设备名称"
       },
-      "locale": "en-US",
       "value": "Pack"
     }
   ]
@@ -102,7 +107,8 @@ server 使用 stdio 通信，标准输出专用于 MCP 协议。
 - Vite Dev 运行时会自动重建 locales；否则在下一次 `vite dev` 或 `vite build` 时同步。
 
 写入时若 `message` 不再存在，请重新调用 `ai_i18n_list_translations`，并原样复制返回的
-`message` 对象。`source_files` 过滤器只用于缩小列表范围；响应中的同名字段仅在显式请求时返回。
+`message` 对象。错误会提供最多 5 个只读候选；候选只帮助定位，不会自动替换精确消息身份。
+`source_files` 过滤器只用于缩小列表范围；响应中的同名字段仅在显式请求时返回。
 它们不属于普通 Translation Memory 写入身份。人工校对更新使用 `files` 或 `occurrences` 作为可选
 范围；路径与行列位置必须从列表结果原样复制。
 
