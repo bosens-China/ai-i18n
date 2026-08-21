@@ -12,6 +12,48 @@ import {
 
 afterEach(cleanupFixtures);
 
+test('supports one batch default locale across translation and review writes', async () => {
+  const root = await fixture();
+  const directory = path.join(root, 'apps/web/i18n');
+  const service = new AiI18nProjectService();
+
+  await expect(
+    service.setTranslations({
+      i18n_directory: directory,
+      default_locale: 'en-US',
+      updates: [{ message: reference('保存'), value: 'Save' }],
+    }),
+  ).resolves.toMatchObject({ added_count: 1 });
+  await expect(
+    service.clearTranslations({
+      i18n_directory: directory,
+      default_locale: 'en-US',
+      targets: [{ message: reference('退出') }],
+    }),
+  ).resolves.toMatchObject({ cleared_count: 1 });
+  await expect(
+    service.setOverrides({
+      i18n_directory: directory,
+      default_locale: 'ja-JP',
+      updates: [{ message: reference('保存'), value: '保管' }],
+    }),
+  ).resolves.toMatchObject({ added_count: 1 });
+
+  await expect(
+    service.setTranslations({
+      i18n_directory: directory,
+      default_locale: 'en-US',
+      updates: [{ message: reference('保存'), locale: 'en-US', value: 'Save' }],
+    }),
+  ).rejects.toMatchObject({ code: 'INVALID_BATCH_LOCALE' });
+  await expect(
+    service.clearTranslations({
+      i18n_directory: directory,
+      targets: [{ message: reference('保存') }],
+    }),
+  ).rejects.toMatchObject({ code: 'INVALID_BATCH_LOCALE' });
+});
+
 test('fills null translations atomically and requires explicit overwrite', async () => {
   const root = await fixture();
   const directory = path.join(root, 'apps/web/i18n');

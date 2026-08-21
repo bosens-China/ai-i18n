@@ -54,7 +54,7 @@ const ERROR_NEXT_ACTIONS: Record<string, string> = {
   PROTOCOL_PATH_NOT_DIRECTORY:
     'Restore the named protocol path as a directory, run one full Vite Build, then retry.',
   DUPLICATE_EXTRACTED_SOURCE:
-    'Remove the duplicate extracted JSON files for source_file, run one full Vite Build, then retry.',
+    'Run one full Vite Build for the target app to migrate legacy extracted filenames, then retry. If it persists, report conflicting_files.',
   MESSAGE_ID_SOURCE_CONFLICT:
     'Run one full Vite Build with a clean extracted directory, then retry. Report the conflicting sources if it persists.',
   MESSAGE_MISSING_FROM_TRANSLATIONS:
@@ -64,13 +64,17 @@ const ERROR_NEXT_ACTIONS: Record<string, string> = {
   SOURCE_FILE_NOT_FOUND:
     'Call ai_i18n_list_translations with view summary and without source_files, then copy an exact returned source_file before retrying.',
   MESSAGE_NOT_FOUND:
-    'Call ai_i18n_list_translations again and copy the exact returned message object before retrying.',
+    'Use a returned suggestion only when its full source and comment match the intended message. Otherwise call ai_i18n_list_translations again and copy the exact returned message object.',
   MESSAGE_NOT_FOUND_IN_SOURCE_FILE:
     'Call ai_i18n_list_translations with include_source_files true, then choose only exact source_file values that contain this message.',
   MESSAGE_NOT_FOUND_AT_SOURCE_LOCATION:
     'Call ai_i18n_list_translations with include_occurrences true, copy one current exact source_file, line, and column, then obtain approval before retrying the moved target.',
   INVALID_OVERRIDE_SCOPE:
     'Choose exactly one override scope: omit both files and occurrences for global, provide files only, or provide occurrences only.',
+  INVALID_BATCH_LOCALE:
+    'Either provide default_locale once and omit every item locale, or omit default_locale and provide locale in every item.',
+  INVALID_TRANSLATION_FILTER:
+    'Use source_contains or translation_contains only with the missing or all translation view.',
   UNKNOWN_LOCALE:
     'Choose one of available_locales and retry; do not use a display label as the locale value.',
   DUPLICATE_TARGET_CONFLICT:

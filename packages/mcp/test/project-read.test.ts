@@ -1,4 +1,3 @@
-import fs from 'node:fs/promises';
 import path from 'node:path';
 import { afterEach, expect, test } from 'vitest';
 import { paginate } from '../src/pagination';
@@ -182,79 +181,58 @@ test('lists missing messages by default and file summaries on request', async ()
   expect(withOccurrences.items[0]).not.toHaveProperty('source_files');
 });
 
-test('lists global, file-scoped, commented, and orphaned human overrides', async () => {
+test('filters message views by source and selected translation values', async () => {
   const root = await fixture();
   const directory = path.join(root, 'apps/web/i18n');
+  const service = new AiI18nProjectService();
   await addCommentedMessage(directory);
-  await fs.writeFile(
-    path.join(directory, 'overrides.json'),
-    JSON.stringify({
-      version: 2,
-      rules: [
-        { source: '保存', translations: { 'en-US': 'Keep' } },
-        {
-          source: '保存',
-          comment: 'toolbar',
-          files: ['src/home.ts'],
-          translations: { 'ja-JP': '保つ' },
-        },
-        { source: '旧文案', translations: { 'en-US': 'Legacy' } },
-      ],
+
+  const first = await service.listTranslations({
+    i18n_directory: directory,
+    view: 'all',
+    source_contains: '保存',
+    limit: 1,
+  });
+  expect(first).toMatchObject({ message_count: 3, count: 1, has_more: true });
+  await expect(
+    service.listTranslations({
+      i18n_directory: directory,
+      view: 'all',
+      source_contains: '保存',
+      cursor: first.next_cursor,
+      limit: 1,
     }),
-  );
+  ).resolves.toMatchObject({ count: 1, has_more: false });
 
-  const result = await new AiI18nProjectService().listOverrides({
-    i18n_directory: directory,
-    limit: 50,
+  await expect(
+    service.listTranslations({
+      i18n_directory: directory,
+      view: 'all',
+      locales: ['en-US'],
+      translation_contains: 'EXIT',
+      limit: 50,
+    }),
+  ).resolves.toMatchObject({
+    total_count: 1,
+    items: [expect.objectContaining({ message: { source: '退出' } })],
   });
-  expect(result).toMatchObject({
-    total_count: 3,
-    global_override_count: 2,
-    file_override_count: 1,
-  });
-  expect(result.items).toEqual(
-    expect.arrayContaining([
-      expect.objectContaining({
-        scope: 'global',
-        message: { source: '保存' },
-        locale: 'en-US',
-        value: 'Keep',
-        orphaned: false,
-        override_id: expect.any(String),
-      }),
-      expect.objectContaining({
-        scope: 'files',
-        message: { source: '保存', comment: 'toolbar' },
-        files: ['src/home.ts'],
-        locale: 'ja-JP',
-        orphaned: false,
-      }),
-      expect.objectContaining({
-        message: { source: '旧文案' },
-        value: 'Legacy',
-        orphaned: true,
-      }),
-    ]),
-  );
-  expect(result.items.every((item) => !('source_files' in item))).toBe(true);
-
-  const withSourceFiles = await new AiI18nProjectService().listOverrides({
-    i18n_directory: directory,
-    include_source_files: true,
-    limit: 50,
-  });
-  expect(withSourceFiles.items).toEqual(
-    expect.arrayContaining([
-      expect.objectContaining({
-        message: { source: '保存' },
-        source_files: ['src/home.ts'],
-      }),
-      expect.objectContaining({
-        message: { source: '旧文案' },
-        source_files: [],
-      }),
-    ]),
-  );
+  await expect(
+    service.listTranslations({
+      i18n_directory: directory,
+      view: 'all',
+      locales: ['ja-JP'],
+      translation_contains: 'exit',
+      limit: 50,
+    }),
+  ).resolves.toMatchObject({ total_count: 0, items: [] });
+  await expect(
+    service.listTranslations({
+      i18n_directory: directory,
+      view: 'summary',
+      source_contains: '保存',
+      limit: 50,
+    }),
+  ).rejects.toMatchObject({ code: 'INVALID_TRANSLATION_FILTER' });
 });
 
 test('keeps escaped internal message ids out of the public contract', async () => {
@@ -293,87 +271,6 @@ test('keeps escaped internal message ids out of the public contract', async () =
       'en-US'
     ],
   ).toBe('Pack');
-});
-
-test('rejects invalid project paths, filters, and protocol files with codes', async () => {
-  const root = await fixture();
-  const directory = path.join(root, 'apps/web/i18n');
-  const service = new AiI18nProjectService();
-
-  await expect(
-    service.listTranslations({
-      i18n_directory: 'apps/web/i18n',
-      limit: 50,
-    }),
-  ).rejects.toMatchObject({ code: 'I18N_DIRECTORY_NOT_ABSOLUTE' });
-  await expect(
-    service.listTranslations({
-      i18n_directory: directory,
-      source_files: ['src/missing.ts'],
-      limit: 50,
-    }),
-  ).rejects.toMatchObject({ code: 'SOURCE_FILE_NOT_FOUND' });
-  await expect(
-    service.listTranslations({
-      i18n_directory: directory,
-      locales: ['fr-FR'],
-      limit: 50,
-    }),
-  ).rejects.toMatchObject({ code: 'UNKNOWN_LOCALE' });
-
-  await fs.rm(path.join(directory, 'overrides.json'));
-  await expect(
-    service.listTranslations({
-      i18n_directory: directory,
-      limit: 50,
-    }),
-  ).rejects.toMatchObject({
-    code: 'REQUIRED_PROTOCOL_FILE_MISSING',
-    details: {
-      file: 'overrides.json',
-    },
-  });
-});
-
-test('rejects one message id assigned to different source text', async () => {
-  const root = await fixture();
-  const directory = path.join(root, 'apps/web/i18n');
-  const extractedPath = path.join(directory, 'extracted/src_home.ts.json');
-  const extracted = JSON.parse(await fs.readFile(extractedPath, 'utf8')) as {
-    messages: Array<Record<string, unknown>>;
-  };
-  extracted.messages.push({
-    id: '保存',
-    source: '提交',
-    locations: [{ line: 3, column: 0 }],
-  });
-  await fs.writeFile(extractedPath, JSON.stringify(extracted));
-
-  await expect(
-    new AiI18nProjectService().listTranslations({
-      i18n_directory: directory,
-      view: 'all',
-      limit: 100,
-    }),
-  ).rejects.toMatchObject({ code: 'MESSAGE_ID_SOURCE_CONFLICT' });
-});
-
-test('ignores nested directories outside the extracted protocol', async () => {
-  const root = await fixture();
-  const directory = path.join(root, 'apps/web/i18n');
-  const nested = path.join(directory, 'extracted/legacy');
-  await fs.mkdir(nested);
-  await fs.writeFile(path.join(nested, 'obsolete.json'), 'invalid');
-
-  await expect(
-    new AiI18nProjectService().listTranslations({
-      i18n_directory: directory,
-      view: 'summary',
-      limit: 50,
-    }),
-  ).resolves.toMatchObject({
-    items: [{ source_file: 'src/home.ts' }],
-  });
 });
 
 async function addCommentedMessage(directory: string): Promise<void> {

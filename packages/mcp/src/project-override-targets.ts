@@ -7,10 +7,12 @@ import {
 } from './project-targets.js';
 import type { OverrideUpdate } from './project.js';
 
+type LocalizedOverrideUpdate = OverrideUpdate & { locale: string };
+
 export function resolveOverrideTargets(
   project: LoadedProject,
-  updates: readonly OverrideUpdate[],
-): Array<ResolvedTarget<OverrideUpdate>> {
+  updates: readonly LocalizedOverrideUpdate[],
+): Array<ResolvedTarget<LocalizedOverrideUpdate>> {
   return resolveTargets(project, updates).flatMap((target) => {
     if (target.input.files && target.input.occurrences) {
       fail('INVALID_OVERRIDE_SCOPE', targetDetails(target.input));

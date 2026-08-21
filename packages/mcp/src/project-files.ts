@@ -122,13 +122,27 @@ export async function loadProject(
   const extracted = await Promise.all(
     extractedPaths.map((file) => readProtocolFile(file, parseExtractedFile)),
   );
-  const sources = new Set<string>();
+  const filesBySource = new Map<string, string[]>();
   const messageSources = new Map<string, string>();
+  for (const [index, item] of extracted.entries()) {
+    const protocolPath = path
+      .relative(directory, extractedPaths[index]!)
+      .split(path.sep)
+      .join('/');
+    const files = filesBySource.get(item.source) ?? [];
+    files.push(protocolPath);
+    filesBySource.set(item.source, files);
+  }
+  const duplicate = [...filesBySource.entries()].find(
+    ([, files]) => files.length > 1,
+  );
+  if (duplicate) {
+    fail('DUPLICATE_EXTRACTED_SOURCE', {
+      source_file: duplicate[0],
+      conflicting_files: duplicate[1].sort(),
+    });
+  }
   for (const item of extracted) {
-    if (sources.has(item.source)) {
-      fail('DUPLICATE_EXTRACTED_SOURCE', { source_file: item.source });
-    }
-    sources.add(item.source);
     for (const message of item.messages) {
       const previous = messageSources.get(message.id);
       if (previous !== undefined && previous !== message.source) {

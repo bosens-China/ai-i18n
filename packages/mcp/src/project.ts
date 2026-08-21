@@ -21,6 +21,8 @@ export interface ListTranslationsInput {
   source_files?: readonly string[];
   view?: TranslationView;
   locales?: readonly string[];
+  source_contains?: string;
+  translation_contains?: string;
   include_source_files?: boolean;
   include_occurrences?: boolean;
   cursor?: string;
@@ -105,7 +107,7 @@ export interface OverrideListResult extends Page<OverrideItem> {
 
 export interface TranslationUpdate {
   message: MessageReference;
-  locale: string;
+  locale?: string;
   value: string;
 }
 
@@ -122,22 +124,25 @@ export interface OverrideOccurrence {
 
 export interface TranslationTarget {
   message: MessageReference;
-  locale: string;
+  locale?: string;
 }
 
 export interface SetTranslationsInput {
   i18n_directory: string;
+  default_locale?: string;
   overwrite_existing?: boolean;
   updates: readonly TranslationUpdate[];
 }
 
 export interface ClearTranslationsInput {
   i18n_directory: string;
+  default_locale?: string;
   targets: readonly TranslationTarget[];
 }
 
 export interface SetOverridesInput {
   i18n_directory: string;
+  default_locale?: string;
   updates: readonly OverrideUpdate[];
 }
 

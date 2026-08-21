@@ -125,6 +125,87 @@ test('validates message references, file scopes, templates, and duplicates', asy
   });
 });
 
+test('suggests exact-comment, normalized, and nearby message identities', async () => {
+  const root = await fixture();
+  const directory = path.join(root, 'apps/web/i18n');
+  const service = new AiI18nProjectService();
+  await addFixtureMessage(directory, {
+    id: '保存#toolbar',
+    source: '保存',
+    comment: 'toolbar',
+  });
+  await addFixtureMessage(directory, {
+    id: 'Temperature settings',
+    source: 'Temperature settings',
+  });
+
+  await expect(
+    service.setTranslations({
+      i18n_directory: directory,
+      updates: [
+        {
+          message: reference('保存', 'missing-comment'),
+          locale: 'en-US',
+          value: 'Save',
+        },
+      ],
+    }),
+  ).rejects.toMatchObject({
+    code: 'MESSAGE_NOT_FOUND',
+    details: {
+      suggestions: expect.arrayContaining([
+        { source: '保存' },
+        { source: '保存', comment: 'toolbar' },
+      ]),
+    },
+  });
+  await expect(
+    service.setTranslations({
+      i18n_directory: directory,
+      updates: [
+        {
+          message: reference('temperature  settings'),
+          locale: 'en-US',
+          value: 'Temperature settings',
+        },
+      ],
+    }),
+  ).rejects.toMatchObject({
+    code: 'MESSAGE_NOT_FOUND',
+    details: { suggestions: [{ source: 'Temperature settings' }] },
+  });
+  await expect(
+    service.setTranslations({
+      i18n_directory: directory,
+      updates: [
+        {
+          message: reference('Temperature setting'),
+          locale: 'en-US',
+          value: 'Temperature setting',
+        },
+      ],
+    }),
+  ).rejects.toMatchObject({
+    code: 'MESSAGE_NOT_FOUND',
+    details: { suggestions: [{ source: 'Temperature settings' }] },
+  });
+  await expect(
+    service.setTranslations({
+      i18n_directory: directory,
+      updates: [
+        {
+          message: reference('Completely unrelated message'),
+          locale: 'en-US',
+          value: 'Unrelated',
+        },
+      ],
+    }),
+  ).rejects.toMatchObject({
+    code: 'MESSAGE_NOT_FOUND',
+    details: { suggestions: [] },
+  });
+});
+
 test('groups identical file overrides and keeps file targets independent', async () => {
   const root = await fixture();
   const directory = path.join(root, 'apps/web/i18n');

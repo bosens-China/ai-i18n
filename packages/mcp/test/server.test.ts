@@ -168,6 +168,32 @@ test('returns one compact JSON TextContent and no structuredContent', async () =
       JSON.parse(toolText(withOccurrences.content)).items[0],
     ).toHaveProperty('occurrences');
 
+    const filtered = await client.callTool({
+      name: 'ai_i18n_list_translations',
+      arguments: {
+        i18n_directory: path.join(root, 'apps/web/i18n'),
+        view: 'all',
+        source_contains: '保存',
+      },
+    });
+    expect(JSON.parse(toolText(filtered.content))).toMatchObject({
+      total_count: 1,
+      items: [expect.objectContaining({ message: { source: '保存' } })],
+    });
+
+    const defaultLocaleWrite = await client.callTool({
+      name: 'ai_i18n_set_translations',
+      arguments: {
+        i18n_directory: path.join(root, 'apps/web/i18n'),
+        default_locale: 'en-US',
+        updates: [{ message: { source: '保存' }, value: 'Save' }],
+      },
+    });
+    expect(defaultLocaleWrite.isError).not.toBe(true);
+    expect(JSON.parse(toolText(defaultLocaleWrite.content))).toMatchObject({
+      added_count: 1,
+    });
+
     await addFixtureOrphanMessage(path.join(root, 'apps/web/i18n'), {
       id: '旧文案',
       source: '旧文案',

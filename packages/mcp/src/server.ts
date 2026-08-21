@@ -18,6 +18,7 @@ const DirectorySchema = z
   );
 const SourceFileSchema = z.string().min(1).max(4_096);
 const LocaleSchema = z.string().min(1).max(128);
+const ContainsSchema = z.string().min(1).max(10_000);
 const CursorSchema = z.string().min(1).max(4_096).optional();
 const SourceFilesSchema = z.array(SourceFileSchema).min(1).max(100).optional();
 const OverrideOccurrencesSchema = z
@@ -47,7 +48,7 @@ const MessageReferenceSchema = z
 const TranslationTargetSchema = z
   .object({
     message: MessageReferenceSchema,
-    locale: LocaleSchema,
+    locale: LocaleSchema.optional(),
   })
   .strict();
 const TranslationUpdateSchema = TranslationTargetSchema.extend({
@@ -103,7 +104,7 @@ export function createAiI18nMcpServer(): McpServer {
     {
       title: 'List translations',
       description:
-        'Inspect extracted source files and raw Translation Memory values from the configured JSON or SQLite storage. Omit source_files on the first call. view defaults to missing and returns one writable message object per shared source and comment; summary returns per-file counts; all returns every message. source_files and per-file locations are omitted unless explicitly requested. Follow next_cursor until has_more is false.',
+        'Inspect extracted source files and raw Translation Memory values from the configured JSON or SQLite storage. Omit source_files on the first call. view defaults to missing and returns one writable message object per shared source and comment; summary returns per-file counts; all returns every message. source_contains and translation_contains provide case-insensitive message filtering for missing or all. source_files and per-file locations are omitted unless explicitly requested. Follow next_cursor until has_more is false.',
       inputSchema: z
         .object({
           i18n_directory: DirectorySchema,
@@ -112,6 +113,12 @@ export function createAiI18nMcpServer(): McpServer {
           ),
           view: z.enum(['summary', 'missing', 'all']).default('missing'),
           locales: LocalesSchema,
+          source_contains: ContainsSchema.describe(
+            'Optional case-insensitive substring filter for message source. Only valid with missing or all views.',
+          ).optional(),
+          translation_contains: ContainsSchema.describe(
+            'Optional case-insensitive substring filter for non-null values in the selected locales. Only valid with missing or all views.',
+          ).optional(),
           include_source_files: z.boolean().default(false),
           include_occurrences: z
             .boolean()
@@ -133,10 +140,13 @@ export function createAiI18nMcpServer(): McpServer {
     {
       title: 'Set translation values',
       description:
-        'Atomically update raw Translation Memory values in the configured JSON or SQLite storage by message source and optional comment. The same message is shared across every source file. Identical duplicate updates are applied once; different values for one target fail the batch. Existing non-null values are protected unless overwrite_existing is true.',
+        'Atomically update raw Translation Memory values in the configured JSON or SQLite storage by message source and optional comment. Use one default_locale with item locales omitted for a single-locale batch, or omit it and provide every item locale. The same message is shared across every source file. Identical duplicate updates are applied once; different values for one target fail the batch. Existing non-null values are protected unless overwrite_existing is true.',
       inputSchema: z
         .object({
           i18n_directory: DirectorySchema,
+          default_locale: LocaleSchema.describe(
+            'Optional locale applied to every update. When provided, omit locale from every updates item.',
+          ).optional(),
           overwrite_existing: z.boolean().default(false),
           updates: TranslationUpdatesSchema,
         })
@@ -151,10 +161,13 @@ export function createAiI18nMcpServer(): McpServer {
     {
       title: 'Clear translation values',
       description:
-        'Atomically reset selected Translation Memory values to null by message source and optional comment. Duplicate targets are cleared once. It does not remove messages, locales, extracted files, or overrides.',
+        'Atomically reset selected Translation Memory values to null by message source and optional comment. Use one default_locale with item locales omitted for a single-locale batch, or omit it and provide every item locale. Duplicate targets are cleared once. It does not remove messages, locales, extracted files, or overrides.',
       inputSchema: z
         .object({
           i18n_directory: DirectorySchema,
+          default_locale: LocaleSchema.describe(
+            'Optional locale applied to every target. When provided, omit locale from every targets item.',
+          ).optional(),
           targets: TranslationTargetsSchema,
         })
         .strict(),
@@ -225,10 +238,13 @@ export function createAiI18nMcpServer(): McpServer {
     {
       title: 'Set human review overrides',
       description:
-        'Atomically add or overwrite overrides.json values by message source, optional comment, and scope. Omit files and occurrences for a global review; provide files for file scope; or provide exact list-returned source_file, line, and column values for occurrence scope. files and occurrences are mutually exclusive. Identical duplicates are applied once; conflicting values for one target fail the batch.',
+        'Atomically add or overwrite overrides.json values by message source, optional comment, and scope. Use one default_locale with item locales omitted for a single-locale batch, or omit it and provide every item locale. Omit files and occurrences for a global review; provide files for file scope; or provide exact list-returned source_file, line, and column values for occurrence scope. files and occurrences are mutually exclusive. Identical duplicates are applied once; conflicting values for one target fail the batch.',
       inputSchema: z
         .object({
           i18n_directory: DirectorySchema,
+          default_locale: LocaleSchema.describe(
+            'Optional locale applied to every update. When provided, omit locale from every updates item.',
+          ).optional(),
           updates: OverrideUpdatesSchema,
         })
         .strict(),

@@ -1,4 +1,5 @@
 import { createMessageId, type ExtractedFile } from '@ai-i18n/core';
+import { fail } from './errors.js';
 import { encodeOverrideId } from './override-id.js';
 import { paginate } from './pagination.js';
 import {
@@ -26,6 +27,14 @@ const RESPONSE_CHARACTER_LIMIT = 100_000;
 export async function listTranslations(
   input: ListTranslationsInput,
 ): Promise<TranslationListResult<TranslationFileItem | TranslationItem>> {
+  const view = input.view ?? 'missing';
+  if (
+    view === 'summary' &&
+    (input.source_contains !== undefined ||
+      input.translation_contains !== undefined)
+  ) {
+    fail('INVALID_TRANSLATION_FILTER', { view });
+  }
   const project = await loadProject(input.i18n_directory);
   validateLocales(project, input.locales);
   const files = selectFiles(project, input.source_files);
@@ -40,11 +49,11 @@ export async function listTranslations(
     input.include_source_files,
     input.include_occurrences,
   );
-  const view = input.view ?? 'missing';
+  const filteredMessageItems = filterMessageItems(messageItems, input);
   const items =
     view === 'summary'
       ? fileItems
-      : messageItems.filter(
+      : filteredMessageItems.filter(
           (item) => view === 'all' || item.missing_locales.length > 0,
         );
   const page =
@@ -86,6 +95,26 @@ export async function listTranslations(
     ),
     ...page,
   };
+}
+
+function filterMessageItems(
+  items: readonly TranslationItem[],
+  input: Pick<
+    ListTranslationsInput,
+    'source_contains' | 'translation_contains'
+  >,
+): TranslationItem[] {
+  const sourceQuery = input.source_contains?.toLowerCase();
+  const translationQuery = input.translation_contains?.toLowerCase();
+  return items.filter(
+    (item) =>
+      (!sourceQuery ||
+        item.message.source.toLowerCase().includes(sourceQuery)) &&
+      (!translationQuery ||
+        Object.values(item.translations).some((value) =>
+          value?.toLowerCase().includes(translationQuery),
+        )),
+  );
 }
 
 export async function listOverrides(

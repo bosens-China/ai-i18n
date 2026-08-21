@@ -19,6 +19,7 @@ import { resolveOverrideTargets } from './project-override-targets.js';
 import {
   affectedFileCount,
   deduplicateTargets,
+  resolveBatchLocales,
   resolveTargets,
   targetDetails,
   type ResolvedTarget,
@@ -34,11 +35,14 @@ import type {
   TranslationTarget,
 } from './project.js';
 
+type LocalizedTranslationTarget = TranslationTarget & { locale: string };
+
 export async function setTranslations(
   input: SetTranslationsInput,
 ): Promise<SetResult> {
+  const updates = resolveBatchLocales(input.updates, input.default_locale);
   const project = await loadProject(input.i18n_directory);
-  const resolved = resolveTargets(project, input.updates);
+  const resolved = resolveTargets(project, updates);
   const { targets, deduplicatedCount } = deduplicateTargets(
     resolved,
     (target) => [target.message.id, target.input.locale].join('\0'),
@@ -109,9 +113,13 @@ export async function setTranslations(
 export async function clearTranslations(
   input: ClearTranslationsInput,
 ): Promise<ClearResult> {
+  const requestedTargets = resolveBatchLocales(
+    input.targets,
+    input.default_locale,
+  );
   const project = await loadProject(input.i18n_directory);
   const { targets, deduplicatedCount } = deduplicateTargets(
-    resolveTargets(project, input.targets),
+    resolveTargets(project, requestedTargets),
     (target) => [target.message.id, target.input.locale].join('\0'),
   );
   let clearedCount = 0;
@@ -138,9 +146,10 @@ export async function clearTranslations(
 export async function setOverrides(
   input: SetOverridesInput,
 ): Promise<SetResult> {
+  const updates = resolveBatchLocales(input.updates, input.default_locale);
   const project = await loadProject(input.i18n_directory);
   const { targets, deduplicatedCount } = deduplicateTargets(
-    resolveOverrideTargets(project, input.updates),
+    resolveOverrideTargets(project, updates),
     (target) =>
       atomicOverrideKey({
         source: target.message.source,
@@ -302,7 +311,7 @@ function matchesOverrideRule(
 function lockedTranslations(
   messages: LoadedProject['messages'],
   extracted: ExtractedMessage,
-  target: TranslationTarget,
+  target: LocalizedTranslationTarget,
 ): Record<string, string | null> {
   const message = messages[extracted.id];
   if (!message) {
@@ -336,7 +345,7 @@ function rejectDuplicateTargets<T>(
 }
 
 function setResult(
-  targets: readonly ResolvedTarget<TranslationTarget>[],
+  targets: readonly ResolvedTarget<LocalizedTranslationTarget>[],
   addedCount: number,
   overwrittenCount: number,
   unchangedCount: number,
