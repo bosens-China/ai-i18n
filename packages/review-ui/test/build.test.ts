@@ -5,13 +5,16 @@ import { describe, expect, it } from 'vitest';
 const output = path.resolve('packages/review-ui/dist');
 
 describe('review UI build', () => {
-  it('produces stable Shadow DOM module and UnoCSS assets', async () => {
+  it('produces a stable Shadow DOM module with inline UnoCSS assets', async () => {
     const client = await fs.readFile(path.join(output, 'review-ui.js'));
-    const style = await fs.readFile(path.join(output, 'review-ui.css'));
+    const files = await fs.readdir(output);
+    const source = client.toString();
     expect(client.byteLength).toBeGreaterThan(10_000);
-    expect(style.byteLength).toBeGreaterThan(1_000);
-    expect(client.toString()).toContain('mountReviewWorkbench');
-    expect(style.toString()).toContain('.review-root');
-    expect(await fs.readdir(output)).not.toContain('index.html');
+    expect(source).toContain('mountReviewWorkbench');
+    expect(source).toContain('.review-root');
+    expect(source).toMatch(/\.review-root\{[^}]*color-scheme:dark/);
+    expect(source).not.toMatch(/:host\{[^}]*color-scheme:dark/);
+    expect(files).not.toContain('review-ui.css');
+    expect(files).not.toContain('index.html');
   });
 });

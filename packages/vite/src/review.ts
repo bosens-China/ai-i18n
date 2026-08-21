@@ -2,6 +2,7 @@ import type { Plugin, ResolvedConfig } from 'vite';
 import { diagnosticMessage } from '@ai-i18n/analyzer';
 import { aiI18nPluginApi, type AiI18nPluginApi } from './plugin-api.js';
 import {
+  REVIEW_CLIENT_MODULE_PATH,
   REVIEW_CLIENT_VIRTUAL_ID,
   REVIEW_WORKBENCH_MODULE_PATH,
 } from './review-page.js';
@@ -66,7 +67,13 @@ export function aiI18nReview(): Plugin {
     },
 
     resolveId(id) {
-      if (id === REVIEW_CLIENT_VIRTUAL_ID) return RESOLVED_REVIEW_CLIENT_ID;
+      if (
+        id === REVIEW_CLIENT_VIRTUAL_ID ||
+        id === REVIEW_CLIENT_MODULE_PATH ||
+        id === reviewClientModuleUrl(config?.base)
+      ) {
+        return RESOLVED_REVIEW_CLIENT_ID;
+      }
     },
 
     load(id) {
@@ -86,14 +93,25 @@ export function aiI18nReview(): Plugin {
         return [
           {
             tag: 'script',
-            attrs: { type: 'module', 'data-ai-i18n-review': '' },
-            children: `import ${JSON.stringify(REVIEW_CLIENT_VIRTUAL_ID)};`,
+            attrs: {
+              type: 'module',
+              src: reviewClientModuleUrl(config?.base),
+              'data-ai-i18n-review': '',
+            },
             injectTo: 'body',
           },
         ];
       },
     },
   };
+}
+
+function reviewClientModuleUrl(base = '/'): string {
+  const prefix =
+    base && base !== './'
+      ? `${base.endsWith('/') ? base : `${base}/`}`.replace(/\/+$/, '/')
+      : '/';
+  return `${prefix}${REVIEW_CLIENT_MODULE_PATH.slice(1)}`;
 }
 
 function requiredCore(core: AiI18nPluginApi | undefined): AiI18nPluginApi {

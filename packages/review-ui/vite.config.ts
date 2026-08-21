@@ -14,10 +14,12 @@ function shadowStyles(): Plugin {
     name: 'ai-i18n:review-shadow-styles',
     enforce: 'pre',
     resolveId(id) {
-      if (id === REVIEW_STYLE_ID) return RESOLVED_REVIEW_STYLE_ID;
+      if (id === REVIEW_STYLE_ID || id.startsWith(`${REVIEW_STYLE_ID}?`)) {
+        return `${RESOLVED_REVIEW_STYLE_ID}${id.slice(REVIEW_STYLE_ID.length)}`;
+      }
     },
     async load(id) {
-      if (id !== RESOLVED_REVIEW_STYLE_ID) return;
+      if (id.split('?', 1)[0] !== RESOLVED_REVIEW_STYLE_ID) return;
       const root = fileURLToPath(new URL('.', import.meta.url));
       const [reset, main, sources] = await Promise.all([
         fs.readFile(

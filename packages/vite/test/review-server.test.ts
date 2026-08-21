@@ -4,7 +4,10 @@ import { describe, expect, it, vi } from 'vitest';
 import { aiI18n, type AiI18nOptions } from '../src/index';
 import { sqlite } from '@ai-i18n/sqlite';
 import { aiI18nReview } from '../src/review';
-import { REVIEW_WORKBENCH_MODULE_PATH } from '../src/review-page';
+import {
+  REVIEW_CLIENT_MODULE_PATH,
+  REVIEW_WORKBENCH_MODULE_PATH,
+} from '../src/review-page';
 import {
   buildFixture,
   connectHmr,
@@ -27,17 +30,34 @@ describe('review server', () => {
         "import { t } from 'virtual:ai-i18n'; console.log(t('本地开发'))",
       );
       const { vite, origin } = await startListening(root);
+      const html = await vite.transformIndexHtml(
+        '/index.html',
+        '<!doctype html><main></main>',
+      );
       await vite.transformRequest('/src/main.ts');
+
+      expect(html).toContain(
+        `src="${REVIEW_CLIENT_MODULE_PATH}" data-ai-i18n-review`,
+      );
+      const reviewClient = await fetch(`${origin}${REVIEW_CLIENT_MODULE_PATH}`);
+      const reviewClientCode = await reviewClient.text();
+      expect(reviewClient.status, reviewClientCode).toBe(200);
+      expect(reviewClientCode).toContain('mountReviewOverlay');
 
       const module = await fetch(`${origin}${REVIEW_WORKBENCH_MODULE_PATH}`);
       const code = await module.text();
       expect(module.status, code).toBe(200);
       expect(code).toContain('mountReviewWorkbench');
-      expect(code).toContain('/__ai-i18n/src/mount-core.ts');
+      expect(code).toContain('/__ai-i18n/src/mount.ts');
+      const mount = await fetch(`${origin}/__ai-i18n/src/mount.ts`);
+      const mountCode = await mount.text();
+      expect(mount.status, mountCode).toBe(200);
+      expect(mountCode).toContain('ai-i18n:review-ui.css?inline');
       const style = await fetch(
-        `${origin}${REVIEW_WORKBENCH_MODULE_PATH.replace(/\.js$/, '.css')}`,
+        `${origin}${REVIEW_WORKBENCH_MODULE_PATH.replace(/\.js$/, '.css')}?inline`,
       );
       expect(style.status).toBe(200);
+      expect(style.headers.get('content-type')).toContain('text/javascript');
       expect(await style.text()).toContain('.review-root');
 
       const viteClient = await fetch(`${origin}/__ai-i18n/@vite/client`).then(

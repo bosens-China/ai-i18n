@@ -1,1 +1,1 @@
-export { mountReviewWorkbench } from './src/mount-core.ts';
+export { mountReviewWorkbench } from './src/mount.ts';

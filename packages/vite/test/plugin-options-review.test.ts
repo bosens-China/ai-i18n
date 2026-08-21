@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { aiI18n, type AiI18nOptions, type Translator } from '../src/index';
 import { aiI18nReview } from '../src/review';
+import { REVIEW_CLIENT_MODULE_PATH } from '../src/review-page';
 import { callHook, options, setupPlugin } from './plugin-test-utils';
 
 describe('@ai-i18n/vite plugin options and Review registration', () => {
@@ -87,7 +88,7 @@ describe('@ai-i18n/vite plugin options and Review registration', () => {
       command: 'serve',
       plugins: [core, plugin],
     });
-    const tags = callHook<Array<{ children?: string }>>(
+    const tags = callHook<Array<{ attrs?: Record<string, string> }>>(
       plugin.transformIndexHtml,
       '<!doctype html><main></main>',
       { filename: '/workspace/index.html' },
@@ -102,8 +103,10 @@ describe('@ai-i18n/vite plugin options and Review registration', () => {
     expect(tags).toEqual([
       expect.objectContaining({
         tag: 'script',
-        attrs: expect.objectContaining({ 'data-ai-i18n-review': '' }),
-        children: 'import "virtual:ai-i18n/review-client";',
+        attrs: expect.objectContaining({
+          'data-ai-i18n-review': '',
+          src: REVIEW_CLIENT_MODULE_PATH,
+        }),
       }),
     ]);
     expect(id).toBe('\0virtual:ai-i18n/review-client');

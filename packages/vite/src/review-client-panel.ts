@@ -61,10 +61,7 @@ export function createReviewPanelShell(
   const copy = overlayCopy();
   const host = createHostElement();
   const shadow = host.reviewShadow;
-  shadow.innerHTML = overlayMarkup(
-    copy,
-    workbenchStyle(options.workbenchModule),
-  );
+  shadow.innerHTML = overlayMarkup(copy);
   document.body.append(host);
 
   const launcher = requiredElement<HTMLButtonElement>(shadow, '#launcher');
@@ -339,13 +336,7 @@ function overlayCopy(): OverlayCopy {
       };
 }
 
-function workbenchStyle(modulePath: string): string {
-  return modulePath.endsWith('.js')
-    ? `${modulePath.slice(0, -3)}.css`
-    : `${modulePath}.css`;
-}
-
-function overlayMarkup(copy: OverlayCopy, stylePath: string): string {
+function overlayMarkup(copy: OverlayCopy): string {
   return `<style>
     :host{all:initial;position:fixed;inset:0;z-index:2147483646;pointer-events:none;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#e5edf8}
     *{box-sizing:border-box}button{font:inherit}
@@ -377,7 +368,7 @@ function overlayMarkup(copy: OverlayCopy, stylePath: string): string {
         <button class="tool" id="close" type="button" title="${copy.close}" aria-label="${copy.close}">×</button>
       </nav>
     </header>
-    <div id="workbench"><link rel="stylesheet" href="${stylePath}"><div id="loading" role="status">${copy.loading}</div></div>
+    <div id="workbench"><div id="loading" role="status">${copy.loading}</div></div>
   </section>
   <div id="highlighter" hidden></div>`;
 }
