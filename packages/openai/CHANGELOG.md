@@ -1,5 +1,19 @@
 # @ai-i18n/openai
 
+## [1.0.0-alpha.15](https://github.com/bosens-China/ai-i18n/compare/openai-v1.0.0-alpha.14...openai-v1.0.0-alpha.15) (2026-08-21)
+
+
+### Features
+
+* **vite:** 重构 Review 工作台与存储适配器 ([424a005](https://github.com/bosens-China/ai-i18n/commit/424a00563bcc8abd4bf976a23eae75bc48569b8a))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @ai-i18n/core bumped to 1.0.0-alpha.13
+
 ## [1.0.0-alpha.14](https://github.com/bosens-China/ai-i18n/compare/openai-v1.0.0-alpha.13...openai-v1.0.0-alpha.14) (2026-08-17)
 
 

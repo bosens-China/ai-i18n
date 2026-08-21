@@ -1,6 +1,6 @@
 {
   "name": "@ai-i18n/vite",
-  "version": "1.0.0-alpha.23",
+  "version": "1.0.0-alpha.24",
   "description": "AI-powered i18n plugin for Vite with source-text extraction and browser runtime localization.",
   "keywords": [
     "ai-i18n",

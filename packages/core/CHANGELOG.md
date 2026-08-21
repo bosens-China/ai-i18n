@@ -1,5 +1,13 @@
 # @ai-i18n/core
 
+## [1.0.0-alpha.13](https://github.com/bosens-China/ai-i18n/compare/core-v1.0.0-alpha.12...core-v1.0.0-alpha.13) (2026-08-21)
+
+
+### Features
+
+* **core:** 增加 Review 主题偏好协议 ([1a9eafe](https://github.com/bosens-China/ai-i18n/commit/1a9eafebb0e5f9577811244b3a9dd639c073e79b))
+* **vite:** 重构 Review 工作台与存储适配器 ([424a005](https://github.com/bosens-China/ai-i18n/commit/424a00563bcc8abd4bf976a23eae75bc48569b8a))
+
 ## [1.0.0-alpha.12](https://github.com/bosens-China/ai-i18n/compare/core-v1.0.0-alpha.11...core-v1.0.0-alpha.12) (2026-08-17)
 
 

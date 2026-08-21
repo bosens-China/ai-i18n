@@ -1,5 +1,19 @@
 # @ai-i18n/analyzer
 
+## [1.0.0-alpha.20](https://github.com/bosens-China/ai-i18n/compare/analyzer-v1.0.0-alpha.19...analyzer-v1.0.0-alpha.20) (2026-08-21)
+
+
+### Bug Fixes
+
+* **vite:** 修复 Vue Options 模板自动导入绑定 ([3c5e02a](https://github.com/bosens-China/ai-i18n/commit/3c5e02ac10957a1c9fed84283cd7c0a2d2ba6f0e))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @ai-i18n/core bumped to 1.0.0-alpha.13
+
 ## [1.0.0-alpha.19](https://github.com/bosens-China/ai-i18n/compare/analyzer-v1.0.0-alpha.18...analyzer-v1.0.0-alpha.19) (2026-08-18)
 
 
