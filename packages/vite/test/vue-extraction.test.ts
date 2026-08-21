@@ -101,7 +101,7 @@ export default defineComponent({
       '方法',
       '模板',
     ]);
-    expect(extraction.templateImports).toBeUndefined();
+    expect(extraction.templateImports).toEqual(['t']);
     expect(
       result.messages.map((message) =>
         extraction.mapLocation(message.locations[0]!),
@@ -144,7 +144,7 @@ export default defineComponent({
       '模板别名桥接',
       '别名后的定位',
     ]);
-    expect(extraction.templateImports).toBeUndefined();
+    expect(extraction.templateImports).toEqual(['t']);
     expect(
       result.messages.map((message) =>
         extraction.mapLocation(message.locations[0]!),
@@ -185,6 +185,7 @@ export default {
       '模板自动桥接',
     ]);
     expect(extraction.templateAutoImportCandidates).toBeUndefined();
+    expect(extraction.templateImports).toEqual(['t']);
     expect(extraction.mapLocation(result.messages[0]!.locations[0]!)).toEqual(
       locationOf(source, "t('模板自动桥接')"),
     );

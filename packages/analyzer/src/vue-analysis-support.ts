@@ -89,8 +89,14 @@ export function templateImportMetadata(
   runtimeBinding: VueTemplateRuntimeBinding | null,
 ): Pick<VueAnalysisSource, 'templateAutoImportCandidates' | 'templateImports'> {
   // 显式 script-setup import 已天然暴露给模板，不能再次生成同名 import。
-  return runtimeBinding === 'auto-import'
-    ? { templateAutoImportCandidates: ['t'] }
+  if (runtimeBinding === 'auto-import') {
+    return { templateAutoImportCandidates: ['t'] };
+  }
+  // Vue 会对 Options methods 执行 bind，绑定后的 t 不再携带源码位置方法。
+  // 为模板单独注入原始 Runtime t，methods 仍保留给 Options 实例与类型系统。
+  return typeof runtimeBinding !== 'string' &&
+    runtimeBinding?.kind === 'component-method'
+    ? { templateImports: ['t'] }
     : {};
 }
 

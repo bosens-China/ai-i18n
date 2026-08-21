@@ -118,6 +118,47 @@ export default {}
 
   it.each([
     [
+      'a direct methods bridge',
+      "import { t } from 'virtual:ai-i18n'",
+      'methods: { t }',
+    ],
+    [
+      'an aliased methods bridge',
+      "import { t as translate } from 'virtual:ai-i18n'",
+      'methods: { t: translate }',
+    ],
+  ])(
+    'keeps occurrence binding in Options templates with %s',
+    async (_, runtimeImport, methods) => {
+      const source = `<script lang="ts">
+${runtimeImport}
+import { defineComponent } from 'vue'
+export default defineComponent({ ${methods} })
+</script>
+<template>{{ t('保留模板位置') }}</template>`;
+      const { transform } = setupPlugin([], undefined, options, [
+        { name: 'vite:vue' },
+      ]);
+
+      const result = await transform(source, '/workspace/src/Options.vue');
+      const descriptor = parse(result!.code, {
+        filename: 'Options.vue',
+      }).descriptor;
+      const compiled = compileScript(descriptor, {
+        id: 'options-occurrence',
+        inlineTemplate: true,
+      });
+
+      expect(descriptor.scriptSetup?.content).toContain(
+        'const t = __aiI18nTemplateT;',
+      );
+      expect(compiled.content).toContain('_unref(t).__aiI18nAt(');
+      expect(compiled.content).not.toContain('_ctx.t.__aiI18nAt(');
+    },
+  );
+
+  it.each([
+    [
       'an ambiguous default export',
       `<script>
 const options = {}
