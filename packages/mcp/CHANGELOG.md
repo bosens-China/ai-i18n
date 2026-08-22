@@ -1,5 +1,22 @@
 # @ai-i18n/mcp
 
+## [1.0.0-alpha.18](https://github.com/bosens-China/ai-i18n/compare/mcp-v1.0.0-alpha.17...mcp-v1.0.0-alpha.18) (2026-08-21)
+
+
+### Features
+
+* **mcp:** 优化批量翻译与错误恢复体验 ([6a4865b](https://github.com/bosens-China/ai-i18n/commit/6a4865b82bdc7911471c30f592e136afeb1cc654))
+* **vite:** 重构 Review 工作台与存储适配器 ([424a005](https://github.com/bosens-China/ai-i18n/commit/424a00563bcc8abd4bf976a23eae75bc48569b8a))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @ai-i18n/core bumped to 1.0.0-alpha.13
+  * devDependencies
+    * @ai-i18n/sqlite bumped to 1.0.0-alpha.2
+
 ## [1.0.0-alpha.17](https://github.com/bosens-China/ai-i18n/compare/mcp-v1.0.0-alpha.16...mcp-v1.0.0-alpha.17) (2026-08-17)
 
 

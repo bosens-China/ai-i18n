@@ -1,5 +1,31 @@
 # @ai-i18n/vite
 
+## [1.0.0-alpha.24](https://github.com/bosens-China/ai-i18n/compare/vite-v1.0.0-alpha.23...vite-v1.0.0-alpha.24) (2026-08-21)
+
+
+### Features
+
+* **vite:** 重构 Review 工作台与存储适配器 ([424a005](https://github.com/bosens-China/ai-i18n/commit/424a00563bcc8abd4bf976a23eae75bc48569b8a))
+* **vite:** 重构 Review 工作台布局与定位体验 ([e500079](https://github.com/bosens-China/ai-i18n/commit/e500079a380840ee938f446aeaf8ccd981458925))
+
+
+### Bug Fixes
+
+* **vite:** 修复 Dev 跨文件静态分析冷启动 ([4f70fe5](https://github.com/bosens-China/ai-i18n/commit/4f70fe5d949f88e19bcaf69d20ffb9370da2338d))
+* **vite:** 修复 Review 工作台资源加载与样式隔离 ([f7da055](https://github.com/bosens-China/ai-i18n/commit/f7da055fa7bff2141c0e2181a55f8a03617b51b0))
+* **vite:** 修复 Vue Options 模板自动导入绑定 ([3c5e02a](https://github.com/bosens-China/ai-i18n/commit/3c5e02ac10957a1c9fed84283cd7c0a2d2ba6f0e))
+* **vite:** 清理旧版 extracted 文件命名 ([e2b45d4](https://github.com/bosens-China/ai-i18n/commit/e2b45d46cf897a4feeeb09734f03c5f1b15a5ec4))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @ai-i18n/analyzer bumped to 1.0.0-alpha.20
+    * @ai-i18n/core bumped to 1.0.0-alpha.13
+  * devDependencies
+    * @ai-i18n/sqlite bumped to 1.0.0-alpha.2
+
 ## [1.0.0-alpha.23](https://github.com/bosens-China/ai-i18n/compare/vite-v1.0.0-alpha.22...vite-v1.0.0-alpha.23) (2026-08-18)
 
 
