@@ -1,9 +1,9 @@
 {
-  "packages/analyzer": "1.0.0-alpha.20",
-  "packages/core": "1.0.0-alpha.13",
-  "packages/eslint": "1.0.0-alpha.23",
-  "packages/mcp": "1.0.0-alpha.18",
-  "packages/openai": "1.0.0-alpha.15",
-  "packages/sqlite": "1.0.0-alpha.2",
-  "packages/vite": "1.0.0-alpha.24"
+  "packages/analyzer": "1.0.0-alpha.21",
+  "packages/core": "1.0.0-alpha.14",
+  "packages/eslint": "1.0.0-alpha.24",
+  "packages/mcp": "1.0.0-alpha.19",
+  "packages/openai": "1.0.0-alpha.16",
+  "packages/sqlite": "1.0.0-alpha.3",
+  "packages/vite": "1.0.0-alpha.25"
 }
