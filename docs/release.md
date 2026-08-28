@@ -35,6 +35,23 @@
    Publishing 上传。
 6. 合并 Release PR 会改 `packages/**`，因此也可能触发 Pages；这是路径过滤的预期副作用。
 
+## Release PR 的 CI 审批
+
+Release Please 当前使用仓库内置的 `GITHUB_TOKEN` 创建和更新版本 PR。GitHub 会让这类 PR 的
+`pull_request` workflow 先等待具有写权限的维护者批准；这是 bot PR 的独立安全门禁，不由外部贡献者
+审批策略决定。
+
+维护者按以下顺序处理版本 PR：
+
+1. 在 PR 的合并状态面板中选择 **Approve workflows to run**。
+2. 等待普通 CI 完成，确认 `pnpm check`、`pnpm test` 和候选 tarball 验证通过。
+3. 审查版本号、Changelog 与 workspace 依赖联动后再合并。
+4. 合并后的 `main` 提交继续由 `release.yml` 验证并创建 tag、GitHub Release 与 npm 发布。
+
+不要在 workflow 获批前合并版本 PR，否则尚未执行 job 的 run 会以过期失败结束。当前不为此流程新增
+PAT 或 GitHub App，也不向版本提交添加 `[skip ci]`；若将来需要版本 PR 无人工介入地自动运行 CI，再
+单独评估最小权限 GitHub App。
+
 ## 手动补发
 
 若 GitHub Release / tag 已创建但 npm 未上传（历史事故或发布步骤中断），在 Actions 里对

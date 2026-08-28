@@ -19,7 +19,6 @@
 ## 其他文档
 
 - [发布与 CI](./release.md)
-- [Release Please PR CI 审批问题讨论报告](./release-ci-approval-report.md)
 
 ## 进行中需求
 
