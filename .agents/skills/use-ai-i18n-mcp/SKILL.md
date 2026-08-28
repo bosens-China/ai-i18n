@@ -52,13 +52,15 @@ catalog a complete source set: first use, complete audits, and orphan decisions 
 full Build above. Do not restart Dev or edit generated locale files merely to expose an MCP write.
 
 When the target explicitly registers `aiI18nReview()`, its Vite Dev console is the preferred interface
-for a person interactively choosing a small number of review values. It is opened only from the launcher on the active business page; do not
-send the user to an internal review URL. Its in-page picker may resolve a static HTML element directly
+for a person interactively choosing a small number of review values. Use the in-page launcher when page
+context or element picking matters; use the printed `/__ai-i18n/` URL for all-page review. The URL remains
+available when `printUrl: false`, and the launcher may be absent when `launcher: false`. Its in-page picker may resolve a static HTML element directly
 to one occurrence; when runtime-rendered copy has multiple candidates, the person must choose the
 exact file, line, and column rather than accepting an inferred first match. This Skill remains the
 authority when an Agent performs batch work,
 automates writes, audits the complete extracted set, or acts on explicit user-approved wording.
-The default current-page scope can be switched to all extracted copy. Multiple picker matches enter a
+The embedded workbench's default current-page scope can be switched to all extracted copy; the standalone
+workbench starts with all extracted copy and has no page picker. Multiple picker matches enter a
 file and occurrence locate hierarchy instead of selecting the first result. Both paths write the same `overrides.json`; do not run MCP review writes concurrently with an open
 review-console save operation.
 

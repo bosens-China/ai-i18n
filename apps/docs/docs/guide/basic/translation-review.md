@@ -20,6 +20,18 @@ export default defineConfig({
 `aiI18n()` 本身不会开启 Review。不注册 `aiI18nReview()` 时，Dev 页面没有校对入口，服务端也不会
 挂载 Review API 或工作台资源。
 
+页面图标和控制台提示可以分别关闭：
+
+```ts
+aiI18nReview({
+  launcher: false,
+  printUrl: false,
+});
+```
+
+`launcher: false` 不会向业务页面注入 Review 客户端；`printUrl: false` 只隐藏控制台提示。两者都不会
+关闭独立页面或 API。完全不需要 Dev Review 时，请从 Vite `plugins` 中移除 `aiI18nReview()`。
+
 ## 打开页面内校对
 
 1. 运行 `vite dev`。
@@ -36,10 +48,18 @@ export default defineConfig({
 
 工作台首次打开时会加载已有的提取快照，通常来自最近一次 `vite build`。这个过程不会重新扫描源码或
 触发自动翻译。随后 Dev 中实际访问的模块会以最新结果更新对应文案；工作台保持可见时会自动获取最新
-快照，不需要手动刷新，也不会覆盖未保存输入。工作台不提供独立审查页面。
+快照，不需要手动刷新，也不会覆盖未保存输入。
 
 如果项目还没有任何提取快照，开发服务器只会处理浏览器已经访问过的模块。此时请先在业务应用中
 打开包含目标文案的页面，文案随后会自动出现在校对页中。
+
+## 打开独立校对页
+
+Vite Dev 启动后，控制台会打印完整的 Review 地址，也可以直接打开当前 Dev Server 下的
+`/__ai-i18n/`。独立页复用同一个工作台、提取快照、人工译文和写入 API，默认进入 **全部页面**。
+
+独立页没有业务 DOM 上下文，因此不显示 **当前页面**，也不提供页面取词和滚动定位。需要按真实页面
+筛选文案或从元素定位源码时，使用页面内入口；需要集中检查整个提取结果时，使用独立页。
 
 ## 从页面取词
 
@@ -150,11 +170,11 @@ t('保存', { comment: '保存状态' });
 
 ## 使用边界
 
-页面内入口只在显式注册 `aiI18nReview()` 后开启，并且只注册在 Vite Dev Server 中。它不会进入 Build、Preview 或生产产物。页面只
+Review 只在显式注册 `aiI18nReview()` 后开启，并且只注册在 Vite Dev Server 中。它不会进入 Build、Preview 或生产产物。页面只
 接受当前 Vite 页面发起的同源 JSON 请求，不提供账号、token 或远程协作能力。
 
 界面资源已经随 `@ai-i18n/vite` 提供。宿主是 Web Component，工作台和 UnoCSS 样式加载在 Shadow
 DOM 内，不会重置或覆盖业务页面样式。业务项目不需要采用 Vue，也不需要安装额外的 UI 组件库。
-完整工作台在第一次打开时才加载；不需要 Dev 校对时，从 Vite `plugins` 中移除 `aiI18nReview()`。
+页面内的完整工作台在第一次打开时才加载；不需要 Dev 校对时，从 Vite `plugins` 中移除 `aiI18nReview()`。
 
 完整补译流程、人工译文格式和提交规则见[补齐和确认译文](/guide/basic/translations)。

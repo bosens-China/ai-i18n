@@ -85,7 +85,8 @@
   comment 与文件范围彼此独立且可以组合。
 - Translation Memory 继续以 `source + comment` 跨文件复用；Runtime 与派生 locale 使用
   `source file + message ID + occurrence` 区分同一语义消息在不同文件、同一行不同列的最终人工值。该运行时身份不改变公开
-  `t()` 调用、Translation Memory 身份或 MCP 的消息对象。
+  `t()` 调用、Translation Memory 身份或 MCP 的消息对象。Vite 注入 occurrence 运行时身份时必须保持
+  JavaScript、JSX 和 Vue 模板等宿主源码语法合法，包括使用单引号或双引号包裹的 Vue 属性绑定。
 - JSON 模式提交源码、生成的类型声明、translations/ 和 overrides.json；SQLite 模式只提交 storage.json 与 overrides.json，用户级数据库不提交。extracted/ 与 locales/ 可由 Build 重建，不提交。
 - 一个 Vite build 独占一个协议目录。共享源码分别进入每个消费 build 的目录；多个 build 不能共用 directory，但 SQLite 可通过一个物理数据库中的逻辑项目绑定复用全局候选。
 
@@ -146,7 +147,9 @@
   懒加载工作台时触发依赖优化重载。
 - Review 由 `@ai-i18n/vite/review` 的 `aiI18nReview()` 独立注册，不再属于 `aiI18n()` 默认行为或
   `review` 选项。未注册时核心插件不注入入口、不挂载 Review API、不提供 Review 虚拟模块；Review
-  插件只在 `serve` 生效，不进入 Build、Preview、SSR 或生产产物。`/__ai-i18n/` 不作为独立页面入口。
+  插件只在 `serve` 生效，不进入 Build、Preview、SSR 或生产产物。注册后固定提供 `/__ai-i18n/` 独立
+  页面与同源 API，并默认注入业务页右下角入口、在 Dev Server 监听后打印一次完整地址。`launcher: false`
+  只停止注入业务页客户端，`printUrl: false` 只关闭控制台提示，二者均不关闭独立页面或 API。
 - Review 宿主使用 Web Component 与开放 Shadow DOM。入口壳随页面注入，完整工作台 JS 与编译后的
   UnoCSS 在首次打开时才加载到 Shadow Root；不使用 iframe 或 postMessage，也不把 reset 或工作台
   样式注入业务 `document.head`。内部 UI 可以使用私有 Vue workspace，但业务应用无需 Vue 或 UI 依赖。
@@ -158,6 +161,8 @@
   字符串无法唯一映射时，左侧进入可返回的定位结果层级，按文件和 occurrence 展示全部候选。在用户
   选择位置前不得保存点选修订或静默采用第一项，退出定位层级后恢复此前的浏览范围。悬停时按指针实时
   命中的业务 DOM 显示带角点的定位框，点击后重新打开工作台并短暂保留反馈，再自动清除。
+- 独立 Review 页面复用同一个工作台、主题、快照和写入 API，默认进入全部文案；由于没有业务 DOM
+  上下文，不展示当前页面范围、页面取词或业务页面滚动定位。独立地址固定，不增加自定义路径配置。
 - 校对 UI 支持深色、浅色和跟随系统三种外观；用户通过工作台设置切换，偏好保存在浏览器本地，
   外层入口壳与内层 Shadow DOM 工作台同步应用，不进入项目配置。
 - 校对 UI 不依赖在线或未随包提供的 Web Font；外层入口壳与内层工作台统一使用操作系统无衬线字体，

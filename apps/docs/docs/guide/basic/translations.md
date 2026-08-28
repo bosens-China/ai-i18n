@@ -10,7 +10,7 @@ ai-i18n 不会用空字符串代替缺失译文。缺译时页面会回退显示
 1. 运行 `vite dev` 并打开需要校对的业务页面，让相关模块进入当前 Dev 模块图。
 2. 选择一种补译方式：配置 [AI 翻译](/guide/advanced/ai-translation)，或使用
    [Agent + MCP](/guide/advanced/ai-tools)。
-3. 如已注册 `aiI18nReview()`，点击业务页面右下角的翻译校对图标，检查关键页面和产品术语。
+3. 如已注册 `aiI18nReview()`，点击业务页面右下角图标检查当前页，或打开 Dev 控制台打印的独立地址检查全部文案。
 4. 对不满意或需要固定的译文保存人工校对结果。
 5. 再运行一次 Build，并按当前存储模式提交源码、Translation Memory 标记与 `overrides.json`。
 

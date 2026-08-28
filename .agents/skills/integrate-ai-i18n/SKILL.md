@@ -59,7 +59,11 @@ hierarchy and let the user select the exact file, line, and column; never choose
 Verify that pointer movement shows a visible DOM locator before selection.
 Click a current-page message in either main scope and verify the business page scrolls the first visible
 match above the fixed panel. An all-page message absent from the current DOM must only update selection.
-The workbench has no standalone user-facing URL; open and verify it only through the active page.
+Registration also keeps `/__ai-i18n/` available and prints its full URL once by default. The standalone
+workbench must start in all-page scope and omit current-page, picker, and business-page scrolling behavior.
+Set `launcher: false` only when the user requests no in-page injection, and `printUrl: false` only when
+the user requests no console hint; neither option disables the standalone page or API. Remove the Review
+plugin when no Review service should exist.
 
 This Skill owns package installation, Vite configuration, Runtime source integration, and integration
 verification. Do not write translation or human review values as part of an integration-only task.
