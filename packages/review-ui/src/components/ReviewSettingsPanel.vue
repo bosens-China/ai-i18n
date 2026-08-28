@@ -1,15 +1,26 @@
 <script setup lang="ts">
-import type { ReviewUiThemePreference } from '@ai-i18n/core';
-import type { ReviewCopy } from '../copy';
+import type {
+  ReviewUiLanguagePreference,
+  ReviewUiThemePreference,
+} from '@ai-i18n/core';
+import type { ReviewCopy } from '@ai-i18n/core/review-i18n';
 
 defineProps<{
   copy: ReviewCopy;
+  languagePreference: ReviewUiLanguagePreference;
   preference: ReviewUiThemePreference;
 }>();
 
 const emit = defineEmits<{
+  updateLanguagePreference: [preference: ReviewUiLanguagePreference];
   updatePreference: [preference: ReviewUiThemePreference];
 }>();
+
+const languageOptions = [
+  { value: 'system' as const, labelKey: 'languageSystem' as const },
+  { value: 'zh-CN' as const, labelKey: 'languageChinese' as const },
+  { value: 'en-US' as const, labelKey: 'languageEnglish' as const },
+] as const;
 
 const themeOptions = [
   { value: 'light' as const, labelKey: 'themeLight' as const },
@@ -45,6 +56,32 @@ const themeOptions = [
           :aria-pressed="preference === option.value"
           :aria-checked="preference === option.value"
           @click="emit('updatePreference', option.value)"
+        >
+          {{ copy[option.labelKey] }}
+        </button>
+      </div>
+    </section>
+
+    <section class="mt-6 max-w-md" :aria-label="copy.interfaceLanguage">
+      <h3
+        class="m-0 mb-3 text-[11px] font-bold tracking-wider uppercase text-dimmed"
+      >
+        {{ copy.interfaceLanguage }}
+      </h3>
+      <div
+        class="grid grid-cols-3 gap-1.5 p-1.5 rounded-lg border border-line bg-bgWash max-w-sm"
+        role="radiogroup"
+        :aria-label="copy.interfaceLanguage"
+      >
+        <button
+          v-for="option in languageOptions"
+          :key="option.value"
+          class="segment-option h-9 px-2 text-center"
+          type="button"
+          role="radio"
+          :aria-pressed="languagePreference === option.value"
+          :aria-checked="languagePreference === option.value"
+          @click="emit('updateLanguagePreference', option.value)"
         >
           {{ copy[option.labelKey] }}
         </button>

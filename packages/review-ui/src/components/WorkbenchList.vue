@@ -7,7 +7,7 @@ import {
   watch,
 } from 'vue';
 import type { ReviewMessage } from '@ai-i18n/core';
-import type { ReviewCopy } from '../copy';
+import type { ReviewCopy } from '@ai-i18n/core/review-i18n';
 import { messageKey } from '../review-state';
 import {
   scrollTopForIndex,

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { ReviewLocale } from '@ai-i18n/core';
-import type { ReviewCopy } from '../copy';
+import type { ReviewCopy } from '@ai-i18n/core/review-i18n';
 import type { ReviewWorkbenchFilter } from '../review-state';
 import ReviewLocaleRail from './ReviewLocaleRail.vue';
 

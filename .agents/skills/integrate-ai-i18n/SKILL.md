@@ -50,7 +50,9 @@ UnoCSS must stay inside that root rather than being added to the application's g
 In Dev, verify the bottom launcher on a real business page, the workbench flush with the viewport
 bottom, the default current-page scope, switching to all extracted copy, and the absence of the
 launcher when the Review plugin is removed. The height preference is browser-local UI state and must
-not enter Vite config. For multiple target locales, verify the locale rail precedes search and status
+not enter Vite config. Review settings also keep theme and interface-language preferences browser-local:
+verify switching between browser default, Chinese, and English updates the workbench and outer shell
+without changing the application's Runtime language. For multiple target locales, verify the locale rail precedes search and status
 controls in the all-page filters, and stays beside the message list in current-page view. Verify the
 file-type filter lists only suffixes present in extracted source files and composes with the other
 filters. Source locations and editor links belong to message rows rather than the editor detail. When

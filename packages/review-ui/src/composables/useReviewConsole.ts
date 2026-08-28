@@ -1,10 +1,11 @@
-import { computed, readonly, shallowRef } from 'vue';
+import { computed, readonly, shallowRef, type Ref } from 'vue';
+import type { ReviewUiLanguage } from '@ai-i18n/core';
 import type {
   ReviewMessage,
   ReviewMutation,
   ReviewSnapshot,
 } from '@ai-i18n/core';
-import type { ReviewCopy } from '../copy';
+import type { ReviewCopy } from '@ai-i18n/core/review-i18n';
 import { matchesReviewFileSuffix, reviewFileSuffixes } from '../review-files';
 import type { ReviewWorkbenchFilter } from '../review-state';
 import { validateTokens } from '../tokens';
@@ -20,7 +21,10 @@ interface ReviewLoadOptions {
 
 const REVIEW_REFRESH_INTERVAL_MS = 1_000;
 
-export function useReviewConsole(copy: ReviewCopy) {
+export function useReviewConsole(
+  copy: Readonly<Ref<ReviewCopy>>,
+  interfaceLanguage: Readonly<Ref<ReviewUiLanguage>>,
+) {
   const snapshot = shallowRef<ReviewSnapshot | null>(null);
   const locale = shallowRef('');
   const filter = shallowRef<ReviewWorkbenchFilter>('all');
@@ -85,7 +89,10 @@ export function useReviewConsole(copy: ReviewCopy) {
       }
     } catch (error) {
       if (!silent && request === requestSequence) {
-        showToast(error instanceof Error ? error.message : copy.failed, true);
+        showToast(
+          error instanceof Error ? error.message : copy.value.reviewDataFailed,
+          true,
+        );
       }
     } finally {
       loading.value = false;
@@ -127,10 +134,16 @@ export function useReviewConsole(copy: ReviewCopy) {
       };
       if (!response.ok) throw apiError(payload);
       await load();
-      showToast(mutation.method === 'POST' ? copy.saved : copy.removed, false);
+      showToast(
+        mutation.method === 'POST' ? copy.value.saved : copy.value.removed,
+        false,
+      );
       return true;
     } catch (error) {
-      showToast(error instanceof Error ? error.message : copy.failed, true);
+      showToast(
+        error instanceof Error ? error.message : copy.value.reviewDataFailed,
+        true,
+      );
       return false;
     }
   }
@@ -153,11 +166,11 @@ export function useReviewConsole(copy: ReviewCopy) {
   }
 
   function apiError(payload: { error?: Record<string, string> }): Error {
-    const language = navigator.language.toLowerCase().startsWith('zh')
-      ? 'zh'
-      : 'en';
+    const language = interfaceLanguage.value === 'zh-CN' ? 'zh' : 'en';
     return new Error(
-      payload.error?.[language] ?? payload.error?.en ?? copy.failed,
+      payload.error?.[language] ??
+        payload.error?.en ??
+        copy.value.reviewDataFailed,
     );
   }
 

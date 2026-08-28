@@ -23,9 +23,9 @@ import ReviewWorkbenchTabs from './components/ReviewWorkbenchTabs.vue';
 import type { ReviewWorkbenchTab } from './components/ReviewWorkbenchTabs.vue';
 import WorkbenchList from './components/WorkbenchList.vue';
 import WorkbenchStudio from './components/WorkbenchStudio.vue';
-import { reviewCopy } from './copy';
 import { useReviewConsole } from './composables/useReviewConsole';
 import { useReviewDrafts } from './composables/useReviewDrafts';
+import { useReviewI18n } from './composables/useReviewI18n';
 import { useReviewKeyboardNavigation } from './composables/useReviewKeyboardNavigation';
 import { useReviewLayout } from './composables/useReviewLayout';
 import { useReviewSelection } from './composables/useReviewSelection';
@@ -49,11 +49,16 @@ const props = defineProps<{
   root: HTMLElement;
   onLocateMessage?: (messageKey: string) => void;
 }>();
-const copy = reviewCopy();
+const {
+  copy,
+  language: interfaceLanguage,
+  preference: languagePreference,
+  setPreference: setLanguagePreference,
+} = useReviewI18n();
 const isStandalone = props.mode === 'standalone';
 const { preference: themePreference, setPreference: setThemePreference } =
   useReviewTheme(props.root);
-const review = useReviewConsole(copy);
+const review = useReviewConsole(copy, interfaceLanguage);
 const drafts = useReviewDrafts();
 const scopes = reactive(new Map<string, ReviewScope>());
 const pageContext = hasReviewPageContext(props.mode);
@@ -115,6 +120,15 @@ const showAllFilters = computed(
   () => browseScope.value === 'all' && !candidateMode.value,
 );
 let stopAutoRefresh: (() => void) | undefined;
+watch(
+  interfaceLanguage,
+  (language) => {
+    if (!isStandalone) return;
+    document.documentElement.lang = language;
+    document.title = `ai-i18n · ${copy.value.reviewTitle}`;
+  },
+  { immediate: true },
+);
 useReviewKeyboardNavigation({
   active: () => workbenchTab.value !== 'settings',
   messages: () => visibleMessages.value,
@@ -226,7 +240,9 @@ async function mutate(
     <ReviewSettingsPanel
       v-if="workbenchTab === 'settings'"
       :copy="copy"
+      :language-preference="languagePreference"
       :preference="themePreference"
+      @update-language-preference="setLanguagePreference"
       @update-preference="setThemePreference"
     />
     <main

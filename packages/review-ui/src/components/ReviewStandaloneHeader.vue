@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue';
-import type { ReviewCopy } from '../copy';
+import type { ReviewCopy } from '@ai-i18n/core/review-i18n';
 import type { ReviewWorkbenchTab } from './ReviewWorkbenchTabs.vue';
 
 const props = defineProps<{
@@ -16,6 +16,9 @@ const progress = computed(() =>
 );
 const remaining = computed(() =>
   Math.max(0, props.total - props.confirmedCount),
+);
+const remainingSummary = computed(() =>
+  props.copy.remainingSummary(remaining.value),
 );
 </script>
 
@@ -97,7 +100,7 @@ const remaining = computed(() =>
           {{ visibleCount }}
         </strong>
         <span class="mt-1 block text-[10px] text-dimmed">
-          {{ remaining }} {{ copy.remainingShort }}
+          {{ remainingSummary }}
         </span>
       </div>
     </section>

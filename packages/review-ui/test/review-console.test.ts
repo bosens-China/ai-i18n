@@ -1,13 +1,15 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { shallowRef } from 'vue';
 import type { ReviewSnapshot } from '@ai-i18n/core';
-import type { ReviewCopy } from '../src/copy';
+import type { ReviewCopy } from '@ai-i18n/core/review-i18n';
 import { useReviewConsole } from '../src/composables/useReviewConsole';
 
 const copy = {
-  failed: 'failed',
+  reviewDataFailed: 'failed',
   saved: 'saved',
   removed: 'removed',
 } as ReviewCopy;
+const interfaceLanguage = shallowRef<'en-US' | 'zh-CN'>('en-US');
 
 const snapshot: ReviewSnapshot = {
   sourceLang: 'zh-CN',
@@ -41,7 +43,7 @@ describe('review console refresh', () => {
       removeEventListener: vi.fn(),
     });
 
-    const review = useReviewConsole(copy);
+    const review = useReviewConsole(shallowRef(copy), interfaceLanguage);
     const stop = review.startAutoRefresh();
     await vi.advanceTimersByTimeAsync(1_000);
 
@@ -62,7 +64,7 @@ describe('review console refresh', () => {
     vi.stubGlobal('document', {
       documentElement: { lang: 'en' },
     });
-    const review = useReviewConsole(copy);
+    const review = useReviewConsole(shallowRef(copy), interfaceLanguage);
 
     await review.mutate({
       method: 'POST',
@@ -80,5 +82,23 @@ describe('review console refresh', () => {
       location: { line: 8, column: 20 },
       value: 'Save here',
     });
+  });
+
+  it('uses the selected interface language for API errors', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: false,
+      json: async () => ({ error: { en: 'English error', zh: '中文错误' } }),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    const language = shallowRef<'en-US' | 'zh-CN'>('zh-CN');
+    const review = useReviewConsole(shallowRef(copy), language);
+
+    await review.mutate({
+      method: 'DELETE',
+      message: { source: '保存' },
+      locale: 'en-US',
+    });
+
+    expect(review.toast.value?.message).toBe('中文错误');
   });
 });

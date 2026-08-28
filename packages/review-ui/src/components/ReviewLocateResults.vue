@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import type { ReviewMessage } from '@ai-i18n/core';
-import type { ReviewCopy } from '../copy';
+import type { ReviewCopy } from '@ai-i18n/core/review-i18n';
 import { messageKey, type ReviewOccurrenceTarget } from '../review-state';
 
 const props = defineProps<{
@@ -56,7 +56,7 @@ const groups = computed(() => {
       <div class="mt-2 flex items-center justify-between gap-2">
         <strong class="text-xs text-cyan">{{ copy.locateResults }}</strong>
         <span class="font-mono text-[10px] text-dimmed">
-          {{ candidateKeys.size }} {{ copy.candidates }}
+          {{ copy.candidateSummary(candidateKeys.size) }}
         </span>
       </div>
       <p class="m-0 mt-1 text-[11px] leading-relaxed text-muted">

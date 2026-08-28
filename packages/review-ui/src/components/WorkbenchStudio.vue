@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, shallowRef, useTemplateRef } from 'vue';
 import type { ReviewMessage, ReviewMutation } from '@ai-i18n/core';
-import type { ReviewCopy } from '../copy';
+import type { ReviewCopy } from '@ai-i18n/core/review-i18n';
 import ReviewScopeTabs from './ReviewScopeTabs.vue';
 import {
   activeOverride as findActiveOverride,
@@ -252,7 +252,7 @@ function insertToken(token: string): void {
           { 'border-statusAmber bg-statusAmberBg/25': dirty },
         ]"
         :value="draft"
-        :aria-label="`${copy.final}：${message.message.source}`"
+        :aria-label="copy.translationInputLabel(message.message.source)"
         :placeholder="copy.enterTranslation"
         spellcheck="true"
         @input="updateDraft"

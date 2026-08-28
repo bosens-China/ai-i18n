@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue';
-import type { ReviewCopy } from '../copy';
+import type { ReviewCopy } from '@ai-i18n/core/review-i18n';
 
 const props = defineProps<{
   confirmedCount: number;
@@ -14,6 +14,13 @@ const progress = computed(() =>
 );
 const remaining = computed(() =>
   Math.max(0, props.total - props.confirmedCount),
+);
+const progressSummary = computed(() =>
+  props.copy.progressSummary({
+    remaining: remaining.value,
+    total: props.total,
+    visible: props.visibleCount,
+  }),
 );
 </script>
 
@@ -41,16 +48,7 @@ const remaining = computed(() =>
         <div class="review-progress-fill" :style="{ width: `${progress}%` }" />
       </div>
       <p class="m-0 mt-1.5 text-[11px] text-muted leading-snug">
-        {{ copy.showing }}
-        <strong class="text-ink">{{ visibleCount }}</strong>
-        {{ copy.of }}
-        <strong class="text-ink">{{ total }}</strong>
-        {{ copy.messages }}
-        <template v-if="remaining">
-          ·
-          <strong class="text-statusAmber">{{ remaining }}</strong>
-          {{ copy.remainingReview }}
-        </template>
+        {{ progressSummary }}
       </p>
     </div>
   </header>

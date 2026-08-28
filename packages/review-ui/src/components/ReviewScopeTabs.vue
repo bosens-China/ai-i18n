@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import type { ReviewMessage } from '@ai-i18n/core';
-import type { ReviewCopy } from '../copy';
+import type { ReviewCopy } from '@ai-i18n/core/review-i18n';
 import type { ReviewOccurrenceTarget, ReviewScope } from '../review-state';
 
 const props = defineProps<{

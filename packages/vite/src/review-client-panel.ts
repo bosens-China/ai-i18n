@@ -1,5 +1,7 @@
 import {
+  REVIEW_UI_LANGUAGE_CHANGE_EVENT,
   REVIEW_UI_THEME_CHANGE_EVENT,
+  readResolvedReviewUiLanguage,
   readResolvedReviewUiTheme,
   readReviewUiThemePreference,
   resolveReviewUiTheme,
@@ -15,6 +17,10 @@ import {
   reviewPanelHeight,
   type ReviewPanelPreferences,
 } from './review-client-layout.js';
+import {
+  reviewOverlayCopy,
+  type ReviewOverlayCopy,
+} from './review-client-copy.js';
 
 const STORAGE_KEY = 'ai-i18n.review.panel.v1';
 const ELEMENT_NAME = 'ai-i18n-review';
@@ -49,22 +55,10 @@ export interface ReviewPanelShell {
   updateCount(count: number): void;
 }
 
-interface OverlayCopy {
-  close: string;
-  currentPage: string;
-  failed: string;
-  frame: string;
-  loading: string;
-  open: string;
-  pick: string;
-  resize: string;
-  title: string;
-}
-
 export function createReviewPanelShell(
   options: ReviewPanelOptions,
 ): ReviewPanelShell {
-  const copy = overlayCopy();
+  let copy = reviewOverlayCopy(readResolvedReviewUiLanguage());
   const host = createHostElement();
   const shadow = host.reviewShadow;
   shadow.innerHTML = overlayMarkup(copy);
@@ -77,6 +71,7 @@ export function createReviewPanelShell(
   const highlighter = requiredElement<HTMLElement>(shadow, '#highlighter');
   const count = requiredElement<HTMLElement>(shadow, '#page-count');
   const resizer = requiredElement<HTMLElement>(shadow, '#resizer');
+  let pageCount = 0;
   let preferences = readPreferences();
   let resizing = false;
   let previousCursor = '';
@@ -101,6 +96,35 @@ export function createReviewPanelShell(
     applyTheme(detail?.theme ?? readResolvedReviewUiTheme());
   }
 
+  function onLanguageChange(event: Event): void {
+    const detail = (event as CustomEvent<{ language?: 'en-US' | 'zh-CN' }>)
+      .detail;
+    updateOverlayCopy(
+      reviewOverlayCopy(detail?.language ?? readResolvedReviewUiLanguage()),
+    );
+  }
+
+  function updateOverlayCopy(next: ReviewOverlayCopy): void {
+    copy = next;
+    launcher.setAttribute('aria-label', copy.openReview);
+    launcher.title = copy.openReview;
+    panel.setAttribute('aria-label', copy.workbenchFrame);
+    resizer.setAttribute('aria-label', copy.resizeWorkbench);
+    requiredElement<HTMLElement>(shadow, '#title').textContent =
+      copy.reviewTitle;
+    const pick = requiredElement<HTMLButtonElement>(shadow, '#pick');
+    pick.title = copy.pickFromPage;
+    requiredElement<HTMLElement>(pick, 'span:last-child').textContent =
+      copy.pickFromPage;
+    const closeButton = requiredElement<HTMLButtonElement>(shadow, '#close');
+    closeButton.title = copy.closeWorkbench;
+    closeButton.setAttribute('aria-label', copy.closeWorkbench);
+    count.textContent = copy.currentPageSummary(pageCount);
+    if (!loading.hasAttribute('data-error')) {
+      loading.textContent = copy.workbenchLoading;
+    }
+  }
+
   function onSystemThemeChange(): void {
     if (readReviewUiThemePreference() === 'system') {
       applyTheme(
@@ -114,6 +138,7 @@ export function createReviewPanelShell(
 
   syncTheme();
   document.addEventListener(REVIEW_UI_THEME_CHANGE_EVENT, onThemeChange);
+  document.addEventListener(REVIEW_UI_LANGUAGE_CHANGE_EVENT, onLanguageChange);
   if (typeof globalThis.matchMedia === 'function') {
     themeMedia = globalThis.matchMedia('(prefers-color-scheme: dark)');
     themeMedia.addEventListener('change', onSystemThemeChange);
@@ -156,7 +181,7 @@ export function createReviewPanelShell(
         return controller;
       })
       .catch((cause: unknown) => {
-        loading.textContent = copy.failed;
+        loading.textContent = copy.workbenchLoadFailed;
         loading.dataset.error = '';
         throw cause;
       }));
@@ -222,6 +247,10 @@ export function createReviewPanelShell(
     if (destroyed) return;
     destroyed = true;
     document.removeEventListener(REVIEW_UI_THEME_CHANGE_EVENT, onThemeChange);
+    document.removeEventListener(
+      REVIEW_UI_LANGUAGE_CHANGE_EVENT,
+      onLanguageChange,
+    );
     themeMedia?.removeEventListener('change', onSystemThemeChange);
     controller?.destroy();
     options.onDestroy?.();
@@ -281,7 +310,8 @@ export function createReviewPanelShell(
     },
     showLauncher,
     updateCount: (value) => {
-      count.textContent = `${copy.currentPage} ${value}`;
+      pageCount = value;
+      count.textContent = copy.currentPageSummary(pageCount);
     },
   };
 }
@@ -324,7 +354,7 @@ function viewport() {
 }
 
 function requiredElement<T extends Element>(
-  root: ShadowRoot,
+  root: ParentNode,
   selector: string,
 ): T {
   const element = root.querySelector<T>(selector);
@@ -339,35 +369,7 @@ function requiredElement<T extends Element>(
   return element;
 }
 
-function overlayCopy(): OverlayCopy {
-  const zh = navigator.language.toLowerCase().startsWith('zh');
-  return zh
-    ? {
-        close: '关闭工作台',
-        currentPage: '当前页',
-        failed: '工作台加载失败，请查看 Vite 控制台后重试。',
-        frame: '翻译校对工作台',
-        loading: '正在加载翻译校对工作台…',
-        open: '打开翻译校对',
-        pick: '页面取词',
-        resize: '调整工作台高度',
-        title: '翻译校对',
-      }
-    : {
-        close: 'Close workbench',
-        currentPage: 'Page',
-        failed:
-          'Failed to load the workbench. Check the Vite console and retry.',
-        frame: 'Translation review workbench',
-        loading: 'Loading translation review workbench…',
-        open: 'Open translation review',
-        pick: 'Pick from page',
-        resize: 'Resize workbench height',
-        title: 'Translation review',
-      };
-}
-
-function overlayMarkup(copy: OverlayCopy): string {
+function overlayMarkup(copy: ReviewOverlayCopy): string {
   return `<style>
     :host{all:initial;display:block;position:fixed;inset:0;z-index:2147483647;pointer-events:none;font-family:${REVIEW_CLIENT_FONT_STACK};color:var(--review-shell-text);color-scheme:dark;--review-shell-bg:#111827;--review-shell-toolbar:#172033;--review-shell-border:#2f3d52;--review-shell-text:#e5edf8;--review-shell-muted:#8fa0b6;--review-shell-accent:#67e8f9;--review-shell-accent-soft:rgb(6 182 212 / 12%);--review-shell-primary:#60a5fa;--review-shell-primary-soft:rgb(59 130 246 / 12%);--review-shell-hover:#1c2738;--review-shell-danger-bg:rgb(127 29 29 / 24%);--review-shell-danger-text:#fca5a5;--review-highlight-border:#22d3ee;--review-highlight-bg:rgb(34 211 238 / 9%);--review-launcher-bg:#0f172a;--review-launcher-hover:#172033;--review-launcher-border:rgb(148 163 184 / 28%);--review-shadow-launcher:0 12px 30px rgb(2 6 23 / 42%),0 2px 8px rgb(2 6 23 / 28%);--review-shadow-panel:0 22px 72px rgb(2 6 23 / 58%)}
     :host([data-theme='light']){color-scheme:light;--review-shell-bg:#fff;--review-shell-toolbar:#f1f5f9;--review-shell-border:#cbd5e1;--review-shell-text:#0f172a;--review-shell-muted:#64748b;--review-shell-accent:#0891b2;--review-shell-accent-soft:rgb(8 145 178 / 10%);--review-shell-primary:#2563eb;--review-shell-primary-soft:rgb(37 99 235 / 9%);--review-shell-hover:#e8eef5;--review-shell-danger-bg:rgb(254 226 226 / 85%);--review-shell-danger-text:#dc2626;--review-highlight-border:#0891b2;--review-highlight-bg:rgb(8 145 178 / 10%);--review-launcher-bg:#fff;--review-launcher-hover:#f8fafc;--review-launcher-border:rgb(15 23 42 / 14%);--review-shadow-launcher:0 12px 28px rgb(15 23 42 / 16%),0 2px 7px rgb(15 23 42 / 8%);--review-shadow-panel:0 20px 56px rgb(15 23 42 / 14%)}
@@ -386,17 +388,17 @@ function overlayMarkup(copy: OverlayCopy): string {
     #highlighter{position:fixed;z-index:4;pointer-events:none;border:2px solid var(--review-highlight-border);border-radius:4px;background:var(--review-highlight-bg);outline:1px solid color-mix(in srgb,var(--review-highlight-border) 38%,transparent);outline-offset:2px;box-shadow:0 0 0 3px color-mix(in srgb,var(--review-highlight-border) 18%,transparent),0 0 28px color-mix(in srgb,var(--review-highlight-border) 28%,transparent);transform:translateZ(0)}#highlighter::before,#highlighter::after{content:"";position:absolute;width:7px;height:7px;border:2px solid var(--review-highlight-border);background:var(--review-shell-bg)}#highlighter::before{left:-5px;top:-5px}#highlighter::after{right:-5px;bottom:-5px}#highlighter:not([hidden]){animation:review-locate-pulse .72s ease-out 2}@keyframes review-locate-pulse{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--review-highlight-border) 42%,transparent),0 0 12px color-mix(in srgb,var(--review-highlight-border) 14%,transparent)}100%{box-shadow:0 0 0 8px transparent,0 0 32px color-mix(in srgb,var(--review-highlight-border) 30%,transparent)}}
     [hidden]{display:none!important}@media(max-width:640px){#launcher{right:12px;bottom:12px}}@media(prefers-reduced-motion:reduce){#launcher,.tool,#resizer::after{transition:none}#highlighter:not([hidden]){animation:none}}
   </style>
-  <button id="launcher" type="button" aria-label="${copy.open}" title="${copy.open}">${brandIconMarkup('launcher-icon')}</button>
-  <section id="panel" hidden aria-label="${copy.frame}">
-    <div id="resizer" role="separator" tabindex="0" aria-orientation="horizontal" aria-label="${copy.resize}"></div>
+  <button id="launcher" type="button" aria-label="${copy.openReview}" title="${copy.openReview}">${brandIconMarkup('launcher-icon')}</button>
+  <section id="panel" hidden aria-label="${copy.workbenchFrame}">
+    <div id="resizer" role="separator" tabindex="0" aria-orientation="horizontal" aria-label="${copy.resizeWorkbench}"></div>
     <header id="toolbar">
-      <div id="identity"><span id="brand">${brandIconMarkup('toolbar-icon')}</span><span id="title">${copy.title}</span><span id="page-count">${copy.currentPage} 0</span></div>
-      <nav id="tools" aria-label="${copy.frame}">
-        <button class="tool" id="pick" type="button" title="${copy.pick}"><span aria-hidden="true">◎</span><span>${copy.pick}</span></button>
-        <button class="tool" id="close" type="button" title="${copy.close}" aria-label="${copy.close}">×</button>
+      <div id="identity"><span id="brand">${brandIconMarkup('toolbar-icon')}</span><span id="title">${copy.reviewTitle}</span><span id="page-count">${copy.currentPageSummary(0)}</span></div>
+      <nav id="tools" aria-label="${copy.workbenchFrame}">
+        <button class="tool" id="pick" type="button" title="${copy.pickFromPage}"><span aria-hidden="true">◎</span><span>${copy.pickFromPage}</span></button>
+        <button class="tool" id="close" type="button" title="${copy.closeWorkbench}" aria-label="${copy.closeWorkbench}">×</button>
       </nav>
     </header>
-    <div id="workbench"><div id="loading" role="status">${copy.loading}</div></div>
+    <div id="workbench"><div id="loading" role="status">${copy.workbenchLoading}</div></div>
   </section>
   <div id="highlighter" hidden></div>`;
 }

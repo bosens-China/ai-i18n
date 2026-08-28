@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { ReviewCopy } from '../copy';
+import type { ReviewCopy } from '@ai-i18n/core/review-i18n';
 
 /** 顶层 Tab：当前页面 / 全部页面 / 设置 */
 export type ReviewWorkbenchTab = 'page' | 'all' | 'settings';

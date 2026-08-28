@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import type { ReviewMessage } from '@ai-i18n/core';
-import type { ReviewCopy } from '../copy';
+import type { ReviewCopy } from '@ai-i18n/core/review-i18n';
 import { currentReviewOccurrence, reviewBaseline } from '../review-state';
 
 const props = defineProps<{
@@ -89,7 +89,7 @@ const editorHref = computed(() => {
         :href="editorHref"
         target="_blank"
         rel="noreferrer"
-        :aria-label="`${copy.openInVsCode}：${locationLabel}`"
+        :aria-label="copy.openInVsCodeLabel(locationLabel)"
         :title="copy.openInVsCode"
       >
         <svg

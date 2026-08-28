@@ -50,6 +50,19 @@ export type {
   ReviewUiThemePreference,
 } from './review-ui-theme.js';
 export {
+  REVIEW_UI_LANGUAGE_CHANGE_EVENT,
+  REVIEW_UI_LANGUAGE_STORAGE_KEY,
+  parseReviewUiLanguagePreference,
+  readResolvedReviewUiLanguage,
+  readReviewUiLanguagePreference,
+  resolveReviewUiLanguage,
+  saveReviewUiLanguagePreference,
+} from './review-ui-language.js';
+export type {
+  ReviewUiLanguage,
+  ReviewUiLanguagePreference,
+} from './review-ui-language.js';
+export {
   AiI18nSchemaError,
   TranslationConflictError,
   parseExtractedFile,
