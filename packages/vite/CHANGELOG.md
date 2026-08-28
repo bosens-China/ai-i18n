@@ -1,5 +1,29 @@
 # @ai-i18n/vite
 
+## [1.0.0-alpha.25](https://github.com/bosens-China/ai-i18n/compare/vite-v1.0.0-alpha.24...vite-v1.0.0-alpha.25) (2026-08-28)
+
+
+### Features
+
+* **core:** 重构项目译文分片存储 ([5e21b26](https://github.com/bosens-China/ai-i18n/commit/5e21b26b9f47dfa0027b68a0141fb99115c42bb5))
+* **review-ui:** 优化独立校对页桌面体验 ([e243aa8](https://github.com/bosens-China/ai-i18n/commit/e243aa84022f09bc65d9baf5233cd42d25b9ba2c))
+* **vite:** 恢复 Review 独立入口 ([76644db](https://github.com/bosens-China/ai-i18n/commit/76644dbe170b888facc3e4db531fc30e6009e777))
+
+
+### Bug Fixes
+
+* **vite:** 修复 Vue 模板属性 occurrence 注入 ([527fd3f](https://github.com/bosens-China/ai-i18n/commit/527fd3fb82aaa5fb8f2e301707f945eb2434c8ef))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @ai-i18n/analyzer bumped to 1.0.0-alpha.21
+    * @ai-i18n/core bumped to 1.0.0-alpha.14
+  * devDependencies
+    * @ai-i18n/sqlite bumped to 1.0.0-alpha.3
+
 ## [1.0.0-alpha.24](https://github.com/bosens-China/ai-i18n/compare/vite-v1.0.0-alpha.23...vite-v1.0.0-alpha.24) (2026-08-21)
 
 

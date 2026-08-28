@@ -1,5 +1,13 @@
 # @ai-i18n/core
 
+## [1.0.0-alpha.14](https://github.com/bosens-China/ai-i18n/compare/core-v1.0.0-alpha.13...core-v1.0.0-alpha.14) (2026-08-28)
+
+
+### Features
+
+* **core:** 重构项目译文分片存储 ([5e21b26](https://github.com/bosens-China/ai-i18n/commit/5e21b26b9f47dfa0027b68a0141fb99115c42bb5))
+* **review-ui:** 优化独立校对页桌面体验 ([e243aa8](https://github.com/bosens-China/ai-i18n/commit/e243aa84022f09bc65d9baf5233cd42d25b9ba2c))
+
 ## [1.0.0-alpha.13](https://github.com/bosens-China/ai-i18n/compare/core-v1.0.0-alpha.12...core-v1.0.0-alpha.13) (2026-08-21)
 
 
