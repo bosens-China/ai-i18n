@@ -301,6 +301,7 @@ Translation Memory 快照计算，与 JSON 分片或 SQLite 物理布局无关�
 仅支持 Vite ≥ 8 和浏览器 Runtime，不支持 SSR。完整配置与文件协议见
 [用户文档](https://bosens-china.github.io/ai-i18n/)。
 
-开发者提示默认按 Node 时区选择语言：`Asia/Shanghai` 与 `Asia/Urumqi` 使用中文，其他
-时区使用英文。设置 `AI_I18N_DIAGNOSTIC_LOCALE=zh-CN` 或 `en-US` 可以固定语言，`auto`
-恢复自动检测。该设置不影响浏览器 Runtime 或翻译文件。
+开发者提示每条只使用中文或英文。Node 侧默认按时区选择：`Asia/Shanghai` 与
+`Asia/Urumqi` 使用中文，其他时区使用英文。设置 `AI_I18N_DIAGNOSTIC_LOCALE=zh-CN` 或
+`en-US` 可以固定 Node 侧语言，`auto` 恢复自动检测。浏览器 Runtime warning 按浏览器时区自动
+选择语言；上述设置不影响翻译文件。

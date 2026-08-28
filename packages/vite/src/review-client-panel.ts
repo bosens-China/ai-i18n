@@ -8,6 +8,7 @@ import {
   type ReviewWorkbenchModule,
   type ReviewWorkbenchSelection,
 } from '@ai-i18n/core';
+import { diagnosticMessage } from '@ai-i18n/core/diagnostics';
 import {
   parseReviewPanelPreferences,
   resizeReviewPanelHeight,
@@ -131,9 +132,21 @@ export function createReviewPanelShell(
     )
       .then((module: ReviewWorkbenchModule) => {
         if (typeof module.mountReviewWorkbench !== 'function') {
-          throw new TypeError('Missing mountReviewWorkbench export.');
+          throw new TypeError(
+            diagnosticMessage(
+              '缺少 mountReviewWorkbench 导出。',
+              'Missing mountReviewWorkbench export.',
+            ),
+          );
         }
-        if (destroyed) throw new Error('Review host was removed.');
+        if (destroyed) {
+          throw new Error(
+            diagnosticMessage(
+              'Review 宿主已移除。',
+              'Review host was removed.',
+            ),
+          );
+        }
         controller = module.mountReviewWorkbench(workbench, {
           onLocateMessage: options.onLocateMessage,
         });
@@ -315,7 +328,14 @@ function requiredElement<T extends Element>(
   selector: string,
 ): T {
   const element = root.querySelector<T>(selector);
-  if (!element) throw new Error(`Missing review panel element: ${selector}`);
+  if (!element) {
+    throw new Error(
+      diagnosticMessage(
+        `缺少 Review 面板元素：${selector}。`,
+        `Missing review panel element: ${selector}.`,
+      ),
+    );
+  }
   return element;
 }
 

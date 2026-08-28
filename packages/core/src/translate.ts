@@ -1,4 +1,5 @@
 import { createMessageId, type TranslationOptions } from './message-id.js';
+import { diagnosticMessage } from './diagnostics.js';
 import {
   translateMessageTree,
   type MessageTree,
@@ -55,7 +56,10 @@ export function createTranslate(
       }
       if (values.length) {
         throw new TypeError(
-          '[ai-i18n] 翻译文案树只接收一个参数 / Translating a message tree accepts exactly one argument.',
+          diagnosticMessage(
+            '[ai-i18n] 翻译文案树只接收一个参数。',
+            '[ai-i18n] Translating a message tree accepts exactly one argument.',
+          ),
         );
       }
       return (

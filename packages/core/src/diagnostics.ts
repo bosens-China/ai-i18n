@@ -4,7 +4,7 @@ const CHINESE_TIME_ZONES = new Set(['Asia/Shanghai', 'Asia/Urumqi']);
 const ENV_NAME = 'AI_I18N_DIAGNOSTIC_LOCALE';
 
 export function resolveDiagnosticLocale(
-  value = process.env[ENV_NAME],
+  value = typeof process === 'undefined' ? undefined : process.env[ENV_NAME],
   timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone,
 ): DiagnosticLocale {
   const automaticLocale = CHINESE_TIME_ZONES.has(timeZone) ? 'zh-CN' : 'en-US';

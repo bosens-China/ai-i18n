@@ -40,7 +40,10 @@ function mapMessageTree(
   if (value === null || typeof value !== 'object') return value;
   if (ancestors.has(value)) {
     throw new TypeError(
-      '[ai-i18n] 文案树不能包含循环引用 / Message trees cannot contain circular references.',
+      diagnosticMessage(
+        '[ai-i18n] 文案树不能包含循环引用。',
+        '[ai-i18n] Message trees cannot contain circular references.',
+      ),
     );
   }
 
@@ -52,7 +55,10 @@ function mapMessageTree(
     const prototype = Object.getPrototypeOf(value);
     if (prototype !== Object.prototype && prototype !== null) {
       throw new TypeError(
-        '[ai-i18n] 文案树只能包含普通对象和数组 / Message trees may only contain plain objects and arrays.',
+        diagnosticMessage(
+          '[ai-i18n] 文案树只能包含普通对象和数组。',
+          '[ai-i18n] Message trees may only contain plain objects and arrays.',
+        ),
       );
     }
     return Object.fromEntries(
@@ -65,3 +71,4 @@ function mapMessageTree(
     ancestors.delete(value);
   }
 }
+import { diagnosticMessage } from './diagnostics.js';

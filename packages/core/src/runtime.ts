@@ -1,4 +1,5 @@
 import type { LangOption, TranslationValue } from './schema.js';
+import { diagnosticMessage } from './diagnostics.js';
 import { TranslationConflictError } from './schema.js';
 import { hasSameTemplateTokens } from './template.js';
 import { createTranslate, type Translate } from './translate.js';
@@ -59,13 +60,28 @@ export function createI18nRuntime(options: I18nRuntimeOptions): I18nRuntime {
   const locales = options.locales.map((locale) => ({ ...locale }));
   const localeValues = new Set(locales.map((locale) => locale.value));
   if (localeValues.size !== locales.length) {
-    throw new Error('[ai-i18n] locale values must be unique');
+    throw new Error(
+      diagnosticMessage(
+        '[ai-i18n] locale 的 value 不能重复。',
+        '[ai-i18n] locale values must be unique.',
+      ),
+    );
   }
   if (!localeValues.has(options.sourceLang)) {
-    throw new Error('[ai-i18n] sourceLang must exist in locales');
+    throw new Error(
+      diagnosticMessage(
+        '[ai-i18n] sourceLang 必须匹配 locales 中的某个 value。',
+        '[ai-i18n] sourceLang must match a value in locales.',
+      ),
+    );
   }
   if (!localeValues.has(options.defaultLang)) {
-    throw new Error('[ai-i18n] defaultLang must exist in locales');
+    throw new Error(
+      diagnosticMessage(
+        '[ai-i18n] defaultLang 必须匹配 locales 中的某个 value。',
+        '[ai-i18n] defaultLang must match a value in locales.',
+      ),
+    );
   }
   const listeners = new Set<() => void>();
   const localeLoaders = options.localeLoaders;
@@ -87,17 +103,30 @@ export function createI18nRuntime(options: I18nRuntimeOptions): I18nRuntime {
     for (const locale of locales) {
       if (locale.value === options.sourceLang) {
         if (Object.hasOwn(localeLoaders, locale.value)) {
-          throw new Error('[ai-i18n] source locale must not have a loader');
+          throw new Error(
+            diagnosticMessage(
+              '[ai-i18n] 源 locale 不能配置 loader。',
+              '[ai-i18n] source locale must not have a loader.',
+            ),
+          );
         }
       } else if (typeof localeLoaders[locale.value] !== 'function') {
         throw new Error(
-          `[ai-i18n] target locale "${locale.value}" must have a loader`,
+          diagnosticMessage(
+            `[ai-i18n] 目标 locale“${locale.value}”必须配置 loader。`,
+            `[ai-i18n] target locale "${locale.value}" must have a loader.`,
+          ),
         );
       }
     }
     for (const locale of Object.keys(localeLoaders)) {
       if (!localeValues.has(locale)) {
-        throw new Error(`[ai-i18n] unknown locale loader "${locale}"`);
+        throw new Error(
+          diagnosticMessage(
+            `[ai-i18n] locale“${locale}”的 loader 不存在于 locales 中。`,
+            `[ai-i18n] unknown locale loader "${locale}".`,
+          ),
+        );
       }
     }
   }
@@ -132,7 +161,14 @@ export function createI18nRuntime(options: I18nRuntimeOptions): I18nRuntime {
   }
 
   function updateModule(moduleId: string, messages: ModuleMessages) {
-    if (!moduleId) throw new Error('[ai-i18n] moduleId must not be empty');
+    if (!moduleId) {
+      throw new Error(
+        diagnosticMessage(
+          '[ai-i18n] moduleId 不能为空。',
+          '[ai-i18n] moduleId must not be empty.',
+        ),
+      );
+    }
     const nextModules = new Map(modules);
     nextModules.set(moduleId, messages);
     rebuild(nextModules);
@@ -163,7 +199,10 @@ export function createI18nRuntime(options: I18nRuntimeOptions): I18nRuntime {
         if (!templateWarnings.has(warningKey)) {
           templateWarnings.add(warningKey);
           console.warn(
-            `[ai-i18n] locale "${currentLang}" message "${messageId}" 的模板占位符与源文不一致 / template placeholders differ from source`,
+            diagnosticMessage(
+              `[ai-i18n] locale“${currentLang}”的消息“${messageId}”模板占位符与源文不一致。`,
+              `[ai-i18n] locale "${currentLang}" message "${messageId}" template placeholders differ from source.`,
+            ),
           );
         }
       }
@@ -179,7 +218,12 @@ export function createI18nRuntime(options: I18nRuntimeOptions): I18nRuntime {
     if (pending) return pending;
     const loader = localeLoaders?.[locale];
     if (!loader) {
-      throw new Error(`[ai-i18n] locale "${locale}" cannot be loaded`);
+      throw new Error(
+        diagnosticMessage(
+          `[ai-i18n] 无法加载 locale“${locale}”。`,
+          `[ai-i18n] locale "${locale}" cannot be loaded.`,
+        ),
+      );
     }
     const promise = loader()
       .then((messages) => {
@@ -197,7 +241,12 @@ export function createI18nRuntime(options: I18nRuntimeOptions): I18nRuntime {
 
   async function changeLang(value: string, persist: boolean) {
     if (!localeValues.has(value)) {
-      throw new RangeError(`[ai-i18n] unsupported locale "${value}"`);
+      throw new RangeError(
+        diagnosticMessage(
+          `[ai-i18n] 不支持 locale“${value}”。`,
+          `[ai-i18n] unsupported locale "${value}".`,
+        ),
+      );
     }
     const request = ++languageRequest;
     const needsLoad =
@@ -267,7 +316,12 @@ export function createI18nRuntime(options: I18nRuntimeOptions): I18nRuntime {
     },
     replaceLocale(locale, messages) {
       if (!localeValues.has(locale) || locale === options.sourceLang) {
-        throw new RangeError(`[ai-i18n] unsupported target locale "${locale}"`);
+        throw new RangeError(
+          diagnosticMessage(
+            `[ai-i18n] 不支持目标 locale“${locale}”。`,
+            `[ai-i18n] unsupported target locale "${locale}".`,
+          ),
+        );
       }
       validateLocaleMessages(locale, messages);
       if (!loadedLocales.has(locale)) {
@@ -294,7 +348,10 @@ export function createI18nRuntime(options: I18nRuntimeOptions): I18nRuntime {
         return;
       }
       console.warn(
-        `[ai-i18n] 初始语言“${initialLang}”加载失败，继续使用源语言“${options.sourceLang}” / Failed to load initial locale "${initialLang}"; continuing with source locale "${options.sourceLang}".`,
+        diagnosticMessage(
+          `[ai-i18n] 初始语言“${initialLang}”加载失败，继续使用源语言“${options.sourceLang}”。`,
+          `[ai-i18n] Failed to load initial locale "${initialLang}"; continuing with source locale "${options.sourceLang}".`,
+        ),
         error,
       );
     });
@@ -314,7 +371,14 @@ function resolvePersistenceKey(
   if (!persist) return undefined;
   if (persist === true) return 'ai-i18n:lang';
   const key = persist.key.trim();
-  if (!key) throw new Error('[ai-i18n] persist.key must not be empty');
+  if (!key) {
+    throw new Error(
+      diagnosticMessage(
+        '[ai-i18n] persist.key 不能为空。',
+        '[ai-i18n] persist.key must not be empty.',
+      ),
+    );
+  }
   return key;
 }
 
@@ -347,7 +411,10 @@ function validateLocaleMessages(
   for (const [id, value] of Object.entries(messages)) {
     if (typeof value !== 'string' && value !== null) {
       throw new Error(
-        `[ai-i18n] locale "${locale}" message "${id}" must be a string or null`,
+        diagnosticMessage(
+          `[ai-i18n] locale“${locale}”的消息“${id}”必须是字符串或 null。`,
+          `[ai-i18n] locale "${locale}" message "${id}" must be a string or null.`,
+        ),
       );
     }
   }
@@ -362,19 +429,28 @@ function validateModule(
   const entries = Object.entries(messages);
   if (entries.length !== localeCount) {
     throw new Error(
-      `[ai-i18n] module "${moduleId}" must register every locale`,
+      diagnosticMessage(
+        `[ai-i18n] 模块“${moduleId}”必须注册每个 locale。`,
+        `[ai-i18n] module "${moduleId}" must register every locale.`,
+      ),
     );
   }
   for (const [locale, localeMessages] of entries) {
     if (!locales.has(locale)) {
       throw new Error(
-        `[ai-i18n] module "${moduleId}" registered unknown locale "${locale}"`,
+        diagnosticMessage(
+          `[ai-i18n] 模块“${moduleId}”注册了未知 locale“${locale}”。`,
+          `[ai-i18n] module "${moduleId}" registered unknown locale "${locale}".`,
+        ),
       );
     }
     for (const [id, value] of Object.entries(localeMessages)) {
       if (typeof value !== 'string' && value !== null) {
         throw new Error(
-          `[ai-i18n] module "${moduleId}" message "${id}" must be a string or null`,
+          diagnosticMessage(
+            `[ai-i18n] 模块“${moduleId}”的消息“${id}”必须是字符串或 null。`,
+            `[ai-i18n] module "${moduleId}" message "${id}" must be a string or null.`,
+          ),
         );
       }
     }

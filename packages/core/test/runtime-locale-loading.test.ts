@@ -125,6 +125,7 @@ describe('@ai-i18n/core runtime locale loading', () => {
   });
 
   it('warns when the initial lazy locale cannot be loaded', async () => {
+    vi.stubEnv('AI_I18N_DIAGNOSTIC_LOCALE', 'en-US');
     const error = new Error('offline');
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     const runtime = createI18nRuntime({

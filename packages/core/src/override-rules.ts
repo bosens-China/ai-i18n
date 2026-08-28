@@ -4,6 +4,7 @@ import {
   type TranslationOverrideRule,
   type TranslationOverridesFile,
 } from './schema.js';
+import { diagnosticMessage } from './diagnostics.js';
 
 export interface OverrideMessageReference {
   source: string;
@@ -71,7 +72,10 @@ export function overridesFromAtomic(
     if (entry.location) {
       if (!entry.file) {
         throw new TypeError(
-          'An occurrence-scoped override requires a source file.',
+          diagnosticMessage(
+            '按 occurrence 范围的人工覆盖必须包含 source file。',
+            'An occurrence-scoped override requires a source file.',
+          ),
         );
       }
       const key = JSON.stringify([

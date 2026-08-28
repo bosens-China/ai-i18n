@@ -14,6 +14,7 @@ afterEach(() => {
 
 describe('@ai-i18n/core runtime', () => {
   it('does not expose its internal locale objects', async () => {
+    vi.stubEnv('AI_I18N_DIAGNOSTIC_LOCALE', 'en-US');
     const runtime = createI18nRuntime({
       sourceLang: 'zh-CN',
       defaultLang: 'zh-CN',
@@ -148,6 +149,7 @@ describe('@ai-i18n/core runtime', () => {
   });
 
   it('rejects unsupported and circular message trees', () => {
+    vi.stubEnv('AI_I18N_DIAGNOSTIC_LOCALE', 'en-US');
     const runtime = createI18nRuntime({
       sourceLang: 'zh-CN',
       defaultLang: 'zh-CN',
@@ -165,6 +167,7 @@ describe('@ai-i18n/core runtime', () => {
   });
 
   it('warns once per locale, message, and mismatched translation', async () => {
+    vi.stubEnv('AI_I18N_DIAGNOSTIC_LOCALE', 'en-US');
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     const runtime = createI18nRuntime({
       sourceLang: 'zh-CN',
@@ -193,8 +196,28 @@ describe('@ai-i18n/core runtime', () => {
     expect(runtime.t`欢迎 ${'Ada'}`).toBe('変更 {{2}}');
     expect(warn).toHaveBeenCalledTimes(3);
     expect(warn).toHaveBeenLastCalledWith(
-      '[ai-i18n] locale "ja-JP" message "欢迎 {{0}}" 的模板占位符与源文不一致 / template placeholders differ from source',
+      '[ai-i18n] locale "ja-JP" message "欢迎 {{0}}" template placeholders differ from source.',
     );
+  });
+
+  it('uses one configured language for browser runtime diagnostics', () => {
+    vi.stubEnv('AI_I18N_DIAGNOSTIC_LOCALE', 'zh-CN');
+    expect(() =>
+      createI18nRuntime({
+        sourceLang: 'zh-CN',
+        defaultLang: 'en-US',
+        locales: [{ value: 'zh-CN', label: '中文' }],
+      }),
+    ).toThrow('[ai-i18n] defaultLang 必须匹配 locales 中的某个 value。');
+
+    vi.stubEnv('AI_I18N_DIAGNOSTIC_LOCALE', 'en-US');
+    expect(() =>
+      createI18nRuntime({
+        sourceLang: 'zh-CN',
+        defaultLang: 'en-US',
+        locales: [{ value: 'zh-CN', label: '中文' }],
+      }),
+    ).toThrow('[ai-i18n] defaultLang must match a value in locales.');
   });
 
   it('keeps literal template tokens separate from runtime values', () => {
