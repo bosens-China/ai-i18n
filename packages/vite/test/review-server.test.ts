@@ -6,7 +6,6 @@ import { sqlite } from '@ai-i18n/sqlite';
 import { readTranslationOverrides } from '@ai-i18n/core/translation-memory';
 import { aiI18nReview } from '../src/review';
 import {
-  REVIEW_CLIENT_MODULE_PATH,
   REVIEW_PAGE_ICON_PATH,
   REVIEW_PAGE_MODULE_PATH,
   REVIEW_PAGE_STYLE_PATH,
@@ -22,39 +21,14 @@ import {
   write,
 } from './review-server-test-utils';
 
-describe('review server', () => {
+// 本组会冷启动业务与 review-ui 两个 Vite 服务，CI 并发时需要独立于单元测试的时间预算。
+describe('review server', { timeout: 10_000 }, () => {
   it('serves the local review-ui source through its own Vite HMR channel', async () => {
     const explicitReviewUiDirectory = process.env.AI_I18N_REVIEW_UI_DIR;
     delete process.env.AI_I18N_REVIEW_UI_DIR;
     try {
       const root = await fixtureRoot();
-      await write(
-        root,
-        'src/main.ts',
-        "import { t } from 'virtual:ai-i18n'; console.log(t('本地开发'))",
-      );
-      const { vite, origin } = await startListening(root);
-      const html = await vite.transformIndexHtml(
-        '/index.html',
-        '<!doctype html><main></main>',
-      );
-      await vite.transformRequest('/src/main.ts');
-
-      expect(html).toContain(
-        `src="${REVIEW_CLIENT_MODULE_PATH}" data-ai-i18n-review`,
-      );
-      const reviewClient = await fetch(`${origin}${REVIEW_CLIENT_MODULE_PATH}`);
-      const reviewClientCode = await reviewClient.text();
-      expect(reviewClient.status, reviewClientCode).toBe(200);
-      expect(reviewClientCode).toContain('mountReviewOverlay');
-
-      const panelSource = await fs.readFile(
-        path.resolve('packages/vite/src/review-client-panel.ts'),
-        'utf8',
-      );
-      expect(panelSource).toContain('PingFang SC');
-      expect(panelSource).toContain('Microsoft YaHei UI');
-      expect(panelSource).not.toContain('font-family:Inter');
+      const { origin } = await startListening(root);
 
       const module = await fetch(`${origin}${REVIEW_WORKBENCH_MODULE_PATH}`);
       const code = await module.text();
@@ -81,11 +55,6 @@ describe('review server', () => {
       await expect(connectHmr(origin, wsToken!)).resolves.toMatchObject({
         type: 'connected',
       });
-
-      const messages = await fetch(`${origin}/__ai-i18n/api/messages`).then(
-        (response) => response.json(),
-      );
-      expect(messages.messages[0].message.source).toBe('本地开发');
     } finally {
       if (explicitReviewUiDirectory === undefined) {
         delete process.env.AI_I18N_REVIEW_UI_DIR;

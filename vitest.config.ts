@@ -8,6 +8,7 @@ const viteIntegrationTests = [
   'packages/vite/test/provider-build.test.ts',
   'packages/vite/test/react-compiler.test.ts',
   'packages/vite/test/react-integration.test.ts',
+  'packages/vite/test/review-server.test.ts',
   'packages/vite/test/vue-integration.test.ts',
 ];
 
