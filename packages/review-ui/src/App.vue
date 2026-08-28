@@ -27,6 +27,11 @@ import { useReviewTheme } from './composables/useReviewTheme';
 import type { ReviewHostSelection, ReviewHostState } from './host-state';
 import { hasMultipleReviewLocales } from './review-locales';
 import {
+  hasReviewPageContext,
+  initialReviewWorkbenchTab,
+  type ReviewWorkbenchMode,
+} from './review-mode';
+import {
   messageKey,
   type ReviewOccurrenceTarget,
   type ReviewScope,
@@ -34,6 +39,7 @@ import {
 
 const props = defineProps<{
   host: ReviewHostState;
+  mode: ReviewWorkbenchMode;
   root: HTMLElement;
   onLocateMessage?: (messageKey: string) => void;
 }>();
@@ -43,7 +49,10 @@ const { preference: themePreference, setPreference: setThemePreference } =
 const review = useReviewConsole(copy);
 const drafts = useReviewDrafts();
 const scopes = reactive(new Map<string, ReviewScope>());
-const workbenchTab = shallowRef<ReviewWorkbenchTab>('page');
+const pageContext = hasReviewPageContext(props.mode);
+const workbenchTab = shallowRef<ReviewWorkbenchTab>(
+  initialReviewWorkbenchTab(props.mode),
+);
 const browseScope = computed(() =>
   workbenchTab.value === 'all' ? 'all' : 'page',
 );
@@ -99,10 +108,8 @@ const showAllFilters = computed(
   () => browseScope.value === 'all' && !candidateMode.value,
 );
 let stopAutoRefresh: (() => void) | undefined;
-
 function handleKeyDown(event: KeyboardEvent): void {
   if (workbenchTab.value === 'settings') return;
-
   const isInputTarget = event
     .composedPath()
     .some(
@@ -110,7 +117,6 @@ function handleKeyDown(event: KeyboardEvent): void {
         target instanceof HTMLInputElement ||
         target instanceof HTMLTextAreaElement,
     );
-
   if (
     !isInputTarget &&
     (event.key === 'ArrowUp' || event.key === 'ArrowDown')
@@ -132,7 +138,6 @@ function handleKeyDown(event: KeyboardEvent): void {
       event.preventDefault();
     }
   }
-
   if (event.altKey && event.code === 'KeyA') {
     const message = selection.selectedMessage.value;
     const automatic = message?.translations[review.locale.value];
@@ -147,29 +152,25 @@ function handleKeyDown(event: KeyboardEvent): void {
     }
   }
 }
-
 onMounted(() => {
   void review.load();
   stopAutoRefresh = review.startAutoRefresh();
   window.addEventListener('keydown', handleKeyDown);
 });
-
 onUnmounted(() => {
   stopAutoRefresh?.();
   window.removeEventListener('keydown', handleKeyDown);
 });
-
 watch(
   () => props.host.selection,
   (next) => {
-    if (next) {
+    if (next && pageContext) {
       workbenchTab.value = 'page';
       applyHostSelection(next);
     }
   },
   { deep: false },
 );
-
 function applyHostSelection(data: ReviewHostSelection): void {
   if (data.exact && data.candidateKeys.includes(data.exact.key)) {
     candidateKeys.value = null;
@@ -189,7 +190,6 @@ function applyHostSelection(data: ReviewHostSelection): void {
   candidateKeys.value = new Set(data.candidateKeys);
   selection.clear();
 }
-
 function showBrowse(): void {
   candidateKeys.value = null;
 }
@@ -201,13 +201,11 @@ function selectLocateResult(
   scopes.set(messageKey(message.message), target);
   selection.select(message);
 }
-
 function selectMessage(message: ReviewMessage): void {
   selection.select(message);
   const key = messageKey(message.message);
   if (pageKeys.value.has(key)) props.onLocateMessage?.(key);
 }
-
 function scopeFor(message: ReviewMessage): ReviewScope {
   return scopes.get(messageKey(message.message)) ?? {};
 }
@@ -238,6 +236,7 @@ async function mutate(
       :all-count="allMessages.length"
       :copy="copy"
       :page-count="pageKeys.size"
+      :show-page="pageContext"
     />
 
     <ReviewSettingsPanel

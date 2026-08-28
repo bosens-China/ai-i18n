@@ -5,7 +5,7 @@ import path from 'node:path';
 import { afterAll, afterEach, beforeAll, vi } from 'vitest';
 import { build, createServer, type ViteDevServer } from 'vite';
 import { aiI18n, type AiI18nOptions } from '../src/index';
-import { aiI18nReview } from '../src/review';
+import { aiI18nReview, type AiI18nReviewOptions } from '../src/review';
 import { removeTempDir } from './temp-dir';
 
 const tempDirs: string[] = [];
@@ -57,6 +57,7 @@ afterEach(async () => {
 export async function start(
   root: string,
   pluginOptions: AiI18nOptions = options,
+  reviewOptions: AiI18nReviewOptions = {},
 ) {
   const vite = await createServer({
     root,
@@ -70,7 +71,7 @@ export async function start(
         '@ai-i18n/vite/runtime': runtimeEntry,
       },
     },
-    plugins: [aiI18n(pluginOptions), aiI18nReview()],
+    plugins: [aiI18n(pluginOptions), aiI18nReview(reviewOptions)],
   });
   const server = http.createServer(vite.middlewares);
   await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
@@ -83,6 +84,7 @@ export async function start(
 export async function startListening(
   root: string,
   pluginOptions: AiI18nOptions = options,
+  reviewOptions: AiI18nReviewOptions = {},
 ) {
   const vite = await createServer({
     root,
@@ -96,15 +98,20 @@ export async function startListening(
         '@ai-i18n/vite/runtime': runtimeEntry,
       },
     },
-    plugins: [aiI18n(pluginOptions), aiI18nReview()],
+    plugins: [aiI18n(pluginOptions), aiI18nReview(reviewOptions)],
   });
+  const loggerInfo = vi.spyOn(vite.config.logger, 'info');
   await vite.listen();
   const server = vite.httpServer;
   if (!(server instanceof http.Server)) throw new Error('Missing HTTP server');
   servers.push({ vite, http: server });
   const address = server.address();
   if (!address || typeof address === 'string') throw new Error('Missing port');
-  return { vite, origin: `http://127.0.0.1:${address.port}` };
+  return {
+    vite,
+    origin: `http://127.0.0.1:${address.port}`,
+    loggerInfo,
+  };
 }
 
 export async function buildFixture(

@@ -2,6 +2,9 @@ import { createApp, reactive } from 'vue';
 import { readResolvedReviewUiTheme } from '@ai-i18n/core';
 import App from './App.vue';
 import type { ReviewHostSelection, ReviewHostState } from './host-state';
+import type { ReviewWorkbenchMode } from './review-mode';
+
+export type { ReviewWorkbenchMode } from './review-mode';
 
 export interface ReviewWorkbenchController {
   setPageMessageKeys(messageKeys: readonly string[]): void;
@@ -10,6 +13,7 @@ export interface ReviewWorkbenchController {
 }
 
 export interface ReviewWorkbenchOptions {
+  mode?: ReviewWorkbenchMode;
   onLocateMessage?: (messageKey: string) => void;
 }
 
@@ -23,10 +27,12 @@ export function mountReviewWorkbench(
   });
   const root = document.createElement('div');
   root.className = 'review-root';
+  root.dataset.mode = options.mode ?? 'embedded';
   root.dataset.theme = readResolvedReviewUiTheme();
   container.replaceChildren(root);
   const app = createApp(App, {
     host: state,
+    mode: options.mode ?? 'embedded',
     root,
     onLocateMessage: options.onLocateMessage,
   });

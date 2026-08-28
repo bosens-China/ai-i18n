@@ -18,6 +18,7 @@ export interface ReviewWorkbenchController {
 }
 
 export interface ReviewWorkbenchOptions {
+  mode?: 'embedded' | 'standalone';
   onLocateMessage?: (messageKey: string) => void;
 }
 

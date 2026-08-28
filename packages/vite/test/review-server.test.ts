@@ -6,6 +6,8 @@ import { sqlite } from '@ai-i18n/sqlite';
 import { aiI18nReview } from '../src/review';
 import {
   REVIEW_CLIENT_MODULE_PATH,
+  REVIEW_PAGE_MODULE_PATH,
+  REVIEW_PAGE_STYLE_PATH,
   REVIEW_WORKBENCH_MODULE_PATH,
 } from '../src/review-page';
 import {
@@ -127,12 +129,34 @@ describe('review server', () => {
     const { vite, origin } = await start(root);
     await vite.transformRequest('/src/main.ts');
 
-    const removedPage = await fetch(`${origin}/__ai-i18n/`, {
+    const redirect = await fetch(`${origin}/__ai-i18n`, {
       redirect: 'manual',
     });
-    const removedHtml = await removedPage.text();
-    expect(removedPage.status).not.toBe(302);
-    expect(removedHtml).not.toContain('ai-i18n Review');
+    expect(redirect.status).toBe(302);
+    expect(redirect.headers.get('location')).toBe('/__ai-i18n/');
+
+    const page = await fetch(`${origin}/__ai-i18n/`);
+    const pageHtml = await page.text();
+    expect(page.status).toBe(200);
+    expect(page.headers.get('content-security-policy')).toContain(
+      "script-src 'self'",
+    );
+    expect(page.headers.get('content-security-policy')).toContain(
+      "style-src 'self' 'unsafe-inline'",
+    );
+    expect(pageHtml).toContain('<title>ai-i18n Review</title>');
+    expect(pageHtml).toContain(`src="${REVIEW_PAGE_MODULE_PATH}"`);
+    expect(pageHtml).toContain(`href="${REVIEW_PAGE_STYLE_PATH}"`);
+
+    const pageModule = await fetch(new URL(REVIEW_PAGE_MODULE_PATH, origin));
+    const pageModuleCode = await pageModule.text();
+    expect(pageModule.status, pageModuleCode).toBe(200);
+    expect(pageModuleCode).toContain("mode: 'standalone'");
+
+    const pageStyle = await fetch(new URL(REVIEW_PAGE_STYLE_PATH, origin));
+    expect(pageStyle.status).toBe(200);
+    expect(pageStyle.headers.get('content-type')).toContain('text/css');
+    expect(await pageStyle.text()).toContain('#ai-i18n-review');
 
     const client = await fetch(new URL(REVIEW_WORKBENCH_MODULE_PATH, origin));
     const clientCode = await client.text();
@@ -281,4 +305,39 @@ describe('review server', () => {
     expect(aiI18n(options).configureServer).toBeTypeOf('function');
     expect(aiI18nReview().configureServer).toBeTypeOf('function');
   });
+
+  it('keeps the standalone page and API when both entry hints are disabled', async () => {
+    const root = await fixtureRoot();
+    const { vite, origin } = await start(root, options, {
+      launcher: false,
+      printUrl: false,
+    });
+    const html = await vite.transformIndexHtml(
+      '/index.html',
+      '<!doctype html><main></main>',
+    );
+
+    expect(html).not.toContain('data-ai-i18n-review');
+    await expect(fetch(`${origin}/__ai-i18n/`)).resolves.toMatchObject({
+      status: 200,
+    });
+    await expect(
+      fetch(`${origin}/__ai-i18n/api/messages`),
+    ).resolves.toMatchObject({ status: 200 });
+  });
+
+  it.each([
+    { printUrl: true, expected: true },
+    { printUrl: false, expected: false },
+  ])(
+    'prints the standalone URL according to printUrl=$printUrl',
+    async ({ printUrl, expected }) => {
+      const root = await fixtureRoot();
+      const { loggerInfo } = await startListening(root, options, { printUrl });
+      const printed = loggerInfo.mock.calls.some(([message]) =>
+        String(message).includes('/__ai-i18n/'),
+      );
+      expect(printed).toBe(expected);
+    },
+  );
 });

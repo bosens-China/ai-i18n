@@ -17,13 +17,18 @@ import type {
   ReviewService,
 } from './review-service.js';
 import { ReviewProblem } from './review-service.js';
+import {
+  printReviewUrl,
+  readReviewStandaloneAsset,
+} from './review-standalone.js';
 import { createReviewUiDevServer } from './review-ui-dev.js';
 
 const MAX_BODY_BYTES = 64 * 1024;
 const CONTENT_SECURITY_POLICY = [
   "default-src 'self'",
   "script-src 'self'",
-  "style-src 'self'",
+  // Review UI 会把随包 CSS 注入工作台根节点；独立页需要显式允许这段内联样式。
+  "style-src 'self' 'unsafe-inline'",
   "connect-src 'self'",
   "img-src 'self' data:",
   "base-uri 'none'",
@@ -34,18 +39,36 @@ const CONTENT_SECURITY_POLICY = [
 export async function configureReviewServer(
   server: ViteDevServer,
   service: ReviewService,
+  options: { printUrl?: boolean } = {},
 ): Promise<void> {
   const reviewUiDevServer = await createReviewUiDevServer(server);
+  if (options.printUrl !== false) printReviewUrl(server);
 
   server.middlewares.use(async (request, response, next) => {
     const pathname = request.url?.split('?', 1)[0];
     if (!pathname?.startsWith(REVIEW_BASE_PATH.slice(0, -1))) return next();
     try {
       if (
-        pathname === REVIEW_BASE_PATH.slice(0, -1) ||
-        pathname === REVIEW_BASE_PATH
+        request.method === 'GET' &&
+        pathname === REVIEW_BASE_PATH.slice(0, -1)
       ) {
-        next();
+        response.statusCode = 302;
+        response.setHeader('Location', REVIEW_BASE_PATH);
+        response.end();
+        return;
+      }
+      const standaloneAsset =
+        request.method === 'GET'
+          ? readReviewStandaloneAsset(pathname)
+          : undefined;
+      if (standaloneAsset) {
+        send(
+          response,
+          200,
+          standaloneAsset.contentType,
+          standaloneAsset.body,
+          standaloneAsset.html,
+        );
         return;
       }
       if (request.method === 'GET' && pathname === REVIEW_API_PATH) {
@@ -124,7 +147,6 @@ interface SourceLocationTarget {
   line: number;
   column: number;
 }
-
 async function editorLocation(
   request: IncomingMessage,
   server: ViteDevServer,
@@ -139,7 +161,6 @@ async function editorLocation(
       'This source location is not in the current review snapshot. Refresh the review page and try again.',
     );
   }
-
   const root = await fs.realpath(server.config.root);
   const sourceFile = await fs.realpath(path.resolve(root, target.file));
   if (!isWithinRoot(root, sourceFile)) {
@@ -150,13 +171,11 @@ async function editorLocation(
       'The source location is outside the current Vite project.',
     );
   }
-
   const vscode = new URL('vscode://file');
   // VS Code 使用 1-based 列号，而提取器的 column 是 0-based。
   vscode.pathname = `${sourceFile}:${target.line}:${target.column + 1}`;
   return vscode.href;
 }
-
 function parseEditorTarget(url: string | undefined): SourceLocationTarget {
   const search = new URL(url ?? '/', 'http://review.local').searchParams;
   const file = search.get('file');
@@ -172,12 +191,10 @@ function parseEditorTarget(url: string | undefined): SourceLocationTarget {
   }
   return { file, line, column };
 }
-
 function parsePositiveInteger(value: string | null): number | undefined {
   const number = Number(value);
   return Number.isSafeInteger(number) && number > 0 ? number : undefined;
 }
-
 function parseNonNegativeInteger(value: string | null): number | undefined {
   const number = Number(value);
   return Number.isSafeInteger(number) && number >= 0 ? number : undefined;

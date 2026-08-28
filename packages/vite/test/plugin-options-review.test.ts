@@ -115,6 +115,24 @@ describe('@ai-i18n/vite plugin options and Review registration', () => {
     );
   });
 
+  it('can disable the page launcher without disabling Review modules', () => {
+    const { plugin: core } = setupPlugin();
+    const plugin = aiI18nReview({ launcher: false });
+    callHook(plugin.configResolved, {
+      command: 'serve',
+      plugins: [core, plugin],
+    });
+
+    expect(
+      callHook(plugin.transformIndexHtml, '<!doctype html><main></main>', {
+        filename: '/workspace/index.html',
+      }),
+    ).toEqual([]);
+    expect(
+      callHook<string>(plugin.resolveId, 'virtual:ai-i18n/review-client'),
+    ).toBe('\0virtual:ai-i18n/review-client');
+  });
+
   it('rejects the removed review option with migration guidance', () => {
     expect(() =>
       aiI18n({ ...options, review: false } as AiI18nOptions),

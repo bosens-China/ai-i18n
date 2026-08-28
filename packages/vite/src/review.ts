@@ -11,8 +11,17 @@ import { createReviewService } from './review-service.js';
 
 const RESOLVED_REVIEW_CLIENT_ID = `\0${REVIEW_CLIENT_VIRTUAL_ID}`;
 
+export interface AiI18nReviewOptions {
+  /** 是否在业务页面注入右下角 Review 入口，默认 true。 */
+  launcher?: boolean;
+  /** 是否在 Vite Dev 控制台打印独立 Review 地址，默认 true。 */
+  printUrl?: boolean;
+}
+
 /** 在 Vite Dev 页面显式启用翻译校对工作台。 */
-export function aiI18nReview(): Plugin {
+export function aiI18nReview(options: AiI18nReviewOptions = {}): Plugin {
+  const launcher = options.launcher !== false;
+  const printUrl = options.printUrl !== false;
   let config: ResolvedConfig | undefined;
   let core: AiI18nPluginApi | undefined;
 
@@ -63,6 +72,7 @@ export function aiI18nReview(): Plugin {
           flushPersistence: api.flushPersistence,
           notify: api.notify,
         }),
+        { printUrl },
       );
     },
 
@@ -90,6 +100,7 @@ export function aiI18nReview(): Plugin {
     transformIndexHtml: {
       order: 'post',
       handler() {
+        if (!launcher) return [];
         return [
           {
             tag: 'script',

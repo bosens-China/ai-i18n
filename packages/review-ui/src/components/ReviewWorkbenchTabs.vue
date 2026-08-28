@@ -8,6 +8,7 @@ defineProps<{
   allCount: number;
   copy: ReviewCopy;
   pageCount: number;
+  showPage: boolean;
 }>();
 
 const tab = defineModel<ReviewWorkbenchTab>({ required: true });
@@ -19,6 +20,7 @@ const tab = defineModel<ReviewWorkbenchTab>({ required: true });
     :aria-label="copy.workbenchTabsLabel"
   >
     <button
+      v-if="showPage"
       class="review-tab"
       type="button"
       :aria-selected="tab === 'page'"
