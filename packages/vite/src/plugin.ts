@@ -50,6 +50,7 @@ import {
   rejectRemovedOptions,
 } from './plugin-utils.js';
 import { createSourceTransformHandler } from './source-transform.js';
+import { formatTerminalDiagnostic } from './terminal-format.js';
 const TRANSLATION_UPDATE_EVENT = 'ai-i18n:update';
 const LOCALE_UPDATE_EVENT = 'ai-i18n:locale-update';
 
@@ -95,9 +96,12 @@ export function aiI18n(options: AiI18nOptions): Plugin {
     onError(cause) {
       const reason = cause instanceof Error ? cause.message : String(cause);
       config?.logger.error(
-        diagnosticMessage(
-          `[ai-i18n] Dev 后台持久化失败：${reason}`,
-          `[ai-i18n] Dev background persistence failed: ${reason}`,
+        formatTerminalDiagnostic(
+          diagnosticMessage(
+            `[ai-i18n] Dev 后台持久化失败：${reason}`,
+            `[ai-i18n] Dev background persistence failed: ${reason}`,
+          ),
+          'error',
         ),
       );
     },
@@ -120,7 +124,9 @@ export function aiI18n(options: AiI18nOptions): Plugin {
     coordinator: () => coordinator,
     providerCache,
     reportMissingTranslations(message) {
-      if (config?.command === 'serve') config.logger?.info(message);
+      if (config?.command === 'serve') {
+        config.logger?.info(formatTerminalDiagnostic(message, 'info'));
+      }
     },
     translationEvent: TRANSLATION_UPDATE_EVENT,
     localeEvent: LOCALE_UPDATE_EVENT,
@@ -275,7 +281,10 @@ export function aiI18n(options: AiI18nOptions): Plugin {
         ...(translationMemory.capacity
           ? { capacity: translationMemory.capacity }
           : {}),
-        onWarning: (message) => resolved.logger.warn(`[ai-i18n] ${message}`),
+        onWarning: (message) =>
+          resolved.logger.warn(
+            formatTerminalDiagnostic(`[ai-i18n] ${message}`, 'warning'),
+          ),
         onSynced(batchIds) {
           for (const batchId of batchIds) {
             coordinator?.reportBatchEvent({
@@ -287,9 +296,12 @@ export function aiI18n(options: AiI18nOptions): Plugin {
       });
       if (resolved.command === 'build' && resolved.build.watch) {
         resolved.logger.info(
-          diagnosticMessage(
-            '[ai-i18n] Build Watch 已启用。修改 Vite 配置、插件、提取规则或协议 Schema 后，请重新启动。',
-            '[ai-i18n] Build Watch is enabled. Restart after changing Vite config, plugins, extraction rules, or the protocol schema.',
+          formatTerminalDiagnostic(
+            diagnosticMessage(
+              '[ai-i18n] Build Watch 已启用。修改 Vite 配置、插件、提取规则或协议 Schema 后，请重新启动。',
+              '[ai-i18n] Build Watch is enabled. Restart after changing Vite config, plugins, extraction rules, or the protocol schema.',
+            ),
+            'info',
           ),
         );
       }

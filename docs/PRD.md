@@ -144,7 +144,9 @@
   `minDurationMs`；除 source-transform 和 file-sync 总阶段外，报告初始化等待、
   分析、注册、依赖解析、状态事务、快照、extracted 扫描/写入、Translation Memory 和 locale 写入
   子阶段。阶段允许嵌套，不能直接相加；日志遵循中英文诊断策略，不输出源码正文、译文、绝对机器路径
-  或凭据，也不进入 Build 或项目文件。
+  或凭据，也不进入 Build 或项目文件。Vite 控制台只按信息、警告和错误语义突出 ai-i18n 前缀；
+  耗时诊断额外突出阶段与耗时并弱化模块路径，正文保持默认颜色。终端不支持颜色时保留相同纯文本，
+  不增加公共配色配置或改变 Vite Logger 的日志等级。
 - `dependency-resolution` 包含 Vite `resolve()`、尚未分析本地依赖的 Dev Environment 完整转换或
   Build `load()` 等待，可能覆盖子模块的嵌套转换。Dev 必须在 importer 首次返回前完成依赖分析并刷新
   当前注册，避免合法跨文件静态值只更新内存状态却留下缓存的错误产物。不能把整段耗时视为插件自身的

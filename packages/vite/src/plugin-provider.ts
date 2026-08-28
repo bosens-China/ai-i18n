@@ -6,6 +6,7 @@ import { ProviderCoordinator } from './provider-coordinator.js';
 import { resolveProviderLogging } from './provider-logging.js';
 import type { DevStateTaskRunner } from './dev-state-queue.js';
 import { normalizeRoot } from './plugin-utils.js';
+import { formatTerminalDiagnostic } from './terminal-format.js';
 
 interface CreatePluginProviderOptions {
   provider: AiI18nProviderOptions;
@@ -65,7 +66,9 @@ export function createPluginProvider(
       });
     },
     onWarning(message) {
-      options.config.logger.warn(`[ai-i18n] ${message}`);
+      options.config.logger.warn(
+        formatTerminalDiagnostic(`[ai-i18n] ${message}`, 'warning'),
+      );
     },
   });
   return coordinator;

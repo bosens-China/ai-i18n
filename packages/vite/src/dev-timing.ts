@@ -1,6 +1,12 @@
 import { performance } from 'node:perf_hooks';
 import { diagnosticMessage } from '@ai-i18n/analyzer';
 import type { AiI18nTimingDiagnosticsOptions } from './options.js';
+import {
+  formatTerminalDiagnostic,
+  formatTimingDuration,
+  formatTimingModule,
+  formatTimingStage,
+} from './terminal-format.js';
 
 const DEFAULT_MIN_DURATION_MS = 50;
 
@@ -82,8 +88,11 @@ function timingMessage(
 ): string {
   const duration = durationMs.toFixed(2);
   const module = JSON.stringify(moduleId);
-  return diagnosticMessage(
-    `[ai-i18n:timing] 阶段=${stage} 耗时=${duration}ms 模块=${module}`,
-    `[ai-i18n:timing] stage=${stage} durationMs=${duration} module=${module}`,
+  return formatTerminalDiagnostic(
+    diagnosticMessage(
+      `[ai-i18n:timing] 阶段=${formatTimingStage(stage)} 耗时=${formatTimingDuration(`${duration}ms`)} 模块=${formatTimingModule(module)}`,
+      `[ai-i18n:timing] stage=${formatTimingStage(stage)} durationMs=${formatTimingDuration(duration)} module=${formatTimingModule(module)}`,
+    ),
+    'timing',
   );
 }

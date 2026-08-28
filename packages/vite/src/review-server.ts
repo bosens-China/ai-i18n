@@ -22,6 +22,7 @@ import {
   readReviewStandaloneAsset,
 } from './review-standalone.js';
 import { createReviewUiDevServer } from './review-ui-dev.js';
+import { formatTerminalDiagnostic } from './terminal-format.js';
 
 const MAX_BODY_BYTES = 64 * 1024;
 const CONTENT_SECURITY_POLICY = [
@@ -129,9 +130,12 @@ export async function configureReviewServer(
             );
       if (!(cause instanceof ReviewProblem)) {
         server.config.logger.error(
-          diagnosticMessage(
-            `[ai-i18n] 翻译校对请求失败：${errorReason(cause)}`,
-            `[ai-i18n] Review request failed: ${errorReason(cause)}`,
+          formatTerminalDiagnostic(
+            diagnosticMessage(
+              `[ai-i18n] 翻译校对请求失败：${errorReason(cause)}`,
+              `[ai-i18n] Review request failed: ${errorReason(cause)}`,
+            ),
+            'error',
           ),
         );
       }
