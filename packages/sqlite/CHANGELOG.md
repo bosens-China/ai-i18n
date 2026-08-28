@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.0.0-alpha.4](https://github.com/bosens-China/ai-i18n/compare/sqlite-v1.0.0-alpha.3...sqlite-v1.0.0-alpha.4) (2026-08-28)
+
+
+### Features
+
+* **core:** 使用固定哈希桶存储项目译文 ([e76f40a](https://github.com/bosens-China/ai-i18n/commit/e76f40a199b05ec9ca484190bbc2896ae54cfa44))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @ai-i18n/core bumped to 1.0.0-alpha.15
+
 ## [1.0.0-alpha.3](https://github.com/bosens-China/ai-i18n/compare/sqlite-v1.0.0-alpha.2...sqlite-v1.0.0-alpha.3) (2026-08-28)
 
 

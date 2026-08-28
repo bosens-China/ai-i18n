@@ -1,5 +1,27 @@
 # @ai-i18n/vite
 
+## [1.0.0-alpha.26](https://github.com/bosens-China/ai-i18n/compare/vite-v1.0.0-alpha.25...vite-v1.0.0-alpha.26) (2026-08-28)
+
+
+### Features
+
+* **core:** 使用固定哈希桶存储项目译文 ([e76f40a](https://github.com/bosens-China/ai-i18n/commit/e76f40a199b05ec9ca484190bbc2896ae54cfa44))
+
+
+### Bug Fixes
+
+* **diagnostics:** 统一开发者诊断语言 ([230cebb](https://github.com/bosens-China/ai-i18n/commit/230cebb121b4ac99fe14596bedaf591ff568c59d))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @ai-i18n/analyzer bumped to 1.0.0-alpha.22
+    * @ai-i18n/core bumped to 1.0.0-alpha.15
+  * devDependencies
+    * @ai-i18n/sqlite bumped to 1.0.0-alpha.4
+
 ## [1.0.0-alpha.25](https://github.com/bosens-China/ai-i18n/compare/vite-v1.0.0-alpha.24...vite-v1.0.0-alpha.25) (2026-08-28)
 
 
