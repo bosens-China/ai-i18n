@@ -1,10 +1,20 @@
+import { afterEach, beforeEach, vi } from 'vitest';
 import {
   collectExportTargets,
   createPublishManifest,
+  diagnosticMessage,
   parsePublishPaths,
   sortPackageEntries,
   validateInternalDependencies,
 } from '../release-package-metadata.mjs';
+
+afterEach(() => {
+  vi.unstubAllEnvs();
+});
+
+beforeEach(() => {
+  vi.stubEnv('AI_I18N_DIAGNOSTIC_LOCALE', 'zh-CN');
+});
 
 function entry(name: string, dependencies: Record<string, string> = {}) {
   return {
@@ -44,6 +54,18 @@ describe('release package verification', () => {
         new Map([['@ai-i18n/core', '1.0.0-alpha.6']]),
       ),
     ).toThrow('必须精确依赖');
+  });
+
+  it('uses the configured language for release diagnostics', () => {
+    vi.stubEnv('AI_I18N_DIAGNOSTIC_LOCALE', 'zh-CN');
+    expect(diagnosticMessage('中文提示', 'English diagnostic')).toBe(
+      '中文提示',
+    );
+
+    vi.stubEnv('AI_I18N_DIAGNOSTIC_LOCALE', 'en-US');
+    expect(diagnosticMessage('中文提示', 'English diagnostic')).toBe(
+      'English diagnostic',
+    );
   });
 
   it('orders dependencies before their consumers', () => {

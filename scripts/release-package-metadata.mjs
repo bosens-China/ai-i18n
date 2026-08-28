@@ -1,7 +1,22 @@
 import path from 'node:path';
 
-function bilingual(zh, en) {
-  return `${zh} / ${en}`;
+const CHINESE_TIME_ZONES = new Set(['Asia/Shanghai', 'Asia/Urumqi']);
+
+export function diagnosticMessage(zh, en) {
+  const value = process.env.AI_I18N_DIAGNOSTIC_LOCALE;
+  const automaticLocale = CHINESE_TIME_ZONES.has(
+    Intl.DateTimeFormat().resolvedOptions().timeZone,
+  )
+    ? 'zh-CN'
+    : 'en-US';
+  if (!value || value === 'auto') return automaticLocale === 'zh-CN' ? zh : en;
+  if (value === 'zh-CN') return zh;
+  if (value === 'en-US') return en;
+  throw new Error(
+    automaticLocale === 'zh-CN'
+      ? `[ai-i18n] 不支持 AI_I18N_DIAGNOSTIC_LOCALE“${value}”；应为“auto”“zh-CN”或“en-US”。`
+      : `[ai-i18n] Unsupported AI_I18N_DIAGNOSTIC_LOCALE "${value}"; expected "auto", "zh-CN", or "en-US".`,
+  );
 }
 
 export function parsePublishPaths(value, allowedPaths) {
@@ -10,7 +25,7 @@ export function parsePublishPaths(value, allowedPaths) {
     paths = JSON.parse(value);
   } catch {
     throw new Error(
-      bilingual(
+      diagnosticMessage(
         'publish_paths 必须是 JSON 数组。',
         'publish_paths must be a JSON array.',
       ),
@@ -25,7 +40,7 @@ export function parsePublishPaths(value, allowedPaths) {
     new Set(paths).size !== paths.length
   ) {
     throw new Error(
-      bilingual(
+      diagnosticMessage(
         `publish_paths 只能包含不重复的发布包路径：${[...allowed].join(', ')}`,
         `publish_paths must contain unique release package paths: ${[...allowed].join(', ')}`,
       ),
@@ -58,7 +73,7 @@ export function validateInternalDependencies(manifest, workspaceVersions) {
       if (!expected) continue;
       if (version !== expected) {
         throw new Error(
-          bilingual(
+          diagnosticMessage(
             `${manifest.name} 必须精确依赖 ${name}@${expected}，当前为 ${version}。`,
             `${manifest.name} must depend exactly on ${name}@${expected}; received ${version}.`,
           ),
@@ -100,7 +115,7 @@ export function sortPackageEntries(entries) {
   }
   if (sorted.length !== entries.length) {
     throw new Error(
-      bilingual(
+      diagnosticMessage(
         '发布包内部依赖存在循环，无法确定发布顺序。',
         'Internal release dependencies contain a cycle; publish order is undefined.',
       ),
@@ -117,7 +132,7 @@ export function createPublishManifest(entries, packages) {
     const item = packageByName.get(entry.manifest.name);
     if (!item) {
       throw new Error(
-        bilingual(
+        diagnosticMessage(
           `找不到 ${entry.manifest.name} 对应的发布包路径。`,
           `Unable to find the release package path for ${entry.manifest.name}.`,
         ),

@@ -13,6 +13,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import {
   collectExportTargets,
   createPublishManifest,
+  diagnosticMessage,
   parsePublishPaths,
   sortPackageEntries,
   validateInternalDependencies,
@@ -38,10 +39,6 @@ const SMOKE_IMPORTS = {
   ],
 };
 
-function bilingual(zh, en) {
-  return `${zh} / ${en}`;
-}
-
 function run(command, args, options = {}) {
   const result = spawnSync(command, args, {
     cwd: options.cwd ?? ROOT,
@@ -52,7 +49,7 @@ function run(command, args, options = {}) {
   if (result.status !== 0 && !options.allowFailure) {
     const detail = [result.stdout, result.stderr].filter(Boolean).join('\n');
     throw new Error(
-      `${bilingual(`命令执行失败：${command}`, `Command failed: ${command}`)}${detail ? `\n${detail}` : ''}`,
+      `${diagnosticMessage(`命令执行失败：${command}`, `Command failed: ${command}`)}${detail ? `\n${detail}` : ''}`,
     );
   }
   return result;
@@ -85,7 +82,7 @@ function isPublished({ name, version }) {
   const detail = `${result.stdout ?? ''}\n${result.stderr ?? ''}`;
   if (/E404|404 Not Found|is not in this registry/i.test(detail)) return false;
   throw new Error(
-    `${bilingual(`无法查询 npm 版本 ${name}@${version}`, `Unable to query npm version ${name}@${version}`)}\n${detail}`,
+    `${diagnosticMessage(`无法查询 npm 版本 ${name}@${version}`, `Unable to query npm version ${name}@${version}`)}\n${detail}`,
   );
 }
 
@@ -114,7 +111,7 @@ function packPackages(packages, directory) {
   const entries = tarballEntries(directory);
   if (entries.length !== packages.length) {
     throw new Error(
-      bilingual(
+      diagnosticMessage(
         `预期生成 ${packages.length} 个 tarball，实际为 ${entries.length} 个。`,
         `Expected ${packages.length} tarballs, received ${entries.length}.`,
       ),
@@ -131,7 +128,7 @@ function validateTarball(entry, workspaceVersions) {
     const archived = `package/${target.slice(2)}`;
     if (!files.has(archived)) {
       throw new Error(
-        bilingual(
+        diagnosticMessage(
           `${entry.manifest.name} 的发布入口 ${target} 不在 tarball 中。`,
           `Published entry ${target} is missing from the ${entry.manifest.name} tarball.`,
         ),
@@ -187,7 +184,7 @@ function verifyConsumer(entries, directory) {
   const imports = smokeImports(entries);
   writeFileSync(
     path.join(directory, 'smoke.mjs'),
-    `${imports.map((specifier) => `await import(${JSON.stringify(specifier)});`).join('\n')}\nconsole.log(${JSON.stringify(bilingual(`已验证 ${imports.length} 个发布入口。`, `Verified ${imports.length} release entries.`))});\n`,
+    `${imports.map((specifier) => `await import(${JSON.stringify(specifier)});`).join('\n')}\nconsole.log(${JSON.stringify(diagnosticMessage(`已验证 ${imports.length} 个发布入口。`, `Verified ${imports.length} release entries.`))});\n`,
   );
   run('pnpm', ['install', '--ignore-scripts', '--no-frozen-lockfile'], {
     cwd: directory,
@@ -198,7 +195,7 @@ function verifyConsumer(entries, directory) {
 function verifyEntries(entries) {
   if (!entries.length) {
     console.log(
-      bilingual(
+      diagnosticMessage(
         'npm 上没有待发布的新版本，跳过 tarball 冒烟。',
         'No unpublished npm versions found; skipping tarball smoke test.',
       ),
@@ -254,7 +251,7 @@ function preparePackages(directory, publishPaths) {
   );
   if (existingTarballs.length) {
     throw new Error(
-      bilingual(
+      diagnosticMessage(
         `发布目录必须不包含已有 tarball：${directory}`,
         `The release directory must not contain existing tarballs: ${directory}`,
       ),
@@ -306,7 +303,7 @@ function main() {
     return;
   }
   throw new Error(
-    bilingual(
+    diagnosticMessage(
       '用法：release-packages.mjs verify | validate-paths <JSON> | prepare-dir <目录> [publish_paths JSON] | verify-dir <目录> | order <目录>',
       'Usage: release-packages.mjs verify | validate-paths <JSON> | prepare-dir <directory> [publish_paths JSON] | verify-dir <directory> | order <directory>',
     ),
