@@ -1,0 +1,24 @@
+{
+  "entries": {
+    "e8c811c383bd297195ddf3228be61d1034c1cea97ef85ee1ffbdf9e1bab53230": {
+      "id": "在 Options API 中切换语言",
+      "source": "在 Options API 中切换语言",
+      "sourceLang": "zh-CN",
+      "value": "Options API で言語を切り替える"
+    },
+    "ed770e14a0d6c572eae1ecc44e45a05d2d53b9c786578eeb2c947e404548c990": {
+      "id": "tComputed 响应式文案",
+      "source": "tComputed 响应式文案",
+      "sourceLang": "zh-CN",
+      "value": "tComputed のリアクティブテキスト"
+    },
+    "eee147786ae4e76315e8d6d4ce01666b6fcc1c48a560230d155e5dfb32a91f7b": {
+      "id": "tRef 响应式文案",
+      "source": "tRef 响应式文案",
+      "sourceLang": "zh-CN",
+      "value": "tRef のリアクティブテキスト"
+    }
+  },
+  "locale": "ja-JP",
+  "version": 1
+}

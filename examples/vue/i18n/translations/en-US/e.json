@@ -1,0 +1,24 @@
+{
+  "entries": {
+    "e4a7ed9095e293a1bf9b3059c2a59c1ac1691ec8c086c9f3d232b48d21752cf9": {
+      "id": "完整兼容",
+      "source": "完整兼容",
+      "sourceLang": "zh-CN",
+      "value": "Full support"
+    },
+    "e936fbc4741fc9774cc6fb456039f1d1fbdd3570109d715d39e7127c05ed196b": {
+      "id": "共享 Runtime",
+      "source": "共享 Runtime",
+      "sourceLang": "zh-CN",
+      "value": "Shared Runtime"
+    },
+    "efa3726d005443bf47ac649cdcc919ffb13f59dbec8305b241e3b2796c4300b6": {
+      "id": "模板中的 t 会同步更新。",
+      "source": "模板中的 t 会同步更新。",
+      "sourceLang": "zh-CN",
+      "value": "Template t updates in sync."
+    }
+  },
+  "locale": "en-US",
+  "version": 1
+}

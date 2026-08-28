@@ -91,7 +91,7 @@ server 使用 stdio 通信，标准输出专用于 MCP 协议。
 
 ## 写入边界
 
-- 翻译工具只修改项目 `translations/` 原子分片；人工校对工具只修改项目 `overrides/` 原子分片。
+- 翻译工具只修改项目 `translations/` 分桶；人工校对工具只修改项目 `overrides/` 分桶。
 - 可选 SQLite 只由 Vite 用作个人候选缓存；MCP 不读取或写入数据库。
 - MCP 不读取 Vite 的 `provider.cache`；Provider 是否刷新进程缓存，不改变 Agent 的列表、写入或清除行为。
 - MCP 不修改 `extracted/` 或 `locales/`。

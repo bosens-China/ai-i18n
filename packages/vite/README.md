@@ -73,7 +73,7 @@ aiI18nReview({
 人工译文可按全局、精确源码文件或精确文件行列位置保存。同一行的多个相同调用通过各自的列号区分；
 作用范围优先级为位置、文件、全局。
 
-人工译文写入 `i18n/overrides/` 原子分片，保存和删除都会通过 HMR 更新业务页面。宿主使用 Web Component
+人工译文写入 `i18n/overrides/` 分桶，保存和删除都会通过 HMR 更新业务页面。宿主使用 Web Component
 和 Shadow DOM，UnoCSS 与 reset 只加载到工作台根节点。校对页面仅存在于
 Vite Dev，不进入 Build、Preview 或生产产物；界面已作为静态资源随插件提供，业务项目不需要安装
 Vue 或其他 UI 依赖。它不使用 token，只接受同源 JSON 写入。不注册 `aiI18nReview()` 时，不会注入
@@ -125,8 +125,8 @@ Vite 的 `optimizeDeps.exclude`，并保留项目原有配置。这样可以避�
 ## Translation Memory
 
 项目自动译文始终按目标语言和稳定 SHA-256 身份写入
-`i18n/translations/<locale>/<prefix>/<hash>.json`，不使用集中 manifest 或存储标记。Vite、MCP、
-团队成员和 CI 都以这些项目文件为唯一事实来源。
+`i18n/translations/<locale>/<0-f>.json`，每种目标语言最多 16 个非空分桶，不使用集中 manifest 或
+存储标记。桶内条目以完整身份哈希为键；Vite、MCP、团队成员和 CI 都以这些项目文件为唯一事实来源。
 
 需要在同一台电脑的项目间复用候选时，可增加个人 SQLite 缓存：
 

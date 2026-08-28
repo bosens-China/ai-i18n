@@ -1,0 +1,18 @@
+{
+  "entries": {
+    "2c2594ac45d711c158b474b3aafc5adf617d833697b2f39f5f8454feb652ec3a": {
+      "id": "由 useI18n 实时订阅 Runtime",
+      "source": "由 useI18n 实时订阅 Runtime",
+      "sourceLang": "zh-CN",
+      "value": "useI18n subscribes to Runtime updates in real time"
+    },
+    "2ff60f1209ebc79eac8742873443094edc9fba1b137675eae86477812f9ea97a": {
+      "id": "这个示例把当前语言、切换动作和文案变化放在同一个视图里。",
+      "source": "这个示例把当前语言、切换动作和文案变化放在同一个视图里。",
+      "sourceLang": "zh-CN",
+      "value": "This demo puts the current language, switch controls, and live copy in one view."
+    }
+  },
+  "locale": "en-US",
+  "version": 1
+}

@@ -1,0 +1,12 @@
+{
+  "entries": {
+    "394c0371e1c48015eb9d3eb31ddfc79ea80d2f0be718f9215c9b5183c281480d": {
+      "id": "跨文件路径别名已通过静态分析",
+      "source": "跨文件路径别名已通过静态分析",
+      "sourceLang": "zh-CN",
+      "value": "Cross-file path aliases passed static analysis"
+    }
+  },
+  "locale": "en-US",
+  "version": 1
+}

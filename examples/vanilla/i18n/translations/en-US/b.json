@@ -1,0 +1,18 @@
+{
+  "entries": {
+    "b010d75cf66c8bb1710749f939aed62a77db477bd92cfb1b66de0d9b8d3b7557": {
+      "id": "交互式语言切换演示",
+      "source": "交互式语言切换演示",
+      "sourceLang": "zh-CN",
+      "value": "Interactive language switch demo"
+    },
+    "b4826b5cbfc17fb0e41d2f81c75f1c561cb4cf0142ae10a6a988c6449ccc551a": {
+      "id": "显式调用会被静态提取",
+      "source": "显式调用会被静态提取",
+      "sourceLang": "zh-CN",
+      "value": "Explicit calls are extracted statically"
+    }
+  },
+  "locale": "en-US",
+  "version": 1
+}

@@ -1,0 +1,12 @@
+{
+  "entries": {
+    "695c3f929a2d58c0b0f6499451c3cdf98a17c45291395ce13d05dfe9db0f7e14": {
+      "id": "语言切换，应该一眼可见",
+      "source": "语言切换，应该一眼可见",
+      "sourceLang": "zh-CN",
+      "value": "Language switching should be instantly visible"
+    }
+  },
+  "locale": "en-US",
+  "version": 1
+}

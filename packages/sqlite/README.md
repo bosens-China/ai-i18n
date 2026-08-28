@@ -1,7 +1,7 @@
 # @ai-i18n/sqlite
 
 ai-i18n 的可选个人 Translation Memory 候选缓存。项目自动译文始终写入可提交的
-`i18n/translations/` 原子 JSON 分片；本包不替代项目存储。
+`i18n/translations/` 分桶 JSON；本包不替代项目存储。
 
 ```bash
 pnpm add -D @ai-i18n/sqlite@alpha

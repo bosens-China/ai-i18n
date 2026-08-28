@@ -1,0 +1,12 @@
+{
+  "entries": {
+    "5445e6d969387aeae9e6b603138c7a9b1b4dfee5d2ec8211a7c30be2a2b13b84": {
+      "id": "useI18n 实时订阅 Runtime 并重渲染。",
+      "source": "useI18n 实时订阅 Runtime 并重渲染。",
+      "sourceLang": "zh-CN",
+      "value": "useI18n subscribes to the Runtime and re-renders in real time."
+    }
+  },
+  "locale": "en-US",
+  "version": 1
+}

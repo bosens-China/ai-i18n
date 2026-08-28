@@ -1,0 +1,30 @@
+{
+  "entries": {
+    "1017a74986ea84d7453c4044b4a7c33dad7c754fbcefa9e084a3a22a63d1502f": {
+      "id": "同一个 Runtime，两种 Vue 写法",
+      "source": "同一个 Runtime，两种 Vue 写法",
+      "sourceLang": "zh-CN",
+      "value": "1つの Runtime、2つの Vue スタイル"
+    },
+    "10736265bd44e28fbde475ed27658fe1c1a852883a0e83d621a74548ccf278d2": {
+      "id": "ai-i18n Vue 示例",
+      "source": "ai-i18n Vue 示例",
+      "sourceLang": "zh-CN",
+      "value": "ai-i18n Vue デモ"
+    },
+    "154b40da1148253393fa801bb4e30a8ff85e0507de6723321c75d4dbd16b2822": {
+      "id": "跨文件路径别名已通过静态分析",
+      "source": "跨文件路径别名已通过静态分析",
+      "sourceLang": "zh-CN",
+      "value": "クロスファイルのパスエイリアスは静的解析を通過しました"
+    },
+    "15675f877220922dc5cdf1d74eb9d5658f1321815d6bb28d98550f2687f5d311": {
+      "id": "切换语言",
+      "source": "切换语言",
+      "sourceLang": "zh-CN",
+      "value": "言語切り替え"
+    }
+  },
+  "locale": "ja-JP",
+  "version": 1
+}

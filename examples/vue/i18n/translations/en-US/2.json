@@ -1,0 +1,18 @@
+{
+  "entries": {
+    "2ede97d33c611b3280321e7710e1858282bbe17262c11d3a8c6529bf34bc815a": {
+      "id": "ai-i18n Vue 示例",
+      "source": "ai-i18n Vue 示例",
+      "sourceLang": "zh-CN",
+      "value": "ai-i18n Vue demo"
+    },
+    "2f1b41a0091676c2abf640ee61696fa4d62d6635dc48cd2575f925c11366fd21": {
+      "id": "尚未发生语言变化",
+      "source": "尚未发生语言变化",
+      "sourceLang": "zh-CN",
+      "value": "No language change yet"
+    }
+  },
+  "locale": "en-US",
+  "version": 1
+}

@@ -1,0 +1,12 @@
+{
+  "entries": {
+    "0e2de0f201d7a4a4b512a82ca89e3d2cb8b9a975a8346f2db90a2e5f6963c91d": {
+      "id": "切换语言",
+      "source": "切换语言",
+      "sourceLang": "zh-CN",
+      "value": "Switch language"
+    }
+  },
+  "locale": "en-US",
+  "version": 1
+}

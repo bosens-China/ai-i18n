@@ -1,0 +1,18 @@
+{
+  "entries": {
+    "5bdec29c2490a03a2ad7eb1c9938fd49e4fd7d8004cf26b5a76254072adf0b85": {
+      "id": "在 Composition API 中切换语言",
+      "source": "在 Composition API 中切换语言",
+      "sourceLang": "zh-CN",
+      "value": "Composition API で言語を切り替える"
+    },
+    "5cb3722d7cca821295f0ae8b0e96fd297d236f2a16aabf354a908451adc9be17": {
+      "id": "Options 原生监听",
+      "source": "Options 原生监听",
+      "sourceLang": "zh-CN",
+      "value": "Options 標準の監視"
+    }
+  },
+  "locale": "ja-JP",
+  "version": 1
+}

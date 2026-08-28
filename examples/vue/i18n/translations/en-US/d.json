@@ -1,0 +1,30 @@
+{
+  "entries": {
+    "d0bf662b45865a614d1aecfa1eb3efb79f95fdfe386e1dc6e678f87d9507a1d2": {
+      "id": "递归解析项目引用",
+      "source": "递归解析项目引用",
+      "sourceLang": "zh-CN",
+      "value": "Resolve project references recursively"
+    },
+    "daa334f6e995f420b98f26e99defce75514142838c2e84e6f5c31abffbf606b0": {
+      "id": "文案变化",
+      "source": "文案变化",
+      "sourceLang": "zh-CN",
+      "value": "Copy changes"
+    },
+    "dc7b62b67bb32b8af6a2b3d1f68fe1fd737c9698fa80b35aade6b52a18eb51ef": {
+      "id": "Options 原生监听",
+      "source": "Options 原生监听",
+      "sourceLang": "zh-CN",
+      "value": "Native Options watcher"
+    },
+    "dccbf7248073fac38cf13c9315a3196c452fad605b036e8b9a6b30eb7e5867b4": {
+      "id": "已捕获",
+      "source": "已捕获",
+      "sourceLang": "zh-CN",
+      "value": "Captured"
+    }
+  },
+  "locale": "en-US",
+  "version": 1
+}

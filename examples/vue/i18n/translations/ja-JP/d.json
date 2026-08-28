@@ -1,0 +1,18 @@
+{
+  "entries": {
+    "dd9c4da6b3147dae0a15a2ff954f2e64bcd4993a7395b40da25c6ef18d660ada": {
+      "id": "在同一页面对照 Composition API 与纯 Options API 的响应式能力。",
+      "source": "在同一页面对照 Composition API 与纯 Options API 的响应式能力。",
+      "sourceLang": "zh-CN",
+      "value": "1つのページで Composition API と純粋な Options API のリアクティブ機能を比較します。"
+    },
+    "de372a376f0d4709796e7e19925bdc006be75bf8458efd5383b8bf1ad78f0847": {
+      "id": "交互式语言切换演示",
+      "source": "交互式语言切换演示",
+      "sourceLang": "zh-CN",
+      "value": "インタラクティブ言語切り替えデモ"
+    }
+  },
+  "locale": "ja-JP",
+  "version": 1
+}

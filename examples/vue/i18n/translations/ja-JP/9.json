@@ -1,0 +1,24 @@
+{
+  "entries": {
+    "985d682da79048eafc955b59e191988b56e552ef5d6d563c2a40e72ddd40bbc9": {
+      "id": "模板会自动响应 Runtime 状态。",
+      "source": "模板会自动响应 Runtime 状态。",
+      "sourceLang": "zh-CN",
+      "value": "テンプレートは Runtime の状態に自動的に反応します。"
+    },
+    "997e8929077e23c18b2c2e30e982c6d397cfba78d1c4630302e1c8b5d9c12b8c": {
+      "id": "语言包加载失败，当前语言保持不变。",
+      "source": "语言包加载失败，当前语言保持不变。",
+      "sourceLang": "zh-CN",
+      "value": "言語パックの読み込みに失敗しました。現在の言語を維持します。"
+    },
+    "9f2b5e4532f2315dc5e9de6e0433a6d4cb16490bcdb03e8662706b1cfd2c9766": {
+      "id": "共享 Runtime",
+      "source": "共享 Runtime",
+      "sourceLang": "zh-CN",
+      "value": "共有 Runtime"
+    }
+  },
+  "locale": "ja-JP",
+  "version": 1
+}

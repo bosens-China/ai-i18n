@@ -1,0 +1,24 @@
+{
+  "entries": {
+    "52ed9c682c92fd2ec6dfbe3711d455d6bdd032bdd2d5bcc2b913f08539fa443c": {
+      "id": "在同一页面对照 Composition API 与纯 Options API 的响应式能力。",
+      "source": "在同一页面对照 Composition API 与纯 Options API 的响应式能力。",
+      "sourceLang": "zh-CN",
+      "value": "Compare the reactive capabilities of Composition API and pure Options API on one page."
+    },
+    "547dc73bb9524c2c23d46386db1aa58e5f66f2acc051f388957ab210adda12aa": {
+      "id": "同一个 Runtime，两种 Vue 写法",
+      "source": "同一个 Runtime，两种 Vue 写法",
+      "sourceLang": "zh-CN",
+      "value": "One Runtime, two ways to write Vue"
+    },
+    "5fb0a19f0d5b0039f5a99a5e535c108f32b25ed2646593203b01bd6f15c86bd3": {
+      "id": "模板会自动响应 Runtime 状态。",
+      "source": "模板会自动响应 Runtime 状态。",
+      "sourceLang": "zh-CN",
+      "value": "The template reacts to Runtime state automatically."
+    }
+  },
+  "locale": "en-US",
+  "version": 1
+}

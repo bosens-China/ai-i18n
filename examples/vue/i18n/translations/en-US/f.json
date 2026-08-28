@@ -1,0 +1,12 @@
+{
+  "entries": {
+    "f0ba41ec8d6c89d53fdcf33594b31ca9a11cfa2d26566d15241da1566aa744d8": {
+      "id": "切换任一面板，另一侧同步更新。",
+      "source": "切换任一面板，另一侧同步更新。",
+      "sourceLang": "zh-CN",
+      "value": "Switch in either panel and the other updates in sync."
+    }
+  },
+  "locale": "en-US",
+  "version": 1
+}

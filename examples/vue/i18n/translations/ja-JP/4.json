@@ -1,0 +1,30 @@
+{
+  "entries": {
+    "41fbb9699fb4b34eea120fd37df1dfc308d89a2b775bf61e9181f4350b02c7c1": {
+      "id": "模板中的 t 会同步更新。",
+      "source": "模板中的 t 会同步更新。",
+      "sourceLang": "zh-CN",
+      "value": "テンプレート内の t も同期して更新されます。"
+    },
+    "420c5bf82a65e7d684796257aa5119f7e80c05f6d8bf9b96df67be982b5cad17": {
+      "id": "完整兼容",
+      "source": "完整兼容",
+      "sourceLang": "zh-CN",
+      "value": "完全対応"
+    },
+    "4859e09143cf54542c299c106294145321314834bbf38d4ac6c9d525de24f9e1": {
+      "id": "切换任一面板，另一侧同步更新。",
+      "source": "切换任一面板，另一侧同步更新。",
+      "sourceLang": "zh-CN",
+      "value": "どちらかのパネルで切り替えると、もう一方も同期して更新されます。"
+    },
+    "496b0ab36e6c0e01d2185caff79abcede3567617fc235745b2abbf58a2562f3a": {
+      "id": "语言",
+      "source": "语言",
+      "sourceLang": "zh-CN",
+      "value": "言語"
+    }
+  },
+  "locale": "ja-JP",
+  "version": 1
+}

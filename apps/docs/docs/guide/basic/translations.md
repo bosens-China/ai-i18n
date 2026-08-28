@@ -20,7 +20,7 @@ ai-i18n 不会用空字符串代替缺失译文。缺译时页面会回退显示
 
 ## 自动翻译与人工译文
 
-自动翻译写入 `i18n/translations/` 原子分片。人工确认的译文写入 `i18n/overrides/` 原子分片，并且
+自动翻译写入 `i18n/translations/` 分桶。人工确认的译文写入 `i18n/overrides/` 分桶，并且
 始终优先显示。SQLite 只可作为个人候选缓存，命中结果仍会补写项目 JSON，详见
 [Translation Memory](/guide/advanced/translation-memory)。
 
@@ -49,16 +49,21 @@ t('保存', { comment: '保存状态' });
 翻译校对页面适合人工确认少量译文，Provider 或 Agent + MCP 适合批量补译与自动化操作。只有在不能
 启动 Vite Dev 时才建议直接编辑现有 JSON 文件，并且不要用下面的示例覆盖已经生成的内容。
 
-`translations/**/*.json` 保存自动译文。先在分片中搜索目标 `source` 与 `locale`，只修改 `value`；
-路径由插件根据身份稳定生成，不要重命名或移动文件。以下分片对应不带 `comment` 的 `t('保存')`：
+`translations/**/*.json` 保存自动译文。每种目标语言最多有 16 个文件；先在 `entries` 中搜索目标
+`source`，只修改该条目的 `value`。完整哈希键和路径由插件根据身份稳定生成，不要添加、重命名或移动
+条目。以下 `en-US/5.json` 分桶包含不带 `comment` 的 `t('保存')`：
 
 ```json
 {
-  "id": "保存",
+  "entries": {
+    "5f76d1cbb458ed9a65ed0791e1880f43632e4134405f8ab79d923848a5f28ecc": {
+      "id": "保存",
+      "source": "保存",
+      "sourceLang": "zh-CN",
+      "value": "Save"
+    }
+  },
   "locale": "en-US",
-  "source": "保存",
-  "sourceLang": "zh-CN",
-  "value": "Save",
   "version": 1
 }
 ```
@@ -66,29 +71,31 @@ t('保存', { comment: '保存状态' });
 不要直接编辑 SQLite 数据库；它只是个人候选缓存。Provider、MCP 和 Review 接受的结果都会写入项目
 分片，因此可以提交并在不同电脑间保持一致。
 
-`overrides/` 每个文件保存一个人工决定。只有 `source` 和 `locale` 时，译文对当前 Vite 应用内的
-所有同源文案生效：
+`overrides/` 使用相同的 16 桶布局，一个文件可以保存多个互不相关的人工决定。只有 `source` 时，
+该条目对当前 Vite 应用内的所有同源文案生效：
 
 ```json
 {
+  "entries": {
+    "98d8ff71369aa4ae386932fea29a515a01d91c0b1a0e0e5cfc0712ce4c076b63": {
+      "source": "保存",
+      "value": "Save"
+    }
+  },
   "locale": "en-US",
-  "source": "保存",
-  "value": "Save",
   "version": 1
 }
 ```
 
 同一句话只需要在某个文件采用不同译法时，增加 `file`。路径必须是相对 Vite `root` 的标准化 POSIX
-路径，并与列表工具返回的 `source_file` 完全一致；不接受绝对路径、路径片段或 glob。多个文件使用
-多个原子分片：
+路径，并与列表工具返回的 `source_file` 完全一致；不接受绝对路径、路径片段或 glob。文件范围保存在
+对应哈希条目中：
 
 ```json
 {
   "file": "src/editor/actions.ts",
-  "locale": "en-US",
   "source": "保存",
-  "value": "Save file",
-  "version": 1
+  "value": "Save file"
 }
 ```
 
@@ -100,13 +107,14 @@ t('保存', { comment: '保存状态' });
 ```json
 {
   "file": "src/editor/actions.ts",
-  "locale": "en-US",
   "location": { "line": 12, "column": 8 },
   "source": "保存",
-  "value": "Save this action",
-  "version": 1
+  "value": "Save this action"
 }
 ```
+
+不要自行计算人工覆盖的完整哈希键或新增条目；使用校对页面或 Agent + MCP 创建、删除和改变作用范围。
+直接编辑只适合修改已有条目的 `value`。
 
 完整优先级为：出现位置 + `comment`、出现位置默认、文件 + `comment`、文件默认、全局 + `comment`、
 全局默认、自动译文、源码回退。源码移动后旧位置不会模糊匹配到其他调用。建议使用

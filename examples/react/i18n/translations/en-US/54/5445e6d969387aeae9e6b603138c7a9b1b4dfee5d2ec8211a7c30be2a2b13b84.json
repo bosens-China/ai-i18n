@@ -1,8 +1,0 @@
-{
-  "id": "useI18n 实时订阅 Runtime 并重渲染。",
-  "locale": "en-US",
-  "source": "useI18n 实时订阅 Runtime 并重渲染。",
-  "sourceLang": "zh-CN",
-  "value": "useI18n subscribes to the Runtime and re-renders in real time.",
-  "version": 1
-}

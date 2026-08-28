@@ -75,9 +75,9 @@
 
 - `translations/` 与 `overrides/` 是项目译文的唯一权威来源；`extracted/` 保存插件生成的
   源码结构，`locales/` 是派生运行时产物。项目不存在 JSON/SQLite 存储模式或存储标记。
-- `translations/` 每个分片只保存一个目标语言的自动译文；`overrides/` 每个分片只保存一个
-  目标语言和作用范围的人工决定。两者都以 `<locale>/<hash-prefix>/<full-hash>.json` 分片，
-  不保存会被所有人同时修改的 manifest 或聚合 JSON。
+- `translations/` 与 `overrides/` 都按目标语言和稳定身份使用 `<locale>/<0-f>.json` 固定哈希桶，
+  每种语言最多 16 个非空分片，不保存集中 manifest 或单一聚合 JSON。桶内以完整 SHA-256 身份为键，
+  分别保存自动译文目标或带作用范围的人工决定，并按键确定性排序。
 - 人工覆盖以 `source`、可选静态 `comment`、目标语言和一种作用范围表达。范围只能是
   当前 Vite 应用全局、精确源码文件，或相对 Vite root 的标准化 POSIX 文件路径加 1-based
   行号与 0-based 列号组成的精确出现位置；不支持绝对路径、路径片段或 glob。
@@ -113,8 +113,9 @@
 
 - Vite、MCP 与 Review 通过同一项目存储抽象读写。自动译文和人工覆盖各自使用跨进程锁、
   锁内重读和可恢复原子提交。内存 ProjectState 只用于加速和 Runtime 更新，项目分片才是写入真相。
-- 不同原子目标使用不同路径，Git 可直接合并；同一目标使用同一路径，同时修改时暴露真实
-  语义冲突并由人选择。不按用户名拆权威文件，不用客户端时间或文件修改时间自动决定赢家。
+- 不同哈希桶使用不同路径；同一桶内的不同目标使用完整哈希键，Git 冲突时按键保留双方独立修改；
+  同一键同时修改时暴露真实语义冲突并由人选择。不按用户名拆权威文件，不用客户端时间或文件修改
+  时间自动决定赢家。
 - 同一 Vite Dev 插件实例内，ProjectState 更新、重新 hydrate 与 HMR 通知继续由状态事务排序；普通
   source transform 只登记变化源码，协议写入由单实例调度器用短 debounce 与 max-wait 串行执行，
   在真正写入前生成一次最新快照，不阻塞转换响应。普通 Dev 批次只更新变化源码对应的 extracted 与
@@ -184,7 +185,7 @@
 - 校对页面首次读取时只读既有 `extracted/` 与 Translation Memory 快照作为初始列表，不扫描源码、
   不触发 Provider，也不写入业务 Runtime 状态；Dev 实际转换的模块始终优先，且会遮蔽同源旧记录。没有
   既有快照时，列表只随当前 Dev 已访问模块渐进增长。校对操作按全局、精确文件或精确出现位置范围原子更新
-  `overrides/` 中对应的原子分片并触发 HMR，不注册到 Build、Build Watch、Preview 或生产产物。
+  `overrides/` 中对应分桶的条目并触发 HMR，不注册到 Build、Build Watch、Preview 或生产产物。
 - 校对 UI 在发布包中由 Vite 插件携带预构建静态资源，与业务应用的框架和 UI 依赖隔离；仓库本地
   Dev 会自动把私有 review-ui workspace 挂到业务 Vite Server，并通过独立 HMR 通道刷新源码改动，
   无需先构建或复制。内部 UI workspace 包保持私有，不作为面向应用开发者的安装入口。

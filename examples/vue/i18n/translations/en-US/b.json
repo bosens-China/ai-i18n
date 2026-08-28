@@ -1,0 +1,18 @@
+{
+  "entries": {
+    "b010d75cf66c8bb1710749f939aed62a77db477bd92cfb1b66de0d9b8d3b7557": {
+      "id": "交互式语言切换演示",
+      "source": "交互式语言切换演示",
+      "sourceLang": "zh-CN",
+      "value": "Interactive language switch demo"
+    },
+    "bc9fd85eea67241707ac921e6f5fe4cde07170277e4489dc7bd54b4b302b8d56": {
+      "id": "Vue 示例",
+      "source": "Vue 示例",
+      "sourceLang": "zh-CN",
+      "value": "Vue demo"
+    }
+  },
+  "locale": "en-US",
+  "version": 1
+}

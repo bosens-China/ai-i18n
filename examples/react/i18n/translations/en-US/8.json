@@ -1,0 +1,18 @@
+{
+  "entries": {
+    "8d2cc842284d8477ed68ac378de56882b3e36aee465bd6064f96705b3259607e": {
+      "id": "ai-i18n React 示例",
+      "source": "ai-i18n React 示例",
+      "sourceLang": "zh-CN",
+      "value": "ai-i18n React demo"
+    },
+    "8e960a34659c8ac118dbdecc42896ca3ba4fdb100510a1933c32b5e8e93145eb": {
+      "id": "React 示例",
+      "source": "React 示例",
+      "sourceLang": "zh-CN",
+      "value": "React demo"
+    }
+  },
+  "locale": "en-US",
+  "version": 1
+}

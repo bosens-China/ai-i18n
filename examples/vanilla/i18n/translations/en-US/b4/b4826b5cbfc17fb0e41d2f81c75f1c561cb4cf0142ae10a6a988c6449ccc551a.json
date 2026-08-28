@@ -1,8 +1,0 @@
-{
-  "id": "显式调用会被静态提取",
-  "locale": "en-US",
-  "source": "显式调用会被静态提取",
-  "sourceLang": "zh-CN",
-  "value": "Explicit calls are extracted statically",
-  "version": 1
-}

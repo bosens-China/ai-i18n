@@ -1,0 +1,18 @@
+{
+  "entries": {
+    "992c12c87da78d2e49e431c685a5fc32ba88ab08e9d237412cc699c6be7221e7": {
+      "id": "Composition API 与 Vite extractor 共享 Runtime",
+      "source": "Composition API 与 Vite extractor 共享 Runtime",
+      "sourceLang": "zh-CN",
+      "value": "Composition API and the Vite extractor share one Runtime"
+    },
+    "9e5216af01a58632a13ef435cf03cf26520f134690db42ed94dac8434cade519": {
+      "id": "tRef 响应式文案",
+      "source": "tRef 响应式文案",
+      "sourceLang": "zh-CN",
+      "value": "Reactive copy with tRef"
+    }
+  },
+  "locale": "en-US",
+  "version": 1
+}

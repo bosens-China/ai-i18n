@@ -1,0 +1,18 @@
+{
+  "entries": {
+    "1187310b66d46b61496dcfe520a036f5cdf65861ea7e402f9e44ada62f880cbd": {
+      "id": "Hook 与 Vite extractor 共享 Runtime",
+      "source": "Hook 与 Vite extractor 共享 Runtime",
+      "sourceLang": "zh-CN",
+      "value": null
+    },
+    "15f01f6fd5041903f1110a2537dd8737963d5264ef6c1a6424e4ea4d4da7fceb": {
+      "id": "语言",
+      "source": "语言",
+      "sourceLang": "zh-CN",
+      "value": "Language"
+    }
+  },
+  "locale": "en-US",
+  "version": 1
+}

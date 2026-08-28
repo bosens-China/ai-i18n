@@ -1,0 +1,24 @@
+{
+  "entries": {
+    "f3290685abfada66963405be4aaeb9cd1d458b5db6ee506cb56ae8a1318563e6": {
+      "id": "Composition API 与 Vite extractor 共享 Runtime",
+      "source": "Composition API 与 Vite extractor 共享 Runtime",
+      "sourceLang": "zh-CN",
+      "value": null
+    },
+    "fcbdf37b14cf0f92b9fd496dc216e79829409fc90286bef52258a4f15f4c0ad6": {
+      "id": "尚未发生语言变化",
+      "source": "尚未发生语言变化",
+      "sourceLang": "zh-CN",
+      "value": "まだ言語は変更されていません"
+    },
+    "ff83c144c8a074010e34b376d1810e5ee7f192acce0f91a3dda3ff12590db67f": {
+      "id": "自动发现 tsconfig",
+      "source": "自动发现 tsconfig",
+      "sourceLang": "zh-CN",
+      "value": "tsconfig を自動検出"
+    }
+  },
+  "locale": "ja-JP",
+  "version": 1
+}

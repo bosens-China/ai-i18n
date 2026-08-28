@@ -1,0 +1,12 @@
+{
+  "entries": {
+    "690d7dd1d025da480525e53e5a4c255aa710b705a2e700d95b1af6c241995647": {
+      "id": "订阅 Runtime 后重新渲染原生 DOM。",
+      "source": "订阅 Runtime 后重新渲染原生 DOM。",
+      "sourceLang": "zh-CN",
+      "value": "Subscribe to the Runtime to re-render the native DOM."
+    }
+  },
+  "locale": "en-US",
+  "version": 1
+}

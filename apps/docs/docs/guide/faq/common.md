@@ -14,7 +14,7 @@ Vue 模板、响应式更新和 `tRef()` 问题见 [Vue 常见问题](/guide/faq
 ## 为什么会安装 fs-native-extensions？
 
 `@ai-i18n/vite` 通过 `@ai-i18n/core` 依赖 `fs-native-extensions`。Vite 与
-`@ai-i18n/mcp` 可能同时修改 `translations/` 或 `overrides/` 原子分片，因此需要跨进程文件锁，
+`@ai-i18n/mcp` 可能同时修改 `translations/` 或 `overrides/` 分桶文件，因此需要跨进程文件锁，
 把“读取 → 修改 → 原子写入”整体串行化。否则，两个进程同时读写时，后完成的进程可能覆盖
 另一个进程的修改。
 

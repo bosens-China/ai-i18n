@@ -1,0 +1,18 @@
+{
+  "entries": {
+    "7faa86d25d953d1fd22d92e2300dd26f9e2a91098101c746c1d964eceffe890c": {
+      "id": "无需 setup，也无需 .value。",
+      "source": "无需 setup，也无需 .value。",
+      "sourceLang": "zh-CN",
+      "value": "setup も .value も不要です。"
+    },
+    "7fb48dcd53cfa6522a005e1973bb398001ebcb9939b6c5d974674d27d592fe0b": {
+      "id": "当前语言",
+      "source": "当前语言",
+      "sourceLang": "zh-CN",
+      "value": "現在の言語"
+    }
+  },
+  "locale": "ja-JP",
+  "version": 1
+}

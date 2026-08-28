@@ -30,9 +30,10 @@ Batch schemas merge the same unknown top-level item key into one validation erro
 count, first index, valid keys, and a retry action. Remove the invalid key from every item before
 retrying; do not fix only the first reported index.
 
-Physical files under `extracted/` use the normalized source's SHA-256 as their filename. The JSON
-`source` field is authoritative, and MCP list filters read that value; never derive `source_files`
-from a hash filename.
+Physical files under `extracted/` use the normalized source's SHA-256 as their filename. Project
+`translations/` and `overrides/` instead use locale hash buckets whose internal keys are storage
+details. The JSON `source` field and MCP results are authoritative; never derive `source_files`,
+message identity, or write targets from any physical filename or bucket key.
 
 ## Automatic translations
 
@@ -108,11 +109,12 @@ To remove a human value, list it first and pass the returned opaque `override_id
 
 ## Write and verification boundaries
 
-- Translation tools always modify committed project `translations/` shards. MCP never reads or writes
-  the optional personal SQLite candidate cache and never creates a storage marker.
+- Translation tools always modify committed project `translations/` buckets through the project
+  store. Never calculate bucket keys or edit bucket JSON directly. MCP never reads or writes the
+  optional personal SQLite candidate cache and never creates a storage marker.
 - A missing local SQLite database does not change MCP results because every accepted cache candidate
   must already have been copied into project JSON by Vite.
-- Human review tools modify only project `overrides/` shards.
+- Human review tools modify only project `overrides/` buckets through the project store.
 - MCP does not modify `extracted/` or `locales/`.
 - `MESSAGE_NOT_FOUND` may include up to five exact public message candidates. Treat them as read-only
   navigation help; choose and copy a complete candidate only when it matches the intended source and

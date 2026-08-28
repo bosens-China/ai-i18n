@@ -60,13 +60,14 @@ export async function firstTranslationShard(
   directory: string,
 ): Promise<string> {
   const translations = path.join(directory, 'translations');
-  const shard = (await fs.readdir(translations, { recursive: true })).find(
-    (file) =>
-      new RegExp(
-        `^[^${path.sep}]+\\${path.sep}[0-9a-f]{2}\\${path.sep}[0-9a-f]{64}\\.json$`,
-      ).test(file),
-  );
-  if (!shard) throw new Error('translation shard not found');
+  const files = await fs.readdir(translations, { recursive: true });
+  const shard = files.find((file) => {
+    const segments = file.split(path.sep);
+    return segments.length === 2 && /^[0-9a-f]\.json$/.test(segments[1]!);
+  });
+  if (!shard) {
+    throw new Error(`translation shard not found in: ${files.join(', ')}`);
+  }
   return path.join(translations, shard);
 }
 

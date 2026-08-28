@@ -23,8 +23,12 @@ import {
   withFileLock,
 } from './translation-memory-files.js';
 
-interface AtomicOverrideFile extends AtomicOverride {
+type OverrideBucketEntry = Omit<AtomicOverride, 'locale'>;
+
+interface OverrideBucketFile {
   version: 1;
+  locale: string;
+  entries: Record<string, OverrideBucketEntry>;
 }
 
 export async function readAtomicTranslationOverrides(
@@ -69,19 +73,38 @@ async function readCurrent(
 ): Promise<TranslationOverridesFile> {
   const entries = new Map<string, AtomicOverride>();
   for (const file of await translationOverrideFiles(directory)) {
-    const entry = parseAtomicOverride(await readJson(file), file);
-    const expected = targetPath(directory, entry);
+    const bucket = parseOverrideBucket(await readJson(file), file);
+    const bucketName = path.basename(file, '.json');
+    const expected = bucketPath(directory, bucket.locale, bucketName);
     if (path.resolve(file) !== path.resolve(expected)) {
-      throw invalidAtomicFile(
+      throw invalidBucketFile(
         file,
-        'override shard path does not match its identity',
+        '人工覆盖分桶路径与其 locale 不匹配',
+        'override bucket path does not match its locale',
       );
     }
-    const key = atomicOverrideKey(entry);
-    if (entries.has(key)) {
-      throw invalidAtomicFile(file, 'duplicate override target');
+    for (const [hash, bucketEntry] of Object.entries(bucket.entries)) {
+      const entry: AtomicOverride = { ...bucketEntry, locale: bucket.locale };
+      if (
+        overrideTargetHash(entry) !== hash ||
+        hash.slice(0, 1) !== bucketName
+      ) {
+        throw invalidBucketFile(
+          file,
+          `条目“${hash}”位于错误的分桶中`,
+          `entry "${hash}" is in the wrong bucket`,
+        );
+      }
+      const key = atomicOverrideKey(entry);
+      if (entries.has(key)) {
+        throw invalidBucketFile(
+          file,
+          '人工覆盖目标重复',
+          'duplicate override target',
+        );
+      }
+      entries.set(key, entry);
     }
-    entries.set(key, entry);
   }
   return overridesFromAtomic(entries.values());
 }
@@ -97,54 +120,96 @@ async function commit(
   directory: string,
   overrides: TranslationOverridesFile,
 ): Promise<void> {
-  const desired = new Map<string, AtomicOverrideFile>();
+  const desired = new Map<string, OverrideBucketFile>();
   for (const entry of atomicOverrides(overrides).values()) {
-    const value: AtomicOverrideFile = { version: 1, ...entry };
-    desired.set(targetPath(directory, value), value);
+    const hash = overrideTargetHash(entry);
+    const file = bucketPath(directory, entry.locale, hash.slice(0, 1));
+    const bucket = desired.get(file) ?? {
+      version: 1,
+      locale: entry.locale,
+      entries: {},
+    };
+    bucket.entries[hash] = {
+      source: entry.source,
+      ...(entry.comment ? { comment: entry.comment } : {}),
+      ...(entry.file ? { file: entry.file } : {}),
+      ...(entry.location ? { location: entry.location } : {}),
+      value: entry.value,
+    };
+    desired.set(file, bucket);
   }
   await syncAtomicJsonFiles(directory, desired);
 }
 
-function targetPath(
-  directory: string,
-  entry: Pick<AtomicOverride, keyof AtomicOverride>,
-): string {
-  const hash = createHash('sha256')
-    .update(atomicOverrideKey(entry))
-    .digest('hex');
-  return path.join(
-    directory,
-    encodeURIComponent(entry.locale),
-    hash.slice(0, 2),
-    `${hash}.json`,
-  );
+function bucketPath(directory: string, locale: string, bucket: string): string {
+  return path.join(directory, encodeURIComponent(locale), `${bucket}.json`);
 }
 
-function parseAtomicOverride(value: unknown, file: string): AtomicOverrideFile {
-  if (!isRecord(value)) throw invalidAtomicFile(file, 'expected an object');
-  const keys = new Set([
-    'version',
-    'source',
-    'comment',
-    'file',
-    'location',
-    'locale',
-    'value',
-  ]);
+function overrideTargetHash(entry: AtomicOverride): string {
+  return createHash('sha256').update(atomicOverrideKey(entry)).digest('hex');
+}
+
+function parseOverrideBucket(value: unknown, file: string): OverrideBucketFile {
+  if (!isRecord(value)) {
+    throw invalidBucketFile(file, '应为对象', 'expected an object');
+  }
+  const keys = new Set(['version', 'locale', 'entries']);
   if (
     value.version !== 1 ||
+    typeof value.locale !== 'string' ||
+    !isRecord(value.entries) ||
+    Object.keys(value.entries).length === 0 ||
+    Object.keys(value).some((key) => !keys.has(key))
+  ) {
+    throw invalidBucketFile(file, '字段无效', 'invalid fields');
+  }
+  for (const [hash, entry] of Object.entries(value.entries)) {
+    if (!/^[0-9a-f]{64}$/.test(hash)) {
+      throw invalidBucketFile(
+        file,
+        `条目“${hash}”无效`,
+        `invalid entry "${hash}"`,
+      );
+    }
+    parseOverrideEntry(entry, value.locale, file, hash);
+  }
+  return value as unknown as OverrideBucketFile;
+}
+
+function parseOverrideEntry(
+  value: unknown,
+  locale: string,
+  file: string,
+  hash: string,
+): OverrideBucketEntry {
+  if (!isRecord(value)) {
+    throw invalidBucketFile(
+      file,
+      `条目“${hash}”无效`,
+      `invalid entry "${hash}"`,
+    );
+  }
+  const keys = new Set(['source', 'comment', 'file', 'location', 'value']);
+  if (
     typeof value.source !== 'string' ||
     (value.comment !== undefined && typeof value.comment !== 'string') ||
     (value.file !== undefined && typeof value.file !== 'string') ||
-    typeof value.locale !== 'string' ||
     typeof value.value !== 'string' ||
     Object.keys(value).some((key) => !keys.has(key))
   ) {
-    throw invalidAtomicFile(file, 'invalid fields');
+    throw invalidBucketFile(
+      file,
+      `条目“${hash}”无效`,
+      `invalid entry "${hash}"`,
+    );
   }
   if (value.location !== undefined) {
     if (!isRecord(value.location)) {
-      throw invalidAtomicFile(file, 'location must be an object');
+      throw invalidBucketFile(
+        file,
+        'location 必须是对象',
+        'location must be an object',
+      );
     }
     if (
       !Number.isInteger(value.location.line) ||
@@ -155,15 +220,19 @@ function parseAtomicOverride(value: unknown, file: string): AtomicOverrideFile {
         (key) => key !== 'line' && key !== 'column',
       )
     ) {
-      throw invalidAtomicFile(file, 'invalid location');
+      throw invalidBucketFile(file, 'location 无效', 'invalid location');
     }
     if (value.file === undefined) {
-      throw invalidAtomicFile(file, 'occurrence scope requires a file');
+      throw invalidBucketFile(
+        file,
+        '出现位置作用范围必须提供文件',
+        'occurrence scope requires a file',
+      );
     }
   }
-  const entry = value as unknown as AtomicOverrideFile;
+  const entry = value as unknown as OverrideBucketEntry;
   // 复用公开聚合 schema 校验 source path、comment 和作用范围。
-  overridesFromAtomic([entry]);
+  overridesFromAtomic([{ ...entry, locale }]);
   return entry;
 }
 
@@ -171,12 +240,16 @@ function journalPath(directory: string): string {
   return atomicJsonJournalPath(directory);
 }
 
-function invalidAtomicFile(file: string, reason: string): Error {
+function invalidBucketFile(
+  file: string,
+  chineseReason: string,
+  englishReason: string,
+): Error {
   const relative = path.basename(file);
   return new Error(
     diagnosticMessage(
-      `[ai-i18n] 原子人工覆盖分片“${relative}”无效：${reason}。`,
-      `[ai-i18n] Invalid atomic override shard "${relative}": ${reason}.`,
+      `[ai-i18n] 人工覆盖分桶“${relative}”无效：${chineseReason}。`,
+      `[ai-i18n] Invalid override bucket "${relative}": ${englishReason}.`,
     ),
   );
 }

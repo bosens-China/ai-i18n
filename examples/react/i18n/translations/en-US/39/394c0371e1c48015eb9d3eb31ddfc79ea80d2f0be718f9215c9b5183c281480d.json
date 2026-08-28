@@ -1,8 +1,0 @@
-{
-  "id": "跨文件路径别名已通过静态分析",
-  "locale": "en-US",
-  "source": "跨文件路径别名已通过静态分析",
-  "sourceLang": "zh-CN",
-  "value": "Cross-file path aliases passed static analysis",
-  "version": 1
-}

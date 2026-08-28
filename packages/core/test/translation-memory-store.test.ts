@@ -19,21 +19,27 @@ afterEach(async () => {
 });
 
 describe('project Translation Memory store', () => {
-  it('writes one deterministic JSON file per locale target without a manifest', async () => {
+  it('groups locale targets into deterministic hash buckets without a manifest', async () => {
     const directory = path.join(await temporaryDirectory(), 'i18n');
     const store = await openTranslationMemoryStore(directory);
     await store.transact((memory) => {
+      memory.messages.Delete = message('删除', 'Delete');
+      memory.messages.Submit = message('提交', 'Submit');
       memory.messages.Save = message('保存', 'Save');
-      memory.messages.Cancel = message('取消', 'Cancel');
     });
 
     const files = await jsonFiles(path.join(directory, 'translations'));
     expect(files).toHaveLength(2);
-    expect(
-      files.every((file) =>
-        /en-US\/[0-9a-f]{2}\/[0-9a-f]{64}\.json$/.test(file),
+    expect(files.every((file) => /en-US\/[0-9a-f]\.json$/.test(file))).toBe(
+      true,
+    );
+    const sharedBucket = JSON.parse(
+      await fs.readFile(
+        translationBucketPath(directory, '删除', 'en-US'),
+        'utf8',
       ),
-    ).toBe(true);
+    ) as { entries: Record<string, unknown> };
+    expect(Object.keys(sharedBucket.entries)).toHaveLength(2);
     await expect(
       fs.access(path.join(directory, 'translations/manifest.json')),
     ).rejects.toMatchObject({ code: 'ENOENT' });
@@ -92,11 +98,14 @@ describe('project Translation Memory store', () => {
     const memory = await first.load();
     expect(Object.keys(memory.messages)).toHaveLength(24);
     expect(memory.revision).toBeGreaterThan(0);
+    const buckets = await jsonFiles(path.join(directory, 'translations'));
+    expect(buckets.length).toBeGreaterThan(1);
+    expect(buckets.length).toBeLessThanOrEqual(16);
     first.close();
     second.close();
   });
 
-  it('rewrites only the changed atomic target', async () => {
+  it('rewrites only the changed hash bucket', async () => {
     const directory = path.join(await temporaryDirectory(), 'i18n');
     const store = await openTranslationMemoryStore(directory);
     await store.transact((memory) => {
@@ -104,7 +113,7 @@ describe('project Translation Memory store', () => {
       memory.messages.Cancel = message('取消', 'Cancel');
     });
 
-    const cancelShard = translationShardPath(directory, '取消', 'en-US');
+    const cancelShard = translationBucketPath(directory, '取消', 'en-US');
     const untouched = `\n${await fs.readFile(cancelShard, 'utf8')}`;
     await fs.writeFile(cancelShard, untouched);
     await store.transact((memory) => {
@@ -115,6 +124,37 @@ describe('project Translation Memory store', () => {
     expect((await store.load()).messages.Save?.translations['en-US']).toBe(
       'Store',
     );
+    store.close();
+  });
+
+  it('deletes a bucket after its final target is removed', async () => {
+    const directory = path.join(await temporaryDirectory(), 'i18n');
+    const store = await openTranslationMemoryStore(directory);
+    await store.transact((memory) => {
+      memory.messages.Save = message('保存', 'Save');
+    });
+    const bucket = translationBucketPath(directory, '保存', 'en-US');
+
+    await store.transact((memory) => {
+      delete memory.messages.Save;
+    });
+
+    await expect(fs.access(bucket)).rejects.toMatchObject({ code: 'ENOENT' });
+    expect((await store.load()).messages).toEqual({});
+    store.close();
+  });
+
+  it('rejects an entry moved into the wrong bucket', async () => {
+    const directory = path.join(await temporaryDirectory(), 'i18n');
+    const store = await openTranslationMemoryStore(directory);
+    await store.transact((memory) => {
+      memory.messages.Save = message('保存', 'Save');
+    });
+    const bucket = translationBucketPath(directory, '保存', 'en-US');
+    const misplaced = path.join(path.dirname(bucket), '0.json');
+    await fs.rename(bucket, misplaced);
+
+    await expect(store.load()).rejects.toThrow();
     store.close();
   });
 });
@@ -135,7 +175,7 @@ async function temporaryDirectory(): Promise<string> {
   return directory;
 }
 
-function translationShardPath(
+function translationBucketPath(
   directory: string,
   source: string,
   locale: string,
@@ -147,8 +187,7 @@ function translationShardPath(
     directory,
     'translations',
     locale,
-    hash.slice(0, 2),
-    `${hash}.json`,
+    `${hash.slice(0, 1)}.json`,
   );
 }
 

@@ -1,0 +1,24 @@
+{
+  "entries": {
+    "76b7036b527e846b1a14f1550e280750b34a44ee7ee5cba2f5573fdf83240ffc": {
+      "id": "自动发现 tsconfig",
+      "source": "自动发现 tsconfig",
+      "sourceLang": "zh-CN",
+      "value": "Discover tsconfig automatically"
+    },
+    "7a99eef326a42e9dfde94be6d20c89af909380b2625ea8e2b71e6589dbb23e2b": {
+      "id": "推荐写法",
+      "source": "推荐写法",
+      "sourceLang": "zh-CN",
+      "value": "Recommended"
+    },
+    "7ec7e1ad161b6700339a93cafe55eff04ebf33c3a5ea992f36b0335042add381": {
+      "id": "语言包加载失败，当前语言保持不变。",
+      "source": "语言包加载失败，当前语言保持不变。",
+      "sourceLang": "zh-CN",
+      "value": "The language pack failed to load. The current language was kept."
+    }
+  },
+  "locale": "en-US",
+  "version": 1
+}
