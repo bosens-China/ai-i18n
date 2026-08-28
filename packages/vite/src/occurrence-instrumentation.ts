@@ -19,10 +19,8 @@ export function instrumentTranslationOccurrences(
     if (start === undefined) continue;
     const invocation = invocationOffset(source, start);
     if (invocation === undefined) continue;
-    transformed.appendLeft(
-      invocation,
-      `.${OCCURRENCE_METHOD}(${JSON.stringify(key)})`,
-    );
+    // 模板字面量不会与 Vue 属性外层的单引号或双引号冲突。
+    transformed.appendLeft(invocation, `.${OCCURRENCE_METHOD}(\`${key}\`)`);
   }
 }
 

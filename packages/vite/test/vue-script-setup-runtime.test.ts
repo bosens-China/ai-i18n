@@ -86,7 +86,7 @@ const label = t('脚本文案')
       'const t = __aiI18nTemplateScope.t;',
     );
     expect(compiled.content).toContain(
-      '_unref(t).__aiI18nAt("8:27")(\'模板文案\')',
+      "_unref(t).__aiI18nAt(`8:27`)('模板文案')",
     );
   });
 
