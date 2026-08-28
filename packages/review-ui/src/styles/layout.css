@@ -2,6 +2,138 @@
   box-shadow: inset 0 -1px 0 var(--review-grid-line);
 }
 
+/* 独立页是批量校对工作台，不复用嵌入式面板的三段式窄轨布局。 */
+.review-standalone-header {
+  min-height: 68px;
+  padding: 10px 24px;
+  border-bottom: 1px solid var(--review-line);
+  background: var(--review-bg-surface);
+  box-shadow: 0 1px 0 var(--review-grid-line);
+}
+
+.review-standalone-mark {
+  color: var(--review-accent);
+  background: var(--review-bg-wash);
+  box-shadow: inset 0 0 0 1px var(--review-line);
+}
+
+.review-standalone-progress {
+  padding-left: 20px;
+  border-left: 1px solid var(--review-line);
+}
+
+.standalone-nav-option {
+  height: 30px;
+  padding: 0 11px;
+  border: 0;
+  border-radius: 6px;
+  color: var(--review-muted);
+  background: transparent;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    color 160ms ease,
+    background-color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.standalone-nav-option:hover {
+  color: var(--review-ink);
+  background: var(--review-bg-wash-hover);
+}
+
+.standalone-nav-option[aria-pressed='true'] {
+  color: var(--review-ink);
+  background: var(--review-bg-surface);
+  box-shadow:
+    0 1px 2px rgb(2 6 23 / 10%),
+    inset 0 0 0 1px var(--review-line);
+}
+
+.standalone-nav-option:focus-visible {
+  outline: 2px solid var(--review-accent);
+  outline-offset: 2px;
+}
+
+.review-workspace[data-mode='standalone'][data-layout] {
+  grid-template-columns: clamp(360px, 24vw, 440px) minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 16px;
+  padding: 16px max(24px, calc((100% - 1600px) / 2)) 24px;
+  background: var(--review-bg-base);
+}
+
+.review-workspace[data-mode='standalone'][data-layout]
+  > .review-standalone-toolbar {
+  grid-column: 1 / -1;
+  grid-row: 1;
+}
+
+.review-workspace[data-mode='standalone'][data-layout] > .review-sidebar {
+  grid-column: 1;
+  grid-row: 2;
+  overflow: hidden;
+  border: 1px solid var(--review-line);
+  border-radius: 12px;
+  box-shadow: var(--review-shadow-soft);
+}
+
+.review-workspace[data-mode='standalone'][data-layout] > .review-studio {
+  grid-column: 2;
+  grid-row: 2;
+  padding: 0;
+  overflow-y: auto;
+  background: transparent;
+}
+
+.review-filter-toolbar {
+  overflow: hidden;
+  border: 1px solid var(--review-line);
+  border-radius: 12px;
+  background: var(--review-bg-surface);
+  box-shadow: 0 1px 3px rgb(2 6 23 / 7%);
+}
+
+.review-filter-toolbar > .review-locale-rail {
+  padding: 10px 0 10px 12px;
+}
+
+.review-filter-toolbar .review-toolbar-body {
+  min-height: 58px;
+}
+
+.review-filter-toolbar .review-filter-search {
+  width: clamp(220px, 24vw, 360px);
+  flex: none;
+}
+
+.review-filter-toolbar .review-filter-control {
+  flex: none;
+}
+
+.review-filter-toolbar .review-toolbar-groups {
+  flex-direction: row;
+}
+
+.review-filter-toolbar .review-filter-control > p {
+  margin-bottom: 4px;
+}
+
+.review-filter-toolbar .review-filter-options {
+  border: 0;
+  background: transparent;
+  padding: 0;
+}
+
+.review-root[data-mode='standalone'] .review-settings-panel {
+  margin: 24px;
+  border: 1px solid var(--review-line);
+  border-radius: 12px;
+  background: var(--review-bg-surface);
+  box-shadow: var(--review-shadow-soft);
+}
+
 /* 布局由工作台容器宽度决定，避免依赖业务页面的 viewport 断点。 */
 .review-workspace[data-layout='page'] {
   grid-template-columns: minmax(220px, 36%) minmax(0, 1fr);
@@ -55,4 +187,58 @@
   grid-column: 1;
   grid-row: 3;
   border-left: 0;
+}
+
+@media (max-width: 1080px) {
+  .review-workspace[data-mode='standalone'][data-layout] {
+    grid-template-columns: minmax(320px, 38%) minmax(0, 1fr);
+    padding-right: 20px;
+    padding-left: 20px;
+  }
+
+  .review-filter-toolbar .review-toolbar-body {
+    flex-wrap: wrap;
+  }
+
+  .review-filter-toolbar .review-toolbar-groups {
+    min-width: 100%;
+  }
+}
+
+@media (max-width: 760px) {
+  .review-standalone-header {
+    min-height: 60px;
+    padding: 8px 12px;
+  }
+
+  .review-workspace[data-mode='standalone'][data-layout] {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto minmax(210px, 38%) minmax(340px, 1fr);
+    gap: 10px;
+    padding: 10px 12px 12px;
+  }
+
+  .review-workspace[data-mode='standalone'][data-layout] > .review-sidebar {
+    grid-column: 1;
+    grid-row: 2;
+  }
+
+  .review-workspace[data-mode='standalone'][data-layout] > .review-studio {
+    grid-column: 1;
+    grid-row: 3;
+  }
+
+  .review-filter-toolbar {
+    overflow-x: auto;
+  }
+
+  .review-filter-toolbar .review-toolbar-body {
+    min-width: 650px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .standalone-nav-option {
+    transition: none;
+  }
 }

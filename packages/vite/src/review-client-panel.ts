@@ -4,6 +4,9 @@ import {
   readReviewUiThemePreference,
   resolveReviewUiTheme,
   type ReviewUiTheme,
+  type ReviewWorkbenchController,
+  type ReviewWorkbenchModule,
+  type ReviewWorkbenchSelection,
 } from '@ai-i18n/core';
 import {
   parseReviewPanelPreferences,
@@ -11,11 +14,6 @@ import {
   reviewPanelHeight,
   type ReviewPanelPreferences,
 } from './review-client-layout.js';
-import type {
-  ReviewWorkbenchController,
-  ReviewWorkbenchModule,
-  ReviewWorkbenchSelection,
-} from './review-workbench.js';
 
 const STORAGE_KEY = 'ai-i18n.review.panel.v1';
 const ELEMENT_NAME = 'ai-i18n-review';
@@ -349,12 +347,12 @@ function overlayCopy(): OverlayCopy {
 
 function overlayMarkup(copy: OverlayCopy): string {
   return `<style>
-    :host{all:initial;display:block;position:fixed;inset:0;z-index:2147483647;pointer-events:none;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei UI","Microsoft YaHei","Noto Sans CJK SC","Source Han Sans SC",sans-serif;color:var(--review-shell-text);color-scheme:dark;--review-shell-bg:#111827;--review-shell-toolbar:#172033;--review-shell-border:#2f3d52;--review-shell-text:#e5edf8;--review-shell-muted:#8fa0b6;--review-shell-accent:#67e8f9;--review-shell-accent-soft:rgb(6 182 212 / 12%);--review-shell-primary:#60a5fa;--review-shell-primary-soft:rgb(59 130 246 / 12%);--review-shell-hover:#1c2738;--review-shell-danger-bg:rgb(127 29 29 / 24%);--review-shell-danger-text:#fca5a5;--review-highlight-border:#22d3ee;--review-highlight-bg:rgb(34 211 238 / 9%);--review-launcher-bg:#111827;--review-launcher-hover:#172033;--review-launcher-border:#40506a;--review-shadow-launcher:0 14px 40px rgb(2 6 23 / 52%),0 0 0 3px rgb(99 102 241 / 14%);--review-shadow-panel:0 22px 72px rgb(2 6 23 / 58%)}
-    :host([data-theme='light']){color-scheme:light;--review-shell-bg:#fff;--review-shell-toolbar:#f1f5f9;--review-shell-border:#cbd5e1;--review-shell-text:#0f172a;--review-shell-muted:#64748b;--review-shell-accent:#0891b2;--review-shell-accent-soft:rgb(8 145 178 / 10%);--review-shell-primary:#2563eb;--review-shell-primary-soft:rgb(37 99 235 / 9%);--review-shell-hover:#e8eef5;--review-shell-danger-bg:rgb(254 226 226 / 85%);--review-shell-danger-text:#dc2626;--review-highlight-border:#0891b2;--review-highlight-bg:rgb(8 145 178 / 10%);--review-launcher-bg:#fff;--review-launcher-hover:#f8fafc;--review-launcher-border:#cbd5e1;--review-shadow-launcher:0 12px 32px rgb(37 99 235 / 20%),0 0 0 3px rgb(99 102 241 / 10%);--review-shadow-panel:0 20px 56px rgb(15 23 42 / 14%)}
+    :host{all:initial;display:block;position:fixed;inset:0;z-index:2147483647;pointer-events:none;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei UI","Microsoft YaHei","Noto Sans CJK SC","Source Han Sans SC",sans-serif;color:var(--review-shell-text);color-scheme:dark;--review-shell-bg:#111827;--review-shell-toolbar:#172033;--review-shell-border:#2f3d52;--review-shell-text:#e5edf8;--review-shell-muted:#8fa0b6;--review-shell-accent:#67e8f9;--review-shell-accent-soft:rgb(6 182 212 / 12%);--review-shell-primary:#60a5fa;--review-shell-primary-soft:rgb(59 130 246 / 12%);--review-shell-hover:#1c2738;--review-shell-danger-bg:rgb(127 29 29 / 24%);--review-shell-danger-text:#fca5a5;--review-highlight-border:#22d3ee;--review-highlight-bg:rgb(34 211 238 / 9%);--review-launcher-bg:#0f172a;--review-launcher-hover:#172033;--review-launcher-border:rgb(148 163 184 / 28%);--review-shadow-launcher:0 12px 30px rgb(2 6 23 / 42%),0 2px 8px rgb(2 6 23 / 28%);--review-shadow-panel:0 22px 72px rgb(2 6 23 / 58%)}
+    :host([data-theme='light']){color-scheme:light;--review-shell-bg:#fff;--review-shell-toolbar:#f1f5f9;--review-shell-border:#cbd5e1;--review-shell-text:#0f172a;--review-shell-muted:#64748b;--review-shell-accent:#0891b2;--review-shell-accent-soft:rgb(8 145 178 / 10%);--review-shell-primary:#2563eb;--review-shell-primary-soft:rgb(37 99 235 / 9%);--review-shell-hover:#e8eef5;--review-shell-danger-bg:rgb(254 226 226 / 85%);--review-shell-danger-text:#dc2626;--review-highlight-border:#0891b2;--review-highlight-bg:rgb(8 145 178 / 10%);--review-launcher-bg:#fff;--review-launcher-hover:#f8fafc;--review-launcher-border:rgb(15 23 42 / 14%);--review-shadow-launcher:0 12px 28px rgb(15 23 42 / 16%),0 2px 7px rgb(15 23 42 / 8%);--review-shadow-panel:0 20px 56px rgb(15 23 42 / 14%)}
     *{box-sizing:border-box}button{font:inherit}
-    #launcher{pointer-events:auto;position:fixed;z-index:3;right:16px;bottom:16px;width:50px;height:50px;padding:5px;border:1px solid var(--review-launcher-border);border-radius:15px;color:#fff;background:var(--review-launcher-bg);box-shadow:var(--review-shadow-launcher),inset 0 1px rgb(255 255 255 / 12%);cursor:pointer;display:grid;place-items:center;transition:transform .16s ease,box-shadow .16s ease,background .16s ease}
-    #launcher:hover{transform:translateY(-2px) scale(1.03);background:var(--review-launcher-hover)}#launcher:focus-visible,.tool:focus-visible{outline:2px solid var(--review-shell-accent);outline-offset:3px}
-    .brand-icon{display:block;width:100%;height:100%}#launcher-icon{filter:drop-shadow(0 3px 5px rgb(59 130 246 / 25%))}
+    #launcher{pointer-events:auto;position:fixed;z-index:3;right:18px;bottom:18px;width:46px;height:46px;padding:8px;border:1px solid var(--review-launcher-border);border-radius:15px;color:#fff;background:var(--review-launcher-bg);box-shadow:var(--review-shadow-launcher);cursor:pointer;display:grid;place-items:center;transition:transform .18s cubic-bezier(.2,.8,.2,1),box-shadow .18s ease,background-color .18s ease}
+    #launcher:hover{transform:translateY(-2px) scale(1.02);background:var(--review-launcher-hover);box-shadow:0 16px 34px rgb(30 41 90 / 24%),0 3px 9px rgb(2 6 23 / 20%)}#launcher:active{transform:translateY(0) scale(.97)}#launcher:focus-visible,.tool:focus-visible{outline:2px solid var(--review-shell-accent);outline-offset:3px}
+    .brand-icon{display:block;width:100%;height:100%}#launcher-icon{filter:drop-shadow(0 2px 4px rgb(79 70 229 / 18%))}
     #panel{pointer-events:auto;position:fixed;z-index:3;left:12px;right:12px;bottom:0;width:auto;height:var(--review-panel-height);overflow:visible;border:1px solid var(--review-shell-border);border-bottom:0;border-radius:11px 11px 0 0;background:var(--review-shell-bg);box-shadow:var(--review-shadow-panel)}
     #toolbar{height:36px;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:0 8px 0 10px;border-bottom:1px solid var(--review-shell-border);background:var(--review-shell-bg);box-shadow:inset 0 -1px rgb(15 23 42 / 10%);user-select:none}
     #identity,#tools{display:flex;align-items:center;min-width:0}#identity{gap:8px}#tools{gap:2px}
@@ -364,7 +362,7 @@ function overlayMarkup(copy: OverlayCopy): string {
     #workbench{display:block;width:100%;height:calc(100% - 36px);overflow:hidden;background:var(--review-shell-bg)}#loading{height:100%;display:grid;place-items:center;padding:24px;color:var(--review-shell-muted);font-size:12px;font-weight:600;line-height:1.5}#loading[data-error]{color:var(--review-shell-danger-text)}
     #resizer{position:absolute;z-index:2;left:16px;right:16px;top:-6px;height:12px;cursor:ns-resize;touch-action:none}#resizer::after{content:"";position:absolute;left:50%;top:4px;width:44px;height:3px;border-radius:999px;background:var(--review-shell-border);transform:translateX(-50%);transition:background .16s ease}#resizer:hover::after,#resizer:focus-visible::after{background:var(--review-shell-accent)}#resizer:focus-visible{outline:none}
     #highlighter{position:fixed;z-index:4;pointer-events:none;border:2px solid var(--review-highlight-border);border-radius:4px;background:var(--review-highlight-bg);outline:1px solid color-mix(in srgb,var(--review-highlight-border) 38%,transparent);outline-offset:2px;box-shadow:0 0 0 3px color-mix(in srgb,var(--review-highlight-border) 18%,transparent),0 0 28px color-mix(in srgb,var(--review-highlight-border) 28%,transparent);transform:translateZ(0)}#highlighter::before,#highlighter::after{content:"";position:absolute;width:7px;height:7px;border:2px solid var(--review-highlight-border);background:var(--review-shell-bg)}#highlighter::before{left:-5px;top:-5px}#highlighter::after{right:-5px;bottom:-5px}#highlighter:not([hidden]){animation:review-locate-pulse .72s ease-out 2}@keyframes review-locate-pulse{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--review-highlight-border) 42%,transparent),0 0 12px color-mix(in srgb,var(--review-highlight-border) 14%,transparent)}100%{box-shadow:0 0 0 8px transparent,0 0 32px color-mix(in srgb,var(--review-highlight-border) 30%,transparent)}}
-    [hidden]{display:none!important}@media(prefers-reduced-motion:reduce){#launcher,.tool,#resizer::after{transition:none}#highlighter:not([hidden]){animation:none}}
+    [hidden]{display:none!important}@media(max-width:640px){#launcher{right:12px;bottom:12px}}@media(prefers-reduced-motion:reduce){#launcher,.tool,#resizer::after{transition:none}#highlighter:not([hidden]){animation:none}}
   </style>
   <button id="launcher" type="button" aria-label="${copy.open}" title="${copy.open}">${brandIconMarkup('launcher-icon')}</button>
   <section id="panel" hidden aria-label="${copy.frame}">
@@ -382,5 +380,6 @@ function overlayMarkup(copy: OverlayCopy): string {
 }
 
 function brandIconMarkup(id: string): string {
-  return `<svg id="${id}" class="brand-icon" viewBox="0 0 64 64" role="presentation" aria-hidden="true"><path fill="#7047eb" d="M24 7H13L3 32l10 25h11L14 32 24 7Z"/><path fill="#168bff" d="M40 7h11l10 25-10 25H40l10-25L40 7Z"/><circle cx="32" cy="32" r="15" fill="none" stroke="#5655ef" stroke-width="4"/><path fill="none" stroke="#5655ef" stroke-width="3" d="M18 32h28M32 17c-5 5-7 10-7 15s2 10 7 15m0-30c5 5 7 10 7 15s-2 10-7 15"/><path fill="#fbbf24" d="m34 13-12 23h9l-3 17 14-25h-9l1-15Z"/></svg>`;
+  // 图标只使用路径，避免操作系统字体差异破坏小尺寸下的清晰度。
+  return `<svg id="${id}" class="brand-icon" viewBox="0 0 40 40" role="presentation" aria-hidden="true"><defs><linearGradient id="${id}-ink" x1="8" y1="8" x2="32" y2="31" gradientUnits="userSpaceOnUse"><stop stop-color="#38bdf8"/><stop offset="1" stop-color="#6366f1"/></linearGradient></defs><path d="M8.5 7.5h19a5.5 5.5 0 0 1 5.5 5.5v9.5a5.5 5.5 0 0 1-5.5 5.5H18l-7 5v-5H8.5A4.5 4.5 0 0 1 4 23.5V12a4.5 4.5 0 0 1 4.5-4.5Z" fill="url(#${id}-ink)"/><path d="M11.5 14.5h13M11.5 19h8" fill="none" stroke="#fff" stroke-width="2.25" stroke-linecap="round" opacity=".92"/><circle cx="29" cy="27.5" r="6.25" fill="#0f172a" stroke="#fff" stroke-width="1.5"/><path d="m26.2 27.5 1.8 1.8 3.8-4.2" fill="none" stroke="#5eead4" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 }

@@ -9,6 +9,7 @@ defineProps<{
   fileSuffixes: readonly string[];
   locale: string;
   locales: readonly ReviewLocale[];
+  toolbar?: boolean;
   vertical: boolean;
 }>();
 
@@ -21,12 +22,16 @@ const emit = defineEmits<{ updateLocale: [locale: string] }>();
 <template>
   <section
     class="review-filter-rail flex min-w-0 min-h-0 flex-none border-r border-line bg-bgOverlay"
-    :class="{ 'border-b border-r-0': !vertical }"
+    :class="{
+      'border-b border-r-0': !vertical,
+      'review-filter-toolbar': toolbar,
+    }"
     :aria-label="copy.filtersLabel"
   >
     <ReviewLocaleRail
       v-if="locales.length > 1"
       :copy="copy"
+      :horizontal="toolbar"
       :locale="locale"
       :locales="locales"
       @update-locale="emit('updateLocale', $event)"
@@ -35,10 +40,14 @@ const emit = defineEmits<{ updateLocale: [locale: string] }>();
     <div
       class="review-filter-body flex-1 min-w-0"
       :class="
-        vertical ? 'flex flex-col gap-3 min-h-0 overflow-y-auto p-3' : 'p-2'
+        toolbar
+          ? 'review-toolbar-body flex items-center gap-3 px-3 py-2.5'
+          : vertical
+            ? 'flex flex-col gap-3 min-h-0 overflow-y-auto p-3'
+            : 'p-2'
       "
     >
-      <label class="relative block">
+      <label class="review-filter-search relative block">
         <svg
           class="absolute top-1/2 left-3 w-4 h-4 text-accent -translate-y-1/2 pointer-events-none"
           viewBox="0 0 24 24"
@@ -64,7 +73,13 @@ const emit = defineEmits<{ updateLocale: [locale: string] }>();
 
       <div
         class="review-filter-groups flex min-h-0 flex-col"
-        :class="vertical ? 'gap-2.5' : 'mt-2 gap-2'"
+        :class="
+          toolbar
+            ? 'review-toolbar-groups flex-1 flex-row items-end gap-3'
+            : vertical
+              ? 'gap-2.5'
+              : 'mt-2 gap-2'
+        "
       >
         <section class="review-filter-control min-w-0">
           <p

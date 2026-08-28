@@ -4,3 +4,29 @@
     0 10px 30px rgb(2 6 23 / 16%),
     inset 0 1px 0 var(--review-grid-line);
 }
+
+/* 独立页把编辑器呈现为校样纸张，青色批注线只在此处承担视觉识别。 */
+.review-editor-spacious {
+  position: relative;
+  height: 100%;
+  min-height: 0;
+  border-left: 3px solid var(--review-cyan);
+}
+
+.review-editor-spacious::before {
+  content: '';
+  position: absolute;
+  z-index: 2;
+  top: 44px;
+  left: -6px;
+  width: 9px;
+  height: 9px;
+  border: 2px solid var(--review-bg-base);
+  border-radius: 50%;
+  background: var(--review-cyan);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--review-cyan) 18%, transparent);
+}
+
+.review-editor-textarea {
+  flex: 1 1 clamp(180px, 28vh, 300px);
+}

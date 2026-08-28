@@ -1,17 +1,6 @@
-import type { ReviewSourceLocation } from '@ai-i18n/core';
-
-export interface ReviewHostTarget {
-  key: string;
-  file: string;
-  location: ReviewSourceLocation;
-}
-
-export interface ReviewHostSelection {
-  candidateKeys: string[];
-  exact?: ReviewHostTarget;
-}
+import type { ReviewWorkbenchSelection } from '@ai-i18n/core';
 
 export interface ReviewHostState {
   pageMessageKeys: string[];
-  selection: ReviewHostSelection | null;
+  selection: ReviewWorkbenchSelection | null;
 }

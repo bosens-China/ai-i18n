@@ -1,21 +1,13 @@
 import { createApp, reactive } from 'vue';
-import { readResolvedReviewUiTheme } from '@ai-i18n/core';
+import {
+  readResolvedReviewUiTheme,
+  type ReviewWorkbenchController,
+  type ReviewWorkbenchOptions,
+} from '@ai-i18n/core';
 import App from './App.vue';
-import type { ReviewHostSelection, ReviewHostState } from './host-state';
-import type { ReviewWorkbenchMode } from './review-mode';
+import type { ReviewHostState } from './host-state';
 
-export type { ReviewWorkbenchMode } from './review-mode';
-
-export interface ReviewWorkbenchController {
-  setPageMessageKeys(messageKeys: readonly string[]): void;
-  setSelection(selection: ReviewHostSelection): void;
-  destroy(): void;
-}
-
-export interface ReviewWorkbenchOptions {
-  mode?: ReviewWorkbenchMode;
-  onLocateMessage?: (messageKey: string) => void;
-}
+export type { ReviewWorkbenchOptions } from '@ai-i18n/core';
 
 export function mountReviewWorkbench(
   container: HTMLElement,

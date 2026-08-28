@@ -61,6 +61,13 @@ Click a current-page message in either main scope and verify the business page s
 match above the fixed panel. An all-page message absent from the current DOM must only update selection.
 Registration also keeps `/__ai-i18n/` available and prints its full URL once by default. The standalone
 workbench must start in all-page scope and omit current-page, picker, and business-page scrolling behavior.
+Verify its page-specific structure separately: a task/progress header, horizontal locale and filter toolbar,
+then a review-queue/editor split. Do not expect or restore the embedded workbench's narrow locale rail and
+three-column all-page layout on the standalone page. At 1280×720, 1440×900, and an approximately
+1900 px-wide desktop viewport, verify the toolbar, queue, and editor share one centered content boundary;
+the queue and editor must remain adjacent and vertically aligned, with no standalone editor centering gap.
+Verify the standalone document declares the bundled same-origin Review favicon; do not reuse or replace
+the business application's favicon.
 Set `launcher: false` only when the user requests no in-page injection, and `printUrl: false` only when
 the user requests no console hint; neither option disables the standalone page or API. Remove the Review
 plugin when no Review service should exist.

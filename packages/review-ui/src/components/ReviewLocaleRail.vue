@@ -4,6 +4,7 @@ import type { ReviewCopy } from '../copy';
 
 defineProps<{
   copy: ReviewCopy;
+  horizontal?: boolean;
   locale: string;
   locales: readonly ReviewLocale[];
 }>();
@@ -17,7 +18,12 @@ function localeCode(locale: string): string {
 
 <template>
   <nav
-    class="review-locale-rail flex min-h-0 w-[58px] flex-none flex-col items-center gap-1.5 overflow-y-auto border-r border-line bg-bgOverlay px-2 py-2.25"
+    class="review-locale-rail flex min-h-0 flex-none items-center gap-1.5"
+    :class="
+      horizontal
+        ? 'w-auto flex-row overflow-x-auto border-r-0 bg-transparent p-0'
+        : 'w-[58px] flex-col overflow-y-auto border-r border-line bg-bgOverlay px-2 py-2.25'
+    "
     :aria-label="copy.localesLabel"
   >
     <span

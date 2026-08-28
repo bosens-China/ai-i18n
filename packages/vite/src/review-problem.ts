@@ -1,11 +1,4 @@
-export interface ReviewProblemShape {
-  code: string;
-  status: number;
-  zh: string;
-  en: string;
-}
-
-export class ReviewProblem extends Error implements ReviewProblemShape {
+export class ReviewProblem extends Error {
   constructor(
     readonly code: string,
     readonly status: number,

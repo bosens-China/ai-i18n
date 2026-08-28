@@ -8,12 +8,17 @@ import {
   useTemplateRef,
   watch,
 } from 'vue';
-import type { ReviewMessage, ReviewMutation } from '@ai-i18n/core';
+import type {
+  ReviewMessage,
+  ReviewMutation,
+  ReviewWorkbenchSelection,
+} from '@ai-i18n/core';
 import ReviewFilterRail from './components/ReviewFilterRail.vue';
 import ReviewHeader from './components/ReviewHeader.vue';
 import ReviewLocaleRail from './components/ReviewLocaleRail.vue';
 import ReviewLocateResults from './components/ReviewLocateResults.vue';
 import ReviewSettingsPanel from './components/ReviewSettingsPanel.vue';
+import ReviewStandaloneHeader from './components/ReviewStandaloneHeader.vue';
 import ReviewWorkbenchTabs from './components/ReviewWorkbenchTabs.vue';
 import type { ReviewWorkbenchTab } from './components/ReviewWorkbenchTabs.vue';
 import WorkbenchList from './components/WorkbenchList.vue';
@@ -21,10 +26,11 @@ import WorkbenchStudio from './components/WorkbenchStudio.vue';
 import { reviewCopy } from './copy';
 import { useReviewConsole } from './composables/useReviewConsole';
 import { useReviewDrafts } from './composables/useReviewDrafts';
+import { useReviewKeyboardNavigation } from './composables/useReviewKeyboardNavigation';
 import { useReviewLayout } from './composables/useReviewLayout';
 import { useReviewSelection } from './composables/useReviewSelection';
 import { useReviewTheme } from './composables/useReviewTheme';
-import type { ReviewHostSelection, ReviewHostState } from './host-state';
+import type { ReviewHostState } from './host-state';
 import { hasMultipleReviewLocales } from './review-locales';
 import {
   hasReviewPageContext,
@@ -44,6 +50,7 @@ const props = defineProps<{
   onLocateMessage?: (messageKey: string) => void;
 }>();
 const copy = reviewCopy();
+const isStandalone = props.mode === 'standalone';
 const { preference: themePreference, setPreference: setThemePreference } =
   useReviewTheme(props.root);
 const review = useReviewConsole(copy);
@@ -108,58 +115,30 @@ const showAllFilters = computed(
   () => browseScope.value === 'all' && !candidateMode.value,
 );
 let stopAutoRefresh: (() => void) | undefined;
-function handleKeyDown(event: KeyboardEvent): void {
-  if (workbenchTab.value === 'settings') return;
-  const isInputTarget = event
-    .composedPath()
-    .some(
-      (target) =>
-        target instanceof HTMLInputElement ||
-        target instanceof HTMLTextAreaElement,
-    );
-  if (
-    !isInputTarget &&
-    (event.key === 'ArrowUp' || event.key === 'ArrowDown')
-  ) {
-    const list = visibleMessages.value;
-    if (!list.length) return;
-    const current = selection.selectedMessage.value;
-    if (!current) {
-      selection.select(list[0]!);
-      event.preventDefault();
-      return;
-    }
-    const index = list.findIndex(
-      (message) => messageKey(message.message) === selection.selectedKey.value,
-    );
-    const next = event.key === 'ArrowDown' ? index + 1 : index - 1;
-    if (index !== -1 && next >= 0 && next < list.length) {
-      selection.select(list[next]!);
-      event.preventDefault();
-    }
-  }
-  if (event.altKey && event.code === 'KeyA') {
+useReviewKeyboardNavigation({
+  active: () => workbenchTab.value !== 'settings',
+  messages: () => visibleMessages.value,
+  onUseAutomatic: () => {
     const message = selection.selectedMessage.value;
     const automatic = message?.translations[review.locale.value];
-    if (message && automatic) {
-      drafts.updateDraft(
-        message,
-        review.locale.value,
-        scopeFor(message),
-        automatic,
-      );
-      event.preventDefault();
-    }
-  }
-}
+    if (!message || !automatic) return false;
+    drafts.updateDraft(
+      message,
+      review.locale.value,
+      scopeFor(message),
+      automatic,
+    );
+    return true;
+  },
+  select: selection.select,
+  selectedKey: () => selection.selectedKey.value,
+});
 onMounted(() => {
   void review.load();
   stopAutoRefresh = review.startAutoRefresh();
-  window.addEventListener('keydown', handleKeyDown);
 });
 onUnmounted(() => {
   stopAutoRefresh?.();
-  window.removeEventListener('keydown', handleKeyDown);
 });
 watch(
   () => props.host.selection,
@@ -171,7 +150,7 @@ watch(
   },
   { deep: false },
 );
-function applyHostSelection(data: ReviewHostSelection): void {
+function applyHostSelection(data: ReviewWorkbenchSelection): void {
   if (data.exact && data.candidateKeys.includes(data.exact.key)) {
     candidateKeys.value = null;
     scopes.set(data.exact.key, {
@@ -193,7 +172,6 @@ function applyHostSelection(data: ReviewHostSelection): void {
 function showBrowse(): void {
   candidateKeys.value = null;
 }
-
 function selectLocateResult(
   message: ReviewMessage,
   target: ReviewOccurrenceTarget,
@@ -209,11 +187,9 @@ function selectMessage(message: ReviewMessage): void {
 function scopeFor(message: ReviewMessage): ReviewScope {
   return scopes.get(messageKey(message.message)) ?? {};
 }
-
 function updateScope(message: ReviewMessage, scope: ReviewScope): void {
   scopes.set(messageKey(message.message), scope);
 }
-
 async function mutate(
   mutation: ReviewMutation,
   advance: boolean,
@@ -232,25 +208,33 @@ async function mutate(
 <template>
   <div class="review-shell h-full w-full flex flex-col overflow-hidden">
     <ReviewWorkbenchTabs
+      v-if="!isStandalone"
       v-model="workbenchTab"
       :all-count="allMessages.length"
       :copy="copy"
       :page-count="pageKeys.size"
       :show-page="pageContext"
     />
-
+    <ReviewStandaloneHeader
+      v-else
+      v-model="workbenchTab"
+      :confirmed-count="confirmedCount"
+      :copy="copy"
+      :total="total"
+      :visible-count="visibleMessages.length"
+    />
     <ReviewSettingsPanel
       v-if="workbenchTab === 'settings'"
       :copy="copy"
       :preference="themePreference"
       @update-preference="setThemePreference"
     />
-
     <main
       v-else
       ref="workspaceRef"
       class="review-workspace flex-1 min-h-0 grid overflow-hidden bg-bgSurface"
       :data-layout="layoutMode"
+      :data-mode="mode"
     >
       <ReviewLocateResults
         v-if="candidateMode"
@@ -264,7 +248,22 @@ async function mutate(
 
       <template v-else>
         <ReviewFilterRail
-          v-if="showAllFilters && layoutMode === 'all-stacked'"
+          v-if="isStandalone && showAllFilters"
+          v-model:file-suffix="review.fileSuffix.value"
+          v-model:filter="review.filter.value"
+          v-model:query="review.query.value"
+          class="review-standalone-toolbar min-w-0"
+          :copy="copy"
+          :file-suffixes="review.fileSuffixes.value"
+          :locale="review.locale.value"
+          :locales="locales"
+          toolbar
+          :vertical="false"
+          @update-locale="review.locale.value = $event"
+        />
+
+        <ReviewFilterRail
+          v-if="!isStandalone && showAllFilters && layoutMode === 'all-stacked'"
           v-model:file-suffix="review.fileSuffix.value"
           v-model:filter="review.filter.value"
           v-model:query="review.query.value"
@@ -278,7 +277,7 @@ async function mutate(
         />
 
         <ReviewFilterRail
-          v-if="showAllFilters && layoutMode === 'all-wide'"
+          v-if="!isStandalone && showAllFilters && layoutMode === 'all-wide'"
           v-model:file-suffix="review.fileSuffix.value"
           v-model:filter="review.filter.value"
           v-model:query="review.query.value"
@@ -294,7 +293,8 @@ async function mutate(
         <aside
           class="review-sidebar review-message-sidebar flex min-w-0 min-h-0 bg-bgSurface"
           :class="{
-            'border-r border-line': layoutMode !== 'all-stacked',
+            'border-r border-line':
+              !isStandalone && layoutMode !== 'all-stacked',
           }"
         >
           <ReviewLocaleRail
@@ -307,7 +307,9 @@ async function mutate(
 
           <div class="review-message-pane flex flex-1 flex-col min-w-0 min-h-0">
             <ReviewFilterRail
-              v-if="showAllFilters && layoutMode === 'all-compact'"
+              v-if="
+                !isStandalone && showAllFilters && layoutMode === 'all-compact'
+              "
               v-model:file-suffix="review.fileSuffix.value"
               v-model:filter="review.filter.value"
               v-model:query="review.query.value"
@@ -320,7 +322,7 @@ async function mutate(
             />
 
             <ReviewHeader
-              v-if="showAllFilters"
+              v-if="showAllFilters && !isStandalone"
               :confirmed-count="confirmedCount"
               :copy="copy"
               :total="total"
@@ -351,7 +353,7 @@ async function mutate(
         <WorkbenchStudio
           v-if="selection.selectedMessage.value"
           :copy="copy"
-          compact
+          :compact="!isStandalone"
           :draft="
             drafts.draftFor(
               selection.selectedMessage.value,

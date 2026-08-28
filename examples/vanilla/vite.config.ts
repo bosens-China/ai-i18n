@@ -12,6 +12,7 @@ export default defineConfig({
       ],
       html: true,
     }),
-    aiI18nReview(),
+    // 保留终端中的 Review 地址，但不向业务页面注入右下角入口。
+    aiI18nReview({ launcher: false, printUrl: true }),
   ],
 });

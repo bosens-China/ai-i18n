@@ -1,4 +1,4 @@
-import type { ReviewSnapshot } from '@ai-i18n/core';
+import type { ReviewSnapshot, ReviewWorkbenchSelection } from '@ai-i18n/core';
 import {
   createReviewValueIndex,
   matchReviewValue,
@@ -7,7 +7,6 @@ import {
 } from './review-client-matcher.js';
 import { createReviewPanelShell } from './review-client-panel.js';
 import { reviewLocateScrollDelta } from './review-client-locate.js';
-import type { ReviewWorkbenchSelection } from './review-workbench.js';
 
 const REVIEW_TARGETS = Symbol.for('ai-i18n.review.targets');
 const TRANSLATED_ATTRIBUTES = [

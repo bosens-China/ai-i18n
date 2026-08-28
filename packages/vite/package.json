@@ -77,7 +77,8 @@
     "@ai-i18n/core": "workspace:*",
     "atomically": "2.1.1",
     "magic-string": "1.2.0",
-    "parse5": "8.0.1"
+    "parse5": "8.0.1",
+    "picocolors": "1.1.1"
   },
   "peerDependencies": {
     "@vue/compiler-sfc": ">=3.2.0",

@@ -18,7 +18,8 @@ export default defineConfig({
       autoImport: true,
       html: true,
     }),
-    aiI18nReview(),
+    // 两种入口提示都关闭；独立 Review 页面仍可通过固定 URL 访问。
+    aiI18nReview({ launcher: false, printUrl: false }),
     react(),
   ],
 });

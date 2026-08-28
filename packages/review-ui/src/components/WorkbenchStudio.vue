@@ -140,8 +140,8 @@ function insertToken(token: string): void {
 
 <template>
   <article
-    class="review-editor-card flex h-full flex-col overflow-hidden rounded-[10px] border border-lineFocus bg-bgSurface"
-    :class="{ compact }"
+    class="review-editor-card flex flex-col overflow-hidden rounded-[10px] border border-lineFocus bg-bgSurface"
+    :class="compact ? 'compact h-full' : 'review-editor-spacious w-full'"
   >
     <header
       class="flex min-h-9.5 flex-none items-center justify-between gap-3 border-b border-line bg-bgOverlay px-3 text-xs text-ink"
@@ -244,9 +244,11 @@ function insertToken(token: string): void {
 
       <textarea
         ref="editor"
-        class="review-input w-full flex-1 resize-y p-3.5 rounded-lg border border-line bg-bgWash text-ink text-sm leading-relaxed"
+        class="review-input w-full resize-y p-3.5 rounded-lg border border-line bg-bgWash text-ink text-sm leading-relaxed"
         :class="[
-          compact ? 'min-h-[92px]' : 'min-h-[140px]',
+          compact
+            ? 'min-h-[92px] flex-1'
+            : 'review-editor-textarea min-h-[180px]',
           { 'border-statusAmber bg-statusAmberBg/25': dirty },
         ]"
         :value="draft"

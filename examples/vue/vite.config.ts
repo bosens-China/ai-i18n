@@ -19,7 +19,8 @@ export default defineConfig({
       loading: {},
       html: true,
     }),
-    aiI18nReview(),
+    // 注入业务页面右下角入口，但不在终端打印 Review 地址。
+    aiI18nReview({ launcher: true, printUrl: false }),
     vue(),
     UnoCSS({ inspector: true }),
   ],

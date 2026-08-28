@@ -7,6 +7,7 @@ import { readTranslationOverrides } from '@ai-i18n/core/translation-memory';
 import { aiI18nReview } from '../src/review';
 import {
   REVIEW_CLIENT_MODULE_PATH,
+  REVIEW_PAGE_ICON_PATH,
   REVIEW_PAGE_MODULE_PATH,
   REVIEW_PAGE_STYLE_PATH,
   REVIEW_WORKBENCH_MODULE_PATH,
@@ -146,8 +147,18 @@ describe('review server', () => {
       "style-src 'self' 'unsafe-inline'",
     );
     expect(pageHtml).toContain('<title>ai-i18n Review</title>');
+    expect(pageHtml).toContain(
+      `rel="icon" type="image/svg+xml" href="${REVIEW_PAGE_ICON_PATH}"`,
+    );
     expect(pageHtml).toContain(`src="${REVIEW_PAGE_MODULE_PATH}"`);
     expect(pageHtml).toContain(`href="${REVIEW_PAGE_STYLE_PATH}"`);
+
+    const pageIcon = await fetch(new URL(REVIEW_PAGE_ICON_PATH, origin));
+    const pageIconSvg = await pageIcon.text();
+    expect(pageIcon.status, pageIconSvg).toBe(200);
+    expect(pageIcon.headers.get('content-type')).toContain('image/svg+xml');
+    expect(pageIconSvg).toContain('<svg');
+    expect(pageIconSvg).toContain('review-icon-ink');
 
     const pageModule = await fetch(new URL(REVIEW_PAGE_MODULE_PATH, origin));
     const pageModuleCode = await pageModule.text();
@@ -335,6 +346,7 @@ describe('review server', () => {
     async ({ printUrl, expected }) => {
       const root = await fixtureRoot();
       const { loggerInfo } = await startListening(root, options, { printUrl });
+      await new Promise<void>((resolve) => setTimeout(resolve, 0));
       const printed = loggerInfo.mock.calls.some(([message]) =>
         String(message).includes('/__ai-i18n/'),
       );
