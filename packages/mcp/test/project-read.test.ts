@@ -1,8 +1,9 @@
 import path from 'node:path';
 import { afterEach, expect, test } from 'vitest';
 import { paginate } from '../src/pagination';
-import { AiI18nProjectService } from '../src/project';
 import { filterTranslations } from '../src/project-files';
+import { listTranslations } from '../src/project-read';
+import { setTranslations } from '../src/project-write';
 import {
   addFixtureMessage,
   addFixtureSourceFile,
@@ -45,9 +46,8 @@ test('enforces response size and rejects invalid cursors', () => {
 test('lists missing messages by default and file summaries on request', async () => {
   const root = await fixture();
   const directory = path.join(root, 'apps/web/i18n');
-  const service = new AiI18nProjectService();
 
-  const missing = await service.listTranslations({
+  const missing = await listTranslations({
     i18n_directory: directory,
     limit: 1,
   });
@@ -71,7 +71,7 @@ test('lists missing messages by default and file summaries on request', async ()
   expect(missing.items[0]).not.toHaveProperty('source_files');
   expect(missing.items[0]).not.toHaveProperty('occurrences');
 
-  const remaining = await service.listTranslations({
+  const remaining = await listTranslations({
     i18n_directory: directory,
     limit: 1,
     cursor: missing.next_cursor,
@@ -81,7 +81,7 @@ test('lists missing messages by default and file summaries on request', async ()
     missing_locales: ['ja-JP'],
   });
 
-  const summary = await service.listTranslations({
+  const summary = await listTranslations({
     i18n_directory: directory,
     view: 'summary',
     locales: ['en-US'],
@@ -101,7 +101,7 @@ test('lists missing messages by default and file summaries on request', async ()
     id: '设置',
     source: '设置',
   });
-  const oneFile = await service.listTranslations({
+  const oneFile = await listTranslations({
     i18n_directory: directory,
     source_files: ['src/settings.ts'],
     view: 'summary',
@@ -111,7 +111,7 @@ test('lists missing messages by default and file summaries on request', async ()
     total_file_count: 1,
     items: [{ source_file: 'src/settings.ts' }],
   });
-  const multipleFiles = await service.listTranslations({
+  const multipleFiles = await listTranslations({
     i18n_directory: directory,
     source_files: ['src/settings.ts', 'src/home.ts'],
     view: 'summary',
@@ -126,7 +126,7 @@ test('lists missing messages by default and file summaries on request', async ()
     id: '保存',
     source: '保存',
   });
-  const shared = await service.listTranslations({
+  const shared = await listTranslations({
     i18n_directory: directory,
     include_source_files: true,
     limit: 100,
@@ -141,7 +141,7 @@ test('lists missing messages by default and file summaries on request', async ()
       source_files: ['src/home.ts', 'src/shared.ts'],
     }),
   ]);
-  const sharedFromOneFile = await service.listTranslations({
+  const sharedFromOneFile = await listTranslations({
     i18n_directory: directory,
     source_files: ['src/shared.ts'],
     include_source_files: true,
@@ -154,7 +154,7 @@ test('lists missing messages by default and file summaries on request', async ()
     }),
   ]);
 
-  const withOccurrences = await service.listTranslations({
+  const withOccurrences = await listTranslations({
     i18n_directory: directory,
     include_occurrences: true,
     limit: 100,
@@ -184,10 +184,9 @@ test('lists missing messages by default and file summaries on request', async ()
 test('filters message views by source and selected translation values', async () => {
   const root = await fixture();
   const directory = path.join(root, 'apps/web/i18n');
-  const service = new AiI18nProjectService();
   await addCommentedMessage(directory);
 
-  const first = await service.listTranslations({
+  const first = await listTranslations({
     i18n_directory: directory,
     view: 'all',
     source_contains: '保存',
@@ -195,7 +194,7 @@ test('filters message views by source and selected translation values', async ()
   });
   expect(first).toMatchObject({ message_count: 3, count: 1, has_more: true });
   await expect(
-    service.listTranslations({
+    listTranslations({
       i18n_directory: directory,
       view: 'all',
       source_contains: '保存',
@@ -205,7 +204,7 @@ test('filters message views by source and selected translation values', async ()
   ).resolves.toMatchObject({ count: 1, has_more: false });
 
   await expect(
-    service.listTranslations({
+    listTranslations({
       i18n_directory: directory,
       view: 'all',
       locales: ['en-US'],
@@ -217,7 +216,7 @@ test('filters message views by source and selected translation values', async ()
     items: [expect.objectContaining({ message: { source: '退出' } })],
   });
   await expect(
-    service.listTranslations({
+    listTranslations({
       i18n_directory: directory,
       view: 'all',
       locales: ['ja-JP'],
@@ -226,7 +225,7 @@ test('filters message views by source and selected translation values', async ()
     }),
   ).resolves.toMatchObject({ total_count: 0, items: [] });
   await expect(
-    service.listTranslations({
+    listTranslations({
       i18n_directory: directory,
       view: 'summary',
       source_contains: '保存',
@@ -242,8 +241,7 @@ test('keeps escaped internal message ids out of the public contract', async () =
     id: '\\#pack',
     source: '#pack',
   });
-  const service = new AiI18nProjectService();
-  const listed = await service.listTranslations({
+  const listed = await listTranslations({
     i18n_directory: directory,
     limit: 100,
   });
@@ -255,7 +253,7 @@ test('keeps escaped internal message ids out of the public contract', async () =
   expect(item).not.toHaveProperty('message_id');
 
   await expect(
-    service.setTranslations({
+    setTranslations({
       i18n_directory: directory,
       updates: [
         {

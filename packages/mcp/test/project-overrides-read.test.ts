@@ -1,8 +1,12 @@
-import fs from 'node:fs/promises';
 import path from 'node:path';
 import { afterEach, expect, test } from 'vitest';
-import { AiI18nProjectService } from '../src/project';
-import { addFixtureMessage, cleanupFixtures, fixture } from './project-fixture';
+import { listOverrides } from '../src/project-read';
+import {
+  addFixtureMessage,
+  cleanupFixtures,
+  fixture,
+  writeFixtureOverrides,
+} from './project-fixture';
 
 afterEach(cleanupFixtures);
 
@@ -10,24 +14,21 @@ test('lists global, file-scoped, commented, and orphaned human overrides', async
   const root = await fixture();
   const directory = path.join(root, 'apps/web/i18n');
   await addCommentedMessage(directory);
-  await fs.writeFile(
-    path.join(directory, 'overrides.json'),
-    JSON.stringify({
-      version: 2,
-      rules: [
-        { source: '保存', translations: { 'en-US': 'Keep' } },
-        {
-          source: '保存',
-          comment: 'toolbar',
-          files: ['src/home.ts'],
-          translations: { 'ja-JP': '保つ' },
-        },
-        { source: '旧文案', translations: { 'en-US': 'Legacy' } },
-      ],
-    }),
-  );
+  await writeFixtureOverrides(directory, {
+    version: 2,
+    rules: [
+      { source: '保存', translations: { 'en-US': 'Keep' } },
+      {
+        source: '保存',
+        comment: 'toolbar',
+        files: ['src/home.ts'],
+        translations: { 'ja-JP': '保つ' },
+      },
+      { source: '旧文案', translations: { 'en-US': 'Legacy' } },
+    ],
+  });
 
-  const result = await new AiI18nProjectService().listOverrides({
+  const result = await listOverrides({
     i18n_directory: directory,
     limit: 50,
   });
@@ -62,7 +63,7 @@ test('lists global, file-scoped, commented, and orphaned human overrides', async
   );
   expect(result.items.every((item) => !('source_files' in item))).toBe(true);
 
-  const withSourceFiles = await new AiI18nProjectService().listOverrides({
+  const withSourceFiles = await listOverrides({
     i18n_directory: directory,
     include_source_files: true,
     limit: 50,

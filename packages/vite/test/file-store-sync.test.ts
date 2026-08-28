@@ -91,7 +91,7 @@ describe('FileStore sync', () => {
     await store.sync(state.snapshot());
 
     const extractedPath = extractedTestPath(root, 'src/main.ts');
-    const memoryPath = path.join(root, 'i18n/translations.json');
+    const memoryPath = path.join(root, 'i18n');
     await updateTestTranslationMemory(memoryPath, (memory) => {
       memory.messages['保存']!.translations['en-US'] = 'Save';
     });
@@ -204,9 +204,7 @@ describe('FileStore sync', () => {
     expect(
       await readJson(extractedTestPath(root, 'src/main.ts')),
     ).toMatchObject({ messages: [{ id: '第二' }] });
-    expect(
-      await readJson(path.join(root, 'i18n/translations.json')),
-    ).toMatchObject({
+    expect(await readJson(path.join(root, 'i18n'))).toMatchObject({
       messages: { 第一: expect.any(Object), 第二: expect.any(Object) },
     });
   });

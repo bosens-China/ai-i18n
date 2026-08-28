@@ -176,7 +176,7 @@ describe('Vite integration', () => {
     await buildFixture(root);
 
     const oldExtracted = extractedTestPath(root, 'src/old.ts');
-    const memoryPath = path.join(root, 'i18n/translations.json');
+    const memoryPath = path.join(root, 'i18n');
     await updateTestTranslationMemory(memoryPath, (memory) => {
       memory.messages['可移动文案']!.translations['en-US'] = 'Moved text';
     });
@@ -191,9 +191,7 @@ describe('Vite integration', () => {
     const moved = await readJson<ExtractedFile>(
       extractedTestPath(root, 'src/new.ts'),
     );
-    const cache = await readJson<CacheFile>(
-      path.join(root, 'i18n/translations.json'),
-    );
+    const cache = await readJson<CacheFile>(path.join(root, 'i18n'));
     expect(moved.messages[0]?.id).toBe('可移动文案');
     expect(JSON.stringify(moved)).not.toContain('translations');
     expect(cache.messages['可移动文案']?.translations['en-US']).toBe(
@@ -223,9 +221,7 @@ describe('Vite integration', () => {
     await write(root, 'src/main.ts', translatedModule('子项目'));
     await buildFixture(root);
 
-    const cache = await readJson<CacheFile>(
-      path.join(root, 'i18n/translations.json'),
-    );
+    const cache = await readJson<CacheFile>(path.join(root, 'i18n'));
     expect(cache).not.toHaveProperty('files');
     expect(JSON.stringify(cache)).not.toContain(workspace);
   });
@@ -323,7 +319,7 @@ async function extractedMessageIds(root: string, source: string) {
 }
 
 async function readJson<T>(filename: string): Promise<T> {
-  if (filename.endsWith('translations.json')) {
+  if (path.basename(filename) === 'i18n') {
     return (await readTestTranslationMemory(filename)) as T;
   }
   return JSON.parse(await fs.readFile(filename, 'utf8')) as T;

@@ -4,9 +4,7 @@ import path from 'node:path';
 import { afterEach, expect, test } from 'vitest';
 import {
   readTranslationOverrides,
-  readTranslationMemory,
   transactTranslationOverrides,
-  transactTranslationMemory,
 } from '../src/translation-memory';
 
 const directories: string[] = [];
@@ -19,62 +17,9 @@ afterEach(async () => {
   );
 });
 
-test('serializes concurrent field updates and advances revision per commit', async () => {
-  const directory = await temporaryDirectory();
-  const file = path.join(directory, 'translations.json');
-
-  await Promise.all(
-    Array.from({ length: 40 }, (_, index) =>
-      transactTranslationMemory(file, (memory) => {
-        memory.messages[`message-${index}`] = {
-          source: `message-${index}`,
-          sourceLang: 'zh-CN',
-          translations: { 'en-US': `translation-${index}` },
-        };
-      }),
-    ),
-  );
-
-  const memory = await readTranslationMemory(file);
-  expect(Object.keys(memory.messages)).toHaveLength(40);
-  expect(memory.revision).toBe(40);
-});
-
-test('does not rewrite an unchanged current memory', async () => {
-  const directory = await temporaryDirectory();
-  const file = path.join(directory, 'translations.json');
-  const created = await transactTranslationMemory(file, (memory) => {
-    memory.messages.示例 = {
-      source: '示例',
-      sourceLang: 'zh-CN',
-      translations: { 'en-US': 'Example' },
-    };
-    memory.messages.保存 = {
-      source: '保存',
-      sourceLang: 'zh-CN',
-      translations: { 'en-US': 'Save' },
-    };
-    memory.messages.请输入 = {
-      source: '请输入',
-      sourceLang: 'zh-CN',
-      translations: { 'en-US': 'Type here' },
-    };
-  });
-  const unchanged = await transactTranslationMemory(file, () => undefined);
-  const content = await fs.readFile(file, 'utf8');
-
-  expect(created).toMatchObject({
-    version: 1,
-    revision: 1,
-    messages: { 保存: { translations: { 'en-US': 'Save' } } },
-  });
-  expect(content.indexOf('"示例"')).toBeLessThan(content.indexOf('"请输入"'));
-  expect(unchanged.revision).toBe(1);
-});
-
 test('serializes concurrent translation override updates with the shared lock', async () => {
   const directory = await temporaryDirectory();
-  const file = path.join(directory, 'overrides.json');
+  const file = path.join(directory, 'overrides');
 
   await Promise.all(
     Array.from({ length: 20 }, (_, index) =>

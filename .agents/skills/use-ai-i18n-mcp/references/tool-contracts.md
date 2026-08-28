@@ -68,17 +68,17 @@ revalidates the whole batch against the current extracted set before writing; if
 the whole batch fails. Rebuild, re-list, show the changed result, and obtain approval again. Do not run
 Build or edit protocol files concurrently with cleanup.
 
-Orphan translation deletion never removes `overrides.json` values. Inspect and delete orphaned human
+Orphan translation deletion never removes `overrides/` values. Inspect and delete orphaned human
 review values separately through the override tools and only with explicit approval.
 
 ## Human review
 
-Human decisions belong in `overrides.json`, not the JSON or SQLite Translation Memory.
+Human decisions belong in project `overrides/` shards, not automatic Translation Memory.
 
 For interactive human editing during Vite Dev, prefer the local review console when the target Vite
 config explicitly registers `aiI18nReview()`. Use these MCP
 contracts when an Agent lists, batches, or writes approved decisions. The console and MCP share the
-same rule identity, validation, and `overrides.json` destination; serialize their writes rather than
+same rule identity, validation, and `overrides/` destination; serialize their writes rather than
 editing through both interfaces at once.
 
 Use `ai_i18n_list_overrides` to inspect current values, including orphaned values. Use
@@ -108,13 +108,11 @@ To remove a human value, list it first and pass the returned opaque `override_id
 
 ## Write and verification boundaries
 
-- Translation tools use sharded JSON when `storage.json` is absent and the user-level SQLite database
-  when its SQLite marker exists. Never edit either storage directly while the tools are available.
-- A SQLite marker requires `@ai-i18n/sqlite` to be installed in the selected Vite project. MCP resolves
-  that adapter from the project only when the marker is present; default JSON projects do not load it.
-- A missing local SQLite database is not a project-path error. Follow the returned full-Build recovery
-  action when the selected cache lacks current message metadata.
-- Human review tools modify only `overrides.json`.
+- Translation tools always modify committed project `translations/` shards. MCP never reads or writes
+  the optional personal SQLite candidate cache and never creates a storage marker.
+- A missing local SQLite database does not change MCP results because every accepted cache candidate
+  must already have been copied into project JSON by Vite.
+- Human review tools modify only project `overrides/` shards.
 - MCP does not modify `extracted/` or `locales/`.
 - `MESSAGE_NOT_FOUND` may include up to five exact public message candidates. Treat them as read-only
   navigation help; choose and copy a complete candidate only when it matches the intended source and

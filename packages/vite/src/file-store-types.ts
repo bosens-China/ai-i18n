@@ -1,5 +1,5 @@
 import type { LangOption } from '@ai-i18n/core';
-import type { TranslationMemoryStorage } from '@ai-i18n/core/translation-memory';
+import type { TranslationMemoryCandidateCacheAdapter } from '@ai-i18n/core/translation-memory';
 import type { AiI18nTranslationMemoryCapacityOptions } from './options.js';
 import type { DevTimingReporter } from './dev-timing.js';
 
@@ -12,7 +12,7 @@ export interface FileStoreOptions {
   cleanupOrphanMessages?: boolean;
   capacity?: AiI18nTranslationMemoryCapacityOptions;
   translationMemory?: {
-    storage: TranslationMemoryStorage;
+    cache?: TranslationMemoryCandidateCacheAdapter;
   };
   onWarning?: (message: string) => void;
   timing?: DevTimingReporter;

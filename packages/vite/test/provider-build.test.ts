@@ -93,9 +93,7 @@ describe('@ai-i18n/vite provider build', () => {
         chunk.map?.sources.some((source) => source.endsWith('/src/main.ts')),
       ),
     ).toBe(true);
-    expect(
-      await readJson(path.join(root, 'i18n/translations.json')),
-    ).toMatchObject({
+    expect(await readJson(path.join(root, 'i18n'))).toMatchObject({
       messages: {
         首页: { translations: { 'en-US': 'Home' } },
         懒加载: { translations: { 'en-US': 'Lazy' } },
@@ -113,7 +111,7 @@ describe('@ai-i18n/vite provider build', () => {
 });
 
 async function readJson(file: string): Promise<Record<string, unknown>> {
-  if (file.endsWith('translations.json')) {
+  if (path.basename(file) === 'i18n') {
     return (await readTestTranslationMemory(file)) as unknown as Record<
       string,
       unknown

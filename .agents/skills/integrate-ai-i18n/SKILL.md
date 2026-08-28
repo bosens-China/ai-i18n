@@ -30,7 +30,7 @@ configuration. Preserve configured values.
 Use one `@ai-i18n/vite` registration, one framework mode, and one i18n directory per Vite build.
 Treat reachable local workspace source as part of the consuming build. Do not create a separate
 integration for a source-only package or rewrite CommonJS as an incidental migration.
-If an existing `overrides.json` contains file- or occurrence-scoped rules, preserve its exact
+If existing `overrides/` shards contain file- or occurrence-scoped rules, preserve their exact
 normalized POSIX paths and occurrence line/column values relative to this Vite root; never rewrite
 them to machine-specific absolute paths or guess moved locations during integration.
 
@@ -64,6 +64,10 @@ workbench must start in all-page scope and omit current-page, picker, and busine
 Set `launcher: false` only when the user requests no in-page injection, and `printUrl: false` only when
 the user requests no console hint; neither option disables the standalone page or API. Remove the Review
 plugin when no Review service should exist.
+
+The project always keeps automatic translations in committed `translations/` shards. Treat
+`translationMemory.cache` as an optional personal reuse cache; never create a storage marker or make
+the project depend on a local database.
 
 This Skill owns package installation, Vite configuration, Runtime source integration, and integration
 verification. Do not write translation or human review values as part of an integration-only task.

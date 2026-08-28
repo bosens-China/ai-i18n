@@ -1,5 +1,4 @@
 import fs from 'node:fs/promises';
-import os from 'node:os';
 import path from 'node:path';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
@@ -245,12 +244,8 @@ test('returns one compact JSON TextContent and no structuredContent', async () =
   }
 });
 
-test('reads and writes the user-level SQLite Translation Memory through the same tools', async () => {
-  const dataRoot = await fs.mkdtemp(
-    path.join(os.tmpdir(), 'ai-i18n-mcp-data-'),
-  );
-  vi.stubEnv('AI_I18N_DATA_DIR', dataRoot);
-  const root = await fixture('sqlite');
+test('reads and writes project JSON Translation Memory through the same tools', async () => {
+  const root = await fixture();
   const directory = path.join(root, 'apps/web/i18n');
   const server = createAiI18nMcpServer();
   const client = new Client({ name: 'ai-i18n-mcp-test', version: '0.0.0' });
@@ -286,16 +281,15 @@ test('reads and writes the user-level SQLite Translation Memory through the same
       ]),
     );
     await expect(
-      fs.access(path.join(directory, 'translations.json')),
-    ).rejects.toMatchObject({ code: 'ENOENT' });
-    await expect(
-      fs.access(path.join(dataRoot, 'translation-memory.sqlite')),
+      fs.access(path.join(directory, 'translations')),
     ).resolves.toBeUndefined();
+    await expect(
+      fs.access(path.join(directory, 'storage.json')),
+    ).rejects.toMatchObject({ code: 'ENOENT' });
   } finally {
     await clientTransport.close();
     await server.close();
     await closeProjectMemoryStores();
-    await fs.rm(dataRoot, { recursive: true, force: true });
   }
 });
 

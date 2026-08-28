@@ -1,7 +1,7 @@
 # @ai-i18n/vite
 
 Vite 的 ai-i18n 主插件。它在 Dev/Build 中提取显式 `t()`，默认维护可提交 Git 的分片
-`translations/*.json`、`overrides.json` 与 `src/ai-i18n.d.ts`，并生成可通过
+`translations/`、`overrides/` 与 `src/ai-i18n.d.ts`，并生成可通过
 Build 重建的 `extracted/*.json`、`locales/**`，同时提供浏览器虚拟 Runtime。
 
 alpha 阶段请安装 `@ai-i18n/vite@alpha`，避免无标签安装命中较旧的 `latest`。
@@ -73,7 +73,7 @@ aiI18nReview({
 人工译文可按全局、精确源码文件或精确文件行列位置保存。同一行的多个相同调用通过各自的列号区分；
 作用范围优先级为位置、文件、全局。
 
-人工译文写入 `i18n/overrides.json`，保存和删除都会通过 HMR 更新业务页面。宿主使用 Web Component
+人工译文写入 `i18n/overrides/` 原子分片，保存和删除都会通过 HMR 更新业务页面。宿主使用 Web Component
 和 Shadow DOM，UnoCSS 与 reset 只加载到工作台根节点。校对页面仅存在于
 Vite Dev，不进入 Build、Preview 或生产产物；界面已作为静态资源随插件提供，业务项目不需要安装
 Vue 或其他 UI 依赖。它不使用 token，只接受同源 JSON 写入。不注册 `aiI18nReview()` 时，不会注入
@@ -115,7 +115,7 @@ Dev 中的模块消息会随原业务模块同步注册到共享 Runtime，不�
 `virtual:ai-i18n` 显式 import 也会在 Dev 中内联为共享 Runtime 的文件 binding。Vue 编译宏参数引用、
 namespace、动态 import、直接 re-export、纯副作用和混合 type/未知导出的 import 保留 scoped 兼容
 路径。Build 继续使用静态虚拟模块，但这些模块被合并到业务 chunk，不会天然形成逐源码浏览器请求。
-MCP、Provider 或校对页更新 Translation Memory / `overrides.json` 后，运行中的 Dev Server 会重新
+MCP、Provider 或校对页更新 `translations/` / `overrides/` 后，运行中的 Dev Server 会重新
 读取存储并通过 HMR 更新已激活模块，不需要把内存注册数据写成项目实体文件。
 
 插件会把 `@ai-i18n/vite/runtime`、`@ai-i18n/vite/vue` 和 `@ai-i18n/vite/react` 合并进
@@ -124,11 +124,11 @@ Vite 的 `optimizeDeps.exclude`，并保留项目原有配置。这样可以避�
 
 ## Translation Memory
 
-默认 `translationMemory.storage: 'json'`，消息按稳定 SHA-256 前缀写入
-`i18n/translations/<xx>.json`，并由 `manifest.json` 记录 revision 和有效分片。旧版单文件
-`translations.json` 会自动迁移。JSON 不生成 `storage.json`；缺少标记时 Vite 与 MCP 都选择 JSON。
+项目自动译文始终按目标语言和稳定 SHA-256 身份写入
+`i18n/translations/<locale>/<prefix>/<hash>.json`，不使用集中 manifest 或存储标记。Vite、MCP、
+团队成员和 CI 都以这些项目文件为唯一事实来源。
 
-需要在同一台电脑的项目间共享自动译文时，可改用用户级全局 SQLite：
+需要在同一台电脑的项目间复用候选时，可增加个人 SQLite 缓存：
 
 ```ts
 import { sqlite } from '@ai-i18n/sqlite';
@@ -136,22 +136,21 @@ import { sqlite } from '@ai-i18n/sqlite';
 aiI18n({
   sourceLang: 'zh-CN',
   locales,
-  translationMemory: { storage: sqlite() },
+  translationMemory: { cache: sqlite() },
 });
 ```
 
 SQLite 是独立可选包。只使用默认 JSON 的项目不安装 `@ai-i18n/sqlite`，依赖图中也不会包含
 `better-sqlite3`。
 
-数据库默认位于系统用户数据目录，可用 `AI_I18N_DATA_DIR` 覆盖，不写入项目也不提交 Git。
-项目内的 `storage.json` 只声明 SQLite，应与 `overrides.json` 一起提交。
-数据库物理全局、逻辑按规范化项目路径绑定；只有同一语义身份的候选唯一时才跨项目自动复用，
-候选冲突时保持缺失。`overrides.json` 始终位于项目内且优先级最高。
+数据库默认位于系统用户数据目录，可用 `AI_I18N_DATA_DIR` 覆盖，不写入项目也不提交 Git。只有同一
+语义身份的候选唯一时才自动复用；命中候选会先补写项目 JSON，候选冲突时保持缺失。Provider 结果在
+项目 JSON 成功写入后回填缓存。删除数据库不改变已提交项目的结果，`overrides/` 始终优先级最高。
 
 模型、`baseURL`、温度或提示词变化后需要重跑时，在 Provider 中使用 `cache: 'fresh'`。该策略不区分
 Dev/Build：它会刷新一次已有自动译文，并持久化、复用本进程新结果；失败或空结果不会因普通 HMR
-立即重复请求。默认 `cache: 'reuse'`。该选项只影响 Provider 调用，不改变 MCP、JSON 或 SQLite 的
-读写语义。插件不对任意 Translator 内部配置生成失效指纹。
+立即重复请求。默认 `cache: 'reuse'`。该选项只影响 Provider 调用，不改变项目 JSON、MCP 或可选
+SQLite 候选缓存的写入边界。插件不对任意 Translator 内部配置生成失效指纹。
 
 Vite 为每次实际 Translator 调用传入可选诊断 `batchId`。日志型 Translator 可以实现可选的
 `reportBatchEvent`，接收 `scheduled`、`state-applied`、`persisted` 和 `failed` 生命周期事件；普通
@@ -294,7 +293,7 @@ Translation Memory 快照计算，与 JSON 分片或 SQLite 物理布局无关�
 普通 `vite build` 每次使用新的分析状态，并在完整模块图可用后统一写协议文件；
 `vite build --watch` 会跨重建复用 ProjectState，
 只重新 parse 变化 source，并刷新必要的 reverse dependents。Translation Memory 或
-`overrides.json` 变化会更新翻译和注册内容，不重新 parse source；extracted 与 locale 始终
+`overrides/` 分片变化会更新翻译和注册内容，不重新 parse source；extracted 与 locale 始终
 由插件重建。删除、重命名或移除 import 后，插件会校准
 当前入口可达模块，同时继续保留可复用的 Translation Memory。Vite 配置、插件、extractor
 或 schema 变化后需要重启 Watch 进程。

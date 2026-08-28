@@ -1,12 +1,4 @@
 import type { Page } from './pagination.js';
-import { deleteOrphanMessages, listOrphanMessages } from './project-orphans.js';
-import { listOverrides, listTranslations } from './project-read.js';
-import {
-  clearTranslations,
-  deleteOverrides,
-  setOverrides,
-  setTranslations,
-} from './project-write.js';
 
 export type TranslationView = 'summary' | 'missing' | 'all';
 export type OverrideScope = 'global' | 'files' | 'occurrences';
@@ -174,44 +166,4 @@ export interface ClearResult {
 export interface DeleteResult {
   deleted_count: number;
   unchanged_count: number;
-}
-
-export class AiI18nProjectService {
-  listTranslations(
-    input: ListTranslationsInput,
-  ): Promise<TranslationListResult<TranslationFileItem | TranslationItem>> {
-    return listTranslations(input);
-  }
-
-  listOverrides(input: ListOverridesInput): Promise<OverrideListResult> {
-    return listOverrides(input);
-  }
-
-  listOrphanMessages(
-    input: ListOrphanMessagesInput,
-  ): Promise<OrphanMessageListResult> {
-    return listOrphanMessages(input);
-  }
-
-  setTranslations(input: SetTranslationsInput): Promise<SetResult> {
-    return setTranslations(input);
-  }
-
-  clearTranslations(input: ClearTranslationsInput): Promise<ClearResult> {
-    return clearTranslations(input);
-  }
-
-  setOverrides(input: SetOverridesInput): Promise<SetResult> {
-    return setOverrides(input);
-  }
-
-  deleteOverrides(input: DeleteOverridesInput): Promise<DeleteResult> {
-    return deleteOverrides(input);
-  }
-
-  deleteOrphanMessages(
-    input: DeleteOrphanMessagesInput,
-  ): Promise<DeleteResult> {
-    return deleteOrphanMessages(input);
-  }
 }

@@ -66,6 +66,3 @@
   `googleapis/release-please-action`，否则版本号不对或不会开 Release PR。
 - 正式稳定版若恢复 `workspace:^`，必须先建立 SemVer 向后兼容和依赖范围最低版本测试；
   不能只验证范围内的最新版本。
-- 首个非 prerelease 稳定版本发布前，必须完成
-  [单文件 Translation Memory 兼容清理计划](./plans/remove-legacy-translation-memory/PRD.md)，并确认仓库中不存在
-  `TODO(stable-release)`。

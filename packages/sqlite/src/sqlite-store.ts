@@ -3,56 +3,27 @@ import path from 'node:path';
 import type BetterSqlite3 from 'better-sqlite3';
 import { diagnosticMessage } from '@ai-i18n/core/diagnostics';
 import {
-  parseTranslationMemoryFile,
-  type CacheMessage,
-  type TranslationMemoryFile,
-} from '@ai-i18n/core';
-import {
-  stableJson,
   withFileLock,
-  type TranslationMemoryStore,
+  type TranslationMemoryCandidate,
+  type TranslationMemoryCandidateCache,
+  type TranslationMemoryCandidateTarget,
 } from '@ai-i18n/core/translation-memory';
-import { projectKey } from './sqlite-paths.js';
-
-interface MessageRow {
-  message_id: string;
-  source: string;
-  source_lang: string;
-  comment: string;
-}
-
-interface TranslationRow {
-  message_id: string;
-  locale: string;
-  value: string | null;
-}
 
 interface CandidateRow {
-  id: number;
   value: string;
-}
-
-interface RevisionRow {
-  revision: number;
 }
 
 const SQLITE_SCHEMA_VERSION = 1;
 
-export class SqliteTranslationMemoryStore implements TranslationMemoryStore {
-  readonly storage = 'sqlite' as const;
-  readonly projectKey: string;
+export class SqliteTranslationMemoryCache implements TranslationMemoryCandidateCache {
   private constructor(
-    readonly directory: string,
     private readonly databasePath: string,
     private readonly database: BetterSqlite3.Database,
-  ) {
-    this.projectKey = projectKey(directory);
-  }
+  ) {}
 
   static async open(
-    directory: string,
     databasePath: string,
-  ): Promise<SqliteTranslationMemoryStore> {
+  ): Promise<SqliteTranslationMemoryCache> {
     await fs.mkdir(path.dirname(databasePath), { recursive: true });
     const canonicalDatabasePath = path.join(
       await fs.realpath(path.dirname(databasePath)),
@@ -72,110 +43,59 @@ export class SqliteTranslationMemoryStore implements TranslationMemoryStore {
     }
     const database = new Database(canonicalDatabasePath);
     database.pragma('journal_mode = WAL');
-    database.pragma('foreign_keys = ON');
     database.pragma('busy_timeout = 5000');
     initialize(database);
-    return new SqliteTranslationMemoryStore(
-      directory,
-      canonicalDatabasePath,
-      database,
+    return new SqliteTranslationMemoryCache(canonicalDatabasePath, database);
+  }
+
+  async findUnique(
+    targets: readonly TranslationMemoryCandidateTarget[],
+  ): Promise<Array<string | undefined>> {
+    const select = this.database.prepare(
+      `SELECT DISTINCT value FROM candidates
+       WHERE source_lang = ? AND target_lang = ? AND source = ? AND comment = ?
+       ORDER BY value
+       LIMIT 2`,
     );
-  }
-
-  async load(): Promise<TranslationMemoryFile> {
-    return this.loadCurrent();
-  }
-
-  async transact(
-    update: (memory: TranslationMemoryFile) => void | Promise<void>,
-  ): Promise<TranslationMemoryFile> {
-    return withFileLock(this.databasePath, async () => {
-      const current = this.loadCurrent();
-      const draft = structuredClone(current);
-      await update(draft);
-      draft.version = 1;
-      draft.revision = current.revision;
-      seedSharedCandidates(this.database, current, draft);
-      parseTranslationMemoryFile(draft);
-      if (stableJson(draft) === stableJson(current)) return draft;
-      draft.revision += 1;
-      this.database
-        .transaction(() => {
-          persistProject(this.database, this.projectKey, draft);
-        })
-        .immediate();
-      return draft;
+    return targets.map((target) => {
+      const rows = select.all(
+        target.sourceLang,
+        target.targetLang,
+        target.source,
+        target.comment ?? '',
+      ) as CandidateRow[];
+      return rows.length === 1 ? rows[0]!.value : undefined;
     });
   }
 
-  async watchFiles(): Promise<string[]> {
-    return [
-      this.databasePath,
-      `${this.databasePath}-wal`,
-      `${this.databasePath}-shm`,
-    ];
-  }
-
-  manages(file: string): boolean {
-    const resolved = path.resolve(file);
-    return (
-      resolved === this.databasePath ||
-      resolved === `${this.databasePath}-wal` ||
-      resolved === `${this.databasePath}-shm`
-    );
-  }
-
-  async removeProjectData(): Promise<void> {
+  async remember(
+    candidates: readonly TranslationMemoryCandidate[],
+  ): Promise<void> {
+    if (!candidates.length) return;
     await withFileLock(this.databasePath, async () => {
+      const insert = this.database.prepare(
+        `INSERT INTO candidates(source_lang, target_lang, source, comment, value)
+         VALUES (?, ?, ?, ?, ?)
+         ON CONFLICT(source_lang, target_lang, source, comment, value) DO NOTHING`,
+      );
       this.database
-        .prepare('DELETE FROM projects WHERE project_key = ?')
-        .run(this.projectKey);
+        .transaction(() => {
+          for (const candidate of candidates) {
+            insert.run(
+              candidate.sourceLang,
+              candidate.targetLang,
+              candidate.source,
+              candidate.comment ?? '',
+              candidate.value,
+            );
+          }
+        })
+        .immediate();
     });
   }
 
   close(): void {
     if (this.database.open) this.database.close();
-  }
-
-  private loadCurrent(): TranslationMemoryFile {
-    const revision = this.database
-      .prepare('SELECT revision FROM projects WHERE project_key = ?')
-      .get(this.projectKey) as RevisionRow | undefined;
-    const messages: Record<string, CacheMessage> = {};
-    const rows = this.database
-      .prepare(
-        `SELECT message_id, source, source_lang, comment
-         FROM project_messages
-         WHERE project_key = ?
-         ORDER BY message_id`,
-      )
-      .all(this.projectKey) as MessageRow[];
-    for (const row of rows) {
-      messages[row.message_id] = {
-        source: row.source,
-        sourceLang: row.source_lang,
-        ...(row.comment ? { comment: row.comment } : {}),
-        translations: {},
-      };
-    }
-    const translations = this.database
-      .prepare(
-        `SELECT binding.message_id, binding.locale, candidate.value
-         FROM project_bindings AS binding
-         LEFT JOIN candidates AS candidate ON candidate.id = binding.candidate_id
-         WHERE binding.project_key = ?
-         ORDER BY binding.message_id, binding.locale`,
-      )
-      .all(this.projectKey) as TranslationRow[];
-    for (const row of translations) {
-      const message = messages[row.message_id];
-      if (message) message.translations[row.locale] = row.value;
-    }
-    return parseTranslationMemoryFile({
-      version: 1,
-      revision: revision?.revision ?? 0,
-      messages,
-    });
   }
 }
 
@@ -189,152 +109,18 @@ function initialize(database: BetterSqlite3.Database): void {
       ),
     );
   }
-  if (version === SQLITE_SCHEMA_VERSION) return;
-
-  // schema 迁移与数据事务保持在同一个 SQLite 连接内，失败时不会留下半升级状态。
-  database
-    .transaction(() => {
-      if (version < 1) {
-        database.exec(`
-        CREATE TABLE IF NOT EXISTS projects (
-          project_key TEXT PRIMARY KEY,
-          revision INTEGER NOT NULL DEFAULT 0
-        );
-        CREATE TABLE IF NOT EXISTS project_messages (
-          project_key TEXT NOT NULL,
-          message_id TEXT NOT NULL,
-          source TEXT NOT NULL,
-          source_lang TEXT NOT NULL,
-          comment TEXT NOT NULL DEFAULT '',
-          PRIMARY KEY (project_key, message_id),
-          FOREIGN KEY (project_key) REFERENCES projects(project_key) ON DELETE CASCADE
-        );
-        CREATE TABLE IF NOT EXISTS candidates (
-          id INTEGER PRIMARY KEY,
-          source_lang TEXT NOT NULL,
-          target_lang TEXT NOT NULL,
-          source TEXT NOT NULL,
-          comment TEXT NOT NULL DEFAULT '',
-          value TEXT NOT NULL,
-          UNIQUE (source_lang, target_lang, source, comment, value)
-        );
-        CREATE INDEX IF NOT EXISTS candidate_lookup
-          ON candidates(source_lang, target_lang, source, comment);
-        CREATE TABLE IF NOT EXISTS project_bindings (
-          project_key TEXT NOT NULL,
-          message_id TEXT NOT NULL,
-          locale TEXT NOT NULL,
-          candidate_id INTEGER,
-          PRIMARY KEY (project_key, message_id, locale),
-          FOREIGN KEY (project_key, message_id)
-            REFERENCES project_messages(project_key, message_id) ON DELETE CASCADE,
-          FOREIGN KEY (candidate_id) REFERENCES candidates(id)
-        );
-      `);
-        database.pragma('user_version = 1');
-      }
-    })
-    .immediate();
-}
-
-function seedSharedCandidates(
-  database: BetterSqlite3.Database,
-  current: TranslationMemoryFile,
-  draft: TranslationMemoryFile,
-): void {
-  const select = database.prepare(
-    `SELECT id, value FROM candidates
-     WHERE source_lang = ? AND target_lang = ? AND source = ? AND comment = ?
-     ORDER BY id
-     LIMIT 2`,
-  );
-  for (const [messageId, message] of Object.entries(draft.messages)) {
-    const previous = current.messages[messageId];
-    const sameIdentity =
-      previous?.source === message.source &&
-      previous.sourceLang === message.sourceLang &&
-      previous.comment === message.comment;
-    for (const [locale, value] of Object.entries(message.translations)) {
-      if (value !== null) continue;
-      if (sameIdentity && locale in previous.translations) continue;
-      const candidates = select.all(
-        message.sourceLang,
-        locale,
-        message.source,
-        message.comment ?? '',
-      ) as CandidateRow[];
-      if (candidates.length === 1) {
-        message.translations[locale] = candidates[0]!.value;
-      }
-    }
-  }
-}
-
-function persistProject(
-  database: BetterSqlite3.Database,
-  projectKey: string,
-  memory: TranslationMemoryFile,
-): void {
-  database
-    .prepare(
-      `INSERT INTO projects(project_key, revision) VALUES (?, ?)
-       ON CONFLICT(project_key) DO UPDATE SET revision = excluded.revision`,
-    )
-    .run(projectKey, memory.revision);
-  // 整体替换项目绑定，避免大型项目用 NOT IN 占满 SQLite 参数槽；候选表仍全局保留。
-  database
-    .prepare('DELETE FROM project_messages WHERE project_key = ?')
-    .run(projectKey);
-  const insertMessage = database.prepare(
-    `INSERT INTO project_messages(project_key, message_id, source, source_lang, comment)
-     VALUES (?, ?, ?, ?, ?)`,
-  );
-  const deleteBindings = database.prepare(
-    'DELETE FROM project_bindings WHERE project_key = ? AND message_id = ?',
-  );
-  const insertCandidate = database.prepare(
-    `INSERT INTO candidates(source_lang, target_lang, source, comment, value)
-     VALUES (?, ?, ?, ?, ?)
-     ON CONFLICT(source_lang, target_lang, source, comment, value) DO NOTHING`,
-  );
-  const selectCandidate = database.prepare(
-    `SELECT id FROM candidates
-     WHERE source_lang = ? AND target_lang = ? AND source = ? AND comment = ? AND value = ?`,
-  );
-  const insertBinding = database.prepare(
-    `INSERT INTO project_bindings(project_key, message_id, locale, candidate_id)
-     VALUES (?, ?, ?, ?)`,
-  );
-  for (const [messageId, message] of Object.entries(memory.messages)) {
-    const comment = message.comment ?? '';
-    insertMessage.run(
-      projectKey,
-      messageId,
-      message.source,
-      message.sourceLang,
-      comment,
+  database.exec(`
+    CREATE TABLE IF NOT EXISTS candidates (
+      id INTEGER PRIMARY KEY,
+      source_lang TEXT NOT NULL,
+      target_lang TEXT NOT NULL,
+      source TEXT NOT NULL,
+      comment TEXT NOT NULL DEFAULT '',
+      value TEXT NOT NULL,
+      UNIQUE (source_lang, target_lang, source, comment, value)
     );
-    deleteBindings.run(projectKey, messageId);
-    for (const [locale, value] of Object.entries(message.translations)) {
-      let candidateId: number | null = null;
-      if (value !== null) {
-        insertCandidate.run(
-          message.sourceLang,
-          locale,
-          message.source,
-          comment,
-          value,
-        );
-        const row = selectCandidate.get(
-          message.sourceLang,
-          locale,
-          message.source,
-          comment,
-          value,
-        ) as { id: number };
-        candidateId = row.id;
-      }
-      insertBinding.run(projectKey, messageId, locale, candidateId);
-    }
-  }
+    CREATE INDEX IF NOT EXISTS candidate_lookup
+      ON candidates(source_lang, target_lang, source, comment);
+  `);
+  database.pragma(`user_version = ${SQLITE_SCHEMA_VERSION}`);
 }

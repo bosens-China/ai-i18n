@@ -260,7 +260,7 @@ describe('review service', () => {
       service.setOverride({ ...base, value: 'Hello {{0}}', locale: 'fr-FR' }),
     ).rejects.toMatchObject({ code: 'UNKNOWN_LOCALE' });
     await expect(
-      fs.access(path.join(root, 'i18n/overrides.json')),
+      fs.access(path.join(root, 'i18n/overrides')),
     ).rejects.toThrow();
     await store.close();
   });

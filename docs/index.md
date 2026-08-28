@@ -14,7 +14,7 @@
 
 ## 未来计划
 
-- [稳定版移除单文件 Translation Memory 兼容](./plans/remove-legacy-translation-memory/PRD.md)：首个非 prerelease 稳定版本发布前完成。
+暂无。
 
 ## 进行中需求
 

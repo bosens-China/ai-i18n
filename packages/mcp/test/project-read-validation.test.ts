@@ -1,49 +1,35 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { afterEach, expect, test } from 'vitest';
-import { AiI18nProjectService } from '../src/project';
+import { listTranslations } from '../src/project-read';
 import { cleanupFixtures, fixture } from './project-fixture';
 
 afterEach(cleanupFixtures);
 
-test('rejects invalid project paths, filters, and protocol files with codes', async () => {
+test('rejects invalid project paths and filters with codes', async () => {
   const root = await fixture();
   const directory = path.join(root, 'apps/web/i18n');
-  const service = new AiI18nProjectService();
 
   await expect(
-    service.listTranslations({
+    listTranslations({
       i18n_directory: 'apps/web/i18n',
       limit: 50,
     }),
   ).rejects.toMatchObject({ code: 'I18N_DIRECTORY_NOT_ABSOLUTE' });
   await expect(
-    service.listTranslations({
+    listTranslations({
       i18n_directory: directory,
       source_files: ['src/missing.ts'],
       limit: 50,
     }),
   ).rejects.toMatchObject({ code: 'SOURCE_FILE_NOT_FOUND' });
   await expect(
-    service.listTranslations({
+    listTranslations({
       i18n_directory: directory,
       locales: ['fr-FR'],
       limit: 50,
     }),
   ).rejects.toMatchObject({ code: 'UNKNOWN_LOCALE' });
-
-  await fs.rm(path.join(directory, 'overrides.json'));
-  await expect(
-    service.listTranslations({
-      i18n_directory: directory,
-      limit: 50,
-    }),
-  ).rejects.toMatchObject({
-    code: 'REQUIRED_PROTOCOL_FILE_MISSING',
-    details: {
-      file: 'overrides.json',
-    },
-  });
 });
 
 test('rejects one message id assigned to different source text', async () => {
@@ -61,7 +47,7 @@ test('rejects one message id assigned to different source text', async () => {
   await fs.writeFile(extractedPath, JSON.stringify(extracted));
 
   await expect(
-    new AiI18nProjectService().listTranslations({
+    listTranslations({
       i18n_directory: directory,
       view: 'all',
       limit: 100,
@@ -77,7 +63,7 @@ test('reports every physical file for a duplicated extracted source', async () =
   await fs.copyFile(original, duplicate);
 
   await expect(
-    new AiI18nProjectService().listTranslations({
+    listTranslations({
       i18n_directory: directory,
       view: 'all',
       limit: 100,
@@ -102,7 +88,7 @@ test('ignores nested directories outside the extracted protocol', async () => {
   await fs.writeFile(path.join(nested, 'obsolete.json'), 'invalid');
 
   await expect(
-    new AiI18nProjectService().listTranslations({
+    listTranslations({
       i18n_directory: directory,
       view: 'summary',
       limit: 50,

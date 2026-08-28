@@ -44,7 +44,7 @@ export async function setup() {
 }
 
 export async function readJson(file: string): Promise<unknown> {
-  if (file.endsWith('translations.json')) {
+  if (path.basename(file) === 'i18n') {
     return readTestTranslationMemory(file);
   }
   return JSON.parse(await fs.readFile(file, 'utf8')) as unknown;

@@ -36,9 +36,8 @@ server does not return that field.
 | `ORPHAN_ID_CONFLICT` | Stop cleanup and report the returned error details; do not retry deletion. |
 | `DUPLICATE_TARGET` | Remove repeated targets and retry. |
 
-If storage opening reports that `@ai-i18n/sqlite` is missing, confirm the selected app intentionally
-uses SQLite, install the adapter in that app only with user authorization, and run the same operation
-again. Do not install `better-sqlite3` directly into `@ai-i18n/core`, `@ai-i18n/vite`, or the MCP package.
+SQLite cache failures belong to the Vite process, not MCP recovery. MCP always uses project JSON; do
+not install `@ai-i18n/sqlite` or `better-sqlite3` merely to make an MCP operation work.
 
 ## Tool unavailable
 

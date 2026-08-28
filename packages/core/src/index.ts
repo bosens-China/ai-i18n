@@ -30,6 +30,11 @@ export type {
   ReviewOverride,
   ReviewSnapshot,
   ReviewSourceLocation,
+  ReviewWorkbenchController,
+  ReviewWorkbenchModule,
+  ReviewWorkbenchOptions,
+  ReviewWorkbenchSelection,
+  ReviewWorkbenchTarget,
 } from './review-contracts.js';
 export {
   REVIEW_UI_THEME_CHANGE_EVENT,

@@ -34,7 +34,7 @@ describe('FileStore migrations', () => {
     await expect(fs.access(legacy)).rejects.toMatchObject({ code: 'ENOENT' });
   });
 
-  it('migrates a legacy memory file when FileStore loads without changes', async () => {
+  it('does not read or mutate an unsupported legacy memory file', async () => {
     const { root, store } = await setup();
     const directory = path.join(root, 'i18n');
     await fs.mkdir(directory, { recursive: true });
@@ -53,15 +53,10 @@ describe('FileStore migrations', () => {
       }),
     );
 
-    expect((await store.load()).messages.Save?.translations['en-US']).toBe(
-      'Save',
-    );
-    await expect(
-      fs.access(path.join(directory, 'translations/manifest.json')),
-    ).resolves.toBeUndefined();
+    expect((await store.load()).messages.Save).toBeUndefined();
     await expect(
       fs.access(path.join(directory, 'translations.json')),
-    ).rejects.toMatchObject({ code: 'ENOENT' });
+    ).resolves.toBeUndefined();
   });
 
   it('adds and removes configured locales without dropping cache history', async () => {
@@ -73,7 +68,7 @@ describe('FileStore migrations', () => {
     await store.sync(state.snapshot());
 
     const extractedPath = extractedTestPath(root, 'src/main.ts');
-    const memoryPath = path.join(root, 'i18n/translations.json');
+    const memoryPath = path.join(root, 'i18n');
     await updateTestTranslationMemory(memoryPath, (memory) => {
       memory.messages['保存']!.translations['en-US'] = 'Save';
     });
@@ -139,7 +134,7 @@ describe('FileStore migrations', () => {
     state.update(chineseCode, source);
     await store.sync(state.snapshot());
 
-    const memoryPath = path.join(root, 'i18n/translations.json');
+    const memoryPath = path.join(root, 'i18n');
     await updateTestTranslationMemory(memoryPath, (memory) => {
       memory.messages['保存']!.translations['en-US'] = 'Save';
     });

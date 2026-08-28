@@ -26,17 +26,11 @@ describe('@ai-i18n/vite plugin options and Review registration', () => {
     expect(() =>
       aiI18n({
         ...base,
-        translationMemory: { storage: 'remote' as 'json' },
+        translationMemory: { cache: 'remote' as never },
       }),
     ).toThrow(
-      'translationMemory.storage must be "json" or a valid storage adapter',
+      'translationMemory.cache must be a valid candidate cache adapter',
     );
-    expect(() =>
-      aiI18n({
-        ...base,
-        translationMemory: { storage: 'sqlite' as 'json' },
-      }),
-    ).toThrow('install @ai-i18n/sqlite and inject sqlite()');
     expect(() =>
       aiI18n({
         ...base,

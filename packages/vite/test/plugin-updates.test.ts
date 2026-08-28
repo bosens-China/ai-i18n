@@ -6,6 +6,7 @@ import {
   type TranslationResult,
   type Translator,
 } from '@ai-i18n/core';
+import { transactTranslationOverrides } from '@ai-i18n/core/translation-memory';
 import { describe, expect, it, vi } from 'vitest';
 import { extractedPath } from '../src/file-store-paths';
 import {
@@ -16,6 +17,7 @@ import {
 } from './plugin-test-utils';
 import {
   firstTranslationShard,
+  readTestTranslationMemory,
   updateTestTranslationMemory,
 } from './translation-memory-test-utils';
 
@@ -227,22 +229,19 @@ describe('@ai-i18n/vite plugin updates', () => {
         },
       },
     });
-    expect(
-      await readJson(path.join(directory, 'translations.json')),
-    ).toMatchObject({
+    expect(await readTestTranslationMemory(directory)).toMatchObject({
       messages: { 保存: { translations: { 'en-US': 'Store' } } },
     });
 
-    const overridesFile = path.join(directory, 'overrides.json');
-    const overridesContent = `${JSON.stringify(
-      {
-        version: 2,
-        rules: [{ source: '保存', translations: { 'en-US': 'Keep' } }],
-      },
-      null,
-      2,
-    )}\n`;
-    await fs.writeFile(overridesFile, overridesContent);
+    const overridesDirectory = path.join(directory, 'overrides');
+    await transactTranslationOverrides(overridesDirectory, (overrides) => {
+      overrides.rules = [{ source: '保存', translations: { 'en-US': 'Keep' } }];
+    });
+    const overrideShard = (
+      await fs.readdir(overridesDirectory, { recursive: true })
+    ).find((file) => file.endsWith('.json'))!;
+    const overridesFile = path.join(overridesDirectory, overrideShard);
+    const overridesContent = await fs.readFile(overridesFile, 'utf8');
     hotSend.mockClear();
     await hotUpdate.call(
       { environment: { name: 'client' } },

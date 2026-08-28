@@ -10,7 +10,7 @@ import type {
   AiI18nTranslationMemoryCapacityOptions,
   AiI18nTranslationMemoryOptions,
 } from './options.js';
-import type { TranslationMemoryStorage } from '@ai-i18n/core/translation-memory';
+import type { TranslationMemoryCandidateCacheAdapter } from '@ai-i18n/core/translation-memory';
 import type { NormalizedAiI18nOptions } from './project-state.js';
 import type { SourceExtraction, TranslationHookBinding } from './extractor.js';
 
@@ -91,31 +91,23 @@ export function normalizeOptions(options: {
 export function normalizeTranslationMemory(
   options: AiI18nTranslationMemoryOptions | undefined,
 ): {
-  storage: TranslationMemoryStorage;
+  cache?: TranslationMemoryCandidateCacheAdapter;
   capacity?: AiI18nTranslationMemoryCapacityOptions;
 } {
-  const storage: unknown = options?.storage ?? 'json';
-  if (storage === 'sqlite') {
-    throw new Error(
-      diagnosticMessage(
-        '[ai-i18n] 字符串 storage: “sqlite” 已移除；请安装 @ai-i18n/sqlite 并注入 sqlite()。',
-        '[ai-i18n] String storage: "sqlite" was removed; install @ai-i18n/sqlite and inject sqlite().',
-      ),
-    );
-  }
+  const cache: unknown = options?.cache;
   if (
-    storage !== 'json' &&
-    (!storage ||
-      typeof storage !== 'object' ||
-      !('storage' in storage) ||
-      storage.storage !== 'sqlite' ||
-      !('open' in storage) ||
-      typeof storage.open !== 'function')
+    cache !== undefined &&
+    (!cache ||
+      typeof cache !== 'object' ||
+      !('cache' in cache) ||
+      cache.cache !== 'sqlite' ||
+      !('open' in cache) ||
+      typeof cache.open !== 'function')
   ) {
     throw new Error(
       diagnosticMessage(
-        '[ai-i18n] translationMemory.storage 必须是“json”或合法的存储适配器。',
-        '[ai-i18n] translationMemory.storage must be "json" or a valid storage adapter.',
+        '[ai-i18n] translationMemory.cache 必须是合法的候选缓存适配器。',
+        '[ai-i18n] translationMemory.cache must be a valid candidate cache adapter.',
       ),
     );
   }
@@ -129,7 +121,9 @@ export function normalizeTranslationMemory(
     capacity?.maxBytes,
   );
   return {
-    storage: storage as TranslationMemoryStorage,
+    ...(cache
+      ? { cache: cache as TranslationMemoryCandidateCacheAdapter }
+      : {}),
     ...(capacity ? { capacity } : {}),
   };
 }

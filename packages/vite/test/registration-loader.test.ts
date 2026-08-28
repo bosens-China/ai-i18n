@@ -14,7 +14,9 @@ test('registration watches Windows dependency paths without loading the dependen
     registration: () => null,
   } as unknown as ProjectState;
   const store = {
-    watchFiles: () => [String.raw`E:\DropRoom\apps\web\i18n\translations.json`],
+    watchFiles: () => [
+      String.raw`E:\DropRoom\apps\web\i18n\translations\en-US\ab\translation.json`,
+    ],
   } as unknown as FileStore;
 
   const load = vi.fn();
@@ -34,7 +36,7 @@ test('registration watches Windows dependency paths without loading the dependen
   expect(addWatchFile.mock.calls.flat()).toEqual([
     String.raw`E:\DropRoom\apps\web\src\page.ts`,
     String.raw`E:\DropRoom\apps\web\src\utils\roomRegistry.ts`,
-    String.raw`E:\DropRoom\apps\web\i18n\translations.json`,
+    String.raw`E:\DropRoom\apps\web\i18n\translations\en-US\ab\translation.json`,
   ]);
   expect(load).not.toHaveBeenCalled();
 });
@@ -48,7 +50,7 @@ test('registration skips generated watch files that background persistence has n
   } as unknown as ProjectState;
   const store = {
     watchFiles: () => [
-      '/project/i18n/overrides.json',
+      '/project/i18n/overrides/en-US/ab/override.json',
       '/project/i18n/extracted/missing.json',
     ],
   } as unknown as FileStore;
@@ -68,6 +70,6 @@ test('registration skips generated watch files that background persistence has n
   ).resolves.toContain('__registerModule');
   expect(addWatchFile.mock.calls.flat()).toEqual([
     '/project/src/page.ts',
-    '/project/i18n/overrides.json',
+    '/project/i18n/overrides/en-US/ab/override.json',
   ]);
 });

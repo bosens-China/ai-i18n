@@ -1,7 +1,9 @@
-import fs from 'node:fs/promises';
 import path from 'node:path';
 import { afterEach, expect, test } from 'vitest';
-import { AiI18nProjectService } from '../src/project';
+import {
+  deleteOrphanMessages,
+  listOrphanMessages,
+} from '../src/project-orphans';
 import {
   addFixtureOrphanMessage,
   addFixtureSourceFile,
@@ -9,6 +11,7 @@ import {
   fixture,
   readFixtureMemory,
   readFixtureOverrides,
+  writeFixtureOverrides,
 } from './project-fixture';
 
 afterEach(cleanupFixtures);
@@ -27,9 +30,8 @@ test('lists only orphan messages with locale filtering and pagination', async ()
     comment: 'menu',
     translations: { 'en-US': 'Old label', 'ja-JP': '旧ラベル' },
   });
-  const service = new AiI18nProjectService();
 
-  const first = await service.listOrphanMessages({
+  const first = await listOrphanMessages({
     i18n_directory: directory,
     locales: ['en-US'],
     limit: 1,
@@ -45,7 +47,7 @@ test('lists only orphan messages with locale filtering and pagination', async ()
   });
   expect(first.items[0]?.message.source).toBe('旧文案');
 
-  const second = await service.listOrphanMessages({
+  const second = await listOrphanMessages({
     i18n_directory: directory,
     locales: ['en-US'],
     cursor: first.next_cursor,
@@ -73,27 +75,23 @@ test('deletes selected orphan messages without changing human overrides', async 
     source: '旧文案',
     translations: { 'en-US': 'Legacy', 'ja-JP': null },
   });
-  await fs.writeFile(
-    path.join(directory, 'overrides.json'),
-    JSON.stringify({
-      version: 2,
-      rules: [
-        {
-          source: '旧文案',
-          translations: { 'en-US': 'Reviewed legacy' },
-        },
-      ],
-    }),
-  );
-  const service = new AiI18nProjectService();
-  const listed = await service.listOrphanMessages({
+  await writeFixtureOverrides(directory, {
+    version: 2,
+    rules: [
+      {
+        source: '旧文案',
+        translations: { 'en-US': 'Reviewed legacy' },
+      },
+    ],
+  });
+  const listed = await listOrphanMessages({
     i18n_directory: directory,
     limit: 50,
   });
   const orphanId = listed.items[0]!.orphan_id;
 
   await expect(
-    service.deleteOrphanMessages({
+    deleteOrphanMessages({
       i18n_directory: directory,
       orphan_ids: [orphanId],
     }),
@@ -110,7 +108,7 @@ test('deletes selected orphan messages without changing human overrides', async 
     ],
   });
   await expect(
-    service.deleteOrphanMessages({
+    deleteOrphanMessages({
       i18n_directory: directory,
       orphan_ids: [orphanId],
     }),
@@ -128,8 +126,7 @@ test('fails the whole delete batch when one message became active', async () => 
     id: '旧文案B',
     source: '旧文案B',
   });
-  const service = new AiI18nProjectService();
-  const listed = await service.listOrphanMessages({
+  const listed = await listOrphanMessages({
     i18n_directory: directory,
     limit: 50,
   });
@@ -139,7 +136,7 @@ test('fails the whole delete batch when one message became active', async () => 
   });
 
   await expect(
-    service.deleteOrphanMessages({
+    deleteOrphanMessages({
       i18n_directory: directory,
       orphan_ids: listed.items.map((item) => item.orphan_id),
     }),
@@ -159,21 +156,20 @@ test('rejects malformed and duplicate orphan ids', async () => {
     id: '旧文案',
     source: '旧文案',
   });
-  const service = new AiI18nProjectService();
   await expect(
-    service.deleteOrphanMessages({
+    deleteOrphanMessages({
       i18n_directory: directory,
       orphan_ids: ['invalid'],
     }),
   ).rejects.toMatchObject({ code: 'INVALID_ORPHAN_ID' });
 
-  const listed = await service.listOrphanMessages({
+  const listed = await listOrphanMessages({
     i18n_directory: directory,
     limit: 50,
   });
   const orphanId = listed.items[0]!.orphan_id;
   await expect(
-    service.deleteOrphanMessages({
+    deleteOrphanMessages({
       i18n_directory: directory,
       orphan_ids: [orphanId, orphanId],
     }),

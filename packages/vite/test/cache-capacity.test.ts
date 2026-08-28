@@ -182,7 +182,7 @@ describe('Cache capacity', () => {
       ['active', 'history-a', 'history-b'],
       ['active'],
     );
-    const cachePath = path.join(root, 'i18n/translations.json');
+    const cachePath = path.join(root, 'i18n');
     cache.messages['history-b']!.translations['en-US'] = 'Git history';
     cache.messages['active']!.translations['en-US'] = 'Agent active';
     await updateTestTranslationMemory(cachePath, (memory) => {

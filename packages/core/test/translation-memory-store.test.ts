@@ -1,10 +1,7 @@
-import { execFile } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { createHash } from 'node:crypto';
-import { pathToFileURL } from 'node:url';
-import { promisify } from 'node:util';
 import { afterEach, describe, expect, it } from 'vitest';
 import {
   openTranslationMemoryStore,
@@ -12,7 +9,6 @@ import {
 } from '../src/translation-memory';
 
 const tempDirectories: string[] = [];
-const execFileAsync = promisify(execFile);
 
 afterEach(async () => {
   await Promise.all(
@@ -22,51 +18,34 @@ afterEach(async () => {
   );
 });
 
-describe('Translation Memory stores', () => {
-  it('migrates a legacy file into deterministic JSON shards on open', async () => {
-    const root = await temporaryDirectory();
-    const directory = path.join(root, 'i18n');
-    await fs.mkdir(directory, { recursive: true });
-    await fs.writeFile(
-      path.join(directory, 'storage.json'),
-      stableJson({ version: 1, storage: 'json' }),
-    );
-    await fs.writeFile(
-      path.join(directory, 'translations.json'),
-      stableJson({
-        version: 1,
-        revision: 4,
-        messages: {
-          Save: message('保存', 'Save'),
-          Cancel: message('取消', 'Cancel'),
-        },
-      }),
-    );
+describe('project Translation Memory store', () => {
+  it('writes one deterministic JSON file per locale target without a manifest', async () => {
+    const directory = path.join(await temporaryDirectory(), 'i18n');
+    const store = await openTranslationMemoryStore(directory);
+    await store.transact((memory) => {
+      memory.messages.Save = message('保存', 'Save');
+      memory.messages.Cancel = message('取消', 'Cancel');
+    });
 
-    const store = await openTranslationMemoryStore({ directory });
-    const files = await fs.readdir(path.join(directory, 'translations'));
-
-    expect(files).toContain('manifest.json');
+    const files = await jsonFiles(path.join(directory, 'translations'));
+    expect(files).toHaveLength(2);
     expect(
-      files.filter((file) => /^[0-9a-f]{2}\.json$/.test(file)),
-    ).toHaveLength(2);
+      files.every((file) =>
+        /en-US\/[0-9a-f]{2}\/[0-9a-f]{64}\.json$/.test(file),
+      ),
+    ).toBe(true);
     await expect(
-      fs.access(path.join(directory, 'translations.json')),
-    ).rejects.toMatchObject({ code: 'ENOENT' });
-    await expect(
-      fs.access(path.join(directory, 'storage.json')),
+      fs.access(path.join(directory, 'translations/manifest.json')),
     ).rejects.toMatchObject({ code: 'ENOENT' });
     expect((await store.load()).messages.Save?.translations['en-US']).toBe(
       'Save',
     );
-    expect((await store.load()).revision).toBe(4);
     store.close();
   });
 
-  it('recovers a complete JSON transaction journal after an interrupted shard commit', async () => {
-    const root = await temporaryDirectory();
-    const directory = path.join(root, 'i18n');
-    const store = await openTranslationMemoryStore({ directory });
+  it('recovers a complete transaction journal after an interrupted commit', async () => {
+    const directory = path.join(await temporaryDirectory(), 'i18n');
+    const store = await openTranslationMemoryStore(directory);
     await store.transact((memory) => {
       memory.messages.Save = message('保存', 'Save');
     });
@@ -83,14 +62,9 @@ describe('Translation Memory stores', () => {
         },
       }),
     );
-    await fs.writeFile(
-      path.join(directory, 'translations/manifest.json'),
-      stableJson({ version: 1, revision: 1, prefixLength: 2, shards: [] }),
-    );
 
-    const recoveredStore = await openTranslationMemoryStore({ directory });
+    const recoveredStore = await openTranslationMemoryStore(directory);
     const recovered = await recoveredStore.load();
-    expect(recovered.revision).toBe(7);
     expect(recovered.messages.Save?.translations['en-US']).toBe('Store');
     expect(recovered.messages.Cancel?.translations['en-US']).toBe('Cancel');
     await expect(
@@ -99,11 +73,10 @@ describe('Translation Memory stores', () => {
     recoveredStore.close();
   });
 
-  it('serializes concurrent updates across JSON shard store instances', async () => {
-    const root = await temporaryDirectory();
-    const directory = path.join(root, 'i18n');
-    const first = await openTranslationMemoryStore({ directory });
-    const second = await openTranslationMemoryStore({ directory });
+  it('serializes concurrent updates across store instances', async () => {
+    const directory = path.join(await temporaryDirectory(), 'i18n');
+    const first = await openTranslationMemoryStore(directory);
+    const second = await openTranslationMemoryStore(directory);
 
     await Promise.all(
       Array.from({ length: 24 }, (_, index) =>
@@ -118,69 +91,31 @@ describe('Translation Memory stores', () => {
 
     const memory = await first.load();
     expect(Object.keys(memory.messages)).toHaveLength(24);
-    expect(memory.revision).toBe(24);
+    expect(memory.revision).toBeGreaterThan(0);
     first.close();
     second.close();
   });
 
-  it('rewrites only JSON shards changed by a transaction', async () => {
-    const root = await temporaryDirectory();
-    const directory = path.join(root, 'i18n');
-    const store = await openTranslationMemoryStore({ directory });
+  it('rewrites only the changed atomic target', async () => {
+    const directory = path.join(await temporaryDirectory(), 'i18n');
+    const store = await openTranslationMemoryStore(directory);
     await store.transact((memory) => {
       memory.messages.Save = message('保存', 'Save');
       memory.messages.Cancel = message('取消', 'Cancel');
     });
 
-    const cancelShard = translationShardPath(directory, 'Cancel');
+    const cancelShard = translationShardPath(directory, '取消', 'en-US');
     const untouched = `\n${await fs.readFile(cancelShard, 'utf8')}`;
     await fs.writeFile(cancelShard, untouched);
-
     await store.transact((memory) => {
       memory.messages.Save!.translations['en-US'] = 'Store';
     });
 
     expect(await fs.readFile(cancelShard, 'utf8')).toBe(untouched);
-    const memory = await store.load();
-    expect(memory.revision).toBe(2);
-    expect(memory.messages.Save?.translations['en-US']).toBe('Store');
-    expect(memory.messages.Cancel?.translations['en-US']).toBe('Cancel');
+    expect((await store.load()).messages.Save?.translations['en-US']).toBe(
+      'Store',
+    );
     store.close();
-  });
-
-  it('reports how to load the adapter for an existing SQLite marker', async () => {
-    const root = await temporaryDirectory();
-    const directory = path.join(root, 'i18n');
-    await fs.mkdir(directory, { recursive: true });
-    await fs.writeFile(
-      path.join(directory, 'storage.json'),
-      stableJson({ version: 1, storage: 'sqlite' }),
-    );
-
-    const entry = pathToFileURL(
-      path.resolve(import.meta.dirname, '../dist/translation-memory.js'),
-    ).href;
-    const script = `
-      import { openTranslationMemoryStore } from ${JSON.stringify(entry)};
-
-      try {
-        const store = await openTranslationMemoryStore({ directory: process.argv[1] });
-        store.close();
-        process.stdout.write('resolved');
-      } catch (error) {
-        process.stdout.write(error instanceof Error ? error.message : String(error));
-      }
-    `;
-    const env = { ...process.env };
-    // pnpm 的 Vitest shim 会注入 workspace NODE_PATH；子进程需模拟真实的未安装消费项目。
-    delete env.NODE_PATH;
-
-    const { stdout } = await execFileAsync(
-      process.execPath,
-      ['--input-type=module', '--eval', script, directory],
-      { env },
-    );
-    expect(stdout).toContain('install @ai-i18n/sqlite');
   });
 });
 
@@ -200,10 +135,26 @@ async function temporaryDirectory(): Promise<string> {
   return directory;
 }
 
-function translationShardPath(directory: string, messageId: string): string {
-  const shard = createHash('sha256')
-    .update(messageId)
-    .digest('hex')
-    .slice(0, 2);
-  return path.join(directory, 'translations', `${shard}.json`);
+function translationShardPath(
+  directory: string,
+  source: string,
+  locale: string,
+): string {
+  const hash = createHash('sha256')
+    .update(JSON.stringify(['zh-CN', source, null, locale]))
+    .digest('hex');
+  return path.join(
+    directory,
+    'translations',
+    locale,
+    hash.slice(0, 2),
+    `${hash}.json`,
+  );
+}
+
+async function jsonFiles(directory: string): Promise<string[]> {
+  const entries = await fs.readdir(directory, { recursive: true });
+  return entries
+    .filter((entry) => entry.endsWith('.json'))
+    .map((entry) => path.join(directory, entry));
 }

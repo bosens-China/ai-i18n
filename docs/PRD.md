@@ -73,48 +73,56 @@
 
 ### 文件职责与最终值
 
-- 缺少 storage.json 表示使用默认分片 JSON；该文件只声明 SQLite。默认的 translations/ 保存可审查分片 JSON，可选 SQLite 保存到用户级全局数据库；overrides.json 保存项目人工校对结果；extracted/ 保存插件生成的源码结构；locales/ 是派生运行时产物。
-- `overrides.json` 使用 v2 扁平 `rules`。规则以 `source`、可选静态 `comment`、可选 `files`、可选
-  `occurrences` 和 `translations` 表达。`files` 与 `occurrences` 互斥；缺少两者表示当前 Vite 应用
-  全局生效，`files` 匹配精确源码文件，`occurrences` 以相对 Vite root 的标准化 POSIX 文件路径、
-  1-based 行号与 0-based 列号匹配精确调用位置。一个规则可复用多个同类范围，不支持绝对路径、
-  路径片段或 glob。
+- `translations/` 与 `overrides/` 是项目译文的唯一权威来源；`extracted/` 保存插件生成的
+  源码结构，`locales/` 是派生运行时产物。项目不存在 JSON/SQLite 存储模式或存储标记。
+- `translations/` 每个分片只保存一个目标语言的自动译文；`overrides/` 每个分片只保存一个
+  目标语言和作用范围的人工决定。两者都以 `<locale>/<hash-prefix>/<full-hash>.json` 分片，
+  不保存会被所有人同时修改的 manifest 或聚合 JSON。
+- 人工覆盖以 `source`、可选静态 `comment`、目标语言和一种作用范围表达。范围只能是
+  当前 Vite 应用全局、精确源码文件，或相对 Vite root 的标准化 POSIX 文件路径加 1-based
+  行号与 0-based 列号组成的精确出现位置；不支持绝对路径、路径片段或 glob。
 - 最终译文优先级固定为：出现位置 + comment、出现位置默认、文件 + comment、文件默认、全局 +
   comment、全局默认、AI Translation Memory、source fallback；更精确范围始终覆盖较宽范围。
-- 人工校对必须写入 overrides.json，不污染 AI Translation Memory。空字符串是有效人工译文；
+- 人工校对必须写入 `overrides/`，不污染项目自动译文或个人候选缓存。空字符串是有效人工译文；
   comment 与文件范围彼此独立且可以组合。
 - Translation Memory 继续以 `source + comment` 跨文件复用；Runtime 与派生 locale 使用
   `source file + message ID + occurrence` 区分同一语义消息在不同文件、同一行不同列的最终人工值。该运行时身份不改变公开
   `t()` 调用、Translation Memory 身份或 MCP 的消息对象。Vite 注入 occurrence 运行时身份时必须保持
   JavaScript、JSX 和 Vue 模板等宿主源码语法合法，包括使用单引号或双引号包裹的 Vue 属性绑定。
-- JSON 模式提交源码、生成的类型声明、translations/ 和 overrides.json；SQLite 模式只提交 storage.json 与 overrides.json，用户级数据库不提交。extracted/ 与 locales/ 可由 Build 重建，不提交。
-- 一个 Vite build 独占一个协议目录。共享源码分别进入每个消费 build 的目录；多个 build 不能共用 directory，但 SQLite 可通过一个物理数据库中的逻辑项目绑定复用全局候选。
+- 提交源码、生成的类型声明、`translations/` 和 `overrides/`；`extracted/` 与 `locales/`
+  可由 Build 重建，个人 SQLite 数据库也不提交。
+- 一个 Vite build 独占一个协议目录。共享源码分别进入每个消费 build 的目录；多个 build
+  不能共用 directory，可选个人缓存可跨项目提供候选，但不改变任何项目的目录格式。
 
 ### Translation Memory 存储
 
-- JSON 是默认驱动。消息按 message ID 的 SHA-256 前缀稳定分片，manifest 保存 revision 与有效分片；单次事务先写完整 journal，再提交分片与 manifest，进程中断后由 journal 恢复。
-- Alpha 阶段将单文件 translations.json 自动迁移为分片 JSON，迁移后删除旧权威来源；首个非 prerelease 稳定版本不再保留该兼容层，也不保留其他未发布旧协议的长期兼容层。
-- Alpha 阶段会接受并删除旧的 JSON 模式 storage.json；稳定版只接受 SQLite 标记，缺少标记直接表示 JSON。
-- SQLite 使用平台用户数据目录中的单个全局数据库，并允许 AI_I18N_DATA_DIR 覆盖；项目目录只记录驱动，不记录数据库路径、源码绝对路径、Provider 配置或密钥。
-- JSON 驱动内置于 core 并保持默认。SQLite 实现和 better-sqlite3 只存在于独立
-  `@ai-i18n/sqlite` 包；Vite 通过 `translationMemory.storage: sqlite()` 注入适配器，不接受新的
-  字符串 `storage: 'sqlite'` 配置。默认 JSON 项目不安装、解析或加载 SQLite 包。
-- 既有 SQLite marker 保持可读。未显式传入适配器的 MCP 等读取方，仅在 marker 指向 SQLite 时从
-  消费项目解析 `@ai-i18n/sqlite`；未安装时给出中英文恢复提示。
-- SQLite 项目身份由 realpath 后的 i18n 目录 hash 派生。候选身份包含 sourceLang、targetLang、source 与 comment；项目已有绑定优先，无绑定时只自动复用唯一候选，多个不同候选保持缺失。
-- SQLite 是本机可丢弃缓存，不提供跨机器或团队同步。数据库丢失后由 Provider 重新生成，项目人工 overrides 不受影响。
-- SQLite 引擎使用 better-sqlite3，并采用参数化固定查询、SQLite 事务、约束、索引和显式 user_version 迁移。当前四张内部缓存表不引入 ORM；出现复杂动态查询、多模块关系映射或大量 schema 迁移时优先重新评估 Drizzle。
+- Core 通过受控目录扫描将自动译文和人工覆盖聚合为规范化内存对象；UI、MCP 和其他
+  消费方按需把它序列化为整理好的 JSON，但不把聚合结果持久化为第二份项目事实。
+- 分片身份和路径由内容确定，内存 revision 也由当前内容稳定派生，不依赖集中计数器。
+  单次事务先写完整 journal，再原子提交变化分片；进程中断后由 journal 恢复。
+- `@ai-i18n/sqlite` 只提供可选个人 Translation Memory 候选缓存，通过
+  `translationMemory.cache: sqlite()` 启用。SQLite 和 `better-sqlite3` 不进入 Core、MCP 或默认项目路径。
+- 缓存按 sourceLang、targetLang、source 与 comment 查询。只有去重后恰好一个候选时才自动
+  复用；无候选或多候选保持缺失，交给 Provider 或人工处理，不按时间自动选优。
+- 缓存命中的值必须先写入项目 `translations/` 才能使用；Provider 结果也先提交项目 JSON，
+  再回填缓存。缓存故障或删除只能降低复用率，不能改变已提交的译文、构建产物或 Runtime 行为。
+- SQLite 使用平台用户数据目录中的单个数据库，允许 `AI_I18N_DATA_DIR` 覆盖。引擎使用
+  better-sqlite3，当前只需候选表、参数化固定查询、SQLite 事务、约束与索引，不引入 ORM。
 
 ### 并发与兼容性
 
-- Vite 与 MCP 通过同一存储抽象读写。JSON 使用跨进程锁、锁内重读、字段级合并和可恢复原子提交；SQLite 使用同一外部锁与数据库事务。内存 ProjectState 只用于加速和 Runtime 更新，持久化存储才是写入真相。
+- Vite、MCP 与 Review 通过同一项目存储抽象读写。自动译文和人工覆盖各自使用跨进程锁、
+  锁内重读和可恢复原子提交。内存 ProjectState 只用于加速和 Runtime 更新，项目分片才是写入真相。
+- 不同原子目标使用不同路径，Git 可直接合并；同一目标使用同一路径，同时修改时暴露真实
+  语义冲突并由人选择。不按用户名拆权威文件，不用客户端时间或文件修改时间自动决定赢家。
 - 同一 Vite Dev 插件实例内，ProjectState 更新、重新 hydrate 与 HMR 通知继续由状态事务排序；普通
   source transform 只登记变化源码，协议写入由单实例调度器用短 debounce 与 max-wait 串行执行，
   在真正写入前生成一次最新快照，不阻塞转换响应。普通 Dev 批次只更新变化源码对应的 extracted 与
   locale 消息并保留未访问模块；依赖全量活动集合的 orphan/capacity 清理由完整同步校准。外部协议
   文件变更、Provider 结果、人工校对和关闭生命周期先 flush 待写快照；浏览器模块注册直接读取已排序的
   ProjectState，避免旧异步结果覆盖或为普通后台写入重复扫描目录。
-- 不保留未发布旧 schema 或旧 MCP 工具参数的兼容层；只为已存在的单文件 Translation Memory 提供一次自动迁移。
+- 产品尚未发布正式版，不保留旧单文件、旧 manifest、存储标记、SQLite 项目绑定或旧 MCP
+  工具参数的读取和迁移兼容。
 - sourceLang 变更时，当前实现会在 comment 一致且历史候选唯一时尽力复用历史翻译；候选不唯一时保持缺失，不猜测。这是保守兼容行为，不构成公开的稳定迁移承诺。
 - Translation Memory 的容量限制与 orphan 清理只淘汰非活动历史消息，不能为满足上限而破坏当前源码仍引用的译文。
 - 容量限制属于 translationMemory.capacity，按当前项目的逻辑 Translation Memory 快照计算；provider.cache 只控制当前 Vite 进程的自动译文刷新，两者不能混用。
@@ -171,7 +179,7 @@
 - 校对页面首次读取时只读既有 `extracted/` 与 Translation Memory 快照作为初始列表，不扫描源码、
   不触发 Provider，也不写入业务 Runtime 状态；Dev 实际转换的模块始终优先，且会遮蔽同源旧记录。没有
   既有快照时，列表只随当前 Dev 已访问模块渐进增长。校对操作按全局、精确文件或精确出现位置范围原子更新
-  `overrides.json` 并触发 HMR，不注册到 Build、Build Watch、Preview 或生产产物。
+  `overrides/` 中对应的原子分片并触发 HMR，不注册到 Build、Build Watch、Preview 或生产产物。
 - 校对 UI 在发布包中由 Vite 插件携带预构建静态资源，与业务应用的框架和 UI 依赖隔离；仓库本地
   Dev 会自动把私有 review-ui workspace 挂到业务 Vite Server，并通过独立 HMR 通道刷新源码改动，
   无需先构建或复制。内部 UI workspace 包保持私有，不作为面向应用开发者的安装入口。
@@ -206,10 +214,13 @@
   Build 初始记录；自动刷新不触发 Provider、不覆盖未保存输入，也不改变当前筛选、语言、范围和选择。
 - 校对页面不引入账号或 token。写接口只接受同源、`application/json` 请求并复用 overrides 的消息、
   locale、文件归属和模板 token 校验；跨机器协作与远程暴露不属于该本地能力。
-- Vite 配置、提取规则或 schema 变化后需要重启 Watch。外部修改当前 Translation Memory 或 overrides.json 时无需重新解析未变化源码。
+- Vite 配置、提取规则或 schema 变化后需要重启 Watch。外部修改当前 `translations/` 或
+  `overrides/` 分片时无需重新解析未变化源码。
 - Provider 按缺失 locale 集合调度、去重、批处理并限制并发。Dev 不阻塞 transform；Build 在结束前等待当前可达模块需要的翻译。
 - 缺失译文的 Provider 请求失败时保留 null；`fresh` 刷新失败时保留已有历史值。默认报告诊断，严格模式可将失败升级为构建错误。
-- Provider 缓存策略不区分 Dev 与 Build。默认 `reuse`；`fresh` 让当前 Vite 进程向 Provider 刷新一次已有自动译文，并立即复用本进程的新结果。历史值仍可供 Runtime 使用，JSON、SQLite 与 MCP 不改变读取和共享语义。
+- Provider 缓存策略不区分 Dev 与 Build。默认 `reuse`；`fresh` 让当前 Vite 进程向 Provider
+  刷新一次已有自动译文，并立即复用本进程的新结果。历史值仍可供 Runtime 使用；该进程策略不改变
+  项目 JSON、个人候选缓存或 MCP 的读写边界。
 - Provider、模型、`baseURL`、温度和提示词不自动参与缓存指纹。任意 Translator 无法被可靠、安全地序列化；需要重跑时由用户显式设置 `provider.cache: 'fresh'`，人工 overrides 始终保留。
 - 同一消息与 locale 在一个进程中只发起一次普通翻译尝试；并发请求由 Provider Coordinator 合并，失败或空结果不会因普通 HMR 无限重试，源码身份变化或重启进程后可重新尝试。
 - LLM 审查日志默认关闭并只由 Vite 的 `provider.logging` 配置。`true` 使用 Vite root 下的 `logs/`；字符串表示相对 Vite root 或绝对日志目录，空字符串无效。Vite 把解析后的关闭状态或绝对目录传给 Translator 和生命周期事件；一个 OpenAI Translator 实例在每个目录对应一个文件，Dev/HMR 与 Build Watch 持续追加，独立 Build 创建新文件。
@@ -269,7 +280,8 @@
   列表返回的 opaque ID，在写入前整批复验消息仍未被源码引用，并且不联动删除人工 overrides。
 - 列表默认请求 100 条并允许提高到 500 条；响应大小保护只能减少完整记录数量，不能截断单条
   或破坏游标推进。
-- MCP 只读取 extracted/ 以校验消息归属；翻译工具在缺少 storage.json 时修改分片 JSON，存在 SQLite 标记时修改全局数据库。人工工具只修改 overrides.json，不修改 extracted/ 或 locales/，也不执行 Vite 配置。
+- MCP 只读取 `extracted/` 以校验消息归属；自动翻译工具只修改 `translations/`，人工工具
+  只修改 `overrides/`。MCP 不读写个人 SQLite 缓存，不修改 `extracted/` 或 `locales/`，也不执行 Vite 配置。
 - MCP 不读取 `provider.cache`。Vite 的进程级 Provider 刷新不能过滤、阻止或覆盖在途 Agent 写入。
 - 工具名、字段和稳定错误码使用英文；Agent 按用户语言解释结果。每次调用只返回一份紧凑 JSON 文本。
 - Agent 的安全操作流程以 use-ai-i18n-mcp Skill 为准；Vite 接入流程以 integrate-ai-i18n Skill 为准。

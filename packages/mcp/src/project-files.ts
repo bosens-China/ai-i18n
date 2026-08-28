@@ -2,7 +2,6 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import {
   parseExtractedFile,
-  parseTranslationOverridesFile,
   type CacheMessage,
   type ExtractedFile,
   type ExtractedMessage,
@@ -10,7 +9,7 @@ import {
 } from '@ai-i18n/core';
 import {
   openTranslationMemoryStore,
-  readTranslationMemoryStorage,
+  readTranslationOverrides,
   type TranslationMemoryStore,
 } from '@ai-i18n/core/translation-memory';
 import { fail } from './errors.js';
@@ -112,10 +111,7 @@ export async function loadProject(
   const memoryStore = await projectMemoryStore(directory);
   const [memory, overrides] = await Promise.all([
     memoryStore.load(),
-    readProtocolFile(
-      path.join(directory, 'overrides.json'),
-      parseTranslationOverridesFile,
-    ),
+    readTranslationOverrides(path.join(directory, 'overrides')),
     requireDirectory(extractedDirectory),
   ]);
   const extractedPaths = await listJsonFiles(extractedDirectory);
@@ -173,15 +169,9 @@ export async function loadProject(
 async function projectMemoryStore(
   directory: string,
 ): Promise<TranslationMemoryStore> {
-  const storage = await readTranslationMemoryStorage(directory);
   const existing = memoryStores.get(directory);
-  if (existing) {
-    const store = await existing;
-    if (store.storage === storage) return store;
-    store.close();
-    memoryStores.delete(directory);
-  }
-  const opened = openTranslationMemoryStore({ directory });
+  if (existing) return existing;
+  const opened = openTranslationMemoryStore(directory);
   memoryStores.set(directory, opened);
   try {
     return await opened;

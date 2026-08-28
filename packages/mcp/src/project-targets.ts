@@ -110,19 +110,6 @@ export function affectedFileCount(
   return new Set(targets.flatMap((target) => target.sourceFiles)).size;
 }
 
-export function sourceFilesForSource(
-  project: LoadedProject,
-  source: string,
-): string[] {
-  const files = new Set<string>();
-  for (const file of project.extracted) {
-    if (file.messages.some((message) => message.source === source)) {
-      files.add(file.source);
-    }
-  }
-  return [...files].sort();
-}
-
 export function targetDetails(
   target: Localized<TranslationTarget>,
 ): Record<string, unknown> {

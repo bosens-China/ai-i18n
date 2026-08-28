@@ -2,7 +2,7 @@ import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import type { TranslationBatchEvent, Translator } from '@ai-i18n/core';
-import type { TranslationMemoryStorage } from '@ai-i18n/core/translation-memory';
+import type { TranslationMemoryCandidateCacheAdapter } from '@ai-i18n/core/translation-memory';
 import { sqlite } from '@ai-i18n/sqlite';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { build } from 'vite';
@@ -86,25 +86,20 @@ describe('Translation Memory Vite storage', () => {
     await createSources(secondRoot);
 
     const provider = translator('Save');
-    await buildProject(firstRoot, provider, { storage: sqlite() });
+    await buildProject(firstRoot, provider, { cache: sqlite() });
     expect(provider).toHaveBeenCalledTimes(1);
-    await buildProject(secondRoot, undefined, { storage: sqlite() });
+    await buildProject(secondRoot, undefined, { cache: sqlite() });
 
     expect(
       (await readTestTranslationMemory(path.join(secondRoot, 'i18n'))).messages[
         '保存'
       ]?.translations['en-US'],
     ).toBe('Save');
-    expect(
-      JSON.parse(
-        await fs.readFile(path.join(firstRoot, 'i18n/storage.json'), 'utf8'),
-      ),
-    ).toEqual({ version: 1, storage: 'sqlite' });
     await expect(
       fs.access(path.join(firstRoot, 'i18n/translations')),
-    ).rejects.toMatchObject({ code: 'ENOENT' });
+    ).resolves.toBeUndefined();
     await expect(
-      fs.access(path.join(firstRoot, 'i18n/translations.json')),
+      fs.access(path.join(firstRoot, 'i18n/storage.json')),
     ).rejects.toMatchObject({ code: 'ENOENT' });
     await expect(
       fs.access(path.join(dataDirectory, 'translation-memory.sqlite')),
@@ -122,7 +117,7 @@ async function buildProject(
   root: string,
   provider?: Translator,
   options?: {
-    storage?: TranslationMemoryStorage;
+    cache?: TranslationMemoryCandidateCacheAdapter;
     providerCache?: 'reuse' | 'fresh';
     logging?: boolean | string;
   },
@@ -149,8 +144,8 @@ async function buildProject(
               },
             }
           : {}),
-        ...(options?.storage
-          ? { translationMemory: { storage: options.storage } }
+        ...(options?.cache
+          ? { translationMemory: { cache: options.cache } }
           : {}),
       }),
     ],

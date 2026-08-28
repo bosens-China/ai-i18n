@@ -37,7 +37,7 @@ describe('FileStore robustness', () => {
     expect((await fs.readdir(path.join(root, 'i18n'))).sort()).toEqual([
       'extracted',
       'locales',
-      'overrides.json',
+      'overrides',
       'translations',
     ]);
   });

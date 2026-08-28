@@ -40,16 +40,16 @@ describe('FileStore', () => {
 
     await store.sync(state.snapshot());
 
-    const cache = await readJson(path.join(root, 'i18n/translations.json'));
+    const cache = await readJson(path.join(root, 'i18n'));
     const extracted = await readJson(extractedTestPath(root, 'src/main.ts'));
     const targetLocale = await readJson(
       path.join(root, 'i18n/locales/en-US.json'),
     );
-    const overrides = await readJson(path.join(root, 'i18n/overrides.json'));
+    const overrides = await store.loadOverrides();
 
     expect(cache).toMatchObject({
       version: 1,
-      revision: 1,
+      revision: expect.any(Number),
       messages: {
         保存: {
           source: '保存',
@@ -93,25 +93,17 @@ describe('FileStore', () => {
       },
     ]);
     await store.sync(state.snapshot());
-    await fs.writeFile(
-      path.join(root, 'i18n/overrides.json'),
-      `${JSON.stringify(
+    await store.transactOverrides((overrides) => {
+      overrides.rules = [
+        { source: '提交', translations: { 'en-US': 'Submit' } },
         {
-          version: 2,
-          rules: [
-            { source: '提交', translations: { 'en-US': 'Submit' } },
-            {
-              source: '提交',
-              comment: 'Git 操作',
-              files: ['src/main.ts'],
-              translations: { 'en-US': 'Commit' },
-            },
-          ],
+          source: '提交',
+          comment: 'Git 操作',
+          files: ['src/main.ts'],
+          translations: { 'en-US': 'Commit' },
         },
-        null,
-        2,
-      )}\n`,
-    );
+      ];
+    });
 
     await store.sync(state.snapshot());
 
@@ -167,7 +159,7 @@ describe('FileStore', () => {
     state.update(oldCode, source);
     await store.sync(state.snapshot());
 
-    const cachePath = path.join(root, 'i18n/translations.json');
+    const cachePath = path.join(root, 'i18n');
     await updateTestTranslationMemory(cachePath, (cache) => {
       cache.messages['保存#旧注释']!.translations['en-US'] = 'Save';
     });

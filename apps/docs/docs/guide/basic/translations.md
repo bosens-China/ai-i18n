@@ -12,7 +12,7 @@ ai-i18n 不会用空字符串代替缺失译文。缺译时页面会回退显示
    [Agent + MCP](/guide/advanced/ai-tools)。
 3. 如已注册 `aiI18nReview()`，点击业务页面右下角图标检查当前页，或打开 Dev 控制台打印的独立地址检查全部文案。
 4. 对不满意或需要固定的译文保存人工校对结果。
-5. 再运行一次 Build，并按当前存储模式提交源码、Translation Memory 标记与 `overrides.json`。
+5. 再运行一次 Build，并提交源码、`translations/` 与 `overrides/`。
 
 运行中的 Vite Dev 会观察 Provider、Agent + MCP 和校对页写入，并更新当前已访问页面的文案；不需要
 重启或手工编辑生成的 locale 文件。Dev 仍只包含浏览器访问过的模块，批量补译、孤立消息审计和提交前
@@ -20,8 +20,8 @@ ai-i18n 不会用空字符串代替缺失译文。缺译时页面会回退显示
 
 ## 自动翻译与人工译文
 
-自动翻译默认写入 `i18n/translations/` 分片。人工确认的译文写入 `i18n/overrides.json`，并且始终优先
-显示。也可以将自动译文放进用户级全局 SQLite，详见
+自动翻译写入 `i18n/translations/` 原子分片。人工确认的译文写入 `i18n/overrides/` 原子分片，并且
+始终优先显示。SQLite 只可作为个人候选缓存，命中结果仍会补写项目 JSON，详见
 [Translation Memory](/guide/advanced/translation-memory)。
 
 适合人工校对的情况包括：
@@ -49,82 +49,62 @@ t('保存', { comment: '保存状态' });
 翻译校对页面适合人工确认少量译文，Provider 或 Agent + MCP 适合批量补译与自动化操作。只有在不能
 启动 Vite Dev 时才建议直接编辑现有 JSON 文件，并且不要用下面的示例覆盖已经生成的内容。
 
-默认存储下，`translations/*.json` 保存自动译文。先在分片中搜索目标 `source`，保留 `version`、消息
-标识和源码信息，只修改目标消息 `translations` 下的语言值。不要修改 `manifest.json`，也不要手工把
-消息移动到另一个分片。以下分片示例对应不带 `comment` 的 `t('保存')`：
+`translations/**/*.json` 保存自动译文。先在分片中搜索目标 `source` 与 `locale`，只修改 `value`；
+路径由插件根据身份稳定生成，不要重命名或移动文件。以下分片对应不带 `comment` 的 `t('保存')`：
 
 ```json
 {
-  "version": 1,
-  "messages": {
-    "保存": {
-      "source": "保存",
-      "sourceLang": "zh-CN",
-      "translations": {
-        "en-US": "Save"
-      }
-    }
-  }
-}
-```
-
-SQLite 模式不适合直接编辑数据库，请使用 Provider 或 Agent + MCP。少量已确认措辞仍建议写入
-`overrides.json`，这样可以提交并在不同电脑间保持一致。
-
-`overrides.json` 使用便于审查的扁平 `rules` 保存人工决定。只写 `source` 时，译文对当前 Vite
-应用内的所有同源文案生效：
-
-```json
-{
-  "version": 2,
-  "rules": [
-    {
-      "source": "保存",
-      "translations": {
-        "en-US": "Save"
-      }
-    }
-  ]
-}
-```
-
-同一句话只需要在部分文件采用不同译法时，为规则增加 `files`。路径必须是相对 Vite `root` 的
-标准化 POSIX 路径，并与列表工具返回的 `source_file` 完全一致；不接受绝对路径、路径片段或 glob。
-一个规则可以列出多个文件，以复用完全相同的人工决定：
-
-```json
-{
-  "version": 2,
-  "rules": [
-    {
-      "source": "保存",
-      "files": ["src/editor/actions.ts", "src/editor/toolbar.ts"],
-      "translations": {
-        "en-US": "Save file"
-      }
-    },
-    {
-      "source": "保存",
-      "comment": "保存状态",
-      "files": ["src/status/panel.ts"],
-      "translations": {
-        "en-US": "Keep"
-      }
-    }
-  ]
-}
-```
-
-`comment` 与 `files` 可以单独使用，也可以组合。
-
-同一文件甚至同一行的多次调用需要不同译法时，使用 `occurrences` 保存精确位置。`file` 是相对 Vite
-`root` 的标准化路径，`line` 从 1 开始，`column` 从 0 开始；`occurrences` 与 `files` 不能同时出现：
-
-```json
-{
+  "id": "保存",
+  "locale": "en-US",
   "source": "保存",
-  "occurrences": [{ "file": "src/editor/actions.ts", "line": 12, "column": 8 }],
-  "translations": { "en-US": "Save this action" }
+  "sourceLang": "zh-CN",
+  "value": "Save",
+  "version": 1
+}
+```
+
+不要直接编辑 SQLite 数据库；它只是个人候选缓存。Provider、MCP 和 Review 接受的结果都会写入项目
+分片，因此可以提交并在不同电脑间保持一致。
+
+`overrides/` 每个文件保存一个人工决定。只有 `source` 和 `locale` 时，译文对当前 Vite 应用内的
+所有同源文案生效：
+
+```json
+{
+  "locale": "en-US",
+  "source": "保存",
+  "value": "Save",
+  "version": 1
+}
+```
+
+同一句话只需要在某个文件采用不同译法时，增加 `file`。路径必须是相对 Vite `root` 的标准化 POSIX
+路径，并与列表工具返回的 `source_file` 完全一致；不接受绝对路径、路径片段或 glob。多个文件使用
+多个原子分片：
+
+```json
+{
+  "file": "src/editor/actions.ts",
+  "locale": "en-US",
+  "source": "保存",
+  "value": "Save file",
+  "version": 1
+}
+```
+
+`comment` 与 `file` 可以单独使用，也可以组合。
+
+同一文件甚至同一行的多次调用需要不同译法时，增加 `location` 保存精确位置。`file` 是相对 Vite
+`root` 的标准化路径，`line` 从 1 开始，`column` 从 0 开始：
+
+```json
+{
+  "file": "src/editor/actions.ts",
+  "locale": "en-US",
+  "location": { "line": 12, "column": 8 },
+  "source": "保存",
+  "value": "Save this action",
+  "version": 1
 }
 ```
 

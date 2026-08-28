@@ -1,6 +1,12 @@
 import path from 'node:path';
 import { afterEach, expect, test } from 'vitest';
-import { AiI18nProjectService } from '../src/project';
+import { listOverrides } from '../src/project-read';
+import {
+  clearTranslations,
+  deleteOverrides,
+  setOverrides,
+  setTranslations,
+} from '../src/project-write';
 import {
   addFixtureMessage,
   addFixtureSourceFile,
@@ -15,24 +21,23 @@ afterEach(cleanupFixtures);
 test('supports one batch default locale across translation and review writes', async () => {
   const root = await fixture();
   const directory = path.join(root, 'apps/web/i18n');
-  const service = new AiI18nProjectService();
 
   await expect(
-    service.setTranslations({
+    setTranslations({
       i18n_directory: directory,
       default_locale: 'en-US',
       updates: [{ message: reference('保存'), value: 'Save' }],
     }),
   ).resolves.toMatchObject({ added_count: 1 });
   await expect(
-    service.clearTranslations({
+    clearTranslations({
       i18n_directory: directory,
       default_locale: 'en-US',
       targets: [{ message: reference('退出') }],
     }),
   ).resolves.toMatchObject({ cleared_count: 1 });
   await expect(
-    service.setOverrides({
+    setOverrides({
       i18n_directory: directory,
       default_locale: 'ja-JP',
       updates: [{ message: reference('保存'), value: '保管' }],
@@ -40,14 +45,14 @@ test('supports one batch default locale across translation and review writes', a
   ).resolves.toMatchObject({ added_count: 1 });
 
   await expect(
-    service.setTranslations({
+    setTranslations({
       i18n_directory: directory,
       default_locale: 'en-US',
       updates: [{ message: reference('保存'), locale: 'en-US', value: 'Save' }],
     }),
   ).rejects.toMatchObject({ code: 'INVALID_BATCH_LOCALE' });
   await expect(
-    service.clearTranslations({
+    clearTranslations({
       i18n_directory: directory,
       targets: [{ message: reference('保存') }],
     }),
@@ -57,10 +62,9 @@ test('supports one batch default locale across translation and review writes', a
 test('fills null translations atomically and requires explicit overwrite', async () => {
   const root = await fixture();
   const directory = path.join(root, 'apps/web/i18n');
-  const service = new AiI18nProjectService();
 
   await expect(
-    service.setTranslations({
+    setTranslations({
       i18n_directory: directory,
       updates: [
         {
@@ -94,7 +98,7 @@ test('fills null translations atomically and requires explicit overwrite', async
     source: '保存',
   });
   await expect(
-    service.setTranslations({
+    setTranslations({
       i18n_directory: directory,
       updates: [
         {
@@ -123,7 +127,7 @@ test('fills null translations atomically and requires explicit overwrite', async
   });
 
   await expect(
-    service.setTranslations({
+    setTranslations({
       i18n_directory: directory,
       updates: [
         {
@@ -147,7 +151,7 @@ test('fills null translations atomically and requires explicit overwrite', async
   });
 
   await expect(
-    service.setTranslations({
+    setTranslations({
       i18n_directory: directory,
       overwrite_existing: true,
       updates: [
@@ -172,10 +176,9 @@ test('fills null translations atomically and requires explicit overwrite', async
 test('clears translation values back to null without deleting fields', async () => {
   const root = await fixture();
   const directory = path.join(root, 'apps/web/i18n');
-  const service = new AiI18nProjectService();
 
   await expect(
-    service.clearTranslations({
+    clearTranslations({
       i18n_directory: directory,
       targets: [
         {
@@ -207,10 +210,9 @@ test('sets and overwrites human reviews without changing translation memory', as
     source: '保存',
     comment: 'toolbar',
   });
-  const service = new AiI18nProjectService();
 
   await expect(
-    service.setOverrides({
+    setOverrides({
       i18n_directory: directory,
       updates: [
         {
@@ -234,7 +236,7 @@ test('sets and overwrites human reviews without changing translation memory', as
   });
 
   await expect(
-    service.setOverrides({
+    setOverrides({
       i18n_directory: directory,
       updates: [
         {
@@ -273,8 +275,7 @@ test('sets and overwrites human reviews without changing translation memory', as
 test('deletes exact listed override values and cleans empty containers', async () => {
   const root = await fixture();
   const directory = path.join(root, 'apps/web/i18n');
-  const service = new AiI18nProjectService();
-  await service.setOverrides({
+  await setOverrides({
     i18n_directory: directory,
     updates: [
       {
@@ -284,14 +285,14 @@ test('deletes exact listed override values and cleans empty containers', async (
       },
     ],
   });
-  const listed = await service.listOverrides({
+  const listed = await listOverrides({
     i18n_directory: directory,
     limit: 50,
   });
   const overrideId = listed.items[0]!.override_id;
 
   await expect(
-    service.deleteOverrides({
+    deleteOverrides({
       i18n_directory: directory,
       override_ids: [overrideId],
     }),
@@ -301,7 +302,7 @@ test('deletes exact listed override values and cleans empty containers', async (
     rules: [],
   });
   await expect(
-    service.deleteOverrides({
+    deleteOverrides({
       i18n_directory: directory,
       override_ids: [overrideId],
     }),

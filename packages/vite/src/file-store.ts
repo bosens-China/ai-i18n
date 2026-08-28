@@ -9,6 +9,7 @@ import {
 import { diagnosticMessage } from '@ai-i18n/analyzer';
 import {
   readTranslationOverrides,
+  translationOverrideFiles,
   transactTranslationOverrides,
 } from '@ai-i18n/core/translation-memory';
 import { findMissingSources } from './file-store-cleanup.js';
@@ -52,6 +53,7 @@ export class FileStore {
   private readonly providerFields = new Set<string>();
   private readonly pendingProviderBatches = new Set<string>();
   private readonly translationManagedFiles = new Set<string>();
+  private readonly overrideManagedFiles = new Set<string>();
 
   constructor(private readonly options: FileStoreOptions) {
     this.directory = path.resolve(options.root, options.directory ?? 'i18n');
@@ -74,18 +76,19 @@ export class FileStore {
     return this.readExtractedFiles();
   }
 
-  loadOverrides(): Promise<TranslationOverridesFile> {
-    return readTranslationOverrides(translationOverridesPath(this.directory));
+  async loadOverrides(): Promise<TranslationOverridesFile> {
+    const directory = translationOverridesPath(this.directory);
+    const overrides = await readTranslationOverrides(directory);
+    this.updateOverrideManagedFiles(await translationOverrideFiles(directory));
+    return overrides;
   }
 
   async transactOverrides(
     update: (overrides: TranslationOverridesFile) => void | Promise<void>,
   ): Promise<TranslationOverridesFile> {
-    const file = translationOverridesPath(this.directory);
-    const overrides = await transactTranslationOverrides(file, update);
-    const content = await readText(file);
-    if (content !== undefined)
-      this.lastWritten.set(path.resolve(file), content);
+    const directory = translationOverridesPath(this.directory);
+    const overrides = await transactTranslationOverrides(directory, update);
+    this.updateOverrideManagedFiles(await translationOverrideFiles(directory));
     return overrides;
   }
 
@@ -138,7 +141,11 @@ export class FileStore {
   }
 
   devWatchTargets(): string[] {
-    return [this.directory, ...this.translationManagedFiles];
+    return [
+      this.directory,
+      ...this.translationManagedFiles,
+      ...this.overrideManagedFiles,
+    ];
   }
 
   isOwnWrite(file: string, content: string): boolean {
@@ -179,7 +186,7 @@ export class FileStore {
   watchFiles(moduleId: string): string[] {
     return [
       ...this.translationManagedFiles,
-      translationOverridesPath(this.directory),
+      ...this.overrideManagedFiles,
       extractedPath(this.directory, moduleId),
       ...this.options.locales
         .filter((locale) => locale.value !== this.options.sourceLang)
@@ -215,6 +222,11 @@ export class FileStore {
         `Translation batch persistence tracing failed after files were written. Cause: ${reason}`,
       ),
     );
+  }
+
+  private updateOverrideManagedFiles(files: readonly string[]): void {
+    this.overrideManagedFiles.clear();
+    for (const file of files) this.overrideManagedFiles.add(path.resolve(file));
   }
 
   async close(): Promise<void> {

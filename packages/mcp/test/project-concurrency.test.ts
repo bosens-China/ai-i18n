@@ -1,6 +1,10 @@
 import path from 'node:path';
 import { afterEach, expect, test } from 'vitest';
-import { AiI18nProjectService } from '../src/project';
+import {
+  deleteOrphanMessages,
+  listOrphanMessages,
+} from '../src/project-orphans';
+import { setOverrides, setTranslations } from '../src/project-write';
 import {
   addFixtureOrphanMessage,
   cleanupFixtures,
@@ -14,11 +18,9 @@ afterEach(cleanupFixtures);
 test('serializes concurrent translation and override updates', async () => {
   const root = await fixture();
   const directory = path.join(root, 'apps/web/i18n');
-  const first = new AiI18nProjectService();
-  const second = new AiI18nProjectService();
 
   await Promise.all([
-    first.setTranslations({
+    setTranslations({
       i18n_directory: directory,
       updates: [
         {
@@ -28,7 +30,7 @@ test('serializes concurrent translation and override updates', async () => {
         },
       ],
     }),
-    second.setTranslations({
+    setTranslations({
       i18n_directory: directory,
       updates: [
         {
@@ -38,7 +40,7 @@ test('serializes concurrent translation and override updates', async () => {
         },
       ],
     }),
-    first.setOverrides({
+    setOverrides({
       i18n_directory: directory,
       updates: [
         {
@@ -48,7 +50,7 @@ test('serializes concurrent translation and override updates', async () => {
         },
       ],
     }),
-    second.setOverrides({
+    setOverrides({
       i18n_directory: directory,
       updates: [
         {
@@ -82,19 +84,17 @@ test('serializes orphan deletion with translation updates', async () => {
     id: '旧文案',
     source: '旧文案',
   });
-  const first = new AiI18nProjectService();
-  const second = new AiI18nProjectService();
-  const listed = await first.listOrphanMessages({
+  const listed = await listOrphanMessages({
     i18n_directory: directory,
     limit: 50,
   });
 
   await Promise.all([
-    first.deleteOrphanMessages({
+    deleteOrphanMessages({
       i18n_directory: directory,
       orphan_ids: [listed.items[0]!.orphan_id],
     }),
-    second.setTranslations({
+    setTranslations({
       i18n_directory: directory,
       updates: [
         {

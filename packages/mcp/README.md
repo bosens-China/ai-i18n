@@ -14,10 +14,9 @@ MCP 不扫描 workspace，也不执行 Vite 配置。Agent 必须先确认目标
 `extracted/` 使用 source 的 SHA-256 作为物理文件名。MCP 扫描 JSON 内容并使用其中的
 标准化 `source`，不会从 hash 文件名推断源码路径。
 
-MCP 会校验绝对路径、目录是否存在，以及 Translation Memory、`overrides.json` 和 `extracted/`
-是否符合当前协议。缺少 `storage.json` 时读取分片 JSON；存在 SQLite 标记时由 Core 打开用户级
-全局数据库，不要求项目内存在 SQLite 文件。MCP 不读取或执行 Vite 配置。`extracted/` 是不提交 Git
-的本地 Build 产物。首次使用、目录或本机 SQLite 缓存缺失，或者切换分支和修改提取相关配置后，
+MCP 会校验绝对路径、目录是否存在，以及项目 `translations/`、`overrides/` 和 `extracted/`
+是否符合当前协议。MCP 始终读写项目 JSON，不读取个人 SQLite 候选缓存，也不读取或执行 Vite 配置。
+`extracted/` 是不提交 Git 的本地 Build 产物。首次使用，或者切换分支和修改提取相关配置后，
 先运行目标应用的一次完整 Vite Build。Dev 只包含浏览器实际请求过的模块。
 
 MCP 宿主可以直接执行 npm 包：
@@ -52,7 +51,7 @@ server 使用 stdio 通信，标准输出专用于 MCP 协议。
   `orphan_id`。
 - `ai_i18n_delete_orphan_messages`：用户审查列表并明确批准后，按 `orphan_id` 原子删除孤立
   Translation Memory。删除前会整批复验；任一消息重新被源码引用时，整批失败且不修改文件。
-- `ai_i18n_list_overrides`：逐 locale 列出 `overrides.json` 中的人工值，包括 orphan，并
+- `ai_i18n_list_overrides`：逐 locale 列出 `overrides/` 中的人工值，包括 orphan，并
   返回删除所需的 opaque `override_id`。文件级和位置级规则分别返回作为规则身份的 `files` 与
   `occurrences`；消息实际出现的
   `source_files` 默认省略，可用 `include_source_files: true` 显式请求。
@@ -92,7 +91,8 @@ server 使用 stdio 通信，标准输出专用于 MCP 协议。
 
 ## 写入边界
 
-- 翻译工具在缺少 `storage.json` 时修改分片 JSON，存在 SQLite 标记时修改全局数据库；人工校对工具只修改 `overrides.json`。
+- 翻译工具只修改项目 `translations/` 原子分片；人工校对工具只修改项目 `overrides/` 原子分片。
+- 可选 SQLite 只由 Vite 用作个人候选缓存；MCP 不读取或写入数据库。
 - MCP 不读取 Vite 的 `provider.cache`；Provider 是否刷新进程缓存，不改变 Agent 的列表、写入或清除行为。
 - MCP 不修改 `extracted/` 或 `locales/`。
 - 每批写入都取得跨进程锁，在锁内重读并校验最新文件，然后按字段原子更新。
@@ -127,6 +127,6 @@ server 使用 stdio 通信，标准输出专用于 MCP 协议。
    `ai_i18n_delete_orphan_messages`；不得自行构造 ID。
 4. 再次列出孤立消息，验证删除结果。
 
-孤立消息工具只读写当前 Translation Memory。`overrides.json` 中的孤立人工值继续通过 override
+孤立消息工具只读写当前 Translation Memory。`overrides/` 中的孤立人工值继续通过 override
 列表与删除工具独立审查，不能随 Translation Memory 联动删除。运行清理期间不要并行执行 Build
 或手工修改协议文件。

@@ -1,0 +1,8 @@
+{
+  "id": "语言包加载失败，当前语言保持不变。",
+  "locale": "en-US",
+  "source": "语言包加载失败，当前语言保持不变。",
+  "sourceLang": "zh-CN",
+  "value": "The language pack failed to load. The current language was kept.",
+  "version": 1
+}

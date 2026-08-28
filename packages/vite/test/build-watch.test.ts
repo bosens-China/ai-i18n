@@ -95,7 +95,7 @@ console.log(t(LABEL));`;
       await waitForBuild(watcher, 0);
       addFile.mockClear();
       const extractedPath = extractedTestPath(root, 'src/main.ts');
-      const memoryPath = path.join(root, 'i18n/translations.json');
+      const memoryPath = path.join(root, 'i18n');
       const localePath = path.join(root, 'i18n/locales/en-US.json');
       const locale = await readJson<LocaleFile>(localePath);
       const localeMessageId = runtimeMessageId('src/main.ts', '首页');
@@ -158,9 +158,7 @@ console.log(t(LABEL));`;
       ).rejects.toMatchObject({ code: 'ENOENT' });
 
       await rebuild(watcher, () => fs.writeFile(main, "console.log('done');"));
-      const cache = await readJson<CacheFile>(
-        path.join(root, 'i18n/translations.json'),
-      );
+      const cache = await readJson<CacheFile>(path.join(root, 'i18n'));
       const locale = await readJson<LocaleFile>(
         path.join(root, 'i18n/locales/en-US.json'),
       );

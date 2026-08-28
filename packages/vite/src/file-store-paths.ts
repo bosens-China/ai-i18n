@@ -2,7 +2,7 @@ import path from 'node:path';
 import { hashExtractedSource } from './extracted-path.js';
 
 export function translationOverridesPath(directory: string): string {
-  return path.join(directory, 'overrides.json');
+  return path.join(directory, 'overrides');
 }
 
 export function localePath(directory: string, locale: string): string {

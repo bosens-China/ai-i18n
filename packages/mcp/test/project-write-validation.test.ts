@@ -1,6 +1,11 @@
 import path from 'node:path';
 import { afterEach, expect, test } from 'vitest';
-import { AiI18nProjectService } from '../src/project';
+import { listOverrides } from '../src/project-read';
+import {
+  clearTranslations,
+  setOverrides,
+  setTranslations,
+} from '../src/project-write';
 import {
   addFixtureMessage,
   addFixtureSourceFile,
@@ -15,10 +20,9 @@ afterEach(cleanupFixtures);
 test('validates message references, file scopes, templates, and duplicates', async () => {
   const root = await fixture();
   const directory = path.join(root, 'apps/web/i18n');
-  const service = new AiI18nProjectService();
 
   await expect(
-    service.setTranslations({
+    setTranslations({
       i18n_directory: directory,
       updates: [
         {
@@ -37,7 +41,7 @@ test('validates message references, file scopes, templates, and duplicates', asy
     source: '退出',
   });
   await expect(
-    service.setOverrides({
+    setOverrides({
       i18n_directory: directory,
       updates: [
         {
@@ -50,7 +54,7 @@ test('validates message references, file scopes, templates, and duplicates', asy
     }),
   ).rejects.toMatchObject({ code: 'MESSAGE_NOT_FOUND_IN_SOURCE_FILE' });
   await expect(
-    service.clearTranslations({
+    clearTranslations({
       i18n_directory: directory,
       targets: [
         { message: reference('保存'), locale: 'en-US' },
@@ -64,7 +68,7 @@ test('validates message references, file scopes, templates, and duplicates', asy
   });
 
   await expect(
-    service.setTranslations({
+    setTranslations({
       i18n_directory: directory,
       updates: [
         { message: reference('保存'), locale: 'en-US', value: 'Save' },
@@ -78,7 +82,7 @@ test('validates message references, file scopes, templates, and duplicates', asy
     source: '当前 {{0}} / {{1}} / {{1}}',
   });
   await expect(
-    service.setTranslations({
+    setTranslations({
       i18n_directory: directory,
       updates: [
         {
@@ -98,7 +102,7 @@ test('validates message references, file scopes, templates, and duplicates', asy
     },
   });
   await expect(
-    service.setOverrides({
+    setOverrides({
       i18n_directory: directory,
       updates: [
         {
@@ -128,7 +132,6 @@ test('validates message references, file scopes, templates, and duplicates', asy
 test('suggests exact-comment, normalized, and nearby message identities', async () => {
   const root = await fixture();
   const directory = path.join(root, 'apps/web/i18n');
-  const service = new AiI18nProjectService();
   await addFixtureMessage(directory, {
     id: '保存#toolbar',
     source: '保存',
@@ -140,7 +143,7 @@ test('suggests exact-comment, normalized, and nearby message identities', async 
   });
 
   await expect(
-    service.setTranslations({
+    setTranslations({
       i18n_directory: directory,
       updates: [
         {
@@ -160,7 +163,7 @@ test('suggests exact-comment, normalized, and nearby message identities', async 
     },
   });
   await expect(
-    service.setTranslations({
+    setTranslations({
       i18n_directory: directory,
       updates: [
         {
@@ -175,7 +178,7 @@ test('suggests exact-comment, normalized, and nearby message identities', async 
     details: { suggestions: [{ source: 'Temperature settings' }] },
   });
   await expect(
-    service.setTranslations({
+    setTranslations({
       i18n_directory: directory,
       updates: [
         {
@@ -190,7 +193,7 @@ test('suggests exact-comment, normalized, and nearby message identities', async 
     details: { suggestions: [{ source: 'Temperature settings' }] },
   });
   await expect(
-    service.setTranslations({
+    setTranslations({
       i18n_directory: directory,
       updates: [
         {
@@ -213,10 +216,9 @@ test('groups identical file overrides and keeps file targets independent', async
     id: '保存',
     source: '保存',
   });
-  const service = new AiI18nProjectService();
 
   await expect(
-    service.setOverrides({
+    setOverrides({
       i18n_directory: directory,
       updates: [
         {
@@ -245,7 +247,7 @@ test('groups identical file overrides and keeps file targets independent', async
     ],
   });
 
-  await service.setOverrides({
+  await setOverrides({
     i18n_directory: directory,
     updates: [
       {
@@ -284,10 +286,9 @@ test('distinguishes occurrence overrides on the same source line', async () => {
       { line: 3, column: 25 },
     ],
   });
-  const service = new AiI18nProjectService();
 
   await expect(
-    service.setOverrides({
+    setOverrides({
       i18n_directory: directory,
       updates: [
         {
@@ -303,7 +304,7 @@ test('distinguishes occurrence overrides on the same source line', async () => {
     }),
   ).resolves.toMatchObject({ added_count: 2, affected_file_count: 1 });
 
-  const listed = await service.listOverrides({
+  const listed = await listOverrides({
     i18n_directory: directory,
     limit: 50,
   });
@@ -322,7 +323,7 @@ test('distinguishes occurrence overrides on the same source line', async () => {
   });
 
   await expect(
-    service.setOverrides({
+    setOverrides({
       i18n_directory: directory,
       updates: [
         {

@@ -1,5 +1,5 @@
 import type { LangOption, Translator } from '@ai-i18n/core';
-import type { TranslationMemoryStorage } from '@ai-i18n/core/translation-memory';
+import type { TranslationMemoryCandidateCacheAdapter } from '@ai-i18n/core/translation-memory';
 import type { AiI18nFramework } from './framework.js';
 import type { HtmlExtractorOptions } from './html.js';
 import type { ProviderCoordinatorOptions } from './provider-coordinator.js';
@@ -26,8 +26,8 @@ export interface AiI18nTranslationMemoryCapacityOptions {
 }
 
 export interface AiI18nTranslationMemoryOptions {
-  /** 持久化驱动；默认使用项目内可提交的分片 JSON。 */
-  storage?: TranslationMemoryStorage;
+  /** 可选的个人候选缓存；项目译文始终写入可提交的 JSON 分片。 */
+  cache?: TranslationMemoryCandidateCacheAdapter;
   /** 限制当前项目的历史 Translation Memory 容量。 */
   capacity?: AiI18nTranslationMemoryCapacityOptions;
 }

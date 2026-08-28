@@ -3,7 +3,14 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 import { z } from 'zod';
 import { errorPayload } from './errors.js';
-import { AiI18nProjectService } from './project.js';
+import { deleteOrphanMessages, listOrphanMessages } from './project-orphans.js';
+import { listOverrides, listTranslations } from './project-read.js';
+import {
+  clearTranslations,
+  deleteOverrides,
+  setOverrides,
+  setTranslations,
+} from './project-write.js';
 
 const { version } = createRequire(import.meta.url)('../package.json') as {
   version: string;
@@ -97,8 +104,6 @@ export function createAiI18nMcpServer(): McpServer {
     name: 'ai-i18n-mcp-server',
     version,
   });
-  const project = new AiI18nProjectService();
-
   server.registerTool(
     'ai_i18n_list_translations',
     {
@@ -132,7 +137,7 @@ export function createAiI18nMcpServer(): McpServer {
         .strict(),
       annotations: readAnnotations,
     },
-    async (input) => callTool(() => project.listTranslations(input)),
+    async (input) => callTool(() => listTranslations(input)),
   );
 
   server.registerTool(
@@ -153,7 +158,7 @@ export function createAiI18nMcpServer(): McpServer {
         .strict(),
       annotations: writeAnnotations,
     },
-    async (input) => callTool(() => project.setTranslations(input)),
+    async (input) => callTool(() => setTranslations(input)),
   );
 
   server.registerTool(
@@ -173,7 +178,7 @@ export function createAiI18nMcpServer(): McpServer {
         .strict(),
       annotations: writeAnnotations,
     },
-    async (input) => callTool(() => project.clearTranslations(input)),
+    async (input) => callTool(() => clearTranslations(input)),
   );
 
   server.registerTool(
@@ -192,7 +197,7 @@ export function createAiI18nMcpServer(): McpServer {
         .strict(),
       annotations: readAnnotations,
     },
-    async (input) => callTool(() => project.listOrphanMessages(input)),
+    async (input) => callTool(() => listOrphanMessages(input)),
   );
 
   server.registerTool(
@@ -209,7 +214,7 @@ export function createAiI18nMcpServer(): McpServer {
         .strict(),
       annotations: writeAnnotations,
     },
-    async (input) => callTool(() => project.deleteOrphanMessages(input)),
+    async (input) => callTool(() => deleteOrphanMessages(input)),
   );
 
   server.registerTool(
@@ -217,7 +222,7 @@ export function createAiI18nMcpServer(): McpServer {
     {
       title: 'List human review overrides',
       description:
-        'List locale-specific values from overrides.json, including orphaned entries. Copy override_id exactly into the delete tool. Omit the source_files filter to include orphaned entries; response items omit source_files unless include_source_files is true. Follow next_cursor until has_more is false.',
+        'List locale-specific values from the project overrides directory, including orphaned entries. Copy override_id exactly into the delete tool. Omit the source_files filter to include orphaned entries; response items omit source_files unless include_source_files is true. Follow next_cursor until has_more is false.',
       inputSchema: z
         .object({
           i18n_directory: DirectorySchema,
@@ -230,7 +235,7 @@ export function createAiI18nMcpServer(): McpServer {
         .strict(),
       annotations: readAnnotations,
     },
-    async (input) => callTool(() => project.listOverrides(input)),
+    async (input) => callTool(() => listOverrides(input)),
   );
 
   server.registerTool(
@@ -238,7 +243,7 @@ export function createAiI18nMcpServer(): McpServer {
     {
       title: 'Set human review overrides',
       description:
-        'Atomically add or overwrite overrides.json values by message source, optional comment, and scope. Use one default_locale with item locales omitted for a single-locale batch, or omit it and provide every item locale. Omit files and occurrences for a global review; provide files for file scope; or provide exact list-returned source_file, line, and column values for occurrence scope. files and occurrences are mutually exclusive. Identical duplicates are applied once; conflicting values for one target fail the batch.',
+        'Atomically add or overwrite project override shards by message source, optional comment, and scope. Use one default_locale with item locales omitted for a single-locale batch, or omit it and provide every item locale. Omit files and occurrences for a global review; provide files for file scope; or provide exact list-returned source_file, line, and column values for occurrence scope. files and occurrences are mutually exclusive. Identical duplicates are applied once; conflicting values for one target fail the batch.',
       inputSchema: z
         .object({
           i18n_directory: DirectorySchema,
@@ -250,7 +255,7 @@ export function createAiI18nMcpServer(): McpServer {
         .strict(),
       annotations: writeAnnotations,
     },
-    async (input) => callTool(() => project.setOverrides(input)),
+    async (input) => callTool(() => setOverrides(input)),
   );
 
   server.registerTool(
@@ -258,7 +263,7 @@ export function createAiI18nMcpServer(): McpServer {
     {
       title: 'Delete human review overrides',
       description:
-        'Atomically delete locale-specific overrides.json values by exact opaque override_id values returned by ai_i18n_list_overrides.',
+        'Atomically delete locale-specific project override shards by exact opaque override_id values returned by ai_i18n_list_overrides.',
       inputSchema: z
         .object({
           i18n_directory: DirectorySchema,
@@ -267,7 +272,7 @@ export function createAiI18nMcpServer(): McpServer {
         .strict(),
       annotations: writeAnnotations,
     },
-    async (input) => callTool(() => project.deleteOverrides(input)),
+    async (input) => callTool(() => deleteOverrides(input)),
   );
 
   return server;

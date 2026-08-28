@@ -185,7 +185,7 @@ export async function setOverrides(
   let unchangedCount = 0;
   // overrides 使用独立锁；人工结果不会写回 AI Translation Memory。
   await transactTranslationOverrides(
-    path.join(project.directory, 'overrides.json'),
+    path.join(project.directory, 'overrides'),
     (overrides) => {
       const entries = atomicOverrides(overrides);
       for (const { input: update, message: extracted } of targets) {
@@ -260,7 +260,7 @@ export async function deleteOverrides(
   let deletedCount = 0;
   let unchangedCount = 0;
   await transactTranslationOverrides(
-    path.join(project.directory, 'overrides.json'),
+    path.join(project.directory, 'overrides'),
     (overrides) => {
       for (const target of targets) {
         const index = overrides.rules.findIndex((rule) =>

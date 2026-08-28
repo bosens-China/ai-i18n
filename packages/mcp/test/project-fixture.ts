@@ -1,7 +1,11 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { openTranslationMemoryStore } from '@ai-i18n/core/translation-memory';
-import { sqlite } from '@ai-i18n/sqlite';
+import {
+  openTranslationMemoryStore,
+  readTranslationOverrides,
+  transactTranslationOverrides,
+} from '@ai-i18n/core/translation-memory';
+import type { TranslationOverridesFile } from '@ai-i18n/core';
 import { closeProjectMemoryStores } from '../src/project-files';
 
 const tempDirectories: string[] = [];
@@ -15,20 +19,14 @@ export async function cleanupFixtures(): Promise<void> {
   );
 }
 
-export async function fixture(
-  storage: 'json' | 'sqlite' = 'json',
-): Promise<string> {
-  // 放在 MCP package 下，使 SQLite marker 能像真实消费项目一样向上解析已安装适配器。
+export async function fixture(): Promise<string> {
   const root = await fs.mkdtemp(
     path.join(path.resolve('packages/mcp'), '.ai-i18n-mcp-'),
   );
   tempDirectories.push(root);
   const directory = path.join(root, 'apps/web/i18n');
   await fs.mkdir(path.join(directory, 'extracted'), { recursive: true });
-  const store = await openTranslationMemoryStore({
-    directory,
-    storage: storage === 'sqlite' ? sqlite() : 'json',
-  });
+  const store = await openTranslationMemoryStore(directory);
   await store.transact((memory) => {
     memory.messages = {
       保存: {
@@ -44,10 +42,6 @@ export async function fixture(
     };
   });
   store.close();
-  await fs.writeFile(
-    path.join(directory, 'overrides.json'),
-    JSON.stringify({ version: 2, rules: [] }),
-  );
   await fs.writeFile(
     path.join(directory, 'extracted/src_home.ts.json'),
     JSON.stringify({
@@ -77,7 +71,7 @@ export interface MemoryDocument {
 export async function readFixtureMemory(
   directory: string,
 ): Promise<MemoryDocument> {
-  const store = await openTranslationMemoryStore({ directory });
+  const store = await openTranslationMemoryStore(directory);
   try {
     return (await store.load()) as MemoryDocument;
   } finally {
@@ -88,9 +82,19 @@ export async function readFixtureMemory(
 export async function readFixtureOverrides(
   directory: string,
 ): Promise<unknown> {
-  return JSON.parse(
-    await fs.readFile(path.join(directory, 'overrides.json'), 'utf8'),
-  ) as unknown;
+  return readTranslationOverrides(path.join(directory, 'overrides'));
+}
+
+export async function writeFixtureOverrides(
+  directory: string,
+  value: TranslationOverridesFile,
+): Promise<void> {
+  await transactTranslationOverrides(
+    path.join(directory, 'overrides'),
+    (draft) => {
+      draft.rules = structuredClone(value.rules);
+    },
+  );
 }
 
 export async function addFixtureMessage(
@@ -181,7 +185,7 @@ async function updateMemory(
   directory: string,
   update: (messages: Record<string, unknown>) => void,
 ): Promise<void> {
-  const store = await openTranslationMemoryStore({ directory });
+  const store = await openTranslationMemoryStore(directory);
   try {
     await store.transact((memory) => update(memory.messages));
   } finally {

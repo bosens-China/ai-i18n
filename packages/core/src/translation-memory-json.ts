@@ -7,50 +7,35 @@ import {
   parseTranslationMemoryFile,
   type CacheMessage,
   type TranslationMemoryFile,
+  type TranslationValue,
 } from './schema.js';
 import {
-  legacyTranslationMemoryPath,
-  projectKey,
-} from './translation-memory-paths.js';
-import type { TranslationMemoryStore } from './translation-memory-store-types.js';
-import { readJson, stableJson, withFileLock } from './translation-memory.js';
+  atomicJsonJournalPath,
+  isRecord,
+  listAtomicJsonFiles,
+  readJson,
+  stableJson,
+  syncAtomicJsonFiles,
+  withFileLock,
+} from './translation-memory-files.js';
 
-interface ShardManifest {
+interface AtomicTranslationFile {
   version: 1;
-  revision: number;
-  prefixLength: 2;
-  shards: string[];
+  id: string;
+  source: string;
+  sourceLang: string;
+  comment?: string;
+  locale: string;
+  value: TranslationValue;
 }
 
-interface ShardFile {
-  version: 1;
-  messages: Record<string, CacheMessage>;
-}
-
-const MANIFEST = 'manifest.json';
-const JOURNAL = '.transaction.json';
-
-export class JsonTranslationMemoryStore implements TranslationMemoryStore {
-  readonly storage = 'json' as const;
-  readonly projectKey: string;
-
-  constructor(
-    readonly directory: string,
-    private readonly translationsDirectory: string,
-  ) {
-    this.projectKey = projectKey(directory);
-  }
+export class JsonTranslationMemoryStore {
+  constructor(private readonly translationsDirectory: string) {}
 
   async load(): Promise<TranslationMemoryFile> {
     return withFileLock(this.translationsDirectory, async () => {
       await this.recover();
-      const current = await this.readCurrent();
-      // TODO(stable-release): 首个非 prerelease 稳定版本发布前，删除单文件
-      // translations.json 的读取、自动迁移、旧路径、测试与文档。
-      if (await exists(legacyTranslationMemoryPath(this.directory))) {
-        await this.commit(current);
-      }
-      return current;
+      return this.readCurrent();
     });
   }
 
@@ -66,24 +51,22 @@ export class JsonTranslationMemoryStore implements TranslationMemoryStore {
       draft.version = 1;
       draft.revision = current.revision;
       parseTranslationMemoryFile(draft);
-      if (stableJson(draft) === stableJson(current)) return draft;
-      draft.revision += 1;
+      if (stableJson(draft.messages) === stableJson(current.messages)) {
+        return draft;
+      }
+      draft.revision = revisionFor(draft.messages);
       await writeFile(this.journalPath(), stableJson(draft), {
         encoding: 'utf8',
         chown: false,
         mode: false,
       });
-      await this.commit(draft, current);
+      await this.commit(draft);
       return draft;
     });
   }
 
   async watchFiles(): Promise<string[]> {
-    const manifest = await this.readManifest();
-    return [
-      this.manifestPath(),
-      ...(manifest?.shards ?? []).map((shard) => this.shardPath(shard)),
-    ];
+    return listAtomicJsonFiles(this.translationsDirectory);
   }
 
   manages(file: string): boolean {
@@ -98,44 +81,48 @@ export class JsonTranslationMemoryStore implements TranslationMemoryStore {
     );
   }
 
-  async removeProjectData(): Promise<void> {
-    await fs.rm(this.translationsDirectory, { recursive: true, force: true });
-    await fs.rm(legacyTranslationMemoryPath(this.directory), { force: true });
-  }
-
   close(): void {}
 
   private async readCurrent(): Promise<TranslationMemoryFile> {
-    const journal = await readJson(this.journalPath());
-    if (journal !== undefined) return parseTranslationMemoryFile(journal);
-    const manifest = await this.readManifest();
-    if (!manifest) {
-      const legacy = await readJson(
-        legacyTranslationMemoryPath(this.directory),
-      );
-      return legacy === undefined
-        ? emptyMemory()
-        : parseTranslationMemoryFile(legacy);
-    }
     const messages: Record<string, CacheMessage> = {};
-    for (const shard of manifest.shards) {
-      const value = await readJson(this.shardPath(shard));
-      const parsed = parseShard(value, shard);
-      for (const [messageId, message] of Object.entries(parsed.messages)) {
-        if (messages[messageId]) {
-          throw new Error(
-            diagnosticMessage(
-              `[ai-i18n] JSON 翻译分片中存在重复消息 ID“${messageId}”。`,
-              `[ai-i18n] Duplicate message ID "${messageId}" in JSON translation shards.`,
-            ),
-          );
-        }
-        messages[messageId] = message;
+    for (const file of await listAtomicJsonFiles(this.translationsDirectory)) {
+      const entry = parseAtomicTranslation(await readJson(file), file);
+      const expected = this.targetPath(entry);
+      if (path.resolve(file) !== path.resolve(expected)) {
+        throw invalidAtomicFile(
+          file,
+          'translation shard path does not match its identity',
+        );
       }
+      const current = messages[entry.id];
+      if (
+        current &&
+        (current.source !== entry.source ||
+          current.sourceLang !== entry.sourceLang ||
+          current.comment !== entry.comment)
+      ) {
+        throw invalidAtomicFile(
+          file,
+          `message ID "${entry.id}" has conflicting metadata`,
+        );
+      }
+      const message = (messages[entry.id] ??= {
+        source: entry.source,
+        sourceLang: entry.sourceLang,
+        ...(entry.comment ? { comment: entry.comment } : {}),
+        translations: {},
+      });
+      if (entry.locale in message.translations) {
+        throw invalidAtomicFile(
+          file,
+          `duplicate locale "${entry.locale}" for message "${entry.id}"`,
+        );
+      }
+      message.translations[entry.locale] = entry.value;
     }
     return parseTranslationMemoryFile({
       version: 1,
-      revision: manifest.revision,
+      revision: revisionFor(messages),
       messages,
     });
   }
@@ -146,160 +133,104 @@ export class JsonTranslationMemoryStore implements TranslationMemoryStore {
       await this.commit(parseTranslationMemoryFile(value));
   }
 
-  private async commit(
-    memory: TranslationMemoryFile,
-    previousMemory?: TranslationMemoryFile,
-  ): Promise<void> {
-    await fs.mkdir(this.translationsDirectory, { recursive: true });
-    const previousManifest = await this.readManifest();
-    const grouped = groupMessages(memory);
-    // 旧单文件迁移和 journal 恢复没有可信的已提交分片，仍需全量写入。
-    const previousGrouped =
-      previousManifest && previousMemory
-        ? groupMessages(previousMemory)
-        : undefined;
-    const shards = [...grouped.keys()].sort();
-    for (const shard of shards) {
-      const value: ShardFile = { version: 1, messages: grouped.get(shard)! };
-      const serialized = stableJson(value);
-      const previousMessages = previousGrouped?.get(shard);
-      if (
-        previousMessages &&
-        stableJson({ version: 1, messages: previousMessages }) === serialized
-      ) {
-        continue;
+  private async commit(memory: TranslationMemoryFile): Promise<void> {
+    const desired = new Map<string, AtomicTranslationFile>();
+    for (const [id, message] of Object.entries(memory.messages)) {
+      for (const [locale, value] of Object.entries(message.translations)) {
+        const entry: AtomicTranslationFile = {
+          version: 1,
+          id,
+          source: message.source,
+          sourceLang: message.sourceLang,
+          ...(message.comment ? { comment: message.comment } : {}),
+          locale,
+          value,
+        };
+        desired.set(this.targetPath(entry), entry);
       }
-      await writeFile(this.shardPath(shard), serialized, {
-        encoding: 'utf8',
-        chown: false,
-        mode: false,
-      });
     }
-    const stale = (previousManifest?.shards ?? []).filter(
-      (shard) => !grouped.has(shard),
+    await syncAtomicJsonFiles(this.translationsDirectory, desired);
+  }
+
+  private targetPath(entry: AtomicTranslationFile): string {
+    const hash = translationTargetHash(entry);
+    return path.join(
+      this.translationsDirectory,
+      encodeURIComponent(entry.locale),
+      hash.slice(0, 2),
+      `${hash}.json`,
     );
-    for (const shard of stale)
-      await fs.rm(this.shardPath(shard), { force: true });
-    const manifest: ShardManifest = {
-      version: 1,
-      revision: memory.revision,
-      prefixLength: 2,
-      shards,
-    };
-    await writeFile(this.manifestPath(), stableJson(manifest), {
-      encoding: 'utf8',
-      chown: false,
-      mode: false,
-    });
-    await fs.rm(legacyTranslationMemoryPath(this.directory), { force: true });
-    await fs.rm(this.journalPath(), { force: true });
-  }
-
-  private async readManifest(): Promise<ShardManifest | undefined> {
-    const value = await readJson(this.manifestPath());
-    if (value === undefined) return undefined;
-    if (!isRecord(value)) throw invalidManifest();
-    if (
-      value.version !== 1 ||
-      value.prefixLength !== 2 ||
-      !Number.isInteger(value.revision) ||
-      (value.revision as number) < 0 ||
-      !Array.isArray(value.shards) ||
-      value.shards.some(
-        (entry) => typeof entry !== 'string' || !/^[0-9a-f]{2}$/.test(entry),
-      )
-    ) {
-      throw invalidManifest();
-    }
-    const shards = [...new Set(value.shards as string[])].sort();
-    if (shards.length !== value.shards.length) throw invalidManifest();
-    return {
-      version: 1,
-      revision: value.revision as number,
-      prefixLength: 2,
-      shards,
-    };
-  }
-
-  private manifestPath(): string {
-    return path.join(this.translationsDirectory, MANIFEST);
   }
 
   private journalPath(): string {
-    return path.join(this.translationsDirectory, JOURNAL);
-  }
-
-  private shardPath(shard: string): string {
-    return path.join(this.translationsDirectory, `${shard}.json`);
+    return atomicJsonJournalPath(this.translationsDirectory);
   }
 }
 
-function shardName(messageId: string): string {
-  return createHash('sha256').update(messageId).digest('hex').slice(0, 2);
+function translationTargetHash(
+  entry: Pick<
+    AtomicTranslationFile,
+    'sourceLang' | 'source' | 'comment' | 'locale'
+  >,
+): string {
+  return createHash('sha256')
+    .update(
+      JSON.stringify([
+        entry.sourceLang,
+        entry.source,
+        entry.comment ?? null,
+        entry.locale,
+      ]),
+    )
+    .digest('hex');
 }
 
-function groupMessages(
-  memory: TranslationMemoryFile,
-): Map<string, Record<string, CacheMessage>> {
-  const grouped = new Map<string, Record<string, CacheMessage>>();
-  for (const [messageId, message] of Object.entries(memory.messages)) {
-    const shard = shardName(messageId);
-    const messages = grouped.get(shard) ?? {};
-    messages[messageId] = message;
-    grouped.set(shard, messages);
+function parseAtomicTranslation(
+  value: unknown,
+  file: string,
+): AtomicTranslationFile {
+  if (!isRecord(value)) throw invalidAtomicFile(file, 'expected an object');
+  const keys = new Set([
+    'version',
+    'id',
+    'source',
+    'sourceLang',
+    'comment',
+    'locale',
+    'value',
+  ]);
+  if (
+    value.version !== 1 ||
+    typeof value.id !== 'string' ||
+    typeof value.source !== 'string' ||
+    typeof value.sourceLang !== 'string' ||
+    (value.comment !== undefined && typeof value.comment !== 'string') ||
+    typeof value.locale !== 'string' ||
+    (typeof value.value !== 'string' && value.value !== null) ||
+    Object.keys(value).some((key) => !keys.has(key))
+  ) {
+    throw invalidAtomicFile(file, 'invalid fields');
   }
-  return grouped;
+  return value as unknown as AtomicTranslationFile;
 }
 
-function parseShard(value: unknown, shard: string): ShardFile {
-  if (!isRecord(value) || value.version !== 1 || !isRecord(value.messages)) {
-    throw new Error(
-      diagnosticMessage(
-        `[ai-i18n] 翻译分片“${shard}.json”无效。`,
-        `[ai-i18n] Invalid translation shard "${shard}.json".`,
-      ),
-    );
-  }
-  const memory = parseTranslationMemoryFile({
-    version: 1,
-    revision: 0,
-    messages: value.messages,
-  });
-  for (const messageId of Object.keys(memory.messages)) {
-    if (shardName(messageId) !== shard) {
-      throw new Error(
-        diagnosticMessage(
-          `[ai-i18n] 消息“${messageId}”存放在错误的翻译分片中。`,
-          `[ai-i18n] Message "${messageId}" is stored in the wrong translation shard.`,
-        ),
-      );
-    }
-  }
-  return { version: 1, messages: memory.messages };
-}
-
-function emptyMemory(): TranslationMemoryFile {
-  return { version: 1, revision: 0, messages: {} };
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
-}
-
-function invalidManifest(): Error {
-  return new Error(
-    diagnosticMessage(
-      '[ai-i18n] 翻译分片清单无效。',
-      '[ai-i18n] Invalid translation shard manifest.',
-    ),
+function revisionFor(messages: Record<string, CacheMessage>): number {
+  if (Object.keys(messages).length === 0) return 0;
+  return Number.parseInt(
+    createHash('sha256')
+      .update(stableJson(messages))
+      .digest('hex')
+      .slice(0, 12),
+    16,
   );
 }
 
-async function exists(file: string): Promise<boolean> {
-  try {
-    await fs.access(file);
-    return true;
-  } catch {
-    return false;
-  }
+function invalidAtomicFile(file: string, reason: string): Error {
+  const relative = path.basename(file);
+  return new Error(
+    diagnosticMessage(
+      `[ai-i18n] 原子翻译分片“${relative}”无效：${reason}。`,
+      `[ai-i18n] Invalid atomic translation shard "${relative}": ${reason}.`,
+    ),
+  );
 }

@@ -1,15 +1,5 @@
-import { createHash } from 'node:crypto';
 import os from 'node:os';
 import path from 'node:path';
-
-export function projectKey(directory: string): string {
-  const resolved = path.resolve(directory);
-  const stable =
-    process.platform === 'win32'
-      ? resolved.toLocaleLowerCase('en-US')
-      : resolved;
-  return createHash('sha256').update(stable).digest('hex');
-}
 
 export function globalTranslationMemoryPath(
   explicitDirectory?: string,

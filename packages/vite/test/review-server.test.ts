@@ -3,6 +3,7 @@ import path from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
 import { aiI18n, type AiI18nOptions } from '../src/index';
 import { sqlite } from '@ai-i18n/sqlite';
+import { readTranslationOverrides } from '@ai-i18n/core/translation-memory';
 import { aiI18nReview } from '../src/review';
 import {
   REVIEW_CLIENT_MODULE_PATH,
@@ -207,8 +208,8 @@ describe('review server', () => {
       }),
     });
     expect(saved.status).toBe(200);
-    const savedOverrides = JSON.parse(
-      await fs.readFile(path.join(root, 'i18n/overrides.json'), 'utf8'),
+    const savedOverrides = await readTranslationOverrides(
+      path.join(root, 'i18n/overrides'),
     );
     expect(savedOverrides.rules[0]).toMatchObject({
       occurrences: [
@@ -257,18 +258,18 @@ describe('review server', () => {
     expect(method.headers.get('allow')).toBe('POST, DELETE');
   });
 
-  it.each(['json', 'sqlite'] as const)(
-    'seeds direct Review access from the latest Build extraction snapshot with %s storage',
-    async (storage) => {
+  it.each(['without cache', 'with sqlite cache'] as const)(
+    'seeds direct Review access from the latest Build extraction snapshot %s',
+    async (mode) => {
       const root = await fixtureRoot();
-      if (storage === 'sqlite') {
+      if (mode === 'with sqlite cache') {
         vi.stubEnv('AI_I18N_DATA_DIR', path.join(root, 'user-data'));
       }
       const storageOptions: AiI18nOptions = {
         ...options,
-        translationMemory: {
-          storage: storage === 'sqlite' ? sqlite() : 'json',
-        },
+        ...(mode === 'with sqlite cache'
+          ? { translationMemory: { cache: sqlite() } }
+          : {}),
       };
       await write(
         root,

@@ -14,7 +14,7 @@ Vue 模板、响应式更新和 `tRef()` 问题见 [Vue 常见问题](/guide/faq
 ## 为什么会安装 fs-native-extensions？
 
 `@ai-i18n/vite` 通过 `@ai-i18n/core` 依赖 `fs-native-extensions`。Vite 与
-`@ai-i18n/mcp` 可能同时修改分片 JSON Translation Memory 或 `overrides.json`，因此需要跨进程文件锁，
+`@ai-i18n/mcp` 可能同时修改 `translations/` 或 `overrides/` 原子分片，因此需要跨进程文件锁，
 把“读取 → 修改 → 原子写入”整体串行化。否则，两个进程同时读写时，后完成的进程可能覆盖
 另一个进程的修改。
 
@@ -149,7 +149,7 @@ Vue Router、组件库或其他业务依赖，说明剩余重载来自项目自�
 ## 为什么切换语言后仍然显示源文案？
 
 缺失翻译或值为 `null` 时，Runtime 固定回退到 source。检查
-当前 Translation Memory 或 `i18n/overrides.json` 中是否存在目标 locale 的有效译文，并让
+项目 `i18n/translations/` 或 `i18n/overrides/` 中是否存在目标 locale 的有效译文，并让
 运行中的 Vite Dev 自动同步，或重新执行一次 Vite Build。
 
 可以通过 [AI 翻译](/guide/advanced/ai-translation)配置 Provider，也可以通过
@@ -187,5 +187,5 @@ MCP 或 AI Agent。完成后改回默认 `reuse`。详见
 SQLite 不会复用所有历史译文。当前项目尚无译文时，原文、源语言、目标语言和 `comment` 必须完全一致，
 并且只能存在一个译文候选。多个候选可能代表不同语境，ai-i18n 会保持缺失，不会自动猜测。
 
-请先确认项目内存在 `i18n/storage.json`，再按
+请先确认 Vite 配置使用 `translationMemory.cache: sqlite()`，再按
 [SQLite 未复用译文时如何排查](/guide/advanced/translation-memory#sqlite-未复用译文时如何排查)逐项检查。

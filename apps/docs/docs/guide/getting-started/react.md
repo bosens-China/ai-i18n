@@ -102,13 +102,13 @@ Build，确认入口可达源码均已提取，并检查以下文件：
 ```text
 src/ai-i18n.d.ts
 i18n/translations/
-i18n/overrides.json
+i18n/overrides/
 i18n/extracted/
 i18n/locales/
-i18n/storage.json  # 仅 SQLite
 ```
 
-应提交声明和项目内译文；SQLite 还需提交存储标记。忽略可重新生成的 `extracted/` 与 `locales/`。
+应提交声明、项目自动译文和人工覆盖。忽略可重新生成的 `extracted/` 与 `locales/`；个人 SQLite
+候选缓存位于用户数据目录，不属于项目文件。
 完整规则见 [生成文件与 Git](/guide/basic/directory)。
 
 ## 接入 UI 组件库

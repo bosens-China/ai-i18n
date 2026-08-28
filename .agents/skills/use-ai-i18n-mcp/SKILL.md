@@ -1,6 +1,6 @@
 ---
 name: use-ai-i18n-mcp
-description: Use the eight local ai-i18n MCP tools to inspect missing or orphaned translations, update the configured JSON or SQLite Translation Memory, and manage reviewed overrides.json values. Use when working with ai_i18n_list_translations, ai_i18n_set_translations, ai_i18n_clear_translations, ai_i18n_list_orphan_messages, ai_i18n_delete_orphan_messages, ai_i18n_list_overrides, ai_i18n_set_overrides, or ai_i18n_delete_overrides, especially when a monorepo requires resolving one Vite app's i18n directory first.
+description: Use the eight local ai-i18n MCP tools to inspect missing or orphaned translations, update project Translation Memory JSON shards, and manage reviewed override shards. Use when working with ai_i18n_list_translations, ai_i18n_set_translations, ai_i18n_clear_translations, ai_i18n_list_orphan_messages, ai_i18n_delete_orphan_messages, ai_i18n_list_overrides, ai_i18n_set_overrides, or ai_i18n_delete_overrides, especially when a monorepo requires resolving one Vite app's i18n directory first.
 ---
 
 # Use ai-i18n MCP
@@ -61,7 +61,7 @@ authority when an Agent performs batch work,
 automates writes, audits the complete extracted set, or acts on explicit user-approved wording.
 The embedded workbench's default current-page scope can be switched to all extracted copy; the standalone
 workbench starts with all extracted copy and has no page picker. Multiple picker matches enter a
-file and occurrence locate hierarchy instead of selecting the first result. Both paths write the same `overrides.json`; do not run MCP review writes concurrently with an open
+file and occurrence locate hierarchy instead of selecting the first result. Both paths write the same project `overrides/` shards; do not run MCP review writes concurrently with an open
 review-console save operation.
 
 ## Execute the workflow

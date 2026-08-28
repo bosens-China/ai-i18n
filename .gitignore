@@ -31,3 +31,9 @@ lerna-debug.log*
 # Example build artifacts
 examples/*/i18n/extracted/
 examples/*/i18n/locales/
+
+# ai-i18n transaction and atomic-write temporary files
+**/i18n/translations/.transaction.json
+**/i18n/overrides/.transaction.json
+**/i18n/translations/**/*.tmp-*
+**/i18n/overrides/**/*.tmp-*

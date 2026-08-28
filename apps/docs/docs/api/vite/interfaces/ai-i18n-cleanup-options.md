@@ -26,6 +26,6 @@ interface AiI18nCleanupOptions {
 | `orphanMessages`     | `false` | 删除当前源码不再引用的历史 Translation Memory。 |
 
 `orphanMessages: true` 会先删除当前项目的全部非活跃消息，再执行容量淘汰。它不会删除
-`overrides.json`。SQLite 模式只影响当前项目的数据，不会删除其他项目的共享候选。
+`overrides/`，也不会删除个人 SQLite 缓存中的候选。
 
 首次启用或修改清理策略后，运行一次完整 Build，确认当前入口可达模块已完成提取。

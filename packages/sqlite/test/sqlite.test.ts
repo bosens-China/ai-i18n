@@ -3,7 +3,6 @@ import os from 'node:os';
 import path from 'node:path';
 import Database from 'better-sqlite3';
 import { afterEach, describe, expect, it } from 'vitest';
-import { openTranslationMemoryStore } from '@ai-i18n/core/translation-memory';
 import { sqlite } from '../src/index';
 
 const tempDirectories: string[] = [];
@@ -17,95 +16,53 @@ afterEach(async () => {
 });
 
 describe('@ai-i18n/sqlite', () => {
-  it('migrates JSON through an injected adapter and keeps the SQLite marker', async () => {
-    const root = await temporaryDirectory();
-    const directory = path.join(root, 'i18n');
-    const adapter = sqlite({ dataDirectory: path.join(root, 'global') });
-    const json = await openTranslationMemoryStore({ directory });
-    await json.transact((memory) => {
-      memory.messages.Save = message('保存', 'Save');
-    });
-    json.close();
-
-    const sqliteStore = await openTranslationMemoryStore({
-      directory,
-      storage: adapter,
-    });
-    expect((await sqliteStore.load()).messages.Save).toBeDefined();
-    expect(
-      JSON.parse(
-        await fs.readFile(path.join(directory, 'storage.json'), 'utf8'),
-      ),
-    ).toEqual({ version: 1, storage: 'sqlite' });
-    sqliteStore.close();
-
-    const restoredJson = await openTranslationMemoryStore({
-      directory,
-      storage: 'json',
-      adapters: [adapter],
-    });
-    expect(
-      (await restoredJson.load()).messages.Save?.translations['en-US'],
-    ).toBe('Save');
-    await expect(
-      fs.access(path.join(directory, 'storage.json')),
-    ).rejects.toMatchObject({ code: 'ENOENT' });
-    restoredJson.close();
-  });
-
-  it('shares one unique candidate and refuses ambiguous reuse', async () => {
+  it('remembers candidates without storing project bindings', async () => {
     const root = await temporaryDirectory();
     const dataDirectory = path.join(root, 'global');
-    const first = await sqliteStore(root, 'first', dataDirectory);
-    await first.transact((memory) => {
-      memory.messages.Save = message('保存', 'Save');
-    });
+    const cache = await sqlite({ dataDirectory }).open();
+    await cache.remember([
+      { ...target(), value: 'Save' },
+      { ...target('取消'), value: 'Cancel' },
+    ]);
 
-    const second = await sqliteStore(root, 'second', dataDirectory);
-    const reused = await second.transact((memory) => {
-      memory.messages.Save = message('保存', null);
-    });
-    expect(reused.messages.Save?.translations['en-US']).toBe('Save');
-
-    await second.transact((memory) => {
-      memory.messages.Save!.translations['en-US'] = 'Store';
-    });
-    const third = await sqliteStore(root, 'third', dataDirectory);
-    const ambiguous = await third.transact((memory) => {
-      memory.messages.Save = message('保存', null);
-    });
-    expect(ambiguous.messages.Save?.translations['en-US']).toBeNull();
-    expect(await fs.readdir(dataDirectory)).toContain(
-      'translation-memory.sqlite',
+    await expect(cache.findUnique([target(), target('取消')])).resolves.toEqual(
+      ['Save', 'Cancel'],
     );
+    cache.close();
+
     const database = new Database(
       path.join(dataDirectory, 'translation-memory.sqlite'),
       { readonly: true },
     );
-    expect(database.pragma('user_version', { simple: true })).toBe(1);
+    const tables = database
+      .prepare(
+        "SELECT name FROM sqlite_master WHERE type = 'table' ORDER BY name",
+      )
+      .all() as Array<{ name: string }>;
+    expect(tables.map((row) => row.name)).toEqual(['candidates']);
     database.close();
+  });
 
-    first.close();
-    second.close();
-    third.close();
+  it('returns only a unique candidate and leaves ambiguity unresolved', async () => {
+    const root = await temporaryDirectory();
+    const cache = await sqlite({
+      dataDirectory: path.join(root, 'global'),
+    }).open();
+    await cache.remember([{ ...target(), value: 'Save' }]);
+    await expect(cache.findUnique([target()])).resolves.toEqual(['Save']);
+
+    await cache.remember([{ ...target(), value: 'Store' }]);
+    await expect(cache.findUnique([target()])).resolves.toEqual([undefined]);
+    cache.close();
   });
 });
 
-function message(source: string, value: string | null) {
+function target(source = '保存') {
   return {
     source,
     sourceLang: 'zh-CN',
-    translations: { 'en-US': value },
+    targetLang: 'en-US',
   };
-}
-
-async function sqliteStore(root: string, name: string, dataDirectory: string) {
-  const directory = path.join(root, name);
-  await fs.mkdir(directory, { recursive: true });
-  return openTranslationMemoryStore({
-    directory,
-    storage: sqlite({ dataDirectory }),
-  });
 }
 
 async function temporaryDirectory(): Promise<string> {
