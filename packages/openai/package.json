@@ -1,6 +1,6 @@
 {
   "name": "@ai-i18n/openai",
-  "version": "1.0.0-alpha.17",
+  "version": "1.0.0-alpha.18",
   "description": "OpenAI-compatible AI translation provider for ai-i18n.",
   "keywords": [
     "ai-i18n",

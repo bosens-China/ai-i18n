@@ -1,5 +1,12 @@
 # @ai-i18n/core
 
+## [1.0.0-alpha.16](https://github.com/bosens-China/ai-i18n/compare/core-v1.0.0-alpha.15...core-v1.0.0-alpha.16) (2026-08-29)
+
+
+### Features
+
+* **review-ui:** 支持切换界面语言 ([aad5ac0](https://github.com/bosens-China/ai-i18n/commit/aad5ac073f5657bbb2e942554328f7e4cb26fc40))
+
 ## [1.0.0-alpha.15](https://github.com/bosens-China/ai-i18n/compare/core-v1.0.0-alpha.14...core-v1.0.0-alpha.15) (2026-08-28)
 
 

@@ -1,6 +1,6 @@
 {
   "name": "@ai-i18n/sqlite",
-  "version": "1.0.0-alpha.4",
+  "version": "1.0.0-alpha.5",
   "description": "Optional SQLite Translation Memory adapter for ai-i18n.",
   "keywords": [
     "ai-i18n",
