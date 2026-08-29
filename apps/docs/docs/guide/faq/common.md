@@ -98,8 +98,7 @@ definePagePermissions({
 
 ## 为什么首次打开页面或懒路由很慢？
 
-浏览器显示 `304 Not Modified` 只表示缓存校验成功，不能单独说明耗时发生在网络或 ai-i18n。
-需要区分源码转换和协议写入时，可临时开启 Dev 阶段耗时诊断：
+浏览器显示 `304 Not Modified` 只表示缓存校验成功，不能单独说明耗时来自网络或 ai-i18n。需要定位时，临时开启 Dev 阶段耗时诊断：
 
 ```ts
 aiI18n({
@@ -111,40 +110,11 @@ aiI18n({
 });
 ```
 
-终端只输出达到阈值的阶段和相对 Vite root 的模块 ID。`timing: true` 使用 50ms 默认阈值；
-该功能默认关闭且仅在 Vite Dev 生效。总阶段还会细分为以下子阶段：
+终端只输出达到阈值的阶段和相对 Vite root 的模块 ID。`timing: true` 使用 50ms 默认阈值；该功能默认关闭，且仅在 Vite Dev 生效。
 
-先按最慢阶段定位：
+优先查看最慢的总阶段：`source-transform` 表示模块转换，`file-sync` 表示译文与生成文件同步。总阶段包含子阶段，不能把所有耗时直接相加；`file-sync` 也不代表浏览器一定被同步阻塞。
 
-- `source-transform`：完整源码转换。继续查看 `plugin-ready-wait`、`source-analysis`、
-  `source-registration`、`dependency-resolution` 和 `state-transaction`，判断慢在初始化等待、
-  单文件分析、依赖解析还是内存状态更新。`dependency-resolution` 还可能包含 Vite 加载并转换
-  尚未分析子模块的等待，不能把它全部当作插件自身的解析计算。
-- `file-sync`：一批 Dev 变化的后台持久化。继续查看 `snapshot-build`、`extracted-scan`、
-  `translation-memory-sync`、`extracted-write` 和 `locale-write`，判断慢在快照、存储事务还是文件写入。
-
-总阶段包含相应子阶段，不能把所有日志耗时直接相加。普通 Dev 转换先返回模块结果，连续变化会在
-短时间内合并，后台只更新变化源码对应的提取文件和语言消息；因此 `file-sync` 日志不等于浏览器被
-同步阻塞。人工校对、Provider、外部协议文件变化、关闭 Dev Server 和完整 Build 等一致性边界仍会
-等待必要的写入。
-
-模块文案会随已经请求的业务源码同步进入共享 Runtime，不需要为每个源码再加载一个注册模块。
-开启自动导入时，注入的 Runtime API 会在源码之间复用；关闭自动导入时，普通静态命名的
-`virtual:ai-i18n` 显式 import 也会在 Dev 转换中复用同一个 internal Runtime，并在业务模块内建立
-文件 scope。Vue 编译期宏参数引用的 binding，以及 namespace、动态 import、直接 re-export、
-纯副作用或混合 type/未知导出的 import 会保留 scoped 兼容路径。如果网络面板仍出现大量业务模块，
-先确认它们是否本来就是当前路由的 ESM 依赖。
-
-Build 仍使用静态虚拟模块完成文件注册，但它们会被打进对应业务 chunk，并不等于每个源码文件产生
-一个浏览器请求。排查生产请求数时应查看最终 chunk 与主动动态导入，而不是按构建模块数推断请求数。
-
-如果这些阶段都没有慢日志，继续检查应用自己的路由守卫、鉴权接口和挂载时机。ai-i18n 不控制
-应用何时调用 `mount()`。排查结束后关闭诊断，避免保留额外终端输出。
-
-插件运行时入口默认合并到 Vite 的 `optimizeDeps.exclude`，不会覆盖项目已有的 include/exclude，
-用于避免这些入口在首次打开动态路由时才触发依赖优化和整页重载。如果 Vite 的重载日志只列出
-Vue Router、组件库或其他业务依赖，说明剩余重载来自项目自己的按需依赖发现，需要在应用侧评估是否
-预构建；它不属于 ai-i18n 的文件同步耗时。
+如果没有 ai-i18n 的慢日志，再检查应用自己的路由、接口和挂载逻辑。排查结束后关闭诊断，避免保留额外终端输出。
 
 ## 为什么切换语言后仍然显示源文案？
 

@@ -3,8 +3,6 @@ title: 语言分包与按需加载
 description: 使用 loading 按 locale 拆分 Vite chunk，并在切换语言时展示加载状态
 ---
 
-import { Tab, Tabs } from '@rspress/core/theme';
-
 默认情况下，ai-i18n 会把所有目标语言注册到同一个 Runtime。配置 `loading` 后，每个目标
 locale 会生成独立的 Vite chunk；未提前加载的语言会在首次 `setLang()` 时按需加载。
 
@@ -60,148 +58,27 @@ aiI18n({
 Composition 组件通过 `useI18n()` 读取共享 Ref，纯 Options 组件通过 `i18nComputed()`
 读取已解包状态。React 组件通过 `useI18n()` 订阅，Vanilla JS 通过 `subscribe()` 订阅。
 
-<Tabs>
-  <Tab label="Vue">
-    ```vue
-    <script setup lang="ts">
-    import { t, useI18n } from 'virtual:ai-i18n';
+所有框架都使用相同的流程：切换时禁用入口，显示 `loading` 的目标语言；失败时显示 `error`，并保留
+当前语言。仅在需要记录、重试或跳转等业务动作时处理 `setLang()` 的 rejected Promise：
 
-    const { isLangLoading, langLoadState, setLang } = useI18n();
+```ts
+async function switchLanguage(value: string) {
+  try {
+    await setLang(value);
+  } catch {
+    // 通用错误状态由界面读取 langLoadState.status。
+  }
+}
+```
 
-    async function switchToFrench() {
-      try {
-        await setLang('fr-FR');
-      } catch {
-        // 仅在这里添加业务级恢复动作；通用错误展示直接读取 langLoadState.status。
-      }
-    }
-    </script>
+| 框架                | 读取状态与更新界面的方式                                                              |
+| ------------------- | ------------------------------------------------------------------------------------- |
+| Vue Composition API | 从 `useI18n()` 读取 `isLangLoading`、`langLoadState` 与 `setLang`。                   |
+| Vue Options API     | 将 `i18nComputed()` 展开到根 `computed`，并在 `methods` 中调用 `setLang`。            |
+| React               | 从 `useI18n()` 读取相同字段并在组件中渲染。                                           |
+| Vanilla JS          | 通过 `getLangLoadState()` 读取快照，并使用 `subscribe()` 在页面或视图销毁时取消订阅。 |
 
-    <template>
-      <button :disabled="isLangLoading" @click="switchToFrench">
-        {{ isLangLoading ? t('正在加载语言包…') : t('切换到法语') }}
-      </button>
-      <p v-if="langLoadState.status === 'error'">
-        {{ t('语言包加载失败，请重试') }}
-      </p>
-      <small v-if="langLoadState.status === 'loading'">
-        {{ t('目标语言：') }} {{ langLoadState.targetLang }}
-      </small>
-    </template>
-    ```
-
-  </Tab>
-
-  <Tab label="Vue Options">
-    ```vue
-    <script lang="ts">
-    import { defineComponent } from 'vue';
-    import {
-      i18nComputed,
-      setLang,
-      t,
-    } from 'virtual:ai-i18n';
-
-    export default defineComponent({
-      computed: {
-        ...i18nComputed(),
-      },
-      methods: {
-        t,
-        async switchToFrench() {
-          try {
-            await setLang('fr-FR');
-          } catch {
-            // 通用错误展示直接读取响应式 langLoadState。
-          }
-        },
-      },
-    });
-    </script>
-
-    <template>
-      <button :disabled="isLangLoading" @click="switchToFrench">
-        {{ isLangLoading ? t('正在加载语言包…') : t('切换到法语') }}
-      </button>
-      <p v-if="langLoadState.status === 'error'">
-        {{ t('语言包加载失败，请重试') }}
-      </p>
-      <small v-if="langLoadState.status === 'loading'">
-        {{ t('目标语言：') }} {{ langLoadState.targetLang }}
-      </small>
-    </template>
-    ```
-
-  </Tab>
-
-  <Tab label="React">
-    ```tsx
-    import { useI18n } from 'virtual:ai-i18n';
-
-    export function LanguageButton() {
-      const { isLangLoading, langLoadState, setLang, t } = useI18n();
-
-      async function switchToFrench() {
-        try {
-          await setLang('fr-FR');
-        } catch {
-          // 仅在这里添加业务级恢复动作；通用错误展示直接读取 langLoadState.status。
-        }
-      }
-
-      return (
-        <>
-          <button
-            disabled={isLangLoading}
-            onClick={() => void switchToFrench()}
-          >
-            {isLangLoading ? t('正在加载语言包…') : t('切换到法语')}
-          </button>
-          {langLoadState.status === 'error' ? (
-            <p>{t('语言包加载失败，请重试')}</p>
-          ) : null}
-          {langLoadState.status === 'loading' ? (
-            <small>
-              {t('目标语言：')} {langLoadState.targetLang}
-            </small>
-          ) : null}
-        </>
-      );
-    }
-    ```
-
-  </Tab>
-
-  <Tab label="Vanilla JS">
-    ```js
-    import { getLangLoadState, setLang, subscribe, t } from 'virtual:ai-i18n';
-
-    const button = document.querySelector('#switch-language');
-    const status = document.querySelector('#language-status');
-
-    function render() {
-      const state = getLangLoadState();
-
-      button.disabled = state.status === 'loading';
-      button.textContent =
-        state.status === 'loading' ? t('正在加载语言包…') : t('切换到法语');
-      status.textContent =
-        state.status === 'error' ? t('语言包加载失败，请重试') : '';
-    }
-
-    button.addEventListener('click', () => {
-      // 共享状态不会消费 rejected Promise，调用方仍需显式 catch。
-      void setLang('fr-FR').catch(() => {});
-    });
-
-    render();
-    const unsubscribe = subscribe(render);
-
-    // 页面或视图销毁时调用 unsubscribe()。
-    ```
-
-  </Tab>
-</Tabs>
+各 API 的签名与完整示例见 [Runtime API](/api/runtime/overview)。
 
 加载失败时，Runtime 会保留当前语言并让 Promise reject。应用可以像上例一样捕获错误，
 执行日志、重试计数等业务动作；只需要通用 UI 时可以直接使用内置状态。

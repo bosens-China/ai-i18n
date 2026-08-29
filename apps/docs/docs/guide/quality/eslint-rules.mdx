@@ -3,8 +3,6 @@ title: ESLint 规则参考
 description: 按需调整 ai-i18n ESLint 规则、自动导入和项目路径解析
 ---
 
-import { Tab, Tabs } from '@rspress/core/theme';
-
 本页面向需要自定义 ESLint 行为的项目。常规接入请先阅读 [ESLint](/guide/quality/eslint)。
 
 ## 规则总览
@@ -151,91 +149,16 @@ const lazyPasswordRules = {
 
 ## 框架规则
 
-新项目优先使用与 Vite 框架模式一致的预设。下面按框架说明额外检查，并列出自动导入预设的
-完整规则配置。框架自动导入 API 见 [自动导入](/guide/basic/auto-import)。
+新项目优先使用与 Vite 框架模式一致的预设。自动导入项目分别使用
+`vanilla-auto-import`、`vue-auto-import` 或 `react-auto-import`；预设已包含对应规则，
+不需要手动复制其内部配置。框架自动导入 API 见 [自动导入](/guide/basic/auto-import)。
 
-<Tabs groupId="eslint-framework">
-<Tab label="Vanilla">
-
-自动导入项目使用 `vanilla-auto-import`。该预设的规则配置如下：
-
-```js
-{
-  rules: {
-    'ai-i18n/t-static-args': ['error', { autoImport: ['t'] }],
-    'ai-i18n/no-embedded-markup': ['warn', { autoImport: ['t'] }],
-    'ai-i18n/no-eager-translation': ['warn', { autoImport: ['t'] }],
-    'ai-i18n/no-unsubscribed-runtime-state': [
-      'warn',
-      { autoImport: ['getLang', 'getLangLoadState'] },
-    ],
-    'ai-i18n/static-candidate-limit': ['warn', { autoImport: ['t'] }],
-  },
-}
-```
+### Vanilla
 
 Vanilla 只使用通用规则。它没有组件渲染生命周期，因此 `vanilla-auto-import` 不启用
 `no-unsubscribed-t`。
 
-启用可选的 `no-redundant-auto-import` 时，传入 Vanilla 注入的完整 Runtime API：
-
-```js
-{
-  autoImport: [
-    't',
-    'setLang',
-    'getLang',
-    'getLangs',
-    'getLangLoadState',
-    'subscribe',
-  ],
-}
-```
-
-</Tab>
-<Tab label="Vue">
-
-自动导入项目使用 `vue-auto-import`。该预设的规则配置如下：
-
-```js
-{
-  rules: {
-    'ai-i18n/t-static-args': [
-      'error',
-      { autoImport: ['t', 'tRef', 'tComputed', 'useI18n'] },
-    ],
-    'ai-i18n/no-embedded-markup': [
-      'warn',
-      { autoImport: ['t', 'tRef', 'tComputed', 'useI18n'] },
-    ],
-    'ai-i18n/no-eager-translation': [
-      'warn',
-      {
-        autoImport: ['t', 'tRef', 'tComputed', 'useI18n'],
-        framework: 'vue',
-      },
-    ],
-    'ai-i18n/no-unsubscribed-runtime-state': [
-      'warn',
-      {
-        autoImport: ['getLang', 'getLangLoadState', 'i18nComputed'],
-        framework: 'vue',
-      },
-    ],
-    'ai-i18n/no-unsubscribed-t': [
-      'warn',
-      {
-        autoImport: ['t', 'tRef', 'tComputed', 'useI18n'],
-        framework: 'vue',
-      },
-    ],
-    'ai-i18n/static-candidate-limit': [
-      'warn',
-      { autoImport: ['t', 'tRef', 'tComputed', 'useI18n'] },
-    ],
-  },
-}
-```
+### Vue
 
 Vue template、render 和 computed 可以直接调用词法作用域中的顶层 `t()`。规则还会检查以下
 Composition API 与 Options API 生命周期问题：
@@ -254,60 +177,7 @@ Composition API 与 Options API 生命周期问题：
 自动导入时，`methods: { t }` 或 `methods: { t: translate }` 必须解析到 ai-i18n Runtime
 `t`，才能作为 template binding。
 
-启用可选的 `no-redundant-auto-import` 时，传入 Vue 注入的完整 API：
-
-```js
-{
-  autoImport: [
-    'useI18n',
-    't',
-    'setLang',
-    'getLang',
-    'getLangs',
-    'getLangLoadState',
-    'subscribe',
-    'tRef',
-    'i18nComputed',
-    'tComputed',
-  ],
-}
-```
-
-</Tab>
-<Tab label="React">
-
-自动导入项目使用 `react-auto-import`。该预设的规则配置如下：
-
-```js
-{
-  rules: {
-    'ai-i18n/t-static-args': [
-      'error',
-      { autoImport: ['t', 'useI18n'] },
-    ],
-    'ai-i18n/no-embedded-markup': [
-      'warn',
-      { autoImport: ['t', 'useI18n'] },
-    ],
-    'ai-i18n/no-eager-translation': [
-      'warn',
-      { autoImport: ['t', 'useI18n'] },
-    ],
-    'ai-i18n/no-unsubscribed-runtime-state': [
-      'warn',
-      { autoImport: ['getLang', 'getLangLoadState'] },
-    ],
-    'ai-i18n/no-unsubscribed-t': [
-      'warn',
-      { autoImport: ['t', 'useI18n'] },
-    ],
-    'ai-i18n/static-candidate-limit': [
-      'warn',
-      { autoImport: ['t', 'useI18n'] },
-    ],
-  },
-}
-```
+### React
 
 React 在通用规则之外增加组件订阅检查：
 
@@ -317,24 +187,8 @@ React 在通用规则之外增加组件订阅检查：
 | 渲染路径读取 Runtime 状态快照          | `no-unsubscribed-runtime-state` | 使用 `useI18n()` 返回的响应式状态。 |
 | 事件处理器或普通延迟函数调用顶层 `t()` | 不触发                          | 保持按需读取。                      |
 
-启用可选的 `no-redundant-auto-import` 时，传入 React 注入的完整 API：
-
-```js
-{
-  autoImport: [
-    'useI18n',
-    't',
-    'setLang',
-    'getLang',
-    'getLangs',
-    'getLangLoadState',
-    'subscribe',
-  ],
-}
-```
-
-</Tab>
-</Tabs>
+需要统一自动导入风格时，再启用 `no-redundant-auto-import`。该规则支持 `eslint --fix`；完整
+选项见下文。
 
 ## 规则选项
 
@@ -347,8 +201,8 @@ React 在通用规则之外增加组件订阅检查：
 
 翻译调用规则中的 `autoImport: true` 是兼容性简写，只启用 `t` 与 `useI18n`，不包含 Vue 专属的
 `tRef` 和 `tComputed`。状态快照规则中的 `autoImport: true` 会启用 `getLang`、
-`getLangLoadState` 与 `i18nComputed`。框架项目应优先使用预设；手动配置时使用 Tabs 中的明确
-API 数组。
+`getLangLoadState` 与 `i18nComputed`。框架项目应优先使用预设；手动配置时参考对应规则的
+API 类型声明。
 
 `no-eager-translation`、`no-unsubscribed-t` 和 `no-unsubscribed-runtime-state` 只判断当前
 文件内可以确定的生命周期问题，不追踪跨文件 store 数据流。

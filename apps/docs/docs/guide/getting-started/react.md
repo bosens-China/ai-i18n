@@ -107,7 +107,7 @@ i18n/extracted/
 i18n/locales/
 ```
 
-应提交声明、项目自动译文和人工覆盖。忽略可重新生成的 `extracted/` 与 `locales/`；个人 SQLite
+应提交声明、项目自动译文和人工译文。忽略可重新生成的 `extracted/` 与 `locales/`；个人 SQLite
 候选缓存位于用户数据目录，不属于项目文件。
 完整规则见 [生成文件与 Git](/guide/basic/directory)。
 

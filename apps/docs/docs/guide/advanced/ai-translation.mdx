@@ -78,15 +78,7 @@ AI_API_KEY=replace-me
 
 本地无认证模型可以省略 `AI_API_KEY`。
 
-## 审查模型日志
-
-日志默认关闭。设置 `provider.logging: true` 后，OpenAI Provider 在 Vite 项目根目录的 `logs/` 生成
-普通文本日志。日志用 `batchId` 串联模型输入、模型输出、校验、Vite 状态应用与持久化结果；并发
-批次不会串号。
-
-`provider.logging` 也可直接设置为相对 Vite root 或绝对路径的目录字符串。
-
-如何开关、逐块阅读、定位失败、交给 AI Agent 分析，以及 Git 忽略和安全边界，见
+需要审查模型请求或排查翻译失败时，配置 `provider.logging` 并查看
 [LLM 日志与排障](/guide/advanced/llm-logs)。
 
 ## 编写翻译风格
