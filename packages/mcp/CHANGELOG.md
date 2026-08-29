@@ -1,5 +1,19 @@
 # @ai-i18n/mcp
 
+## [1.0.0-alpha.21](https://github.com/bosens-China/ai-i18n/compare/mcp-v1.0.0-alpha.20...mcp-v1.0.0-alpha.21) (2026-08-29)
+
+
+### Bug Fixes
+
+* **mcp:** 统一项目译文存储描述 ([3c8459a](https://github.com/bosens-China/ai-i18n/commit/3c8459adbcb5bedde3a16272535c90dc65560525))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @ai-i18n/core bumped to 1.0.0-alpha.16
+
 ## [1.0.0-alpha.20](https://github.com/bosens-China/ai-i18n/compare/mcp-v1.0.0-alpha.19...mcp-v1.0.0-alpha.20) (2026-08-28)
 
 

@@ -1,5 +1,23 @@
 # @ai-i18n/vite
 
+## [1.0.0-alpha.27](https://github.com/bosens-China/ai-i18n/compare/vite-v1.0.0-alpha.26...vite-v1.0.0-alpha.27) (2026-08-29)
+
+
+### Features
+
+* **review-ui:** 支持切换界面语言 ([aad5ac0](https://github.com/bosens-China/ai-i18n/commit/aad5ac073f5657bbb2e942554328f7e4cb26fc40))
+* **vite:** 优化控制台诊断配色 ([82485a5](https://github.com/bosens-China/ai-i18n/commit/82485a5273a30182055fd8e6312b6a3d2f332dd2))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @ai-i18n/analyzer bumped to 1.0.0-alpha.23
+    * @ai-i18n/core bumped to 1.0.0-alpha.16
+  * devDependencies
+    * @ai-i18n/sqlite bumped to 1.0.0-alpha.5
+
 ## [1.0.0-alpha.26](https://github.com/bosens-China/ai-i18n/compare/vite-v1.0.0-alpha.25...vite-v1.0.0-alpha.26) (2026-08-28)
 
 
