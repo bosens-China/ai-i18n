@@ -1,3 +1,4 @@
+import { stripVTControlCharacters } from 'node:util';
 import { describe, expect, it, vi } from 'vitest';
 import { createDevTimingReporter } from '../src/dev-timing';
 
@@ -32,7 +33,7 @@ describe('Dev timing diagnostics', () => {
     await timing.measure('file-sync', 'src/slow.ts', async () => {});
 
     expect(log).toHaveBeenCalledTimes(1);
-    expect(log.mock.calls[0]?.[0]).toMatch(
+    expect(stripVTControlCharacters(log.mock.calls[0]?.[0] ?? '')).toMatch(
       /stage=file-sync durationMs=11\.00 module="src\/slow\.ts"/,
     );
   });
@@ -54,7 +55,7 @@ describe('Dev timing diagnostics', () => {
 
     await timing.measure('source-registration', 'src/page.ts', async () => {});
 
-    expect(log.mock.calls[0]?.[0]).toContain(
+    expect(stripVTControlCharacters(log.mock.calls[0]?.[0] ?? '')).toContain(
       '阶段=source-registration 耗时=1.00ms 模块="src/page.ts"',
     );
   });

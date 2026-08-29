@@ -1,3 +1,4 @@
+import { stripVTControlCharacters } from 'node:util';
 import { runtimeMessageId } from '@ai-i18n/core';
 import { describe, expect, it, vi } from 'vitest';
 import { FileStore } from '../src/file-store';
@@ -16,7 +17,9 @@ describe('@ai-i18n/vite plugin', () => {
     );
     await close();
 
-    const messages = timingInfo.mock.calls.map(([message]) => message);
+    const messages = timingInfo.mock.calls.map(([message]) =>
+      stripVTControlCharacters(message),
+    );
     expect(messages).toEqual(
       expect.arrayContaining([
         expect.stringContaining('stage=plugin-ready-wait'),
