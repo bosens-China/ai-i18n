@@ -109,7 +109,7 @@ export function createAiI18nMcpServer(): McpServer {
     {
       title: 'List translations',
       description:
-        'Inspect extracted source files and raw Translation Memory values from the configured JSON or SQLite storage. Omit source_files on the first call. view defaults to missing and returns one writable message object per shared source and comment; summary returns per-file counts; all returns every message. source_contains and translation_contains provide case-insensitive message filtering for missing or all. source_files and per-file locations are omitted unless explicitly requested. Follow next_cursor until has_more is false.',
+        'Inspect extracted source files and raw Translation Memory values from project JSON shards. Omit source_files on the first call. view defaults to missing and returns one writable message object per shared source and comment; summary returns per-file counts; all returns every message. source_contains and translation_contains provide case-insensitive message filtering for missing or all. source_files and per-file locations are omitted unless explicitly requested. Follow next_cursor until has_more is false.',
       inputSchema: z
         .object({
           i18n_directory: DirectorySchema,
@@ -145,7 +145,7 @@ export function createAiI18nMcpServer(): McpServer {
     {
       title: 'Set translation values',
       description:
-        'Atomically update raw Translation Memory values in the configured JSON or SQLite storage by message source and optional comment. Use one default_locale with item locales omitted for a single-locale batch, or omit it and provide every item locale. The same message is shared across every source file. Identical duplicate updates are applied once; different values for one target fail the batch. Existing non-null values are protected unless overwrite_existing is true.',
+        'Atomically update raw Translation Memory values in project JSON shards by message source and optional comment. Use one default_locale with item locales omitted for a single-locale batch, or omit it and provide every item locale. The same message is shared across every source file. Identical duplicate updates are applied once; different values for one target fail the batch. Existing non-null values are protected unless overwrite_existing is true.',
       inputSchema: z
         .object({
           i18n_directory: DirectorySchema,
