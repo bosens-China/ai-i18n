@@ -19,6 +19,7 @@ describe('review UI build', () => {
     expect(source).toContain('Microsoft YaHei UI');
     expect(source).not.toContain('font-family:Inter');
     expect(source).not.toContain('.browse-scope-option');
+    expect(source).not.toContain('process.env');
     expect(source).toMatch(/\.review-root\[data-theme=dark\]/);
     expect(source).toMatch(/\.review-root\[data-theme=light\]/);
     expect(files).not.toContain('review-ui.css');

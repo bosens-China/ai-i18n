@@ -61,9 +61,14 @@ async function readSources(directory: string): Promise<string> {
   return contents.join('\n');
 }
 
-export default defineConfig({
+export default defineConfig(({ command }) => ({
   base: '/__ai-i18n/',
   plugins: [vue(), shadowStyles()],
+  // Vite 的 library mode 不会自动替换 Vue 产物中的 NODE_ENV，需显式移除浏览器端 process 访问。
+  define:
+    command === 'build'
+      ? { 'process.env.NODE_ENV': JSON.stringify('production') }
+      : undefined,
   build: {
     target: 'baseline-widely-available',
     sourcemap: true,
@@ -74,4 +79,4 @@ export default defineConfig({
       cssFileName: 'review-ui',
     },
   },
-});
+}));
