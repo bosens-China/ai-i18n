@@ -1,5 +1,19 @@
 # @ai-i18n/eslint-plugin
 
+## [1.0.0-alpha.27](https://github.com/bosens-China/ai-i18n/compare/eslint-plugin-v1.0.0-alpha.26...eslint-plugin-v1.0.0-alpha.27) (2026-08-31)
+
+
+### Bug Fixes
+
+* **vite:** 改进静态提取诊断与宏声明 ([a447ff6](https://github.com/bosens-China/ai-i18n/commit/a447ff6b057361b45b826db853fd945b58682e99))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @ai-i18n/analyzer bumped to 1.0.0-alpha.24
+
 ## [1.0.0-alpha.26](https://github.com/bosens-China/ai-i18n/compare/eslint-plugin-v1.0.0-alpha.25...eslint-plugin-v1.0.0-alpha.26) (2026-08-29)
 
 
