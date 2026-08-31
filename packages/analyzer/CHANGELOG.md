@@ -1,5 +1,12 @@
 # @ai-i18n/analyzer
 
+## [1.0.0-alpha.24](https://github.com/bosens-China/ai-i18n/compare/analyzer-v1.0.0-alpha.23...analyzer-v1.0.0-alpha.24) (2026-08-31)
+
+
+### Bug Fixes
+
+* **vite:** 改进静态提取诊断与宏声明 ([a447ff6](https://github.com/bosens-China/ai-i18n/commit/a447ff6b057361b45b826db853fd945b58682e99))
+
 ## [1.0.0-alpha.23](https://github.com/bosens-China/ai-i18n/compare/analyzer-v1.0.0-alpha.22...analyzer-v1.0.0-alpha.23) (2026-08-29)
 
 
