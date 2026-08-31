@@ -182,14 +182,15 @@ Composition API 的 `useI18n()`；纯 Options 组件则在 `computed` 中展开
 ## 诊断语言
 
 ESLint、Vite 与浏览器 Runtime 的开发者诊断每条只显示中文或英文。ESLint 与 Vite 的 Node
-侧诊断默认按系统时区选择；需要固定 Node 侧语言时，设置：
+侧诊断默认按当前系统 locale 选择；中文 locale 使用中文，其他 locale 回退英文。需要固定 Node
+侧语言时，设置：
 
 ```text
 AI_I18N_DIAGNOSTIC_LOCALE=zh-CN
 AI_I18N_DIAGNOSTIC_LOCALE=en-US
 ```
 
-设置为 `auto` 可恢复自动选择。浏览器 Runtime warning 则按浏览器时区自动选择语言。该环境
+设置为 `auto` 可恢复自动选择。浏览器 Runtime warning 同样按浏览器 locale 选择语言。该环境
 变量只影响 Node 侧提示文字，不影响规则结果、翻译结果或生成文件。
 
 ## 下一步

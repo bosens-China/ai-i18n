@@ -1,12 +1,11 @@
 import path from 'node:path';
 
-const CHINESE_TIME_ZONES = new Set(['Asia/Shanghai', 'Asia/Urumqi']);
-
 export function diagnosticMessage(zh, en) {
   const value = process.env.AI_I18N_DIAGNOSTIC_LOCALE;
-  const automaticLocale = CHINESE_TIME_ZONES.has(
-    Intl.DateTimeFormat().resolvedOptions().timeZone,
-  )
+  const automaticLocale = Intl.DateTimeFormat()
+    .resolvedOptions()
+    .locale.toLowerCase()
+    .startsWith('zh')
     ? 'zh-CN'
     : 'en-US';
   if (!value || value === 'auto') return automaticLocale === 'zh-CN' ? zh : en;

@@ -1,13 +1,14 @@
 export type DiagnosticLocale = 'zh-CN' | 'en-US';
 
-const CHINESE_TIME_ZONES = new Set(['Asia/Shanghai', 'Asia/Urumqi']);
 const ENV_NAME = 'AI_I18N_DIAGNOSTIC_LOCALE';
 
 export function resolveDiagnosticLocale(
   value = typeof process === 'undefined' ? undefined : process.env[ENV_NAME],
-  timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone,
+  locale = Intl.DateTimeFormat().resolvedOptions().locale,
 ): DiagnosticLocale {
-  const automaticLocale = CHINESE_TIME_ZONES.has(timeZone) ? 'zh-CN' : 'en-US';
+  const automaticLocale = locale.toLowerCase().startsWith('zh')
+    ? 'zh-CN'
+    : 'en-US';
   if (!value || value === 'auto') return automaticLocale;
   if (value === 'zh-CN' || value === 'en-US') return value;
   throw new Error(

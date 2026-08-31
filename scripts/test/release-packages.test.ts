@@ -68,6 +68,24 @@ describe('release package verification', () => {
     );
   });
 
+  it('uses the current locale and falls back to English', () => {
+    vi.stubEnv('AI_I18N_DIAGNOSTIC_LOCALE', 'auto');
+    const dateTimeFormat = vi.spyOn(Intl, 'DateTimeFormat');
+    dateTimeFormat.mockReturnValueOnce({
+      resolvedOptions: () => ({ locale: 'zh-Hant' }),
+    } as Intl.DateTimeFormat);
+    expect(diagnosticMessage('中文提示', 'English diagnostic')).toBe(
+      '中文提示',
+    );
+
+    dateTimeFormat.mockReturnValueOnce({
+      resolvedOptions: () => ({ locale: 'ja-JP' }),
+    } as Intl.DateTimeFormat);
+    expect(diagnosticMessage('中文提示', 'English diagnostic')).toBe(
+      'English diagnostic',
+    );
+  });
+
   it('orders dependencies before their consumers', () => {
     const sorted = sortPackageEntries([
       entry('@ai-i18n/eslint-plugin', {

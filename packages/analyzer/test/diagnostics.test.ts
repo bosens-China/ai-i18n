@@ -5,22 +5,23 @@ import {
 } from '../src/diagnostics.js';
 
 describe('diagnostic locale', () => {
-  it('uses an explicit locale before the time zone', () => {
-    expect(resolveDiagnosticLocale('en-US', 'Asia/Shanghai')).toBe('en-US');
-    expect(resolveDiagnosticLocale('zh-CN', 'UTC')).toBe('zh-CN');
+  it('uses an explicit locale before the runtime locale', () => {
+    expect(resolveDiagnosticLocale('en-US', 'zh-CN')).toBe('en-US');
+    expect(resolveDiagnosticLocale('zh-CN', 'en-US')).toBe('zh-CN');
   });
 
-  it('uses Chinese only for mainland China time zones', () => {
-    expect(resolveDiagnosticLocale('auto', 'Asia/Shanghai')).toBe('zh-CN');
-    expect(resolveDiagnosticLocale('auto', 'Asia/Urumqi')).toBe('zh-CN');
-    expect(resolveDiagnosticLocale('auto', 'Asia/Singapore')).toBe('en-US');
+  it('uses the current locale and falls back to English', () => {
+    expect(resolveDiagnosticLocale('auto', 'zh-CN')).toBe('zh-CN');
+    expect(resolveDiagnosticLocale('auto', 'zh-TW')).toBe('zh-CN');
+    expect(resolveDiagnosticLocale('auto', 'en-GB')).toBe('en-US');
+    expect(resolveDiagnosticLocale('auto', 'ja-JP')).toBe('en-US');
   });
 
   it('rejects unsupported overrides', () => {
-    expect(() => resolveDiagnosticLocale('fr-FR', 'UTC')).toThrow(
+    expect(() => resolveDiagnosticLocale('fr-FR', 'en-US')).toThrow(
       'Unsupported AI_I18N_DIAGNOSTIC_LOCALE',
     );
-    expect(() => resolveDiagnosticLocale('fr-FR', 'Asia/Shanghai')).toThrow(
+    expect(() => resolveDiagnosticLocale('fr-FR', 'zh-CN')).toThrow(
       '不支持 AI_I18N_DIAGNOSTIC_LOCALE',
     );
   });
