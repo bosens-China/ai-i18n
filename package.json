@@ -34,7 +34,7 @@
     "docs:build": "pnpm examples:build && pnpm --filter @ai-i18n/docs build",
     "check": "pnpm build && tsc -p tsconfig.json && eslint \"*.config.{js,ts}\" scripts && turbo run check --filter=./packages/*",
     "test": "turbo run test --filter=./packages/* && vitest run scripts/test --config vitest.config.ts",
-    "release:verify": "pnpm build && node scripts/release-packages.mjs verify"
+    "release:verify": "pnpm build && tsx scripts/release-packages.ts verify"
   },
   "devDependencies": {
     "@arethetypeswrong/core": "0.18.5",
@@ -50,6 +50,7 @@
     "prettier": "^3.8.3",
     "publint": "0.3.22",
     "tsdown": "0.22.13",
+    "tsx": "^4.23.13",
     "turbo": "^2.10.5",
     "typescript": "~5.9.3",
     "typescript-eslint": "^8.65.0",

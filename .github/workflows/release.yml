@@ -13,8 +13,8 @@ on:
       - 'pnpm-workspace.yaml'
       - 'turbo.json'
       - 'tsdown.config.ts'
-      - 'scripts/release-package-metadata.mjs'
-      - 'scripts/release-packages.mjs'
+      - 'scripts/release-package-metadata.ts'
+      - 'scripts/release-packages.ts'
       - '.github/workflows/release.yml'
   workflow_dispatch:
     inputs:
@@ -66,12 +66,12 @@ jobs:
         with:
           node-version: 24
           cache: pnpm
+      - run: pnpm install --frozen-lockfile
       - name: Validate manual publish paths
         if: github.event_name == 'workflow_dispatch' && inputs.publish_paths != ''
         env:
           PUBLISH_PATHS: ${{ inputs.publish_paths }}
-        run: node scripts/release-packages.mjs validate-paths "$PUBLISH_PATHS"
-      - run: pnpm install --frozen-lockfile
+        run: pnpm exec tsx scripts/release-packages.ts validate-paths "$PUBLISH_PATHS"
       # 必须在创建 GitHub Release/tag 之前验证，避免测挂后留下孤儿 release。
       - run: pnpm check
       - run: pnpm test
@@ -83,9 +83,9 @@ jobs:
         run: |
           mkdir -p "$RUNNER_TEMP/npm-pack"
           if [[ -n "$PUBLISH_PATHS" ]]; then
-            node scripts/release-packages.mjs prepare-dir "$RUNNER_TEMP/npm-pack" "$PUBLISH_PATHS"
+            pnpm exec tsx scripts/release-packages.ts prepare-dir "$RUNNER_TEMP/npm-pack" "$PUBLISH_PATHS"
           else
-            node scripts/release-packages.mjs prepare-dir "$RUNNER_TEMP/npm-pack"
+            pnpm exec tsx scripts/release-packages.ts prepare-dir "$RUNNER_TEMP/npm-pack"
           fi
           if [[ -s "$RUNNER_TEMP/npm-pack/publish-order.txt" ]]; then
             echo "has-packages=true" >> "$GITHUB_OUTPUT"

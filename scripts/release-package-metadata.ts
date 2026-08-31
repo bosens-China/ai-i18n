@@ -1,6 +1,27 @@
 import path from 'node:path';
 
-export function diagnosticMessage(zh, en) {
+export interface PackageManifest {
+  name: string;
+  version?: string;
+  exports?: unknown;
+  main?: unknown;
+  types?: unknown;
+  bin?: unknown;
+  dependencies?: Record<string, string>;
+  optionalDependencies?: Record<string, string>;
+}
+
+export interface PackageEntry {
+  manifest: PackageManifest;
+  tarball: string;
+}
+
+export interface ReleasePackage {
+  manifest: PackageManifest;
+  relativePath: string;
+}
+
+export function diagnosticMessage(zh: string, en: string): string {
   const value = process.env.AI_I18N_DIAGNOSTIC_LOCALE;
   const automaticLocale = Intl.DateTimeFormat()
     .resolvedOptions()
@@ -18,8 +39,11 @@ export function diagnosticMessage(zh, en) {
   );
 }
 
-export function parsePublishPaths(value, allowedPaths) {
-  let paths;
+export function parsePublishPaths(
+  value: string,
+  allowedPaths: readonly string[],
+): string[] {
+  let paths: unknown;
   try {
     paths = JSON.parse(value);
   } catch {
@@ -45,18 +69,22 @@ export function parsePublishPaths(value, allowedPaths) {
       ),
     );
   }
-  return paths;
+  return paths as string[];
 }
 
-export function collectExportTargets(manifest) {
-  const targets = new Set();
-  const visit = (value) => {
+export function collectExportTargets(
+  manifest: Pick<PackageManifest, 'exports' | 'main' | 'types' | 'bin'>,
+): string[] {
+  const targets = new Set<string>();
+  const visit = (value: unknown): void => {
     if (typeof value === 'string') {
       if (value.startsWith('./')) targets.add(value);
       return;
     }
     if (!value || typeof value !== 'object') return;
-    for (const child of Object.values(value)) visit(child);
+    for (const child of Object.values(value as Record<string, unknown>)) {
+      visit(child);
+    }
   };
   visit(manifest.exports);
   visit(manifest.main);
@@ -65,8 +93,11 @@ export function collectExportTargets(manifest) {
   return [...targets].sort();
 }
 
-export function validateInternalDependencies(manifest, workspaceVersions) {
-  for (const section of ['dependencies', 'optionalDependencies']) {
+export function validateInternalDependencies(
+  manifest: PackageManifest,
+  workspaceVersions: ReadonlyMap<string, string>,
+): void {
+  for (const section of ['dependencies', 'optionalDependencies'] as const) {
     for (const [name, version] of Object.entries(manifest[section] ?? {})) {
       const expected = workspaceVersions.get(name);
       if (!expected) continue;
@@ -82,29 +113,40 @@ export function validateInternalDependencies(manifest, workspaceVersions) {
   }
 }
 
-export function sortPackageEntries(entries) {
+export function sortPackageEntries<T extends PackageEntry>(
+  entries: readonly T[],
+): T[] {
   // 使用依赖优先的拓扑排序，避免 Analyzer 先于本批 Core 上传。
-  const byName = new Map(entries.map((entry) => [entry.manifest.name, entry]));
-  const dependencies = new Map();
-  const dependents = new Map(entries.map((entry) => [entry.manifest.name, []]));
+  const byName = new Map<string, T>(
+    entries.map((entry) => [entry.manifest.name, entry]),
+  );
+  const dependencies = new Map<string, Set<string>>();
+  const dependents = new Map<string, string[]>(
+    entries.map((entry) => [entry.manifest.name, []]),
+  );
   for (const entry of entries) {
     const names = Object.keys(entry.manifest.dependencies ?? {}).filter(
       (name) => byName.has(name),
     );
     dependencies.set(entry.manifest.name, new Set(names));
-    for (const name of names) dependents.get(name).push(entry.manifest.name);
+    for (const name of names) {
+      dependents.get(name)?.push(entry.manifest.name);
+    }
   }
 
   const ready = entries
     .map((entry) => entry.manifest.name)
-    .filter((name) => dependencies.get(name).size === 0)
+    .filter((name) => dependencies.get(name)?.size === 0)
     .sort();
-  const sorted = [];
+  const sorted: T[] = [];
   while (ready.length) {
     const name = ready.shift();
-    sorted.push(byName.get(name));
-    for (const dependent of dependents.get(name).sort()) {
+    if (!name) break;
+    const entry = byName.get(name);
+    if (entry) sorted.push(entry);
+    for (const dependent of [...(dependents.get(name) ?? [])].sort()) {
       const pending = dependencies.get(dependent);
+      if (!pending) continue;
       pending.delete(name);
       if (pending.size === 0) {
         ready.push(dependent);
@@ -123,8 +165,11 @@ export function sortPackageEntries(entries) {
   return sorted;
 }
 
-export function createPublishManifest(entries, packages) {
-  const packageByName = new Map(
+export function createPublishManifest(
+  entries: readonly PackageEntry[],
+  packages: readonly ReleasePackage[],
+) {
+  const packageByName = new Map<string, ReleasePackage>(
     packages.map((item) => [item.manifest.name, item]),
   );
   return sortPackageEntries(entries).map((entry) => {

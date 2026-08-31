@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   collectExportTargets,
   createPublishManifest,
@@ -6,7 +6,7 @@ import {
   parsePublishPaths,
   sortPackageEntries,
   validateInternalDependencies,
-} from '../release-package-metadata.mjs';
+} from '../release-package-metadata.js';
 
 afterEach(() => {
   vi.unstubAllEnvs();

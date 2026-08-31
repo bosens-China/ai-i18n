@@ -17,11 +17,35 @@ import {
   parsePublishPaths,
   sortPackageEntries,
   validateInternalDependencies,
-} from './release-package-metadata.mjs';
+} from './release-package-metadata.js';
+import type {
+  PackageEntry,
+  PackageManifest,
+  ReleasePackage,
+} from './release-package-metadata.js';
+
+interface RunOptions {
+  cwd?: string;
+  capture?: boolean;
+  allowFailure?: boolean;
+}
+
+interface ReleaseConfig {
+  packages: Record<string, unknown>;
+}
+
+interface WorkspacePackage extends ReleasePackage {
+  directory: string;
+  manifest: PackageManifest & { version: string };
+}
+
+interface RootManifest {
+  packageManager: string;
+}
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const RELEASE_CONFIG = path.join(ROOT, 'release-please-config.json');
-const SMOKE_IMPORTS = {
+const SMOKE_IMPORTS: Readonly<Record<string, readonly string[]>> = {
   '@ai-i18n/analyzer': ['@ai-i18n/analyzer', '@ai-i18n/analyzer/vue'],
   '@ai-i18n/core': [
     '@ai-i18n/core',
@@ -39,7 +63,7 @@ const SMOKE_IMPORTS = {
   ],
 };
 
-function run(command, args, options = {}) {
+function run(command: string, args: string[], options: RunOptions = {}) {
   const result = spawnSync(command, args, {
     cwd: options.cwd ?? ROOT,
     encoding: 'utf8',
@@ -55,20 +79,22 @@ function run(command, args, options = {}) {
   return result;
 }
 
-function readJson(filename) {
-  return JSON.parse(readFileSync(filename, 'utf8'));
+function readJson<T>(filename: string): T {
+  return JSON.parse(readFileSync(filename, 'utf8')) as T;
 }
 
-function releasePackages() {
-  const config = readJson(RELEASE_CONFIG);
+function releasePackages(): WorkspacePackage[] {
+  const config = readJson<ReleaseConfig>(RELEASE_CONFIG);
   return Object.keys(config.packages).map((relativePath) => {
     const directory = path.join(ROOT, relativePath);
-    const manifest = readJson(path.join(directory, 'package.json'));
+    const manifest = readJson<WorkspacePackage['manifest']>(
+      path.join(directory, 'package.json'),
+    );
     return { directory, manifest, relativePath };
   });
 }
 
-function isPublished({ name, version }) {
+function isPublished({ name, version }: WorkspacePackage['manifest']): boolean {
   // 普通功能提交仍沿用已发布版本；Release Please 提升版本后才进入候选验证。
   const result = run(
     'npm',
@@ -86,7 +112,7 @@ function isPublished({ name, version }) {
   );
 }
 
-function tarballEntries(directory) {
+function tarballEntries(directory: string): PackageEntry[] {
   return readdirSync(directory)
     .filter((filename) => filename.endsWith('.tgz'))
     .map((filename) => {
@@ -94,11 +120,17 @@ function tarballEntries(directory) {
       const result = run('tar', ['-xOf', tarball, 'package/package.json'], {
         capture: true,
       });
-      return { manifest: JSON.parse(result.stdout), tarball };
+      return {
+        manifest: JSON.parse(result.stdout) as PackageManifest,
+        tarball,
+      };
     });
 }
 
-function packPackages(packages, directory) {
+function packPackages(
+  packages: readonly WorkspacePackage[],
+  directory: string,
+): PackageEntry[] {
   for (const item of packages) {
     run('pnpm', [
       '--dir',
@@ -120,7 +152,10 @@ function packPackages(packages, directory) {
   return entries;
 }
 
-function validateTarball(entry, workspaceVersions) {
+function validateTarball(
+  entry: PackageEntry,
+  workspaceVersions: ReadonlyMap<string, string>,
+): void {
   validateInternalDependencies(entry.manifest, workspaceVersions);
   const result = run('tar', ['-tf', entry.tarball], { capture: true });
   const files = new Set(result.stdout.trim().split('\n'));
@@ -137,7 +172,7 @@ function validateTarball(entry, workspaceVersions) {
   }
 }
 
-function workspaceYaml(entries) {
+function workspaceYaml(entries: readonly PackageEntry[]): string {
   // pnpm 11 的 overrides 位于 workspace 配置，用本批 tarball 覆盖尚未上 npm 的依赖。
   const overrides = entries
     .map(
@@ -148,7 +183,7 @@ function workspaceYaml(entries) {
   return `packages:\n  - .\noverrides:\n${overrides}\n`;
 }
 
-function smokeImports(entries) {
+function smokeImports(entries: readonly PackageEntry[]): string[] {
   return [
     ...new Set(
       entries.flatMap(
@@ -158,8 +193,13 @@ function smokeImports(entries) {
   ];
 }
 
-function verifyConsumer(entries, directory) {
-  const { packageManager } = readJson(path.join(ROOT, 'package.json'));
+function verifyConsumer(
+  entries: readonly PackageEntry[],
+  directory: string,
+): void {
+  const { packageManager } = readJson<RootManifest>(
+    path.join(ROOT, 'package.json'),
+  );
   const dependencies = Object.fromEntries(
     entries.map(({ manifest, tarball }) => [manifest.name, `file:${tarball}`]),
   );
@@ -192,7 +232,7 @@ function verifyConsumer(entries, directory) {
   run('node', ['smoke.mjs'], { cwd: directory });
 }
 
-function verifyEntries(entries) {
+function verifyEntries(entries: readonly PackageEntry[]): void {
   if (!entries.length) {
     console.log(
       diagnosticMessage(
@@ -215,7 +255,7 @@ function verifyEntries(entries) {
   }
 }
 
-function selectPackages(publishPaths) {
+function selectPackages(publishPaths?: string): WorkspacePackage[] {
   const packages = releasePackages();
   if (publishPaths === undefined) {
     return packages.filter(({ manifest }) => !isPublished(manifest));
@@ -227,10 +267,14 @@ function selectPackages(publishPaths) {
   const packageByPath = new Map(
     packages.map((item) => [item.relativePath, item]),
   );
-  return selectedPaths.map((relativePath) => packageByPath.get(relativePath));
+  return selectedPaths.map((relativePath) => packageByPath.get(relativePath)!);
 }
 
-function writePublishManifest(entries, packages, directory) {
+function writePublishManifest(
+  entries: readonly PackageEntry[],
+  packages: readonly ReleasePackage[],
+  directory: string,
+): void {
   const manifest = createPublishManifest(entries, packages);
   writeFileSync(
     path.join(directory, 'publish-manifest.json'),
@@ -244,7 +288,7 @@ function writePublishManifest(entries, packages, directory) {
   );
 }
 
-function preparePackages(directory, publishPaths) {
+function preparePackages(directory: string, publishPaths?: string): void {
   mkdirSync(directory, { recursive: true });
   const existingTarballs = readdirSync(directory).filter((filename) =>
     filename.endsWith('.tgz'),
@@ -269,7 +313,7 @@ function preparePackages(directory, publishPaths) {
   writePublishManifest(entries, packages, directory);
 }
 
-function verifyUnpublished() {
+function verifyUnpublished(): void {
   const temporary = mkdtempSync(path.join(os.tmpdir(), 'ai-i18n-pack-'));
   try {
     const packDirectory = path.join(temporary, 'tarballs');
@@ -279,20 +323,26 @@ function verifyUnpublished() {
   }
 }
 
-function main() {
+function main(): void {
   const [command, argument, publishPaths] = process.argv.slice(2);
-  if (command === 'verify') return verifyUnpublished();
+  if (command === 'verify') {
+    verifyUnpublished();
+    return;
+  }
   if (command === 'validate-paths' && argument) {
-    return parsePublishPaths(
+    parsePublishPaths(
       argument,
       releasePackages().map(({ relativePath }) => relativePath),
     );
+    return;
   }
   if (command === 'prepare-dir' && argument) {
-    return preparePackages(path.resolve(argument), publishPaths);
+    preparePackages(path.resolve(argument), publishPaths);
+    return;
   }
   if (command === 'verify-dir' && argument) {
-    return verifyEntries(tarballEntries(path.resolve(argument)));
+    verifyEntries(tarballEntries(path.resolve(argument)));
+    return;
   }
   if (command === 'order' && argument) {
     for (const entry of sortPackageEntries(
@@ -304,8 +354,8 @@ function main() {
   }
   throw new Error(
     diagnosticMessage(
-      '用法：release-packages.mjs verify | validate-paths <JSON> | prepare-dir <目录> [publish_paths JSON] | verify-dir <目录> | order <目录>',
-      'Usage: release-packages.mjs verify | validate-paths <JSON> | prepare-dir <directory> [publish_paths JSON] | verify-dir <directory> | order <directory>',
+      '用法：release-packages.ts verify | validate-paths <JSON> | prepare-dir <目录> [publish_paths JSON] | verify-dir <目录> | order <目录>',
+      'Usage: release-packages.ts verify | validate-paths <JSON> | prepare-dir <directory> [publish_paths JSON] | verify-dir <directory> | order <directory>',
     ),
   );
 }

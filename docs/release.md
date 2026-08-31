@@ -75,6 +75,8 @@ PAT 或 GitHub App，也不向版本提交添加 `[skip ci]`；若将来需要�
 ## 约定
 
 - 六个 npm 包的 Trusted Publisher workflow 文件名保持为 `release.yml`。
+- 发布校验脚本使用根 workspace 锁定的 `tsx` 执行，并纳入根 `tsc` 检查。CI 必须先完成
+  `pnpm install --frozen-lockfile`，再通过 `pnpm exec tsx` 调用，不使用临时下载的 runner。
 - Alpha 阶段发布包之间统一使用 `workspace:*`，`pnpm pack` 后必须是当前 workspace 版本的
   精确依赖。旧的 ESLint、Vite 等消费包不能自动漂移到新 Analyzer/Core；底层版本变化由
   Release Please 的 `node-workspace` 插件生成配套消费包版本。
