@@ -18,7 +18,7 @@ uses one. First locate the named documentation page through
 | Dev Review | Do not register Review unless requested or already present. Add `aiI18nReview()` from `@ai-i18n/vite/review` beside `aiI18n()`; never use the removed `review` option. Keep the default page launcher and console URL unless the user requests `launcher: false` or `printUrl: false`; these options do not disable `/__ai-i18n/` or its API. | 翻译校对 |
 | HTML extraction | Do not enable or broaden extracted attributes unless requested. | HtmlExtractorOptions |
 | ESLint | Do not install or change presets unless requested. When enabled, verify at least one real translated source path, including aliases used by that path. Do not suppress or disable `no-embedded-markup` to make verification pass. Report warnings outside the requested edit scope, and follow the public rule reference for in-scope fixes. | ESLint / ESLint 规则参考 |
-| Vitest | Do not add the adapter unless requested. If production `aiI18n()` causes the documented SSR warning in tests, use `aiI18nVitest()` instead of silencing it. | 测试（Vitest） |
+| Vitest | Do not add the adapter unless requested. If production `aiI18n()` causes the documented SSR warning in tests, use `aiI18nVitest()` instead of silencing it. Remove manual aliases and `vi.mock('virtual:ai-i18n')`; they replace the official test Runtime. If a translated array becomes a string or indexing returns one character, inspect shared test setup before changing application code. | 测试（Vitest） |
 
 Do not enable adjacent features merely because they are shown on the same documentation page. After
 editing, run the feature-specific validation recommended there.

@@ -39,15 +39,17 @@ export const messages = {
 const labels = t(messages);
 ```
 
-宏接受任意类型，并在 Vite 或 `aiI18nVitest()` 转换时消除为原参数。它不会冻结、拷贝或校验
-对象；作用只是告诉静态分析器，这个对象或数组是可枚举的消息集合。
+宏接受任意类型。Vite 或 `aiI18nVitest()` 会把宏调用替换为原参数表达式，因此参数对象或数组仍然
+存在，可以继续导出、索引或传给 `t()`。宏不会冻结、拷贝或校验对象；它只告诉静态分析器，这个
+对象或数组是可枚举的消息集合。
 
 动态索引会提取集合中可以证明有限的候选值。函数调用、getter、`await` 等用户代码不会在分析
 阶段执行。
 
 ## 限制
 
-宏必须直接写成 `defineI18nMessages(value)`。不能将它赋值给别名、作为值传递，或在未经
+宏必须直接写成 `defineI18nMessages(value)`。不能引用宏函数本身、将它赋值给别名或作为值传递，
+也不能在未经
 `aiI18n()` / `aiI18nVitest()` 转换的 Node、Jest 环境中执行。
 
 局部声明同名 `defineI18nMessages` 时，局部 binding 优先，不会被识别为编译宏。

@@ -91,6 +91,8 @@ the `use-ai-i18n-mcp` Skill and its approval rules.
 3. Prefer framework detection and explicit Runtime imports. Override either only when the target
    setup or user request requires it.
 4. Add the smallest representative translation call by following the selected framework page.
+   If lint or Build reports a local value typed as `I18nRuntime['t']`, call the Runtime import or the
+   `t` returned directly by `useI18n()` instead of passing the function through a parameter or local value.
 5. Integrate generated declarations and Git ignores exactly as described by the TypeScript and
    generated-files pages selected from `llms.txt`.
 6. Preserve existing component style. Do not convert Vue Options API to Composition API solely for

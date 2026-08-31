@@ -42,6 +42,9 @@ export default defineConfig([
 阶段确定；options 必须是仅包含 `comment` 的静态对象。动态字符串、不支持的调用形式和不推荐的
 集合成员引用会报错。
 
+如果局部参数或函数值标注为 `I18nRuntime['t']`，规则会提示它不属于可提取的 Runtime binding。
+请直接调用从 `virtual:ai-i18n` 导入的 `t`，或直接使用 `useI18n()` 返回的 `t`。
+
 ### `no-embedded-markup`
 
 检查 `t()`、tagged template、Vue `tRef()`、`tComputed()` 以及 `useI18n()` 返回的

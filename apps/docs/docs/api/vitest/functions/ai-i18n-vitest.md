@@ -22,6 +22,7 @@ Runtime。
 
 - 保留生产环境的 `t()`、`setLang()`、`getLangLoadState()`、框架 `useI18n()` 与 Vue-only
   `tRef()` 契约；
+- `t()` 递归处理数组和普通对象，并保持文案树结构；
 - `autoImport: true` 时注入与生产框架模式相同的 Runtime API；
 - 消除 `defineI18nMessages()` 编译宏；
 - 不提取翻译；
@@ -31,6 +32,8 @@ Runtime。
 测试 Runtime 没有目标语言译文，因此 `t()` 始终返回 source 文案。
 它也不创建语言 chunk loader，因此 `getLangLoadState()` 与 `useI18n()` 的加载状态字段固定
 为 `idle`；这里只保留 API 形状，不模拟生产加载失败。
+
+不要为 `virtual:ai-i18n` 添加 alias 或 `vi.mock()`。手写替换会覆盖本插件提供的测试 Runtime。
 
 ## 示例
 

@@ -34,9 +34,10 @@
 ### 显式提取与消息标识
 
 - 插件只提取显式的 t()、tagged template、Vue tRef()、Vue tComputed() 和受支持的静态文案树调用；不会猜测普通文本、JSXText 或业务属性是否需要翻译。
+- 标注为 `I18nRuntime['t']` 的函数参数或局部函数值不属于可提取 Runtime binding；Analyzer、Vite 与 ESLint 对其直接调用发出中英文诊断，引导开发者直接使用 `virtual:ai-i18n` 导入或 `useI18n()` 返回的 `t`。普通同名函数不据此报警，也不根据 TypeScript 类型追踪运行时实参来源。
 - 消息 ID 由 source 与可选的静态 comment 构成，不包含文件路径。相同语义可复用 Translation Memory；需要区分语义时必须传入 comment。
 - 缺失译文保持 null，Runtime 回退 source 文案。Provider 与普通补译只补缺失字段，不能静默覆盖已提交译文。
-- defineI18nMessages() 是编译期宏，用于成员级静态集合访问。整棵静态文案树直接传给 t()、Vue tRef() 或 Vue tComputed() 时不需要宏。
+- defineI18nMessages() 是编译期宏，用于成员级静态集合访问；转换只移除宏调用，参数对象或数组作为运行时值保留，宏函数本身不能被引用、传递或保存。整棵静态文案树直接传给 t()、Vue tRef() 或 Vue tComputed() 时不需要宏。
 - 数据库、接口与业务判断保存稳定语义 code；有限业务枚举通过静态文案映射在展示层翻译，不把译文作为持久值或业务身份。
 
 ## Runtime 与框架
@@ -52,7 +53,7 @@
 - 主 dts 与 Vue template 类型桥使用统一的生成文件头，标记所有权并抑制宿主 TypeScript、ESLint、Prettier 与 Biome 对生成内容的检查或改写；声明正确性由生成器测试与框架类型检查保证。
 - Vue 模式的顶层 t() 会读取 adapter revision，在 template、render 或 computed 的响应式执行路径中建立依赖；Options API 与 Composition API 均可直接使用。React 组件仍必须通过 useI18n() 订阅。普通模块中的 t() 不会自行创建响应式执行路径，应在实际需要文案时调用。
 - getLang() 与 getLangLoadState() 返回调用时快照。ESLint 提示模块顶层缓存、Vue setup / Options data 保存和可确定的组件渲染读取；action、事件与普通函数可以按需读取，跨文件 store 数据流不做不可靠推断。
-- Vitest 使用独立的内存 Runtime 与转换插件，不读取或修改项目翻译文件。测试环境误用生产插件而进入 SSR 降级时，双语 warning 必须指向专用 Vitest 入口，不能静默掩盖配置错误。
+- Vitest 使用独立的内存 Runtime 与转换插件，不读取或修改项目翻译文件；`t()` 对数组和普通对象保持同形结构，字符串叶子回退 source。测试环境误用生产插件而进入 SSR 降级时，双语 warning 必须指向专用 Vitest 入口，不能静默掩盖配置错误。应用不得用 alias 或 `vi.mock('virtual:ai-i18n')` 覆盖专用 Runtime；文案树退化为字符串时先排查测试 setup。
 
 ### 响应式翻译
 

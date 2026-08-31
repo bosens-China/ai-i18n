@@ -6,6 +6,11 @@ description: 使用 aiI18nVitest() 测试使用 ai-i18n 的业务代码，无需
 在 `vitest.config.ts` 中使用 `aiI18nVitest()`，即可测试导入 `virtual:ai-i18n` 的业务模块，无需
 手写 alias 或 mock。测试环境不执行自动翻译，也不会修改项目中的翻译文件。
 
+如果项目曾为 `virtual:ai-i18n` 添加 alias 或 `vi.mock()`，请先删除。手写 mock 会替换
+`aiI18nVitest()` 提供的整个测试 Runtime；即使配置文件已经注册插件，测试实际调用的仍可能是
+mock。数组被拼成字符串、对象结构丢失或数组下标只返回一个字符时，应优先检查测试 setup 中的
+`vi.mock('virtual:ai-i18n')`。
+
 如果 Vitest 输出“仅支持浏览器 Runtime，已跳过 SSR 转换/注入”，说明测试配置加载了生产用的
 `aiI18n()`。不要忽略或静默过滤该提示；从 `@ai-i18n/vite/vitest` 改用
 `aiI18nVitest()`，并确保同一测试配置只注册其中一个插件。
@@ -98,7 +103,7 @@ export default defineConfig({
 
 | 能力                       | 测试环境行为                                                                       |
 | -------------------------- | ---------------------------------------------------------------------------------- |
-| `t(source)` / `` t`...` `` | 可用。测试 Runtime 没有加载任何目标语言译文，因此固定返回 source 文案。            |
+| `t(source)` / `` t`...` `` | 可用。字符串叶子固定返回 source 文案；数组和普通对象会递归处理并保持原结构。       |
 | `setLang(value)`           | 可用，可用于测试语言切换触发的重渲染，以及 `persist` 写入 localStorage。           |
 | `useI18n()`                | Vue / React 模式下可用；字段契约一致，但测试 Runtime 的语言加载状态固定为 `idle`。 |
 | `tRef()`                   | 仅 Vue 模式可用；返回响应式 source fallback Ref，与生产环境保持相同 API 形状。     |
@@ -111,6 +116,12 @@ export default defineConfig({
 由于没有加载任何目标语言译文，`t('保存')` 始终返回 `"保存"`，即使调用过
 `await setLang('en-US')` 之后也是如此。可以把这类测试理解为契约测试——只断言组件确实调用了
 `t()` 并渲染出结果，不断言具体译文内容。
+
+文案树遵循同一规则，但不会退化为字符串：
+
+```ts
+expect(t(['安静', { noun: '海豚' }])).toEqual(['安静', { noun: '海豚' }]);
+```
 
 `loading` 不属于 `AiI18nVitestOptions`，测试 Runtime 不创建语言 chunk loader。
 `getLangLoadState()` 以及 `useI18n()` 的 loading/error 字段仍存在，但固定为 `idle`；真实
@@ -126,6 +137,10 @@ loading/error 变化应由应用自己的抽象单测或生产 Vite 集成测试
 
 **能不能在同一个 `vitest.config.ts` 里同时注册 `aiI18n()` 和 `aiI18nVitest()`？**
 不要这样做。两者都会尝试解析 `virtual:ai-i18n`，只注册 `aiI18nVitest()` 即可。
+
+**为什么 `t(messages)` 返回了字符串，数组下标只剩一个字符？**
+官方测试 Runtime 会保持数组和对象结构。请搜索测试 setup、共享测试工具和 Vitest alias，删除对
+`virtual:ai-i18n` 的手写替换。只保留 `aiI18nVitest()` 后再运行最小文案树用例。
 
 **端到端测试（Playwright 等）呢？**
 `aiI18nVitest()` 只覆盖 Vitest 场景。端到端测试应运行真实的 `vite dev` 或 `vite build`，

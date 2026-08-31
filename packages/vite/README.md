@@ -200,7 +200,8 @@ t(messages.states[index]);
 依赖，因此相对路径、alias、tsconfig paths 与 resolver plugin 不需要预热或手工刷新。
 
 宏只能直接调用，不能赋值或传递；它在客户端、SSR transform 与 `aiI18nVitest()` 中消除为
-原参数，不提供冻结或运行时校验。生成的 `ai-i18n.d.ts` 始终包含它的全局类型。
+原参数表达式，因此参数对象或数组仍可在运行时使用。不能引用、传递或保存宏函数本身。宏不提供冻结
+或运行时校验。生成的 `ai-i18n.d.ts` 始终包含它的全局类型。
 
 `autoImport: true` 在三种模式都注入顶层 Runtime API；React 额外注入 `useI18n`，Vue
 额外注入 `useI18n`、`tRef`、`i18nComputed` 与 `tComputed`。Vue 组件可在 `<script>`、
@@ -239,7 +240,8 @@ Vue template 的提取与自动注入目前只支持默认 HTML template 和 `la
 
 Vitest 使用 `@ai-i18n/vite/vitest` 的 `aiI18nVitest()`，无需手写 alias，也不会读写协议文件；
 生产开启自动导入时，把同一个 `autoImport: true` 传给测试插件。
-语言偏好可用 `persist` 配置；缺译固定返回 source 文案。
+语言偏好可用 `persist` 配置；缺译固定返回 source 文案，数组和普通对象保持原结构。已有的
+`vi.mock('virtual:ai-i18n')` 或手写 alias 会覆盖测试 Runtime，应当删除。
 
 ## Locale Lazy
 
