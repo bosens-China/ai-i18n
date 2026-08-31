@@ -177,14 +177,29 @@ t(messages.states[index])`,
     ).resolves.toBeNull();
   });
 
-  it('rejects using defineI18nMessages as a runtime value', async () => {
+  it('warns when a local function value is typed as Runtime t', async () => {
+    const warnings: unknown[] = [];
+    const { transform } = setupPlugin(warnings);
+
+    await transform(
+      `import type { I18nRuntime } from '@ai-i18n/vite'
+function display(t: I18nRuntime['t']) { return t('保存') }`,
+      '/workspace/src/helper.ts',
+    );
+
+    expect(warnings).toMatchObject([
+      { message: expect.stringContaining("I18nRuntime['t']") },
+    ]);
+  });
+
+  it('rejects referencing the defineI18nMessages macro function', async () => {
     const { transform } = setupPlugin();
     await expect(
       transform(
         'const macro = defineI18nMessages',
         '/workspace/src/invalid-macro.ts',
       ),
-    ).rejects.toThrow('must be called directly');
+    ).rejects.toThrow('do not reference, pass, or store the macro function');
   });
 
   it('erases defineI18nMessages inside Vue script setup', async () => {

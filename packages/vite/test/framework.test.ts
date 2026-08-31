@@ -123,6 +123,8 @@ describe('framework integration', () => {
     expect(source).toContain(
       '编译宏：标记可静态提取的文案对象或数组，无需 import',
     );
+    expect(source).toContain('参数对象或数组仍可在运行时使用');
+    expect(source).toContain('不能引用、传递或保存宏函数本身');
     expect(source).toContain('支持 t("保存")、t(messages) 和标签模板');
     expect(source).toContain('@returns 取消订阅函数');
     expect(source).toContain('随语言更新的只读 ComputedRef');

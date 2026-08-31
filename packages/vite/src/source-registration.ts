@@ -44,8 +44,8 @@ export function assertDirectDefineI18nMessagesCalls(module: Module): void {
   if (findInvalidDefineI18nMessagesReferences(module).length) {
     throw new Error(
       diagnosticMessage(
-        '[ai-i18n] defineI18nMessages() 只能直接调用，不能作为运行时值使用。',
-        '[ai-i18n] defineI18nMessages() must be called directly and cannot be used as a runtime value.',
+        '[ai-i18n] defineI18nMessages() 只能直接调用；不能引用、传递或保存宏函数本身。',
+        '[ai-i18n] defineI18nMessages() must be called directly; do not reference, pass, or store the macro function itself.',
       ),
     );
   }

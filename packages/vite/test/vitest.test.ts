@@ -218,7 +218,7 @@ test('Vitest plugin exposes Vue-only reactive helpers in the Vue runtime', () =>
   );
 });
 
-test('Vitest plugin rejects using defineI18nMessages as a runtime value', async () => {
+test('Vitest plugin rejects referencing the defineI18nMessages macro function', async () => {
   const plugin = aiI18nVitest({
     sourceLang: 'zh-CN',
     locales: [{ value: 'zh-CN', label: '中文' }],
@@ -233,7 +233,7 @@ test('Vitest plugin rejects using defineI18nMessages as a runtime value', async 
       'const macro = defineI18nMessages',
       '/workspace/src/invalid-macro.ts',
     ),
-  ).rejects.toThrow('must be called directly');
+  ).rejects.toThrow('do not reference, pass, or store the macro function');
 });
 
 test('Vitest plugin skips definePage submodules but transforms external Vue scripts', async () => {

@@ -352,6 +352,9 @@ const API_DOCUMENTATION: Readonly<
   defineI18nMessages: [
     '编译宏：标记可静态提取的文案对象或数组，无需 import。',
     'Compile-time macro: marks a statically extractable message object or array; no import is needed.',
-    '构建时调用会被消除，类型上原样返回 T，不能当作运行时值引用。',
+    '转换时调用会替换为参数表达式；参数对象或数组仍可在运行时使用。',
+    'The transform replaces each call with its argument expression; that object or array remains available at runtime.',
+    '不能引用、传递或保存宏函数本身。',
+    'Do not reference, pass, or store the macro function itself.',
   ],
 };

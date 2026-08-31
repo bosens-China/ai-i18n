@@ -22,6 +22,7 @@ import {
 } from './static-values.js';
 import { AI_I18N_VIRTUAL_MODULE_ID } from './analysis-queries.js';
 import { diagnosticMessage } from './diagnostics.js';
+import { findRuntimeTypedLocalTranslationCalls } from './runtime-type-diagnostics.js';
 import {
   createTranslationContext,
   hasTranslationAutoImports,
@@ -55,6 +56,8 @@ export type {
   RuntimeImportDeclaration,
   RuntimeImportSpecifier,
 } from './runtime-imports.js';
+export { findRuntimeTypedLocalTranslationCalls } from './runtime-type-diagnostics.js';
+export type { RuntimeTypedTranslationCall } from './runtime-type-diagnostics.js';
 export type {
   TranslationAutoImports,
   TranslationCalleeOrigin,
@@ -76,7 +79,8 @@ export interface ExtractedMessage {
   locations: SourceLocation[];
 }
 
-export type ExtractWarningCode = StaticWarningCode;
+export type ExtractWarningCode =
+  StaticWarningCode | 'unrecognized-runtime-t-binding';
 
 export interface ExtractWarning extends SourceLocation {
   code: ExtractWarningCode;
@@ -126,6 +130,17 @@ export function extractMessages(
     runtimeModuleId,
     translationHooks,
   );
+  for (const call of findRuntimeTypedLocalTranslationCalls(module)) {
+    warnings.push({
+      code: 'unrecognized-runtime-t-binding',
+      file: module.path,
+      ...sourceLocation(module.source, call.start),
+      message: diagnosticMessage(
+        `“${call.name}”虽然标注为 I18nRuntime['t']，但局部函数值不会作为 ai-i18n Runtime t 提取。请直接调用从 virtual:ai-i18n 导入的 t，或 useI18n() 返回的 t。`,
+        `"${call.name}" is typed as I18nRuntime['t'], but local function values are not extracted as the ai-i18n Runtime t. Call t imported from virtual:ai-i18n or returned by useI18n() directly.`,
+      ),
+    });
+  }
 
   if (
     !translationContext.translateSymbols.size &&

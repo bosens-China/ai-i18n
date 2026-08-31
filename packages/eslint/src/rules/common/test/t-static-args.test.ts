@@ -108,6 +108,16 @@ describe('ai-i18n/t-static-args', () => {
     ],
     invalid: [
       {
+        code: "import type { I18nRuntime } from '@ai-i18n/vite'; function display(t: I18nRuntime['t']) { return t('保存') }",
+        filename: path.join(sourceRoot, 'runtime-t-parameter.ts'),
+        errors: [
+          {
+            message: /I18nRuntime\['t'\]/,
+            line: 1,
+          },
+        ],
+      },
+      {
         code: "import { t } from 'virtual:ai-i18n'; t(props.label)",
         filename: path.join(sourceRoot, 'dynamic.ts'),
         errors: [{ messageId: 'invalidUsage' }],

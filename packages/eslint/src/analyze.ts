@@ -5,6 +5,7 @@ import {
   Analyzer,
   extractMessages,
   findInvalidDefineI18nMessagesReferences,
+  findRuntimeTypedLocalTranslationCalls,
   findTranslationCalls,
   findUnboundCalls,
   validateRecommendedUsage,
@@ -112,7 +113,9 @@ export function analyzeStaticSource(
           (warning) => warning.code === 'parse-error',
         ),
         ...extraction.warnings.filter(
-          (warning) => warning.code === 'static-candidate-limit',
+          (warning) =>
+            warning.code === 'static-candidate-limit' ||
+            warning.code === 'unrecognized-runtime-t-binding',
         ),
         ...recommended,
       ]
@@ -178,6 +181,7 @@ function hasTranslationCandidate(
           item.name === 'useI18n'),
     ) ||
     findInvalidDefineI18nMessagesReferences(module).length > 0 ||
+    findRuntimeTypedLocalTranslationCalls(module).length > 0 ||
     findUnboundCalls(module, new Set(unbound)).length > 0
   );
 }
