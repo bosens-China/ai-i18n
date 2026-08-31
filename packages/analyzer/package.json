@@ -1,6 +1,6 @@
 {
   "name": "@ai-i18n/analyzer",
-  "version": "1.0.0-alpha.24",
+  "version": "1.0.0-alpha.25",
   "description": "Static i18n message analysis for ai-i18n tooling in Vite, Vue, and React projects.",
   "keywords": [
     "ai-i18n",

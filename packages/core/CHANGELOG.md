@@ -1,5 +1,12 @@
 # @ai-i18n/core
 
+## [1.0.0-alpha.17](https://github.com/bosens-China/ai-i18n/compare/core-v1.0.0-alpha.16...core-v1.0.0-alpha.17) (2026-08-31)
+
+
+### Bug Fixes
+
+* **diagnostics:** 按当前语言选择诊断文案 ([d709ebb](https://github.com/bosens-China/ai-i18n/commit/d709ebbce590626e68ce1a28b2472ed08c2d795b))
+
 ## [1.0.0-alpha.16](https://github.com/bosens-China/ai-i18n/compare/core-v1.0.0-alpha.15...core-v1.0.0-alpha.16) (2026-08-29)
 
 
