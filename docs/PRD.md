@@ -20,6 +20,10 @@
 ### 平台与包边界
 
 - ai-i18n 面向 Vite 8 项目，采用 pnpm monorepo 发布 Core、Analyzer、Vite、ESLint、OpenAI 和 MCP 包。
+- 所有发布包的 Node.js 最低兼容基线不得低于当前 Vite 8 支持范围。每个包再将该基线与
+  自身代码、运行时依赖及原生模块的 Node.js 要求取交集；MCP SDK、better-sqlite3 等依赖
+  可以提高具体包的最低版本或限制主版本范围，不能将兼容基线降到 Vite 8 以下。
+  CI 与 tsdown 等构建工具的 Node.js 要求独立管理，不代表发布产物的消费者最低版本。
 - Alpha 阶段的内部发布依赖使用 `workspace:*` 并打包为精确版本，避免旧消费包自动漂移到
   新内部包。底层包变化通过 Release Please 生成配套消费包版本；正式稳定版只有在建立
   SemVer 向后兼容和最低依赖版本验证后才能恢复浮动范围。
