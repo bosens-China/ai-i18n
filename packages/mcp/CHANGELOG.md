@@ -1,5 +1,19 @@
 # @ai-i18n/mcp
 
+## [1.0.0-alpha.23](https://github.com/bosens-China/ai-i18n/compare/mcp-v1.0.0-alpha.22...mcp-v1.0.0-alpha.23) (2026-09-01)
+
+
+### Bug Fixes
+
+* **core:** 稳定 Translation Memory JSON 写入顺序 ([c6aa8bc](https://github.com/bosens-China/ai-i18n/commit/c6aa8bc023fc7b0d36af5627fbdc37fae616269e))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @ai-i18n/core bumped to 1.0.0-alpha.18
+
 ## [1.0.0-alpha.22](https://github.com/bosens-China/ai-i18n/compare/mcp-v1.0.0-alpha.21...mcp-v1.0.0-alpha.22) (2026-08-31)
 
 

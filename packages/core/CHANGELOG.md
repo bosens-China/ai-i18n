@@ -1,5 +1,12 @@
 # @ai-i18n/core
 
+## [1.0.0-alpha.18](https://github.com/bosens-China/ai-i18n/compare/core-v1.0.0-alpha.17...core-v1.0.0-alpha.18) (2026-09-01)
+
+
+### Bug Fixes
+
+* **core:** 稳定 Translation Memory JSON 写入顺序 ([c6aa8bc](https://github.com/bosens-China/ai-i18n/commit/c6aa8bc023fc7b0d36af5627fbdc37fae616269e))
+
 ## [1.0.0-alpha.17](https://github.com/bosens-China/ai-i18n/compare/core-v1.0.0-alpha.16...core-v1.0.0-alpha.17) (2026-08-31)
 
 
