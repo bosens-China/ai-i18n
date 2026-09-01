@@ -101,6 +101,9 @@
   消费方按需把它序列化为整理好的 JSON，但不把聚合结果持久化为第二份项目事实。
 - 分片身份和路径由内容确定，内存 revision 也由当前内容稳定派生，不依赖集中计数器。
   单次事务先写完整 journal，再原子提交变化分片；进程中断后由 journal 恢复。
+- 自动译文分桶固定以 `version`、`locale`、`entries` 写入顶层字段；条目固定以 `id`、`source`、
+  `sourceLang`、可选 `comment`、`value` 写入，动态哈希键按固定码元排序。协议字段不使用字典序重排，
+  避免一次 MCP、Provider 或 Vite 写入产生无关 Git diff。
 - `@ai-i18n/sqlite` 只提供可选个人 Translation Memory 候选缓存，通过
   `translationMemory.cache: sqlite()` 启用。SQLite 和 `better-sqlite3` 不进入 Core、MCP 或默认项目路径。
 - 缓存按 sourceLang、targetLang、source 与 comment 查询。只有去重后恰好一个候选时才自动

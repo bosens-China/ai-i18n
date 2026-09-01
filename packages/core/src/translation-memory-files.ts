@@ -66,16 +66,19 @@ export async function listAtomicJsonFiles(
   return files.sort();
 }
 
-export async function syncAtomicJsonFiles(
+export async function syncAtomicJsonFiles<T>(
   directory: string,
-  desired: ReadonlyMap<string, unknown>,
+  desired: ReadonlyMap<string, T>,
+  serialize: (value: T) => string = stableJson,
 ): Promise<void> {
   await fs.mkdir(directory, { recursive: true });
   const existing = await listAtomicJsonFiles(directory);
   for (const [file, entry] of desired) {
-    const serialized = stableJson(entry);
+    const serialized = serialize(entry);
     const current = await readJson(file);
-    if (current !== undefined && stableJson(current) === serialized) continue;
+    if (current !== undefined && stableJson(current) === stableJson(entry)) {
+      continue;
+    }
     await fs.mkdir(path.dirname(file), { recursive: true });
     await writeFile(file, serialized, {
       encoding: 'utf8',

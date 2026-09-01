@@ -1,3 +1,5 @@
+import { createHash } from 'node:crypto';
+import fs from 'node:fs/promises';
 import path from 'node:path';
 import { afterEach, expect, test } from 'vitest';
 import { listOverrides } from '../src/project-read';
@@ -57,6 +59,47 @@ test('supports one batch default locale across translation and review writes', a
       targets: [{ message: reference('保存') }],
     }),
   ).rejects.toMatchObject({ code: 'INVALID_BATCH_LOCALE' });
+});
+
+test('keeps Translation Memory protocol fields ordered after an MCP write', async () => {
+  const root = await fixture();
+  const directory = path.join(root, 'apps/web/i18n');
+  await addFixtureMessage(directory, {
+    id: '断开#继电器状态',
+    source: '断开',
+    comment: '继电器状态',
+  });
+
+  await setTranslations({
+    i18n_directory: directory,
+    default_locale: 'en-US',
+    updates: [
+      {
+        message: reference('断开', '继电器状态'),
+        value: 'Disconnected',
+      },
+    ],
+  });
+
+  const hash = createHash('sha256')
+    .update(JSON.stringify(['zh-CN', '断开', '继电器状态', 'en-US']))
+    .digest('hex');
+  const bucket = await fs.readFile(
+    path.join(directory, 'translations/en-US', `${hash.slice(0, 1)}.json`),
+    'utf8',
+  );
+  expect(bucket).toMatch(
+    /^\{\n {2}"version": 1,\n {2}"locale": "en-US",\n {2}"entries": \{/u,
+  );
+  expect(bucket).toContain(
+    [
+      '      "id": "断开#继电器状态",',
+      '      "source": "断开",',
+      '      "sourceLang": "zh-CN",',
+      '      "comment": "继电器状态",',
+      '      "value": "Disconnected"',
+    ].join('\n'),
+  );
 });
 
 test('fills null translations atomically and requires explicit overwrite', async () => {

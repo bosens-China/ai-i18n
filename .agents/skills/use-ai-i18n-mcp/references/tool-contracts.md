@@ -112,6 +112,9 @@ To remove a human value, list it first and pass the returned opaque `override_id
 - Translation tools always modify committed project `translations/` buckets through the project
   store. Never calculate bucket keys or edit bucket JSON directly. MCP never reads or writes the
   optional personal SQLite candidate cache and never creates a storage marker.
+- Project-store writes keep Translation Memory protocol fields in their fixed schema order and sort
+  dynamic entry hashes deterministically. Treat resulting hash-position changes as storage formatting;
+  do not reorder or rewrite bucket JSON manually.
 - A missing local SQLite database does not change MCP results because every accepted cache candidate
   must already have been copied into project JSON by Vite.
 - Human review tools modify only project `overrides/` buckets through the project store.

@@ -49,6 +49,50 @@ describe('project Translation Memory store', () => {
     store.close();
   });
 
+  it('keeps protocol fields in semantic order while sorting bucket hashes', async () => {
+    const directory = path.join(await temporaryDirectory(), 'i18n');
+    const store = await openTranslationMemoryStore(directory);
+    await store.transact((memory) => {
+      memory.messages.Delete = message('删除', 'Delete');
+      memory.messages.Submit = message('提交', 'Submit');
+      memory.messages.Relay = {
+        source: '断开',
+        sourceLang: 'zh-CN',
+        comment: '继电器状态',
+        translations: { 'en-US': 'Disconnected' },
+      };
+    });
+
+    const sharedBucket = await fs.readFile(
+      translationBucketPath(directory, '删除', 'en-US'),
+      'utf8',
+    );
+    expect(sharedBucket).toMatch(
+      /^\{\n {2}"version": 1,\n {2}"locale": "en-US",\n {2}"entries": \{/u,
+    );
+    const parsed = JSON.parse(sharedBucket) as {
+      entries: Record<string, unknown>;
+    };
+    expect(Object.keys(parsed.entries)).toEqual(
+      Object.keys(parsed.entries).sort(),
+    );
+
+    const commentedBucket = await fs.readFile(
+      translationBucketPath(directory, '断开', 'en-US', '继电器状态'),
+      'utf8',
+    );
+    expect(commentedBucket).toContain(
+      [
+        '      "id": "Relay",',
+        '      "source": "断开",',
+        '      "sourceLang": "zh-CN",',
+        '      "comment": "继电器状态",',
+        '      "value": "Disconnected"',
+      ].join('\n'),
+    );
+    store.close();
+  });
+
   it('recovers a complete transaction journal after an interrupted commit', async () => {
     const directory = path.join(await temporaryDirectory(), 'i18n');
     const store = await openTranslationMemoryStore(directory);
@@ -179,9 +223,10 @@ function translationBucketPath(
   directory: string,
   source: string,
   locale: string,
+  comment: string | null = null,
 ): string {
   const hash = createHash('sha256')
-    .update(JSON.stringify(['zh-CN', source, null, locale]))
+    .update(JSON.stringify(['zh-CN', source, comment, locale]))
     .digest('hex');
   return path.join(
     directory,

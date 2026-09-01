@@ -175,7 +175,11 @@ export class JsonTranslationMemoryStore {
         desired.set(file, bucket);
       }
     }
-    await syncAtomicJsonFiles(this.translationsDirectory, desired);
+    await syncAtomicJsonFiles(
+      this.translationsDirectory,
+      desired,
+      serializeTranslationBucket,
+    );
   }
 
   private bucketPath(locale: string, bucket: string): string {
@@ -189,6 +193,33 @@ export class JsonTranslationMemoryStore {
   private journalPath(): string {
     return atomicJsonJournalPath(this.translationsDirectory);
   }
+}
+
+function serializeTranslationBucket(bucket: TranslationBucketFile): string {
+  const entries = Object.fromEntries(
+    Object.entries(bucket.entries)
+      .sort(([left], [right]) => compareText(left, right))
+      .map(([hash, entry]) => [
+        hash,
+        {
+          id: entry.id,
+          source: entry.source,
+          sourceLang: entry.sourceLang,
+          ...(entry.comment === undefined ? {} : { comment: entry.comment }),
+          value: entry.value,
+        } satisfies TranslationBucketEntry,
+      ]),
+  );
+  const normalized: TranslationBucketFile = {
+    version: bucket.version,
+    locale: bucket.locale,
+    entries,
+  };
+  return `${JSON.stringify(normalized, null, 2)}\n`;
+}
+
+function compareText(left: string, right: string): number {
+  return left < right ? -1 : left > right ? 1 : 0;
 }
 
 function translationTargetHash(
