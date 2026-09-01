@@ -1,5 +1,22 @@
 # @ai-i18n/vite
 
+## [1.0.0-alpha.29](https://github.com/bosens-China/ai-i18n/compare/vite-v1.0.0-alpha.28...vite-v1.0.0-alpha.29) (2026-08-31)
+
+
+### Bug Fixes
+
+* **diagnostics:** 按当前语言选择诊断文案 ([d709ebb](https://github.com/bosens-China/ai-i18n/commit/d709ebbce590626e68ce1a28b2472ed08c2d795b))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @ai-i18n/analyzer bumped to 1.0.0-alpha.25
+    * @ai-i18n/core bumped to 1.0.0-alpha.17
+  * devDependencies
+    * @ai-i18n/sqlite bumped to 1.0.0-alpha.6
+
 ## [1.0.0-alpha.28](https://github.com/bosens-China/ai-i18n/compare/vite-v1.0.0-alpha.27...vite-v1.0.0-alpha.28) (2026-08-31)
 
 
