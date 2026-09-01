@@ -43,6 +43,12 @@
       "skillPath": "skills/mcp-builder/SKILL.md",
       "computedHash": "826e46adf81e1372282e205c34e1a2ee876e72148007726e4a2512599d2fef7b"
     },
+    "modernize-ecmascript": {
+      "source": "bosens-China/tc39-atlas",
+      "sourceType": "github",
+      "skillPath": ".agents/skills/modernize-ecmascript/SKILL.md",
+      "computedHash": "df95b776114147c79636287921fc1701270746609610f7e7e91da1c985af9076"
+    },
     "vercel-composition-patterns": {
       "source": "vercel-labs/agent-skills",
       "sourceType": "github",
