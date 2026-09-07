@@ -1,5 +1,14 @@
 # @ai-i18n/openai
 
+## [1.0.0-alpha.21](https://github.com/bosens-China/ai-i18n/compare/openai-v1.0.0-alpha.20...openai-v1.0.0-alpha.21) (2026-09-07)
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @ai-i18n/core bumped to 1.0.0-alpha.19
+
 ## [1.0.0-alpha.20](https://github.com/bosens-China/ai-i18n/compare/openai-v1.0.0-alpha.19...openai-v1.0.0-alpha.20) (2026-09-01)
 
 

@@ -1,5 +1,24 @@
 # @ai-i18n/vite
 
+## [1.0.0-alpha.31](https://github.com/bosens-China/ai-i18n/compare/vite-v1.0.0-alpha.30...vite-v1.0.0-alpha.31) (2026-09-07)
+
+
+### Bug Fixes
+
+* **core:** 修复原型同名文案的提取与持久化 ([7ce33c6](https://github.com/bosens-China/ai-i18n/commit/7ce33c6ad2ed66b488820f60983b47b26d0cbc4e))
+* **vite:** 修复出现位置校对的热更新 ([45ddbe5](https://github.com/bosens-China/ai-i18n/commit/45ddbe5f1132a60c98a5c341821e55fd9878785c))
+* **vite:** 防止 Provider 旧结果覆盖外部译文修改 ([7a53568](https://github.com/bosens-China/ai-i18n/commit/7a535684d98dd59755894c259cd7bf1326b104a0))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @ai-i18n/analyzer bumped to 1.0.0-alpha.27
+    * @ai-i18n/core bumped to 1.0.0-alpha.19
+  * devDependencies
+    * @ai-i18n/sqlite bumped to 1.0.0-alpha.8
+
 ## [1.0.0-alpha.30](https://github.com/bosens-China/ai-i18n/compare/vite-v1.0.0-alpha.29...vite-v1.0.0-alpha.30) (2026-09-01)
 
 

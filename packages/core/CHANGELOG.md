@@ -1,5 +1,12 @@
 # @ai-i18n/core
 
+## [1.0.0-alpha.19](https://github.com/bosens-China/ai-i18n/compare/core-v1.0.0-alpha.18...core-v1.0.0-alpha.19) (2026-09-07)
+
+
+### Bug Fixes
+
+* **core:** 修复原型同名文案的提取与持久化 ([7ce33c6](https://github.com/bosens-China/ai-i18n/commit/7ce33c6ad2ed66b488820f60983b47b26d0cbc4e))
+
 ## [1.0.0-alpha.18](https://github.com/bosens-China/ai-i18n/compare/core-v1.0.0-alpha.17...core-v1.0.0-alpha.18) (2026-09-01)
 
 
