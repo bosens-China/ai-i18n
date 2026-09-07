@@ -23,10 +23,7 @@ import type {
   ProjectUpdate,
   ProjectStateUpdateOptions,
 } from './project-state-types.js';
-import {
-  changedEffectiveModules,
-  snapshotEffectiveModules,
-} from './translation-overrides.js';
+import { changedEffectiveModules } from './translation-overrides.js';
 import type { ProviderResult } from './provider-coordinator.js';
 import type { ProviderRequest } from './provider-coordinator.js';
 import { ProviderTranslationState } from './provider-translation-state.js';
@@ -359,12 +356,12 @@ export class ProjectState {
   }
 
   private effectiveModules(): Map<string, string> {
-    return snapshotEffectiveModules(
-      this.modules,
-      this.options.locales,
-      this.options.sourceLang,
-      (message, locale, moduleId) =>
-        this.translation(message, locale, moduleId),
+    // 与浏览器实际注册数据共用出现位置解析，避免位置校对变化漏发 HMR。
+    return new Map(
+      [...this.modules.keys()].map((moduleId) => [
+        moduleId,
+        JSON.stringify(this.registration(moduleId)),
+      ]),
     );
   }
 

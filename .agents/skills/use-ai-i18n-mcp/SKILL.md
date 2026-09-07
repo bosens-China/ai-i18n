@@ -47,7 +47,8 @@ source, branch, or extraction configuration changes that make it stale. Do not e
 merely to locate the directory. Never open or edit Translation Memory storage directly.
 
 When that app's Vite Dev Server is running, successful MCP Translation Memory or override writes are
-observed and applied to its in-memory Runtime through HMR. This convenience does not make the Dev
+observed and applied to its in-memory Runtime through HMR, including occurrence-scoped override edits
+and deletions. This convenience does not make the Dev
 catalog a complete source set: first use, complete audits, and orphan decisions still require the
 full Build above. Do not restart Dev or edit generated locale files merely to expose an MCP write.
 

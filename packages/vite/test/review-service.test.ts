@@ -186,6 +186,7 @@ describe('review service', () => {
       },
     ]);
     expect(notify).toHaveBeenCalledTimes(3);
+    expect(notify).toHaveBeenNthCalledWith(3, ['src/main.ts'], 'en-US');
 
     await service.deleteOverride({
       message: { source: '保存' },
@@ -193,6 +194,7 @@ describe('review service', () => {
       file: 'src/main.ts',
       location: { line: 1, column: 0 },
     });
+    expect(notify).toHaveBeenNthCalledWith(4, ['src/main.ts'], 'en-US');
 
     await service.deleteOverride({
       message: { source: '保存' },
