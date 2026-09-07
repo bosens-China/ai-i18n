@@ -40,10 +40,21 @@ export function createPluginProvider(
         await options.flushPersistence();
         const project = options.state();
         const store = options.store();
-        store.markProviderTranslations(results);
+        const baseline = project.snapshot().cache;
         const affected = project.applyTranslations(results, {
           replaceCached: options.providerCache === 'fresh',
         });
+        const snapshot = project.snapshot();
+        // 只登记本次真正应用的结果，被并发新值拒绝的结果不能留下写入权限。
+        store.markProviderTranslations(
+          results.filter(
+            ({ messageId, locale, value }) =>
+              snapshot.cache.messages[messageId]?.translations?.[locale] ===
+                value &&
+              baseline.messages[messageId]?.translations?.[locale] !== value,
+          ),
+          baseline,
+        );
         store.markProviderBatch(batchId);
         coordinator.reportBatchEvent({
           batchId,
@@ -52,7 +63,7 @@ export function createPluginProvider(
           affectedModules: affected.length,
         });
         if (options.config.command !== 'build') {
-          const cache = await store.sync(project.snapshot());
+          const cache = await store.sync(snapshot);
           project.hydrateCache(cache);
           project.hydrateOverrides(await store.loadOverrides());
         }

@@ -10,11 +10,20 @@ import {
 import { diagnosticMessage } from '@ai-i18n/analyzer';
 import { enforceCacheCapacity } from './cache-capacity.js';
 import { removeOrphanMessages } from './file-store-cleanup.js';
-import { mergeProjectMessages } from './file-store-merge.js';
+import {
+  mergeProjectMessages,
+  translationFieldKey,
+  type PendingProviderTranslation,
+} from './file-store-merge.js';
 import type { FileStoreOptions } from './file-store-types.js';
 import type { ProjectSnapshot } from './project-snapshot.js';
+import type { ProviderResult } from './provider-coordinator.js';
 
 export class FileStoreMemory {
+  private readonly providerFields = new Map<
+    string,
+    PendingProviderTranslation
+  >();
   private store: Promise<TranslationMemoryStore> | undefined;
   private candidateCache:
     Promise<TranslationMemoryCandidateCache | undefined> | undefined;
@@ -22,9 +31,28 @@ export class FileStoreMemory {
   constructor(
     private readonly directory: string,
     private readonly options: FileStoreOptions,
-    private readonly providerFields: ReadonlySet<string>,
     private readonly updateManagedFiles: (files: readonly string[]) => void,
   ) {}
+
+  markProviderTranslations(
+    results: readonly ProviderResult[],
+    baseline: TranslationMemoryFile,
+  ): void {
+    for (const result of results) {
+      if (result.value !== null) {
+        this.providerFields.set(
+          translationFieldKey(result.messageId, result.locale),
+          {
+            baseline:
+              baseline.messages[result.messageId]?.translations?.[
+                result.locale
+              ] ?? null,
+            value: result.value,
+          },
+        );
+      }
+    }
+  }
 
   async update(
     snapshot?: ProjectSnapshot,
@@ -32,12 +60,22 @@ export class FileStoreMemory {
   ): Promise<TranslationMemoryFile> {
     const store = await this.getStore();
     const cache = await this.getCandidateCache();
+    const pendingProvider = new Map<string, PendingProviderTranslation>();
+    for (const [id, message] of Object.entries(
+      snapshot?.cache.messages ?? {},
+    )) {
+      for (const [locale, value] of Object.entries(message.translations)) {
+        const key = translationFieldKey(id, locale);
+        const pending = this.providerFields.get(key);
+        if (pending?.value === value) pendingProvider.set(key, pending);
+      }
+    }
     const persistent = await store.transact(async (memory) => {
       if (snapshot) {
         memory.messages = mergeProjectMessages(
           memory.messages,
           snapshot.cache.messages,
-          this.providerFields,
+          pendingProvider,
         );
       }
       this.ensureCurrentLocales(memory.messages);
@@ -56,6 +94,11 @@ export class FileStoreMemory {
         );
       }
     });
+    // 仅在事务成功后消费本快照的写入意图；失败可重试，后续外部编辑不再被旧结果覆盖。
+    for (const [key, pending] of pendingProvider) {
+      if (this.providerFields.get(key) === pending)
+        this.providerFields.delete(key);
+    }
     this.updateManagedFiles(
       (await store.watchFiles()).map((file) => path.resolve(file)),
     );

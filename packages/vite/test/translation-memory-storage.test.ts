@@ -8,7 +8,10 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { build } from 'vite';
 import { aiI18n } from '../src';
 import { removeTempDir } from './temp-dir';
-import { readTestTranslationMemory } from './translation-memory-test-utils';
+import {
+  readTestTranslationMemory,
+  updateTestTranslationMemory,
+} from './translation-memory-test-utils';
 
 const tempDirectories: string[] = [];
 const runtimeEntry = path.resolve('packages/vite/src/runtime.ts');
@@ -104,6 +107,24 @@ describe('Translation Memory Vite storage', () => {
     await expect(
       fs.access(path.join(dataDirectory, 'translation-memory.sqlite')),
     ).resolves.toBeUndefined();
+  });
+
+  it('keeps an Agent write made while a fresh Provider request is in flight', async () => {
+    const root = await fixture('fresh-concurrent-write');
+    await buildProject(root, translator('Old'));
+    const provider = vi.fn<Translator>(async ({ messages }) => {
+      await updateTestTranslationMemory(path.join(root, 'i18n'), (memory) => {
+        memory.messages['保存']!.translations['en-US'] = 'Agent';
+      });
+      return messages.map(() => ({ 'en-US': 'Stale Provider' }));
+    });
+    await buildProject(root, provider, { providerCache: 'fresh' });
+    expect(provider).toHaveBeenCalledTimes(1);
+    expect(
+      (await readTestTranslationMemory(path.join(root, 'i18n'))).messages[
+        '保存'
+      ]!.translations['en-US'],
+    ).toBe('Agent');
   });
 });
 

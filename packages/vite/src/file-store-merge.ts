@@ -3,9 +3,15 @@ import {
   type ExtractedFile,
   type LocaleFileV1,
   type TranslationOverridesFile,
+  type TranslationValue,
   runtimeMessageId,
 } from '@ai-i18n/core';
 import { effectiveTranslation } from './translation-overrides.js';
+
+export interface PendingProviderTranslation {
+  baseline: TranslationValue;
+  value: string;
+}
 
 export function hydrateExtracted(extracted: ExtractedFile): ExtractedFile {
   return {
@@ -51,7 +57,7 @@ export function hydrateLocale(
 export function mergeProjectMessages(
   current: Record<string, CacheMessage>,
   incoming: Record<string, CacheMessage>,
-  preferIncoming: ReadonlySet<string> = new Set(),
+  pendingProvider: ReadonlyMap<string, PendingProviderTranslation> = new Map(),
 ): Record<string, CacheMessage> {
   // 磁盘上的 Agent 编辑优先；ProjectState 只补充新消息和缺失翻译。
   const reused = structuredClone(incoming);
@@ -64,7 +70,7 @@ export function mergeProjectMessages(
         next,
         currentMessage,
         messageId,
-        preferIncoming,
+        pendingProvider,
       );
       continue;
     }
@@ -78,7 +84,7 @@ export function mergeProjectMessages(
         );
     if (candidates.length !== 1) continue;
     const historic = candidates[0]!;
-    keepCommittedTranslations(next, historic, messageId, preferIncoming);
+    keepCommittedTranslations(next, historic, messageId, pendingProvider);
     delete next.translations[next.sourceLang];
     if (historic.sourceLang) {
       next.translations[historic.sourceLang] = historic.source;
@@ -135,18 +141,19 @@ function keepCommittedTranslations(
   target: CacheMessage,
   current: CacheMessage,
   messageId: string,
-  preferIncoming: ReadonlySet<string>,
+  pendingProvider: ReadonlyMap<string, PendingProviderTranslation>,
 ): void {
   for (const [locale, value] of Object.entries(current.translations)) {
+    const pending = pendingProvider.get(translationFieldKey(messageId, locale));
     if (
-      preferIncoming.has(translationFieldKey(messageId, locale)) &&
-      target.translations[locale] !== null
+      pending &&
+      pending.baseline === value &&
+      pending.value === target.translations[locale]
     ) {
       continue;
     }
-    if (value !== null || !(locale in target.translations)) {
-      target.translations[locale] = value;
-    }
+    // 锁内读到的项目值优先，包括外部显式清空；只有基线未变的待提交结果可替换。
+    target.translations[locale] = value;
   }
 }
 

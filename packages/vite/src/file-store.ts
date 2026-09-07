@@ -24,7 +24,7 @@ import {
   warnExtractedMismatches,
   writeProtocolJson,
 } from './file-store-io.js';
-import { hydrateExtracted, translationFieldKey } from './file-store-merge.js';
+import { hydrateExtracted } from './file-store-merge.js';
 import {
   loadIncrementalSyncState,
   writeFullLocales,
@@ -37,6 +37,7 @@ import type {
   FileStoreOptions,
 } from './file-store-types.js';
 import type { ProjectSnapshot } from './project-state.js';
+import type { ProviderResult } from './provider-coordinator.js';
 import type { DevTimingStage } from './dev-timing.js';
 import { readJson, readText } from './json-files.js';
 
@@ -50,22 +51,16 @@ export class FileStore {
   private queue = Promise.resolve();
   private readonly lastWritten = new Map<string, string>();
   private readonly memory: FileStoreMemory;
-  private readonly providerFields = new Set<string>();
   private readonly pendingProviderBatches = new Set<string>();
   private readonly translationManagedFiles = new Set<string>();
   private readonly overrideManagedFiles = new Set<string>();
 
   constructor(private readonly options: FileStoreOptions) {
     this.directory = path.resolve(options.root, options.directory ?? 'i18n');
-    this.memory = new FileStoreMemory(
-      this.directory,
-      options,
-      this.providerFields,
-      (files) => {
-        this.translationManagedFiles.clear();
-        for (const file of files) this.translationManagedFiles.add(file);
-      },
-    );
+    this.memory = new FileStoreMemory(this.directory, options, (files) => {
+      this.translationManagedFiles.clear();
+      for (const file of files) this.translationManagedFiles.add(file);
+    });
   }
 
   async load(): Promise<TranslationMemoryFile> {
@@ -195,19 +190,10 @@ export class FileStore {
   }
 
   markProviderTranslations(
-    results: readonly {
-      messageId: string;
-      locale: string;
-      value: string | null;
-    }[],
+    results: readonly ProviderResult[],
+    baseline: TranslationMemoryFile,
   ): void {
-    for (const result of results) {
-      if (result.value !== null) {
-        this.providerFields.add(
-          translationFieldKey(result.messageId, result.locale),
-        );
-      }
-    }
+    this.memory.markProviderTranslations(results, baseline);
   }
 
   markProviderBatch(batchId: string): void {

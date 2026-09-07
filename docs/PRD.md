@@ -304,6 +304,7 @@
 - MCP 只读取 `extracted/` 以校验消息归属；自动翻译工具只修改 `translations/`，人工工具
   只修改 `overrides/`。MCP 不读写个人 SQLite 缓存，不修改 `extracted/` 或 `locales/`，也不执行 Vite 配置。
 - MCP 不读取 `provider.cache`。Vite 的进程级 Provider 刷新不能过滤、阻止或覆盖在途 Agent 写入。
+- Provider 结果在项目锁内校验旧值，提交成功后消费对应写入意图；外部修改、清空或空字符串不能被旧内存快照恢复。
 - 工具名、字段和稳定错误码使用英文；Agent 按用户语言解释结果。每次调用只返回一份紧凑 JSON 文本。
 - Agent 的安全操作流程以 use-ai-i18n-mcp Skill 为准；Vite 接入流程以 integrate-ai-i18n Skill 为准。
 
