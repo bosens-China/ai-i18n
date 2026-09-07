@@ -22,7 +22,7 @@ export function createProjectSnapshot(
   seen: ReadonlySet<string>,
   options: NormalizedAiI18nOptions,
 ): ProjectSnapshot {
-  const messages: Record<string, CacheMessage> = {};
+  const messages: Record<string, CacheMessage> = Object.create(null);
   const messageSources = new Map<string, string>();
   const extracted: Record<string, ExtractedFile> = {};
   const targetLocales = options.locales.filter(

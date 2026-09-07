@@ -17,7 +17,9 @@ export function effectiveTranslation(
 ): TranslationValue {
   return (
     resolveTranslationOverride(overrides, message, locale, sourceFile) ??
-    cacheMessages[message.id]?.translations[locale] ??
+    (Object.hasOwn(cacheMessages, message.id)
+      ? cacheMessages[message.id]?.translations[locale]
+      : undefined) ??
     null
   );
 }

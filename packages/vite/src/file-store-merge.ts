@@ -56,7 +56,9 @@ export function mergeProjectMessages(
   // 磁盘上的 Agent 编辑优先；ProjectState 只补充新消息和缺失翻译。
   const reused = structuredClone(incoming);
   for (const [messageId, next] of Object.entries(reused)) {
-    const currentMessage = current[messageId];
+    const currentMessage = Object.hasOwn(current, messageId)
+      ? current[messageId]
+      : undefined;
     if (currentMessage && currentMessage.sourceLang === next.sourceLang) {
       keepCommittedTranslations(
         next,
@@ -91,7 +93,11 @@ export function overlayMessages(
   overwriteNull: boolean,
   overwriteMetadata = false,
 ): Record<string, CacheMessage> {
-  const merged = structuredClone(current);
+  // structuredClone 不保留空原型，合并时重新建立仅含消息自身键的字典。
+  const merged: Record<string, CacheMessage> = Object.assign(
+    Object.create(null),
+    structuredClone(current),
+  );
   for (const [messageId, next] of Object.entries(incoming)) {
     const previous = merged[messageId];
     if (!previous) {

@@ -88,7 +88,7 @@ export class JsonTranslationMemoryStore {
   close(): void {}
 
   private async readCurrent(): Promise<TranslationMemoryFile> {
-    const messages: Record<string, CacheMessage> = {};
+    const messages: Record<string, CacheMessage> = Object.create(null);
     for (const file of await listAtomicJsonFiles(this.translationsDirectory)) {
       const bucket = parseTranslationBucket(await readJson(file), file);
       const bucketName = path.basename(file, '.json');
