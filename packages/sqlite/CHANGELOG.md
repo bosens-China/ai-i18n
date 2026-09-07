@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.0.0-alpha.8](https://github.com/bosens-China/ai-i18n/compare/sqlite-v1.0.0-alpha.7...sqlite-v1.0.0-alpha.8) (2026-09-07)
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @ai-i18n/core bumped to 1.0.0-alpha.19
+
 ## [1.0.0-alpha.7](https://github.com/bosens-China/ai-i18n/compare/sqlite-v1.0.0-alpha.6...sqlite-v1.0.0-alpha.7) (2026-09-01)
 
 
