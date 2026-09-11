@@ -1,5 +1,19 @@
 # @ai-i18n/vite
 
+## [1.0.0-alpha.33](https://github.com/bosens-China/ai-i18n/compare/vite-v1.0.0-alpha.32...vite-v1.0.0-alpha.33) (2026-09-11)
+
+
+### Features
+
+* **vite:** 增加启动与转换性能诊断及演示对照 ([08eccc9](https://github.com/bosens-China/ai-i18n/commit/08eccc90326629963a89aed3546df171b954f2a9))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @ai-i18n/analyzer bumped to 1.0.0-alpha.28
+
 ## [1.0.0-alpha.32](https://github.com/bosens-China/ai-i18n/compare/vite-v1.0.0-alpha.31...vite-v1.0.0-alpha.32) (2026-09-11)
 
 
