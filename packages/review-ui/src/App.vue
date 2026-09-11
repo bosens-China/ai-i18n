@@ -22,7 +22,7 @@ import ReviewStandaloneHeader from './components/ReviewStandaloneHeader.vue';
 import ReviewWorkbenchTabs from './components/ReviewWorkbenchTabs.vue';
 import type { ReviewWorkbenchTab } from './components/ReviewWorkbenchTabs.vue';
 import WorkbenchList from './components/WorkbenchList.vue';
-import WorkbenchStudio from './components/WorkbenchStudio.vue';
+import ReviewStudioPane from './components/ReviewStudioPane.vue';
 import { useReviewConsole } from './composables/useReviewConsole';
 import { useReviewDrafts } from './composables/useReviewDrafts';
 import { useReviewI18n } from './composables/useReviewI18n';
@@ -363,42 +363,25 @@ async function mutate(
         </aside>
       </template>
 
-      <section
-        class="review-studio flex min-w-0 min-h-0 flex-col overflow-hidden bg-bgBase p-2"
-      >
-        <WorkbenchStudio
-          v-if="selection.selectedMessage.value"
-          :copy="copy"
-          :compact="!isStandalone"
-          :draft="
-            drafts.draftFor(
-              selection.selectedMessage.value,
-              review.locale.value,
-              scopeFor(selection.selectedMessage.value),
-            )
-          "
-          :locale="review.locale.value"
-          :message="selection.selectedMessage.value"
-          :require-occurrence="candidateMode"
-          :scope="scopeFor(selection.selectedMessage.value)"
-          @mutate="mutate"
-          @update-draft="
-            drafts.updateDraft(
-              selection.selectedMessage.value!,
-              review.locale.value,
-              scopeFor(selection.selectedMessage.value!),
-              $event,
-            )
-          "
-          @update-scope="updateScope(selection.selectedMessage.value!, $event)"
-        />
-        <div
-          v-else
-          class="h-full grid place-items-center p-12 text-center text-muted text-sm leading-relaxed"
-        >
-          {{ candidateMode ? copy.chooseExactOccurrence : copy.selectMessage }}
-        </div>
-      </section>
+      <ReviewStudioPane
+        :copy="copy"
+        :compact="!isStandalone"
+        :draft-for="drafts.draftFor"
+        :locale="review.locale.value"
+        :message="selection.selectedMessage.value"
+        :require-occurrence="candidateMode"
+        :scope-for="scopeFor"
+        @mutate="mutate"
+        @update-draft="
+          drafts.updateDraft(
+            selection.selectedMessage.value!,
+            review.locale.value,
+            scopeFor(selection.selectedMessage.value!),
+            $event,
+          )
+        "
+        @update-scope="updateScope(selection.selectedMessage.value!, $event)"
+      />
     </main>
   </div>
 
