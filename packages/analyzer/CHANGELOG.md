@@ -1,5 +1,12 @@
 # @ai-i18n/analyzer
 
+## [1.0.0-alpha.28](https://github.com/bosens-China/ai-i18n/compare/analyzer-v1.0.0-alpha.27...analyzer-v1.0.0-alpha.28) (2026-09-11)
+
+
+### Features
+
+* **vite:** 增加启动与转换性能诊断及演示对照 ([08eccc9](https://github.com/bosens-China/ai-i18n/commit/08eccc90326629963a89aed3546df171b954f2a9))
+
 ## [1.0.0-alpha.27](https://github.com/bosens-China/ai-i18n/compare/analyzer-v1.0.0-alpha.26...analyzer-v1.0.0-alpha.27) (2026-09-07)
 
 
