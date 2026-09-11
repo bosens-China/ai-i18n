@@ -1,5 +1,6 @@
 import type { FileStore, FileStoreLoadOptions } from './file-store.js';
 import type { ProjectState } from './project-state.js';
+import { isInternalStoreFile } from './file-store-paths.js';
 
 interface BuildWatchDependencies {
   sourcePattern: RegExp;
@@ -21,6 +22,7 @@ export function createBuildWatchState(dependencies: BuildWatchDependencies) {
     ): Promise<void> {
       await dependencies.ready();
       const store = dependencies.store();
+      if (isInternalStoreFile(store.directory, file)) return;
       if (store.manages(file)) {
         if (event !== 'delete' && (await store.isOwnFile(file))) return;
         managedChanges.add(file);

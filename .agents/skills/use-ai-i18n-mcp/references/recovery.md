@@ -39,6 +39,15 @@ server does not return that field.
 SQLite cache failures belong to the Vite process, not MCP recovery. MCP always uses project JSON; do
 not install `@ai-i18n/sqlite` or `better-sqlite3` merely to make an MCP operation work.
 
+## Vite HMR reports a missing transaction journal
+
+If an MCP write succeeds but Vite reports `ENOENT` for `.transaction.json`, verify the write with
+the matching read-only MCP list first. Do not repeat a successful mutation, recreate or delete the
+journal, or infer translation corruption from that watcher error. Use the `integrate-ai-i18n` Skill
+for the target app's installed-version check and Dev recovery, then verify the page receives updates
+from real translation or override shard changes. A journal event alone is not an HMR acknowledgement;
+do not touch it to force refresh or recovery.
+
 ## Tool unavailable
 
 If the MCP tools are unavailable, explain that `@ai-i18n/mcp` must be registered locally. Do not

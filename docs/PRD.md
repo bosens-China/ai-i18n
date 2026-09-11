@@ -146,8 +146,13 @@
   合并进业务 chunk，不能成为独立 facade 或逐源码浏览器请求。MCP、Provider 和校对写入后，由 Dev
   独立观察 i18n 目录与 Translation Memory
   文件并通过 HMR 更新已激活模块；完整 Build 仍是 MCP 首次使用和 orphan 审计的全量依据。
+- Dev 与 Build Watch 忽略当前 i18n 目录内 translations/overrides 根事务日志及协议目录中的原子 JSON
+  临时文件事件；Dev 在进入状态队列和 flush 前过滤。过滤不改变全局 watcher、跨进程锁、原子提交或
+  恢复机制，journal 仍由正常存储读取或事务入口恢复。真实分片的新增、修改、删除继续同步。
 - Dev 管理文件的 create/update 事件允许读取内容并识别插件自身写入；delete 事件不得读取已经消失的
-  文件。活动生成文件被外部删除时按当前内存状态恢复，已失效文件不得复活或触发 HMR 自激循环。
+  文件。create/update 排队后读取遇到 ENOENT 时仍按最新磁盘状态同步，不能因分片已经消失
+  而中断 HMR 或直接丢弃更新；其他读取错误继续抛出。活动生成文件被外部删除时按当前内存状态恢复，
+  已失效文件不得复活或触发 HMR 自激循环。
 - `diagnostics.timing` 是默认关闭的 Vite Dev 慢阶段诊断。`true` 使用 50ms 阈值，也可配置非负有限的
   `minDurationMs`；除 source-transform 和 file-sync 总阶段外，报告初始化等待、
   分析、注册、依赖解析、状态事务、快照、extracted 扫描/写入、Translation Memory 和 locale 写入

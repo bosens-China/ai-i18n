@@ -15,6 +15,7 @@ import {
 import { findMissingSources } from './file-store-cleanup.js';
 import {
   extractedPath,
+  isInternalStoreFile,
   localePath,
   translationOverridesPath,
 } from './file-store-paths.js';
@@ -125,6 +126,7 @@ export class FileStore {
 
   manages(file: string): boolean {
     const resolved = path.resolve(file);
+    if (isInternalStoreFile(this.directory, resolved)) return false;
     if (this.translationManagedFiles.has(resolved)) return true;
     const relative = path.relative(this.directory, resolved);
     return (

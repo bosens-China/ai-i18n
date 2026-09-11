@@ -13,6 +13,8 @@ import {
   type AiI18nFramework,
 } from './framework.js';
 import { sourceUpdateOptions } from './plugin-utils.js';
+import { isNotFound } from './json-files.js';
+import { isInternalStoreFile } from './file-store-paths.js';
 import type { ProjectState } from './project-state.js';
 
 interface HotUpdateDependencies {
@@ -42,6 +44,9 @@ export function createHotUpdateHandler(dependencies: HotUpdateDependencies) {
   ): Promise<EnvironmentModuleNode[] | undefined> {
     if (this.environment.name !== 'client') return;
     await dependencies.ready();
+    // 内部文件事件不进入状态队列，也不触发待写快照 flush。
+    if (isInternalStoreFile(dependencies.store().directory, options.file))
+      return [];
     return dependencies.runStateTask(async () => {
       await dependencies.flushPersistence();
       const project = dependencies.state();
@@ -50,10 +55,19 @@ export function createHotUpdateHandler(dependencies: HotUpdateDependencies) {
         ? snapshotLocales(project)
         : undefined;
       if (fileStore.manages(options.file)) {
-        // Vite 8 的 delete 事件仍会进入 hotUpdate，但此时 read() 会读取已消失的文件。
+        // 排队或 flush 期间文件可能已删除；ENOENT 仍按最新磁盘状态同步，不能丢弃事件。
         if (options.type !== 'delete') {
-          const content = await options.read();
-          if (fileStore.isOwnWrite(options.file, content)) return [];
+          let content: string | undefined;
+          try {
+            content = await options.read();
+          } catch (error) {
+            if (!isNotFound(error)) throw error;
+          }
+          if (
+            content !== undefined &&
+            fileStore.isOwnWrite(options.file, content)
+          )
+            return [];
         }
         const loadOptions = await fileStore.loadOptions([options.file]);
         const affected = project.hydrateCache(await fileStore.load());
