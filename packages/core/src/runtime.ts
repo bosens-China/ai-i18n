@@ -1,3 +1,12 @@
+import {
+  resolvePersistenceKey,
+  readPersistedLang,
+  writePersistedLang,
+} from './runtime-persistence.js';
+import {
+  validateLocaleMessages,
+  validateModule,
+} from './runtime-validation.js';
 import type { LangOption, TranslationValue } from './schema.js';
 import { diagnosticMessage } from './diagnostics.js';
 import { TranslationConflictError } from './schema.js';
@@ -364,95 +373,3 @@ const idleLangLoadState: LangLoadState = Object.freeze({
   targetLang: null,
   error: null,
 });
-
-function resolvePersistenceKey(
-  persist: I18nRuntimeOptions['persist'],
-): string | undefined {
-  if (!persist) return undefined;
-  if (persist === true) return 'ai-i18n:lang';
-  const key = persist.key.trim();
-  if (!key) {
-    throw new Error(
-      diagnosticMessage(
-        '[ai-i18n] persist.key 不能为空。',
-        '[ai-i18n] persist.key must not be empty.',
-      ),
-    );
-  }
-  return key;
-}
-
-function readPersistedLang(
-  key: string | undefined,
-  locales: ReadonlySet<string>,
-): string | undefined {
-  if (!key) return undefined;
-  try {
-    const value = globalThis.localStorage?.getItem(key) ?? undefined;
-    return value && locales.has(value) ? value : undefined;
-  } catch {
-    return undefined;
-  }
-}
-
-function writePersistedLang(key: string | undefined, value: string): void {
-  if (!key) return;
-  try {
-    globalThis.localStorage?.setItem(key, value);
-  } catch {
-    // 隐私模式、禁用存储或配额错误不应阻断语言切换。
-  }
-}
-
-function validateLocaleMessages(
-  locale: string,
-  messages: LocaleMessages,
-): void {
-  for (const [id, value] of Object.entries(messages)) {
-    if (typeof value !== 'string' && value !== null) {
-      throw new Error(
-        diagnosticMessage(
-          `[ai-i18n] locale“${locale}”的消息“${id}”必须是字符串或 null。`,
-          `[ai-i18n] locale "${locale}" message "${id}" must be a string or null.`,
-        ),
-      );
-    }
-  }
-}
-
-function validateModule(
-  moduleId: string,
-  messages: ModuleMessages,
-  locales: Set<string>,
-  localeCount: number,
-): void {
-  const entries = Object.entries(messages);
-  if (entries.length !== localeCount) {
-    throw new Error(
-      diagnosticMessage(
-        `[ai-i18n] 模块“${moduleId}”必须注册每个 locale。`,
-        `[ai-i18n] module "${moduleId}" must register every locale.`,
-      ),
-    );
-  }
-  for (const [locale, localeMessages] of entries) {
-    if (!locales.has(locale)) {
-      throw new Error(
-        diagnosticMessage(
-          `[ai-i18n] 模块“${moduleId}”注册了未知 locale“${locale}”。`,
-          `[ai-i18n] module "${moduleId}" registered unknown locale "${locale}".`,
-        ),
-      );
-    }
-    for (const [id, value] of Object.entries(localeMessages)) {
-      if (typeof value !== 'string' && value !== null) {
-        throw new Error(
-          diagnosticMessage(
-            `[ai-i18n] 模块“${moduleId}”的消息“${id}”必须是字符串或 null。`,
-            `[ai-i18n] module "${moduleId}" message "${id}" must be a string or null.`,
-          ),
-        );
-      }
-    }
-  }
-}
