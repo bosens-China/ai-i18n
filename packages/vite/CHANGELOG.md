@@ -1,5 +1,12 @@
 # @ai-i18n/vite
 
+## [1.0.0-alpha.32](https://github.com/bosens-China/ai-i18n/compare/vite-v1.0.0-alpha.31...vite-v1.0.0-alpha.32) (2026-09-11)
+
+
+### Bug Fixes
+
+* **vite:** 过滤内部存储文件事件并修复热更新读取竞态 ([4bea537](https://github.com/bosens-China/ai-i18n/commit/4bea5372bc48952ddee0e2ca7eda3a7014c7c39c))
+
 ## [1.0.0-alpha.31](https://github.com/bosens-China/ai-i18n/compare/vite-v1.0.0-alpha.30...vite-v1.0.0-alpha.31) (2026-09-07)
 
 
