@@ -5,5 +5,5 @@
   "packages/mcp": "1.0.0-alpha.24",
   "packages/openai": "1.0.0-alpha.21",
   "packages/sqlite": "1.0.0-alpha.8",
-  "packages/vite": "1.0.0-alpha.31"
+  "packages/vite": "1.0.0-alpha.32"
 }
