@@ -3,6 +3,8 @@ import type { TranslationMemoryCandidateCacheAdapter } from '@ai-i18n/core/trans
 import type { AiI18nFramework } from './framework.js';
 import type { HtmlExtractorOptions } from './html.js';
 import type { ProviderCoordinatorOptions } from './provider-coordinator.js';
+import type { AiI18nPerformanceDiagnosticsOptions } from './performance-types.js';
+export type { AiI18nPerformanceDiagnosticsOptions } from './performance-types.js';
 
 export type AiI18nProviderOptions = Pick<
   ProviderCoordinatorOptions,
@@ -49,6 +51,8 @@ export interface AiI18nTimingDiagnosticsOptions {
 export interface AiI18nDiagnosticsOptions {
   /** 显式开启 Dev 阶段耗时诊断；默认关闭。 */
   timing?: boolean | AiI18nTimingDiagnosticsOptions;
+  /** Dev / Build 启动与转换的有界性能报告；不单独统计写入，默认关闭。 */
+  performance?: boolean | AiI18nPerformanceDiagnosticsOptions;
 }
 
 export interface AiI18nOptions {

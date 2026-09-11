@@ -8,7 +8,8 @@
     "build": "vite build --base=./",
     "lint": "eslint .",
     "check": "tsc -b && pnpm lint",
-    "preview": "vite preview --port 51883 --strictPort"
+    "preview": "vite preview --port 51883 --strictPort",
+    "dev:perf": "vite --port 51883 --strictPort"
   },
   "dependencies": {
     "react": "^19.2.7",

@@ -1,10 +1,13 @@
+import type { PerformanceRecorder } from './performance-recorder.js';
 import {
   hasSameTemplateTokens,
   type TranslationMessage,
   type TranslationResult,
+  type Translator,
+  type TranslationBatch,
 } from '@ai-i18n/core';
 import { diagnosticMessage } from '@ai-i18n/analyzer';
-import type { ProviderRequest } from './provider-coordinator.js';
+import type { ProviderRequest } from './provider-types.js';
 
 interface BatchPending {
   request: ProviderRequest;
@@ -157,4 +160,26 @@ export function positiveInteger(value: number, name: string): number {
     );
   }
   return value;
+}
+
+export async function translateProviderBatch(
+  translator: Translator,
+  batch: TranslationBatch,
+  performance?: PerformanceRecorder,
+) {
+  const translate = () => translator(batch);
+  const details = { batchId: batch.batchId };
+  const translated = await (performance
+    ? performance.measure('provider-call', '<provider>', translate, details)
+    : translate());
+  const validate = () =>
+    validateResults(batch.messages, batch.locales, translated);
+  return performance
+    ? performance.measure(
+        'provider-validation',
+        '<provider>',
+        validate,
+        details,
+      )
+    : validate();
 }

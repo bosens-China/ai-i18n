@@ -8,7 +8,8 @@
     "build": "vite build --base=./",
     "lint": "eslint .",
     "check": "vue-tsc -b && pnpm lint",
-    "preview": "vite preview --port 51882 --strictPort"
+    "preview": "vite preview --port 51882 --strictPort",
+    "dev:perf": "vite --port 51882 --strictPort"
   },
   "dependencies": {
     "vue": "^3.5.39"

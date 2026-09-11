@@ -47,7 +47,7 @@ interface AiI18nOptions {
 | `html`              | [`boolean \| HtmlExtractorOptions`](/api/vite/interfaces/html-extractor-options)            | 否   | `false`              | 开启 `index.html` 文本和属性提取。             |
 | `translationMemory` | [`AiI18nTranslationMemoryOptions`](/api/vite/interfaces/ai-i18n-translation-memory-options) | 否   | 分片 JSON            | 配置可选个人候选缓存，并按需限制历史译文容量。 |
 | `cleanup`           | [`AiI18nCleanupOptions`](/api/vite/interfaces/ai-i18n-cleanup-options)                      | 否   | 保留默认清理策略     | 控制失效提取文件和孤立消息的清理。             |
-| `diagnostics`       | [`AiI18nDiagnosticsOptions`](/api/vite/interfaces/ai-i18n-diagnostics-options)              | 否   | 关闭                 | 按需输出 Vite Dev 阶段耗时。                   |
+| `diagnostics`       | [`AiI18nDiagnosticsOptions`](/api/vite/interfaces/ai-i18n-diagnostics-options)              | 否   | 关闭                 | 按需输出 Dev 慢日志或 Dev / Build 性能报告。   |
 
 ## 语言约束
 

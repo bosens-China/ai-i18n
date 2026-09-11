@@ -61,6 +61,7 @@ export function analyzeVueSource(
   source: string,
   id: string,
   compiler: VueCompiler,
+  options: { autoImport?: boolean } = {},
 ): VueAnalysisSource {
   const { descriptor, errors } = compiler.parse(source, {
     filename: id,
@@ -242,9 +243,11 @@ export function analyzeVueSource(
   try {
     // 自动导入分析必须保留普通 script 的模块作用域与 setup 的函数作用域，
     // 否则 setup 局部变量会错误遮蔽普通 script 中同名的未绑定 Runtime API。
-    const autoImportCompiled = compiler.compileScript(descriptor, {
-      id,
-    });
+    // 未启用自动导入时不生成其专用分析代码；普通消息分析仍完整编译。
+    const autoImportCompiled =
+      options.autoImport === false
+        ? undefined
+        : compiler.compileScript(descriptor, { id });
     // compiler-sfc 同时保留 setup、模板局部作用域和双 script 的真实语义。
     const compiled = compiler.compileScript(descriptor, {
       id,
@@ -267,8 +270,8 @@ export function analyzeVueSource(
       code: analysis.code,
       lang: scriptLanguage(compiled.lang),
       ...autoImportMetadata,
-      autoImportCode: autoImportCompiled.content,
-      autoImportLang: scriptLanguage(autoImportCompiled.lang),
+      autoImportCode: autoImportCompiled?.content ?? '',
+      autoImportLang: scriptLanguage(autoImportCompiled?.lang),
       mapLocation: compiled.map
         ? createSourceMapLocationMapper(compiled.map as unknown as RawSourceMap)
         : identityLocation,

@@ -310,3 +310,18 @@ Translation Memory 快照计算，与 JSON 分片或 SQLite 物理布局无关�
 其他 locale 回退英文。设置 `AI_I18N_DIAGNOSTIC_LOCALE=zh-CN` 或 `en-US` 可以固定 Node
 侧语言，`auto` 恢复自动检测。浏览器 Runtime warning 按浏览器 locale 自动选择语言；上述设置
 不影响翻译文件。
+
+## 性能诊断
+
+在已有插件配置中增加 `diagnostics: { performance: true }`，可以在 Dev 和 Build 中
+记录配置、初始化、源码转换、状态排队和 Provider 阶段，不单独统计写入。默认关闭；开启后在终端输出
+汇总和 `logs/performance/<runId>.json` 路径，同一会话更新同一文件。
+
+可使用 `{ directory: 'logs/performance', maxSamples: 2000 }` 调整相对 root 的目录和有界
+样本窗口；目录不能包含上级路径或位于 i18n 协议目录，样本上限为 1–10000。
+累计统计覆盖全部完成阶段，分位数使用最近窗口。父子阶段与并发阶段不可相加作为启动总耗时。
+
+原有 `diagnostics.timing` 仍为独立的 Dev 慢阶段日志，默认阈值 50ms，不过滤性能报告样本。
+报告不包含源码、译文或凭据；写入失败不会改变插件结果。忽略报告目录，旧会话文件自行清理。
+详细使用方法见 [性能诊断](../../apps/docs/docs/guide/advanced/performance.md)。
+仓库维护者可按 [演示说明](../../examples/README.md) 对比插件开启、关闭和采集开销。

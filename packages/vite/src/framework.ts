@@ -93,6 +93,7 @@ export async function extractFrameworkSource(
   source: string,
   id: string,
   framework: AiI18nFramework,
+  autoImport = true,
 ): Promise<SourceExtraction | null | undefined> {
   const filename = id.split('?')[0]!;
   if (!supportsSource(filename, framework)) return null;
@@ -101,11 +102,16 @@ export async function extractFrameworkSource(
   // Vue 的 Node 入口会注册宿主 TypeScript，支持解析宏中引用的外部类型。
   const { compileScript, compileTemplate, parse } =
     await import('vue/compiler-sfc');
-  const analysis = analyzeVueSource(source, id, {
-    parse,
-    compileScript,
-    compileTemplate,
-  });
+  const analysis = analyzeVueSource(
+    source,
+    id,
+    {
+      parse,
+      compileScript,
+      compileTemplate,
+    },
+    { autoImport },
+  );
   return {
     analysisCode: analysis.code,
     analysisLang: analysis.lang,

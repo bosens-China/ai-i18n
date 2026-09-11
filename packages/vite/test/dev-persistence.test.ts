@@ -37,7 +37,7 @@ describe('Dev persistence scheduler', () => {
 
     expect(createSnapshot).toHaveBeenCalledTimes(1);
     expect(sync).toHaveBeenCalledWith(latest, {
-      moduleId: 'src/latest.ts',
+      moduleId: '<batch>',
       changedSources: ['src/first.ts', 'src/latest.ts', 'src/middle.ts'],
     });
   });

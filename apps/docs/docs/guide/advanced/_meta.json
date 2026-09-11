@@ -11,6 +11,11 @@
   },
   {
     "type": "file",
+    "name": "performance",
+    "label": "性能诊断"
+  },
+  {
+    "type": "file",
     "name": "translation-memory",
     "label": "Translation Memory"
   },

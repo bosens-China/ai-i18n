@@ -7,8 +7,10 @@ import { resolveProviderLogging } from './provider-logging.js';
 import type { DevStateTaskRunner } from './dev-state-queue.js';
 import { normalizeRoot } from './plugin-utils.js';
 import { formatTerminalDiagnostic } from './terminal-format.js';
+import type { PerformanceRecorder } from './performance-recorder.js';
 
 interface CreatePluginProviderOptions {
+  performance?: PerformanceRecorder;
   provider: AiI18nProviderOptions;
   providerCache: 'reuse' | 'fresh';
   config: ResolvedConfig;
@@ -31,6 +33,7 @@ export function createPluginProvider(
 
   const coordinator = new ProviderCoordinator(translator, {
     ...providerOptions,
+    performance: options.performance,
     logging: resolveProviderLogging(
       logging,
       normalizeRoot(options.config.root),

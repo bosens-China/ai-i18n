@@ -37,3 +37,6 @@ examples/*/i18n/locales/
 **/i18n/overrides/.transaction.json
 **/i18n/translations/**/*.tmp-*
 **/i18n/overrides/**/*.tmp-*
+
+# Isolated performance benchmark fixtures
+examples/.performance-*/

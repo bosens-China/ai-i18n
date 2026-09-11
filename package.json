@@ -34,7 +34,9 @@
     "docs:build": "pnpm examples:build && pnpm --filter @ai-i18n/docs build",
     "check": "pnpm build && tsc -p tsconfig.json && eslint \"*.config.{js,ts}\" scripts && turbo run check --filter=./packages/*",
     "test": "turbo run test --filter=./packages/* && vitest run scripts/test --config vitest.config.ts",
-    "release:verify": "pnpm build && tsx scripts/release-packages.ts verify"
+    "release:verify": "pnpm build && tsx scripts/release-packages.ts verify",
+    "perf:examples": "pnpm build && tsx scripts/performance/run.ts",
+    "examples:perf": "pnpm build && pnpm --parallel --filter \"@ai-i18n/example-*\" dev:perf"
   },
   "devDependencies": {
     "@arethetypeswrong/core": "0.18.5",

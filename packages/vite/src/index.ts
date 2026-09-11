@@ -13,6 +13,7 @@ export { aiI18n } from './plugin.js';
 export type {
   AiI18nCleanupOptions,
   AiI18nDiagnosticsOptions,
+  AiI18nPerformanceDiagnosticsOptions,
   AiI18nTranslationMemoryCapacityOptions,
   AiI18nLocaleLoadingOptions,
   AiI18nOptions,

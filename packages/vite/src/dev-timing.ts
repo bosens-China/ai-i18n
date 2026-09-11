@@ -1,6 +1,8 @@
 import { performance } from 'node:perf_hooks';
 import { diagnosticMessage } from '@ai-i18n/analyzer';
 import type { AiI18nTimingDiagnosticsOptions } from './options.js';
+import type { PerformanceRecorder } from './performance-recorder.js';
+import type { PerformanceDetails } from './performance-types.js';
 import {
   formatTerminalDiagnostic,
   formatTimingDuration,
@@ -9,8 +11,30 @@ import {
 } from './terminal-format.js';
 
 const DEFAULT_MIN_DURATION_MS = 50;
+// 写入仍按原策略执行，独立慢日志可排障；性能报告只观察启动与转换链路。
+const WRITE_STAGES = new Set<DevTimingStage>([
+  'types-write',
+  'snapshot-build',
+  'file-sync',
+  'extracted-scan',
+  'translation-memory-sync',
+  'extracted-write',
+  'locale-write',
+]);
 
 export type DevTimingStage =
+  | 'initialization'
+  | 'translation-memory-load'
+  | 'overrides-load'
+  | 'types-write'
+  | 'state-hydrate'
+  | 'state-execute'
+  | 'html-transform'
+  | 'hot-update'
+  | 'build-start'
+  | 'build-reconcile'
+  | 'locale-render'
+  | 'provider-flush'
   | 'plugin-ready-wait'
   | 'source-analysis'
   | 'source-registration'
@@ -25,14 +49,18 @@ export type DevTimingStage =
   | 'locale-write';
 
 export interface DevTimingReporter {
+  readonly performance?: PerformanceRecorder;
   measure<T>(
     stage: DevTimingStage,
     moduleId: string,
     task: () => T | PromiseLike<T>,
+    details?: PerformanceDetails,
+    detached?: boolean,
   ): Promise<T>;
 }
 
 interface DevTimingReporterOptions {
+  performance?: PerformanceRecorder;
   enabled(): boolean;
   log(message: string): void;
   now?(): number;
@@ -46,17 +74,32 @@ export function createDevTimingReporter(
   const now = options.now ?? (() => performance.now());
 
   return {
-    async measure(stage, moduleId, task) {
+    performance: options.performance,
+    async measure(stage, moduleId, task, details, detached) {
+      const run = () =>
+        options.performance && !WRITE_STAGES.has(stage)
+          ? options.performance.measure(
+              stage,
+              moduleId,
+              task,
+              details,
+              detached,
+            )
+          : task();
       if (minDurationMs === undefined || !options.enabled()) {
-        return await task();
+        return await run();
       }
       const startedAt = now();
       try {
-        return await task();
+        return await run();
       } finally {
         const durationMs = now() - startedAt;
         if (durationMs >= minDurationMs) {
-          options.log(timingMessage(stage, durationMs, moduleId));
+          try {
+            options.log(timingMessage(stage, durationMs, moduleId));
+          } catch {
+            /* 日志故障不能覆盖原始结果或异常。 */
+          }
         }
       }
     },

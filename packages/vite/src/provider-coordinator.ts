@@ -1,10 +1,5 @@
-import {
-  type TranslationMessage,
-  type TranslationBatchEvent,
-  type TranslationLogging,
-  type TranslationValue,
-  type Translator,
-} from '@ai-i18n/core';
+import type { TranslationBatchEvent } from '@ai-i18n/core';
+import { type TranslationLogging, type Translator } from '@ai-i18n/core';
 import { diagnosticMessage } from '@ai-i18n/analyzer';
 import {
   createBatchId,
@@ -15,52 +10,33 @@ import {
   readyLocalesKey,
   takeBatch,
   validateRequest,
-  validateResults,
+  translateProviderBatch,
 } from './provider-coordinator-helpers.js';
+import {
+  sameRequest,
+  updateLatest,
+  type PendingRequest,
+  type RequestState,
+} from './provider-request-state.js';
 import { reportTranslationBatchEvent } from './provider-batch-tracing.js';
-export interface ProviderRequest extends TranslationMessage {
-  messageId: string;
-  locales: readonly string[];
-}
-export interface ProviderResult {
-  messageId: string;
-  locale: string;
-  value: TranslationValue;
-}
-export interface ProviderCoordinatorOptions {
-  debounceMs?: number;
-  batchLength?: number;
-  maxConcurrency?: number;
-  strict?: boolean;
-  /** Translator 批次诊断日志目录；默认关闭。 */
-  logging?: TranslationLogging;
-  onResults?: (
-    results: readonly ProviderResult[],
-    context: { batchId: string },
-  ) => void | Promise<void>;
-  onWarning?: (message: string) => void;
-}
+import type {
+  PerformanceHandle,
+  PerformanceRecorder,
+} from './performance-recorder.js';
+import type {
+  ProviderRequest,
+  ProviderResult,
+  ProviderCoordinatorOptions,
+  TranslationBatchEventDetails,
+} from './provider-types.js';
+export type {
+  ProviderRequest,
+  ProviderResult,
+  ProviderCoordinatorOptions,
+} from './provider-types.js';
 
-type TranslationBatchEventDetails = TranslationBatchEvent extends infer Event
-  ? Event extends unknown
-    ? Omit<Event, 'logging'>
-    : never
-  : never;
-interface PendingRequest {
-  key: string;
-  request: ProviderRequest;
-  state: RequestState;
-  promise: Promise<readonly ProviderResult[]>;
-  resolve: (results: readonly ProviderResult[]) => void;
-  serializedLength: number;
-}
-interface RequestState {
-  latest: ProviderRequest;
-  pending: Set<PendingRequest>;
-  resolvedLocales: Set<string>;
-  failed: boolean;
-}
 export class ProviderCoordinator {
+  private readonly performance?: PerformanceRecorder;
   private readonly debounceMs: number;
   private readonly batchLength: number;
   private readonly maxConcurrency: number;
@@ -78,6 +54,7 @@ export class ProviderCoordinator {
     private readonly translator: Translator,
     options: ProviderCoordinatorOptions = {},
   ) {
+    this.performance = options.performance;
     this.debounceMs = nonNegativeNumber(
       options.debounceMs ?? 100,
       'debounceMs',
@@ -133,6 +110,10 @@ export class ProviderCoordinator {
     };
     updateLatest(requestState, normalized);
     const pending: PendingRequest = {
+      timing: this.performance?.start(
+        'provider-queue-wait',
+        this.performance.currentModule(),
+      ),
       key,
       request: normalized,
       state: requestState,
@@ -211,7 +192,21 @@ export class ProviderCoordinator {
   }
 
   private startBatch(batch: PendingRequest[]): void {
-    const task = this.runBatch(batch).finally(() => {
+    const batchId = createBatchId();
+    for (const pending of batch) pending.timing?.end('ok', { batchId });
+    const handle = this.performance?.start(
+      'provider-batch',
+      '<provider>',
+      {
+        batchId,
+        messageCount: batch.length,
+        localeCount: batch[0]!.request.locales.length,
+      },
+      true,
+    );
+    const run = () => this.runBatch(batch, batchId, handle);
+    const task = (handle ? handle.run(run) : run()).finally(() => {
+      handle?.end();
       this.inFlight.delete(task);
       for (const pending of batch) {
         if (this.active.get(pending.key) === pending)
@@ -252,8 +247,11 @@ export class ProviderCoordinator {
     this.inFlight.add(task);
   }
 
-  private async runBatch(batch: PendingRequest[]): Promise<void> {
-    const batchId = createBatchId();
+  private async runBatch(
+    batch: PendingRequest[],
+    batchId: string,
+    handle?: PerformanceHandle,
+  ): Promise<void> {
     const locales = batch[0]!.request.locales;
     this.reportBatchEvent({
       batchId,
@@ -263,15 +261,15 @@ export class ProviderCoordinator {
     });
     try {
       const messages = batch.map((pending) => promptMessage(pending.request));
-      const rows = validateResults(
-        messages,
-        locales,
-        await this.translator({
+      const rows = await translateProviderBatch(
+        this.translator,
+        {
           batchId,
           logging: this.logging,
           locales,
           messages,
-        }),
+        },
+        this.performance,
       );
       const results = batch.map((pending, index) =>
         locales.map((locale) => ({
@@ -297,7 +295,15 @@ export class ProviderCoordinator {
         );
       });
       if (currentResults.length) {
-        await this.onResults?.(currentResults, { batchId });
+        const apply = () => this.onResults?.(currentResults, { batchId });
+        if (this.performance)
+          await this.performance.measure(
+            'provider-results',
+            '<provider>',
+            apply,
+            { batchId },
+          );
+        else await apply();
         for (const [index, pending] of batch.entries()) {
           const latest = pending.state.latest;
           if (
@@ -318,6 +324,7 @@ export class ProviderCoordinator {
       }
       batch.forEach((pending, index) => pending.resolve(results[index]!));
     } catch (cause) {
+      handle?.end('error');
       const hasCurrentRequest = batch.some((pending) =>
         sameRequest(pending.state.latest, pending.request),
       );
@@ -370,23 +377,4 @@ export class ProviderCoordinator {
     if (this.timer) clearTimeout(this.timer);
     this.timer = undefined;
   }
-}
-function sameRequest(left: ProviderRequest, right: ProviderRequest): boolean {
-  return (
-    left.source === right.source &&
-    left.comment === right.comment &&
-    left.locales.length === right.locales.length &&
-    left.locales.every((locale, index) => locale === right.locales[index])
-  );
-}
-
-function updateLatest(state: RequestState, request: ProviderRequest): void {
-  if (
-    state.latest.source !== request.source ||
-    state.latest.comment !== request.comment
-  ) {
-    state.resolvedLocales.clear();
-  }
-  if (!sameRequest(state.latest, request)) state.failed = false;
-  state.latest = request;
 }

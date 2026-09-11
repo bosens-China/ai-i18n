@@ -30,7 +30,6 @@ export function createDevPersistenceScheduler(
   options: DevPersistenceOptions,
 ): DevPersistenceScheduler {
   const dirtySources = new Set<string>();
-  let latestModuleId = '<unknown>';
   let running: Promise<void> | undefined;
   let failure: unknown;
   let debounceTimer: ReturnType<typeof setTimeout> | undefined;
@@ -41,7 +40,7 @@ export function createDevPersistenceScheduler(
   async function drain(): Promise<void> {
     while (dirtySources.size) {
       const context: PersistenceJobContext = {
-        moduleId: latestModuleId,
+        moduleId: dirtySources.size === 1 ? [...dirtySources][0]! : '<batch>',
         changedSources: [...dirtySources].sort(),
       };
       dirtySources.clear();
@@ -95,7 +94,6 @@ export function createDevPersistenceScheduler(
     schedule(moduleId) {
       // 冷启动突发转换只记录变化来源，快照在真正写入前统一生成。
       dirtySources.add(moduleId);
-      latestModuleId = moduleId;
       scheduleStart();
     },
     async flush() {

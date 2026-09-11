@@ -104,7 +104,12 @@ export function createHotUpdateHandler(dependencies: HotUpdateDependencies) {
       const extraction =
         code === undefined
           ? undefined
-          : await extractFrameworkSource(code, options.file, framework);
+          : await extractFrameworkSource(
+              code,
+              options.file,
+              framework,
+              dependencies.autoImport(),
+            );
       if (extraction === null) return;
       const affected =
         options.type === 'delete'

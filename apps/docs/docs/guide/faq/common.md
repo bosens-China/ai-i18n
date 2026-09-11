@@ -110,6 +110,8 @@ aiI18n({
 });
 ```
 
+需要统计启动、Build 或多次转换的整体分布时，使用[性能诊断](/guide/advanced/performance)中的 `diagnostics.performance`。
+
 终端只输出达到阈值的阶段和相对 Vite root 的模块 ID。`timing: true` 使用 50ms 默认阈值；该功能默认关闭，且仅在 Vite Dev 生效。
 
 优先查看最慢的总阶段：`source-transform` 表示模块转换，`file-sync` 表示译文与生成文件同步。总阶段包含子阶段，不能把所有耗时直接相加；`file-sync` 也不代表浏览器一定被同步阻塞。

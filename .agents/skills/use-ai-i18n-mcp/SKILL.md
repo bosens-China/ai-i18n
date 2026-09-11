@@ -65,6 +65,10 @@ workbench starts with all extracted copy and has no page picker. Multiple picker
 file and occurrence locate hierarchy instead of selecting the first result. Both paths write the same project `overrides/` shards; do not run MCP review writes concurrently with an open
 review-console save operation.
 
+Performance diagnosis and plugin on/off comparisons belong to `integrate-ai-i18n`. Startup/transform reports
+omit individual write stages and do not prove persistence completion. Reports are diagnostic artifacts outside the i18n protocol directory; they are not MCP inputs or evidence that
+a full extracted catalog exists. Do not change translations to address a timing anomaly.
+
 ## Execute the workflow
 
 1. List missing translations with only the resolved `i18n_directory` on the first call.

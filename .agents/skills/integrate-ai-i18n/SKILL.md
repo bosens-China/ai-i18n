@@ -1,6 +1,6 @@
 ---
 name: integrate-ai-i18n
-description: Integrate ai-i18n into Vite browser projects that use Vue 3, React 18+, or vanilla JavaScript and TypeScript. Use when installing or configuring @ai-i18n/vite, adding translation calls or virtual:ai-i18n imports, selecting framework mode, enabling auto imports or ESLint, configuring optional locale loading, LLM audit logs, or Dev timing diagnostics, reviewing Provider logs, or diagnosing an incomplete integration.
+description: Integrate ai-i18n into Vite browser projects that use Vue 3, React 18+, or vanilla JavaScript and TypeScript. Use when installing or configuring @ai-i18n/vite, adding translation calls or virtual:ai-i18n imports, selecting framework mode, enabling auto imports or ESLint, configuring optional locale loading, LLM audit logs, Dev timing diagnostics, or performance comparisons, reviewing Provider logs, or diagnosing an incomplete integration.
 ---
 
 # Integrate ai-i18n
@@ -97,6 +97,8 @@ the `use-ai-i18n-mcp` Skill and its approval rules.
    generated-files pages selected from `llms.txt`.
 6. Preserve existing component style. Do not convert Vue Options API to Composition API solely for
    ai-i18n, and do not add React subscriptions to non-component utilities.
+
+For startup overhead and stage attribution, follow [Performance diagnosis](references/performance.md).
 
 ## Verify and report
 

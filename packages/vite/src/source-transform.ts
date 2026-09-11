@@ -52,14 +52,19 @@ type SourceTransformHandler = HookHandler<NonNullable<Plugin['transform']>>;
 export function createSourceTransformHandler(
   dependencies: SourceTransformDependencies,
 ): SourceTransformHandler {
-  return async function transformSource(code, id, transformOptions) {
+  const transformSource: SourceTransformHandler = async function (
+    code,
+    id,
+    transformOptions,
+  ) {
     if (shouldIgnoreSource(id)) return null;
     const normalizedId = dependencies.moduleId(id);
     const framework = dependencies.framework();
     const extraction = await dependencies.timing.measure(
       'source-analysis',
       normalizedId,
-      () => extractFrameworkSource(code, id, framework),
+      () =>
+        extractFrameworkSource(code, id, framework, dependencies.autoImport()),
     );
     if (extraction === null) return null;
     if (transformOptions?.ssr || this.environment.name !== 'client') {
@@ -93,6 +98,7 @@ export function createSourceTransformHandler(
       : false;
     const translationHooks = dependencies.translationHooks();
     const project = dependencies.state();
+    const previousResult = project.modules.get(normalizedId);
     const initialUpdate = await dependencies.timing.measure(
       'state-transaction',
       normalizedId,
@@ -111,6 +117,10 @@ export function createSourceTransformHandler(
         ),
     );
     if (!initialUpdate) return null;
+    dependencies.timing.performance?.annotate({
+      messageCount: initialUpdate.result.messages.length,
+      cacheHit: previousResult === initialUpdate.result,
+    });
     let update = initialUpdate;
     const { moduleId } = update;
     const analysisChanged = await dependencies.timing.measure(
@@ -155,7 +165,7 @@ export function createSourceTransformHandler(
         dependencies.requestMissingTranslations(update.affectedModuleIds);
         // 只注入没有本地 symbol 的值引用，避免覆盖用户自己的同名函数或变量。
         const autoImportModule =
-          extraction?.autoImportCode === undefined
+          !autoImport || extraction?.autoImportCode === undefined
             ? currentModule
             : analyzeModule(
                 extraction.autoImportCode,
@@ -253,6 +263,16 @@ export function createSourceTransformHandler(
             }),
         );
       }),
+    );
+  };
+  return function (code, id, transformOptions) {
+    return dependencies.timing.measure(
+      'source-transform',
+      dependencies.moduleId(id),
+      () => transformSource.call(this, code, id, transformOptions),
+      dependencies.timing.performance
+        ? { sourceBytes: Buffer.byteLength(code) }
+        : undefined,
     );
   };
 }

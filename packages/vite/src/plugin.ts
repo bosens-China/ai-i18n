@@ -4,9 +4,7 @@ import {
   type ResolvedConfig,
 } from 'vite';
 import type { TranslationMemoryFile } from '@ai-i18n/core';
-import { diagnosticMessage } from '@ai-i18n/analyzer';
 import { createBuildWatchState } from './build-watch.js';
-import { createDevPersistenceScheduler } from './dev-persistence.js';
 import { optimizeDevRuntimeDependencies } from './dev-optimize-deps.js';
 import { createDevUpdateSender } from './dev-updates.js';
 import {
@@ -14,12 +12,17 @@ import {
   type DevStateTaskRunner,
 } from './dev-state-queue.js';
 import { createDevTimingReporter } from './dev-timing.js';
-import { FileStore } from './file-store.js';
+import { createPerformanceDiagnostics } from './performance-diagnostics.js';
+import {
+  initializePlugin,
+  createPluginStore,
+  createPluginPersistence,
+} from './plugin-initialization.js';
+import type { FileStore } from './file-store.js';
 import {
   frameworkTranslationHooks,
   resolveFramework,
   SOURCE_RE,
-  writeFrameworkTypes,
   type AiI18nFramework,
 } from './framework.js';
 import { html as createHtmlExtractor, type HtmlExtractor } from './html.js';
@@ -79,33 +82,30 @@ export function aiI18n(options: AiI18nOptions): Plugin {
     () => state,
     () => store,
   );
-  const queueDevStateTask = createDevStateQueue();
+  const performanceDiagnostics = createPerformanceDiagnostics(
+    options.diagnostics?.performance,
+    () => config,
+    () => framework,
+    options.directory,
+  );
+  const measureSetup = <T>(stage: string, task: () => T): T =>
+    performanceDiagnostics
+      ? performanceDiagnostics.recorder.measureSync(stage, '<project>', task)
+      : task();
+  const queueDevStateTask = createDevStateQueue(
+    performanceDiagnostics?.recorder,
+  );
   const devTiming = createDevTimingReporter(options.diagnostics?.timing, {
+    performance: performanceDiagnostics?.recorder,
     enabled: () => config?.command === 'serve',
     log: (message) => config?.logger.info(message),
   });
-  const devPersistence = createDevPersistenceScheduler({
-    snapshot: () => currentState().snapshot(),
-    sync: async (snapshot, context) => {
-      await currentStore().sync(snapshot, {
-        changedSources: context.changedSources,
-        timingModuleId: context.moduleId,
-      });
-    },
-    timing: devTiming,
-    onError(cause) {
-      const reason = cause instanceof Error ? cause.message : String(cause);
-      config?.logger.error(
-        formatTerminalDiagnostic(
-          diagnosticMessage(
-            `[ai-i18n] Dev 后台持久化失败：${reason}`,
-            `[ai-i18n] Dev background persistence failed: ${reason}`,
-          ),
-          'error',
-        ),
-      );
-    },
-  });
+  const devPersistence = createPluginPersistence(
+    () => config,
+    currentStore,
+    currentState,
+    devTiming,
+  );
 
   const runStateTask: DevStateTaskRunner = (task) =>
     config?.command === 'build'
@@ -139,6 +139,16 @@ export function aiI18n(options: AiI18nOptions): Plugin {
     store: currentStore,
     requestMissingTranslations,
   });
+  const reconcile = (moduleIds: Iterable<string>, complete = false) =>
+    devTiming.measure('build-reconcile', '<project>', () =>
+      buildWatch.reconcile(moduleIds, complete),
+    );
+  const flushProvider = () =>
+    devTiming.measure(
+      'provider-flush',
+      '<project>',
+      () => coordinator?.flush() ?? Promise.resolve(),
+    );
 
   const handleHotUpdate = createHotUpdateHandler({
     sourcePattern: SOURCE_RE,
@@ -184,19 +194,6 @@ export function aiI18n(options: AiI18nOptions): Plugin {
     runStateTask,
     persist: (moduleId) => devPersistence.schedule(moduleId),
   });
-  const transformSource: typeof handleTransformSource = function (
-    code,
-    id,
-    transformOptions,
-  ) {
-    const moduleId = config
-      ? (normalizeProjectId(config.root, id) ?? '<unknown>')
-      : '<unknown>';
-    return devTiming.measure('source-transform', moduleId, () =>
-      handleTransformSource.call(this, code, id, transformOptions),
-    );
-  };
-
   const transformIndexHtml = createHtmlTransformHandler({
     ...(htmlExtractor ? { extractor: htmlExtractor } : {}),
     options: normalized,
@@ -205,7 +202,7 @@ export function aiI18n(options: AiI18nOptions): Plugin {
     state: currentState,
     store: currentStore,
     requestMissingTranslations,
-    flush: () => coordinator?.flush() ?? Promise.resolve(),
+    flush: flushProvider,
     persist: (moduleId) => devPersistence.schedule(moduleId),
     setDevHot(hot) {
       devHot = hot;
@@ -220,9 +217,8 @@ export function aiI18n(options: AiI18nOptions): Plugin {
     ready: () => ready,
     state: currentState,
     store: currentStore,
-    flushProvider: () => coordinator?.flush() ?? Promise.resolve(),
-    reconcile: (moduleIds, complete) =>
-      buildWatch.reconcile(moduleIds, complete),
+    flushProvider,
+    reconcile,
     runStateTask,
     warnSsrOnce(warn) {
       if (warnedSsr) return;
@@ -251,99 +247,80 @@ export function aiI18n(options: AiI18nOptions): Plugin {
     name: 'ai-i18n',
     enforce: 'pre',
     config: (_userConfig, environment) =>
-      optimizeDevRuntimeDependencies(environment),
+      measureSetup('config', () => optimizeDevRuntimeDependencies(environment)),
 
     configResolved(resolved) {
-      if (
-        options.provider &&
-        typeof options.provider.translator !== 'function'
-      ) {
-        throw new TypeError(
-          diagnosticMessage(
-            '[ai-i18n] provider.translator 必须是函数。',
-            '[ai-i18n] provider.translator must be a function.',
-          ),
+      return measureSetup('config-resolved', () => {
+        config = resolved;
+        performanceDiagnostics?.validateDirectory();
+        framework = resolveFramework(resolved.plugins, options.framework);
+        translationHooks = frameworkTranslationHooks(framework, autoImport);
+        state = new ProjectState(normalizeRoot(resolved.root), normalized);
+        store = createPluginStore(
+          resolved,
+          options,
+          {
+            root: normalizeRoot(resolved.root),
+            sourceLang: normalized.sourceLang,
+            locales: normalized.locales,
+            ...(options.directory ? { directory: options.directory } : {}),
+            cleanupMissingSourceFiles:
+              options.cleanup?.missingSourceFiles ?? true,
+            cleanupOrphanMessages: options.cleanup?.orphanMessages ?? false,
+            translationMemory,
+            timing: devTiming,
+            ...(translationMemory.capacity
+              ? { capacity: translationMemory.capacity }
+              : {}),
+          },
+          () => coordinator,
         );
-      }
-      config = resolved;
-      framework = resolveFramework(resolved.plugins, options.framework);
-      translationHooks = frameworkTranslationHooks(framework, autoImport);
-      state = new ProjectState(normalizeRoot(resolved.root), normalized);
-      store = new FileStore({
-        root: normalizeRoot(resolved.root),
-        sourceLang: normalized.sourceLang,
-        locales: normalized.locales,
-        ...(options.directory ? { directory: options.directory } : {}),
-        cleanupMissingSourceFiles: options.cleanup?.missingSourceFiles ?? true,
-        cleanupOrphanMessages: options.cleanup?.orphanMessages ?? false,
-        translationMemory,
-        timing: devTiming,
-        ...(translationMemory.capacity
-          ? { capacity: translationMemory.capacity }
-          : {}),
-        onWarning: (message) =>
-          resolved.logger.warn(
-            formatTerminalDiagnostic(`[ai-i18n] ${message}`, 'warning'),
-          ),
-        onSynced(batchIds) {
-          for (const batchId of batchIds) {
-            coordinator?.reportBatchEvent({
-              batchId,
-              stage: 'persisted',
-            });
-          }
-        },
-      });
-      if (resolved.command === 'build' && resolved.build.watch) {
-        resolved.logger.info(
-          formatTerminalDiagnostic(
-            diagnosticMessage(
-              '[ai-i18n] Build Watch 已启用。修改 Vite 配置、插件、提取规则或协议 Schema 后，请重新启动。',
-              '[ai-i18n] Build Watch is enabled. Restart after changing Vite config, plugins, extraction rules, or the protocol schema.',
-            ),
-            'info',
-          ),
-        );
-      }
-      ready = Promise.all([
-        store.load(),
-        store.loadOverrides(),
-        writeFrameworkTypes(resolved.root, framework, autoImport, options.dts),
-      ]).then(([cache, overrides]) => {
-        currentState().hydrateCache(cache);
-        currentState().hydrateOverrides(overrides);
-        reviewCache = cache;
-      });
-      // 部分工具只执行 configResolved 后即释放临时 root；保留 rejection 供后续 hook 抛出，
-      // 同时登记观察者，避免未进入任何 hook 时产生 unhandled rejection。
-      void ready.catch(() => undefined);
-      if (options.provider) {
-        coordinator = createPluginProvider({
-          provider: options.provider,
-          providerCache,
-          config: resolved,
-          state: currentState,
-          store: currentStore,
-          runStateTask,
-          flushPersistence: () => devPersistence.flush(),
-          localeLoading: normalized.loading !== undefined,
-          sendTranslationUpdates,
-          sendLocaleUpdates,
+        ready = initializePlugin(
+          resolved,
+          framework,
+          options,
+          store,
+          state,
+          devTiming,
+        ).then((cache) => {
+          reviewCache = cache;
         });
-      }
+        // 部分工具只执行 configResolved 后即释放临时 root；保留 rejection 供后续 hook 抛出，
+        // 同时登记观察者，避免未进入任何 hook 时产生 unhandled rejection。
+        void ready.catch(() => undefined);
+        if (options.provider) {
+          coordinator = createPluginProvider({
+            provider: options.provider,
+            providerCache,
+            config: resolved,
+            state: currentState,
+            store: currentStore,
+            runStateTask,
+            flushPersistence: () => devPersistence.flush(),
+            localeLoading: normalized.loading !== undefined,
+            sendTranslationUpdates,
+            sendLocaleUpdates,
+            performance: performanceDiagnostics?.recorder,
+          });
+        }
+      });
     },
 
     configureServer(server) {
-      // Dev 注册不再依附虚拟注册模块，目录观察必须独立存在，才能接收 MCP 与校对页写入。
-      server.watcher.add(currentStore().directory);
-      void ready
-        .then(() => server.watcher.add(currentStore().devWatchTargets()))
-        .catch(() => undefined);
+      return measureSetup('configure-server', () => {
+        // Dev 注册不再依附虚拟注册模块，目录观察必须独立存在，才能接收 MCP 与校对页写入。
+        server.watcher.add(currentStore().directory);
+        void ready
+          .then(() => server.watcher.add(currentStore().devWatchTargets()))
+          .catch(() => undefined);
+      });
     },
 
     async buildStart() {
       if (config?.command === 'build') {
-        await buildWatch.buildStart(this.meta.watchMode);
+        await devTiming.measure('build-start', '<project>', () =>
+          buildWatch.buildStart(this.meta.watchMode),
+        );
       }
     },
 
@@ -357,37 +334,58 @@ export function aiI18n(options: AiI18nOptions): Plugin {
 
     transform: {
       filter: { id: SOURCE_RE },
-      handler: transformSource,
+      handler: handleTransformSource,
     },
 
     async renderChunk(code, chunk) {
-      return renderLocaleChunk(this, code, chunk.facadeModuleId, {
-        project: currentState(),
-        store: currentStore(),
-        flush: () => coordinator?.flush() ?? Promise.resolve(),
-        reconcile: (moduleIds, complete) =>
-          buildWatch.reconcile(moduleIds, complete),
-      });
+      return devTiming.measure('locale-render', '<project>', () =>
+        renderLocaleChunk(this, code, chunk.facadeModuleId, {
+          project: currentState(),
+          store: currentStore(),
+          flush: flushProvider,
+          reconcile,
+        }),
+      );
     },
 
-    transformIndexHtml: { order: 'pre', handler: transformIndexHtml },
+    transformIndexHtml: {
+      order: 'pre',
+      handler(html, context) {
+        return devTiming.measure('html-transform', '<html>', () =>
+          transformIndexHtml.call(this, html, context),
+        );
+      },
+    },
 
     generateBundle: {
       order: 'post',
       async handler(_outputOptions, bundle) {
         if (config?.command !== 'build') return;
-        await buildWatch.reconcile(this.getModuleIds(), true);
+        await reconcile(this.getModuleIds(), true);
         injectBuiltLocaleHints(bundle, config, normalized);
       },
     },
 
-    hotUpdate: handleHotUpdate,
+    hotUpdate(options) {
+      // 报告自身的写入不再触发采集，避免周期性 HMR / 报告自激。
+      if (performanceDiagnostics?.owns(options.file)) return [];
+      const moduleId = config
+        ? (normalizeProjectId(config.root, options.file) ?? '<project>')
+        : '<project>';
+      return devTiming.measure('hot-update', moduleId, () =>
+        handleHotUpdate.call(this, options),
+      );
+    },
 
     async closeBundle() {
-      disposeDevUpdates();
-      await devPersistence.flush();
-      if (config?.command !== 'build' || !config.build.watch) {
-        await store?.close();
+      try {
+        disposeDevUpdates();
+        await devPersistence.flush();
+        if (config?.command !== 'build' || !config.build.watch) {
+          await store?.close();
+        }
+      } finally {
+        await performanceDiagnostics?.close();
       }
     },
     [AI_I18N_PLUGIN_API]: api,
