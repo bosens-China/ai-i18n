@@ -16,6 +16,23 @@ export interface ProjectSnapshot {
   seen: string[];
 }
 
+export function hydrateTranslationCache(
+  target: Map<string, Map<string, TranslationValue>>,
+  cache: TranslationMemoryFile,
+): void {
+  const next = new Map<string, Map<string, TranslationValue>>();
+  for (const [messageId, message] of Object.entries(cache.messages)) {
+    for (const [locale, value] of Object.entries(message.translations)) {
+      const translations = next.get(locale) ?? new Map();
+      translations.set(messageId, value);
+      next.set(locale, translations);
+    }
+  }
+  // 完整转换后再替换，避免解析中断留下半份内存译文。
+  target.clear();
+  for (const [locale, translations] of next) target.set(locale, translations);
+}
+
 export function createProjectSnapshot(
   modules: ReadonlyMap<string, ExtractResult>,
   translations: ReadonlyMap<string, ReadonlyMap<string, TranslationValue>>,

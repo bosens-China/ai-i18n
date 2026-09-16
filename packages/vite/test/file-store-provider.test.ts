@@ -18,7 +18,7 @@ async function providerFixture(initial: string | null = null) {
     draft.messages['保存']!.translations['en-US'] = initial;
   });
   state.hydrateCache(memory);
-  state.missingTranslations('src/main.ts', { refreshCached: true });
+  state.requestTranslations('src/main.ts', { refreshCached: true });
   const results = [{ messageId: '保存', locale: 'en-US', value: 'Provider' }];
   const baseline = state.snapshot().cache;
   state.applyTranslations(results, { replaceCached: true });

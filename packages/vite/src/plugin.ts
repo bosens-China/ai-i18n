@@ -2,6 +2,7 @@ import {
   type NormalizedHotChannel,
   type Plugin,
   type ResolvedConfig,
+  type ViteDevServer,
 } from 'vite';
 import type { TranslationMemoryFile } from '@ai-i18n/core';
 import { createBuildWatchState } from './build-watch.js';
@@ -77,6 +78,7 @@ export function aiI18n(options: AiI18nOptions): Plugin {
   let reviewCache: TranslationMemoryFile | undefined;
   let coordinator: ProviderCoordinator | undefined;
   let devHot: NormalizedHotChannel | undefined;
+  let devServer: ViteDevServer | undefined;
   let warnedSsr = false;
   const { currentState, currentStore } = createPluginStateAccessors(
     () => state,
@@ -121,6 +123,7 @@ export function aiI18n(options: AiI18nOptions): Plugin {
     options: normalized,
     state: currentState,
     hot: () => devHot,
+    moduleGraph: () => devServer?.environments.client?.moduleGraph,
     coordinator: () => coordinator,
     providerCache,
     reportMissingTranslations(message) {
@@ -307,6 +310,7 @@ export function aiI18n(options: AiI18nOptions): Plugin {
     },
 
     configureServer(server) {
+      devServer = server;
       return measureSetup('configure-server', () => {
         // Dev 注册不再依附虚拟注册模块，目录观察必须独立存在，才能接收 MCP 与校对页写入。
         server.watcher.add(currentStore().directory);

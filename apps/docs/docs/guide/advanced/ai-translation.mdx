@@ -15,6 +15,11 @@ ai-i18n 提供两种补译方式：
 本页介绍 OpenAI-compatible Provider。未配置 Provider 时，ai-i18n 仍会提取文案和生成语言包；
 缺失译文会显示源码文案。
 
+未配置 Provider 时，Dev 控制台会按目标语言提示当前已发现的未翻译数量。同一文案及语境在多个
+位置出现时只计一次；只要其中一个已发现位置没有适用的人工译文且自动译文缺失，就仍计为未翻译。
+这个数量不包含尚未发现的模块，不等于全项目总量，也不等于校对页的“待确认”数量。完整检查前请
+运行一次 `vite build`。
+
 ## 安装
 
 <PackageManagerTabs command="add @ai-i18n/openai@alpha" />

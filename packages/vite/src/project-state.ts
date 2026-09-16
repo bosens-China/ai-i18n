@@ -15,6 +15,7 @@ import type { SourceLocation, TranslationHookBinding } from './extractor.js';
 import {
   createProjectSnapshot,
   fingerprint,
+  hydrateTranslationCache,
   mapResultLocations,
   type ProjectSnapshot,
 } from './project-snapshot.js';
@@ -26,7 +27,10 @@ import type {
 import { changedEffectiveModules } from './translation-overrides.js';
 import type { ProviderResult } from './provider-coordinator.js';
 import type { ProviderRequest } from './provider-coordinator.js';
-import { ProviderTranslationState } from './provider-translation-state.js';
+import {
+  findMissingTranslations,
+  ProviderTranslationState,
+} from './provider-translation-state.js';
 import { normalizeProjectId, resolutionKey } from './project-paths.js';
 import { occurrenceMessageEntries } from './occurrence-registration.js';
 import {
@@ -217,18 +221,7 @@ export class ProjectState {
 
   hydrateCache(cache: TranslationMemoryFile): string[] {
     const previous = this.effectiveModules();
-    const nextTranslations = new Map<string, Map<string, TranslationValue>>();
-    for (const [messageId, message] of Object.entries(cache.messages)) {
-      for (const [locale, value] of Object.entries(message.translations)) {
-        const translations = nextTranslations.get(locale) ?? new Map();
-        translations.set(messageId, value);
-        nextTranslations.set(locale, translations);
-      }
-    }
-    this.translations.clear();
-    for (const [locale, translations] of nextTranslations) {
-      this.translations.set(locale, translations);
-    }
+    hydrateTranslationCache(this.translations, cache);
     return changedEffectiveModules(previous, this.effectiveModules());
   }
 
@@ -244,7 +237,7 @@ export class ProjectState {
   ): ProviderRequest[] {
     const result = this.modules.get(moduleId);
     if (!result) return [];
-    return this.providerTranslations.requests({
+    return findMissingTranslations({
       messages: result.messages,
       sourceFile: moduleId,
       locales: this.options.locales,
@@ -254,6 +247,16 @@ export class ProjectState {
       cachedTranslation: (messageId, locale) =>
         this.cachedTranslation(messageId, locale),
     });
+  }
+
+  requestTranslations(
+    moduleId: string,
+    options: { refreshCached?: boolean } = {},
+  ): ProviderRequest[] {
+    return this.providerTranslations.requests(
+      this.missingTranslations(moduleId, options),
+      (messageId, locale) => this.cachedTranslation(messageId, locale),
+    );
   }
 
   applyTranslations(

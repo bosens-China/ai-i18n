@@ -48,6 +48,14 @@ for the target app's installed-version check and Dev recovery, then verify the p
 from real translation or override shard changes. A journal event alone is not an HMR acknowledgement;
 do not touch it to force refresh or recovery.
 
+## A successful write is not reflected in Dev
+
+Verify the write using the matching read-only MCP list before retrying it. For a human override,
+verify the selected locale and exact file or occurrence scope. Automatic translation `null` and a
+Review confirmation badge are not sufficient evidence of the final displayed value.
+If the stored value is correct, use `integrate-ai-i18n` for Dev resource and active-page verification;
+do not rewrite successful values, touch generated files, or infer a complete catalog from Dev counts.
+
 ## Tool unavailable
 
 If the MCP tools are unavailable, explain that `@ai-i18n/mcp` must be registered locally. Do not

@@ -2,6 +2,7 @@ import { configDefaults, defineConfig } from 'vitest/config';
 
 const viteIntegrationTests = [
   'packages/vite/test/build-watch.test.ts',
+  'packages/vite/test/dev-translation-updates.test.ts',
   'packages/vite/test/html-integration.test.ts',
   'packages/vite/test/integration.test.ts',
   'packages/vite/test/locale-lazy.test.ts',

@@ -24,6 +24,42 @@ interface ProviderRequestsOptions {
   cachedTranslation(messageId: string, locale: string): TranslationValue;
 }
 
+// 只查询有效译文，不消费 Provider 的请求次数；任一实际出现位置缺失就需要补译。
+export function findMissingTranslations(
+  options: ProviderRequestsOptions,
+): ProviderRequest[] {
+  return options.messages.flatMap((message) => {
+    const locales = options.locales
+      .filter(
+        ({ value: locale }) =>
+          locale !== options.sourceLang &&
+          (options.refreshCached ||
+            options.cachedTranslation(message.id, locale) === null) &&
+          (message.locations.length ? message.locations : [undefined]).some(
+            (location) =>
+              resolveTranslationOverride(
+                options.overrides,
+                message,
+                locale,
+                options.sourceFile,
+                location,
+              ) === undefined,
+          ),
+      )
+      .map(({ value }) => value);
+    return locales.length
+      ? [
+          {
+            messageId: message.id,
+            source: message.source,
+            ...(message.comment ? { comment: message.comment } : {}),
+            locales,
+          },
+        ]
+      : [];
+  });
+}
+
 export class ProviderTranslationState {
   private readonly attempted = new Set<string>();
   private readonly baselines = new Map<string, TranslationValue>();
@@ -33,42 +69,25 @@ export class ProviderTranslationState {
     this.baselines.clear();
   }
 
-  requests(options: ProviderRequestsOptions): ProviderRequest[] {
-    return options.messages.flatMap((message) => {
-      const locales = options.locales.flatMap((locale) => {
-        if (locale.value === options.sourceLang) return [];
-        const attemptKey = translationAttemptKey(message, locale.value);
-        const cached = options.cachedTranslation(message.id, locale.value);
-        const reviewed = resolveTranslationOverride(
-          options.overrides,
-          message,
-          locale.value,
-          options.sourceFile,
+  requests(
+    missing: readonly ProviderRequest[],
+    cachedTranslation: ProviderRequestsOptions['cachedTranslation'],
+  ): ProviderRequest[] {
+    return missing.flatMap((message) => {
+      const locales = message.locales.filter((locale) => {
+        const attemptKey = translationAttemptKey(
+          { ...message, id: message.messageId },
+          locale,
         );
-        if (
-          reviewed !== undefined ||
-          (!options.refreshCached && cached !== null) ||
-          this.attempted.has(attemptKey)
-        ) {
-          return [];
-        }
+        if (this.attempted.has(attemptKey)) return false;
         this.attempted.add(attemptKey);
         this.baselines.set(
-          translationAttemptFieldKey(message.id, locale.value),
-          cached,
+          translationAttemptFieldKey(message.messageId, locale),
+          cachedTranslation(message.messageId, locale),
         );
-        return [locale.value];
+        return true;
       });
-      return locales.length
-        ? [
-            {
-              messageId: message.id,
-              source: message.source,
-              ...(message.comment ? { comment: message.comment } : {}),
-              locales,
-            },
-          ]
-        : [];
+      return locales.length ? [{ ...message, locales }] : [];
     });
   }
 

@@ -102,7 +102,8 @@ For startup overhead and stage attribution, follow [Performance diagnosis](refer
 
 ## Verify and report
 
-For `ENOENT` during generated-file HMR, follow [Dev file recovery](references/dev-file-recovery.md).
+For `ENOENT`, stale translations after a Dev update, or incomplete Dev counts, follow
+[Dev file recovery](references/dev-file-recovery.md).
 
 Run the target app's lint, type check, relevant tests, and full Vite Build in proportion to the
 change. Check installation, resolved framework mode, one Runtime translation call, generated

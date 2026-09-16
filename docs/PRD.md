@@ -146,6 +146,10 @@
   合并进业务 chunk，不能成为独立 facade 或逐源码浏览器请求。MCP、Provider 和校对写入后，由 Dev
   独立观察 i18n 目录与 Translation Memory
   文件并通过 HMR 更新已激活模块；完整 Build 仍是 MCP 首次使用和 orphan 审计的全量依据。
+- Dev 译文更新在公共通知链路失效受影响的业务模块或按需语言模块转换缓存；热更新与后续页面
+  请求必须读取一致的新值，不通过强制整页刷新修复缓存。该规则同时适用于 Provider、MCP 与人工校对。
+- 未配置 Provider 的 Dev 缺失统计只读当前已发现模块，按消息与目标语言去重；任一已发现出现位置
+  没有有效人工覆盖且自动译文缺失时计入。统计不消费 Provider 请求去重状态，也不代表完整源码集。
 - Dev 与 Build Watch 忽略当前 i18n 目录内 translations/overrides 根事务日志及协议目录中的原子 JSON
   临时文件事件；Dev 在进入状态队列和 flush 前过滤。过滤不改变全局 watcher、跨进程锁、原子提交或
   恢复机制，journal 仍由正常存储读取或事务入口恢复。真实分片的新增、修改、删除继续同步。

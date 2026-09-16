@@ -264,18 +264,18 @@ describe('ProjectState incremental analysis', () => {
       },
     ]);
 
-    expect(state.missingTranslations('src/main.ts')).toEqual([
+    expect(state.requestTranslations('src/main.ts')).toEqual([
       {
         messageId: '保存',
         source: '保存',
         locales: ['en-US'],
       },
     ]);
-    expect(state.missingTranslations('src/main.ts')).toEqual([]);
+    expect(state.requestTranslations('src/main.ts')).toEqual([]);
     state.applyTranslations([
       { messageId: '保存', locale: 'en-US', value: null },
     ]);
-    expect(state.missingTranslations('src/main.ts')).toEqual([]);
+    expect(state.requestTranslations('src/main.ts')).toEqual([]);
 
     state.updateExtracted('', '/workspace/src/main.ts', [
       {
@@ -284,7 +284,7 @@ describe('ProjectState incremental analysis', () => {
         locations: [{ line: 1, column: 0 }],
       },
     ]);
-    expect(state.missingTranslations('src/main.ts')).toHaveLength(1);
+    expect(state.requestTranslations('src/main.ts')).toHaveLength(1);
   });
 
   it('refreshes Provider cache without hiding or overwriting an in-flight Agent write', () => {
@@ -319,7 +319,7 @@ describe('ProjectState incremental analysis', () => {
     });
 
     expect(
-      state.missingTranslations('src/main.ts', { refreshCached: true }),
+      state.requestTranslations('src/main.ts', { refreshCached: true }),
     ).toHaveLength(2);
     expect(state.localeMessages('en-US')).toEqual({
       [runtimeMessageId('src/main.ts', '保存')]: 'Old save',

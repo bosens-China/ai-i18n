@@ -26,15 +26,12 @@ describe('Dev untranslated summary', () => {
       "import { t } from 'virtual:ai-i18n'; t('首页')",
       '/workspace/src/main.ts',
     );
-    state.update(
-      "import { t } from 'virtual:ai-i18n'; t('首页'); t('设置')",
-      '/workspace/src/settings.ts',
-    );
     const report = vi.fn();
     const updates = createDevUpdateSender({
       options,
       state: () => state,
       hot: () => undefined,
+      moduleGraph: () => undefined,
       coordinator: () => undefined,
       providerCache: 'reuse',
       reportMissingTranslations: report,
@@ -42,17 +39,101 @@ describe('Dev untranslated summary', () => {
       localeEvent: 'locale',
     });
 
-    updates.requestMissingTranslations(['src/main.ts', 'src/settings.ts']);
-    await vi.advanceTimersByTimeAsync(100);
-
-    expect(report).toHaveBeenCalledOnce();
-    expect(report).toHaveBeenCalledWith(
-      expect.stringContaining('en-US 2 条、ja-JP 2 条'),
-    );
-
     updates.requestMissingTranslations(['src/main.ts']);
     await vi.advanceTimersByTimeAsync(100);
     expect(report).toHaveBeenCalledOnce();
+    expect(report).toHaveBeenLastCalledWith(
+      expect.stringContaining('en-US 1 条、ja-JP 1 条'),
+    );
+
+    state.update(
+      "import { t } from 'virtual:ai-i18n'; t('首页'); t('设置')",
+      '/workspace/src/settings.ts',
+    );
+    updates.requestMissingTranslations(['src/settings.ts']);
+    await vi.advanceTimersByTimeAsync(100);
+    expect(report).toHaveBeenLastCalledWith(
+      expect.stringContaining('en-US 2 条、ja-JP 2 条'),
+    );
+
+    state.update(
+      "import { t } from 'virtual:ai-i18n'; t('其他')",
+      '/workspace/src/other.ts',
+    );
+    updates.requestMissingTranslations(['src/other.ts']);
+    await vi.advanceTimersByTimeAsync(100);
+    expect(report).toHaveBeenLastCalledWith(
+      expect.stringContaining('en-US 3 条、ja-JP 3 条'),
+    );
+    updates.requestMissingTranslations(['src/main.ts']);
+    await vi.advanceTimersByTimeAsync(100);
+    expect(report).toHaveBeenCalledTimes(3);
+
+    state.applyTranslations([
+      { messageId: '首页', locale: 'en-US', value: 'Home' },
+    ]);
+    updates.requestMissingTranslations(['src/main.ts']);
+    await vi.advanceTimersByTimeAsync(100);
+    expect(report).toHaveBeenLastCalledWith(
+      expect.stringContaining('en-US 2 条、ja-JP 3 条'),
+    );
     updates.dispose();
+  });
+
+  it('queries missing occurrences without consuming Provider attempts', () => {
+    const state = new ProjectState('/workspace', options);
+    state.updateExtracted('', '/workspace/src/main.ts', [
+      {
+        id: '保存',
+        source: '保存',
+        locations: [
+          { line: 1, column: 0 },
+          { line: 2, column: 0 },
+        ],
+      },
+    ]);
+    const expected = [
+      { messageId: '保存', source: '保存', locales: ['en-US', 'ja-JP'] },
+    ];
+    expect(state.missingTranslations('src/main.ts')).toEqual(expected);
+    expect(state.missingTranslations('src/main.ts')).toEqual(expected);
+    expect(state.requestTranslations('src/main.ts')).toEqual(expected);
+    expect(state.requestTranslations('src/main.ts')).toEqual([]);
+    expect(state.missingTranslations('src/main.ts')).toEqual(expected);
+
+    const rule = {
+      source: '保存',
+      translations: { 'en-US': '' },
+      occurrences: [{ file: 'src/main.ts', line: 1, column: 0 }],
+    };
+    state.hydrateOverrides({ version: 2, rules: [rule] });
+    expect(state.missingTranslations('src/main.ts')).toEqual(expected);
+    state.hydrateOverrides({
+      version: 2,
+      rules: [
+        {
+          ...rule,
+          occurrences: [
+            ...rule.occurrences,
+            { file: 'src/main.ts', line: 2, column: 0 },
+          ],
+        },
+      ],
+    });
+    expect(state.missingTranslations('src/main.ts')).toEqual([
+      { messageId: '保存', source: '保存', locales: ['ja-JP'] },
+    ]);
+    state.hydrateOverrides({
+      version: 2,
+      rules: [
+        {
+          source: '保存',
+          files: ['src/main.ts'],
+          translations: { 'en-US': 'Save' },
+        },
+        { source: '保存', translations: { 'ja-JP': '保存する' } },
+      ],
+    });
+    expect(state.missingTranslations('src/main.ts')).toEqual([]);
   });
 });
