@@ -1,5 +1,12 @@
 # @ai-i18n/vite
 
+## [1.0.0-alpha.34](https://github.com/bosens-China/ai-i18n/compare/vite-v1.0.0-alpha.33...vite-v1.0.0-alpha.34) (2026-09-16)
+
+
+### Bug Fixes
+
+* **vite:** 修复 Dev 译文缓存与缺失统计 ([d0351d5](https://github.com/bosens-China/ai-i18n/commit/d0351d520f9b22ba09d5145205f0ee45b64291a1))
+
 ## [1.0.0-alpha.33](https://github.com/bosens-China/ai-i18n/compare/vite-v1.0.0-alpha.32...vite-v1.0.0-alpha.33) (2026-09-11)
 
 
