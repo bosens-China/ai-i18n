@@ -45,7 +45,7 @@ root，绝对路径保持不变。空字符串无效。开启后，Vite 会把�
 生命周期事件。官方 OpenAI Provider 会据此记录 REQUEST、RESPONSE、VALIDATION 等日志；省略或设为
 `false` 时不创建或追加日志，但翻译、状态应用和持久化继续执行。自定义 Translator 可以选择支持该
 诊断字段。完整说明见
-[LLM 日志与排障](/guide/advanced/llm-logs)。
+[LLM 日志与排障](/guide/ai/llm-logs)。
 
 `cache: 'fresh'` 只影响当前 Vite 进程发起的 Provider 调用。已有译文仍可供 Runtime 使用；本进程
 生成的新结果会立即缓存，普通 HMR 不会重复请求。该选项不传给 Translator，也不影响 MCP 或 AI Agent
@@ -68,4 +68,4 @@ aiI18n({
 });
 ```
 
-Provider 的完整接入流程见 [AI 翻译](/guide/advanced/ai-translation)。
+Provider 的完整接入流程见 [AI 翻译](/guide/ai/ai-translation)。

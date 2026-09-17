@@ -1,6 +1,6 @@
 ---
 title: 通用常见问题
-description: 排查 ai-i18n 的安装兼容性、SSR、开发环境提取、语言加载与生成文件问题
+description: 排查安装兼容性、SSR、开发提取、语言加载与生成文件问题
 ---
 
 Vue 模板、响应式更新和 `tRef()` 问题见 [Vue 常见问题](/guide/faq/vue)。React JSX、组件订阅
@@ -14,11 +14,11 @@ Vue 模板、响应式更新和 `tRef()` 问题见 [Vue 常见问题](/guide/faq
 ## 为什么会安装 fs-native-extensions？
 
 `@ai-i18n/vite` 通过 `@ai-i18n/core` 依赖 `fs-native-extensions`。Vite 与
-`@ai-i18n/mcp` 可能同时修改 `translations/` 或 `overrides/` 分桶文件，因此需要跨进程文件锁，
+`@ai-i18n/mcp` 可能同时修改 `translations/` 或 `overrides/` 分桶文件。因此需要跨进程文件锁，
 把“读取 → 修改 → 原子写入”整体串行化。否则，两个进程同时读写时，后完成的进程可能覆盖
 另一个进程的修改。
 
-原子写入只能避免文件写到一半时损坏，无法避免并发读改写造成的数据丢失。Node.js 的
+原子写入只能避免文件写到一半时损坏。它无法避免并发读改写造成的数据丢失。Node.js 的
 `node:fs` 目前也没有跨平台的 `flock` 等价 API，因此 ai-i18n 使用
 `fs-native-extensions` 提供操作系统级文件锁。该依赖只在 Vite 和 MCP 的 Node.js 进程中
 运行，不会进入浏览器产物。
@@ -39,7 +39,7 @@ glibc 镜像，例如 `node:24-bookworm-slim`。最终用于托管静态文件�
 ## 是否需要安装 unplugin-auto-import？
 
 不需要。ai-i18n 的自动导入是插件自身能力，安装 `unplugin-auto-import` 不会自动启用它。
-如果项目因为其他 API 使用了 `unplugin-auto-import`，两者可以同时存在，但不要重复配置
+如果项目因为其他 API 使用了 `unplugin-auto-import`，两者可以同时存在。但不要重复配置
 ai-i18n Runtime API。
 
 需要省略显式 import 时，请设置 `aiI18n({ autoImport: true })`。完整边界见
@@ -60,7 +60,7 @@ ai-i18n Runtime API。
    `react-auto-import` preset。
 
 局部变量、函数参数或显式 import 与自动导入 API 同名时，本地 binding 始终优先。Vue
-template 可以直接使用未绑定的 `t()`；组件自身同名 binding 会遮挡自动导入。详见
+template 可以直接使用未绑定的 `t()`。组件自身同名 binding 会遮挡自动导入。详见
 [Vue 常见问题](/guide/faq/vue)。
 
 ## 为什么开发服务器没有提取某个页面？
@@ -74,7 +74,7 @@ Vite 开发服务器只分析浏览器实际请求到的模块。懒路由尚未
 ## 为什么源码中的 `t()` 没有被提取，但调整 Vite 插件顺序后恢复了？
 
 Vite 插件会按顺序转换模块。ai-i18n 已经运行在 `pre` 阶段，通常会早于 Vue、React 等普通
-转换；但另一个同为 `pre` 的插件仍可能先替换宏或改写源码，使 ai-i18n 只能看到转换后的结果。
+转换。但另一个同为 `pre` 的插件仍可能先替换宏或改写源码，使 ai-i18n 只能看到转换后的结果。
 
 按以下顺序排查：
 
@@ -82,7 +82,7 @@ Vite 插件会按顺序转换模块。ai-i18n 已经运行在 `pre` 阶段，通
 2. 确认这段文案确实应由 ai-i18n 的 `t()` 翻译，而不是由另一个构建期宏自行处理。
 3. 临时禁用可能改写源码的前置插件并重新构建。提取恢复时，说明该插件在 ai-i18n 之前移除了
    调用。
-4. 如果 `t()` 确实属于 ai-i18n，把 `aiI18n()` 放在同阶段的源码改写插件之前，再检查两者是否
+4. 如果 `t()` 确实属于 ai-i18n，把 `aiI18n()` 放在同阶段的源码改写插件之前。再检查两者是否
    设置了更细的 hook 顺序。修改后重启开发服务器或重新构建。
 
 不要为了让 ai-i18n 提取而给其他插件拥有的宏字段添加 `t()`。例如权限插件本来就会翻译页面标题时，
@@ -94,11 +94,12 @@ definePagePermissions({
 });
 ```
 
-此时标题没有进入 ai-i18n 的提取结果是正常行为，不需要调整插件顺序，也不需要声明宏白名单。
+此时标题没有进入 ai-i18n 的提取结果是正常行为。不需要调整插件顺序，也不需要声明宏白名单。
 
 ## 为什么首次打开页面或懒路由很慢？
 
-浏览器显示 `304 Not Modified` 只表示缓存校验成功，不能单独说明耗时来自网络或 ai-i18n。需要定位时，临时开启开发服务器阶段耗时诊断：
+浏览器显示 `304 Not Modified` 只表示缓存校验成功。它不能单独说明耗时来自网络或 ai-i18n。需要
+定位时，临时开启开发服务器阶段耗时诊断：
 
 ```ts
 aiI18n({
@@ -112,20 +113,23 @@ aiI18n({
 
 需要统计启动、构建或多次转换的整体分布时，使用[性能诊断](/guide/advanced/performance)中的 `diagnostics.performance`。
 
-终端只输出达到阈值的阶段和相对 Vite root 的模块 ID。`timing: true` 使用 50ms 默认阈值；该功能默认关闭，且仅在 Vite 开发服务器生效。
+终端只输出达到阈值的阶段和相对 Vite root 的模块 ID。`timing: true` 使用 50 ms 的默认阈值。
+该功能默认关闭，且仅在 Vite 开发服务器生效。
 
-优先查看最慢的总阶段：`source-transform` 表示模块转换，`file-sync` 表示译文与生成文件同步。总阶段包含子阶段，不能把所有耗时直接相加；`file-sync` 也不代表浏览器一定被同步阻塞。
+优先查看最慢的总阶段。`source-transform` 表示模块转换，`file-sync` 表示译文与生成文件同步。
+总阶段包含子阶段，不能把所有耗时直接相加。`file-sync` 也不代表浏览器一定被同步阻塞。
 
-如果没有 ai-i18n 的慢日志，再检查应用自己的路由、接口和挂载逻辑。排查结束后关闭诊断，避免保留额外终端输出。
+如果没有 ai-i18n 的慢日志，再检查应用自己的路由、接口和挂载逻辑。排查结束后关闭诊断，
+避免保留额外终端输出。
 
 ## 为什么切换语言后仍然显示源文案？
 
-缺失翻译或值为 `null` 时，Runtime 固定回退到 source。检查
-项目 `i18n/translations/` 或 `i18n/overrides/` 中是否存在目标 locale 的有效译文，并让
-运行中的 Vite 开发服务器自动同步，或重新执行一次 Vite 构建。
+缺失翻译或值为 `null` 时，Runtime 固定回退到 source。检查项目 `i18n/translations/` 或
+`i18n/overrides/` 中是否存在目标 locale 的有效译文。并让运行中的 Vite 开发服务器自动同步，
+或重新执行一次 Vite 构建。
 
-可以通过 [AI 翻译](/guide/advanced/ai-translation)配置 Provider，也可以通过
-[接入 Agent](/guide/advanced/ai-tools)补齐缺失翻译。协议文件职责见
+可以通过 [AI 翻译](/guide/ai/ai-translation)配置 Provider，也可以通过
+[接入 Agent](/guide/ai/ai-tools)补齐缺失翻译。协议文件职责见
 [生成文件与 Git](/guide/basic/directory)。
 
 ## 为什么按需加载语言包时切换失败？
@@ -136,23 +140,23 @@ Promise 会 reject，并保留当前语言。Vue Composition 与 React 组件可
 组件把 `i18nComputed()` 展开到 `computed` 后读取同名字段。需要业务级恢复动作时，捕获
 Promise 并提供重试入口。
 
-同时确认 `preload` 和 `prefetch` 只包含已配置的目标 locale，未包含 `sourceLang`，并且
-同一 locale 没有同时出现在两个列表中。完整示例见
+同时确认 `preload` 和 `prefetch` 只包含已配置的目标 locale，未包含 `sourceLang`。
+同一 locale 也不要同时出现在两个列表中。完整示例见
 [语言分包与按需加载](/guide/basic/locale-loading)。
 
 ## 生成文件是否需要提交？
 
-需要。权威译文与生成声明随源码提交，可重建的提取结果和语言包不提交。完整文件清单、构建
-时机与 Monorepo 归属统一见[生成文件与 Git](/guide/basic/directory)；声明文件本身的作用见
-[TypeScript 与生成声明](/guide/quality/typescript)。
+需要。权威译文与生成声明随源码提交。可重建的提取结果和语言包不提交。
+完整文件清单、构建时机与 Monorepo 归属统一见[生成文件与 Git](/guide/basic/directory)。
+声明文件本身的作用见 [TypeScript 与生成声明](/guide/quality/typescript)。
 
 ## 修改模型或提示词后，为什么没有重新翻译？
 
 翻译记忆默认复用历史结果。插件不能可靠识别自定义 Translator 内部的模型、温度、提示词或
 `baseURL`，也不会把这些配置写入缓存指纹。需要刷新一次时，在 Provider 中配置
-`cache: 'fresh'`。本次 Vite 进程会主动刷新已有自动译文，并继续复用本进程新生成的结果。该选项不影响
-MCP 或 AI Agent。完成后改回默认 `reuse`。详见
-[翻译记忆](/guide/advanced/translation-memory)。
+`cache: 'fresh'`。本次 Vite 进程会主动刷新已有自动译文，并继续复用本进程新生成的结果。
+该选项不影响 MCP 或 AI Agent。完成后改回默认 `reuse`。详见
+[翻译记忆](/guide/ai/translation-memory)。
 
 ## 为什么 SQLite 没有复用另一个项目的译文？
 
@@ -160,4 +164,4 @@ SQLite 不会复用所有历史译文。当前项目尚无译文时，原文、�
 并且只能存在一个译文候选。多个候选可能代表不同语境，ai-i18n 会保持缺失，不会自动猜测。
 
 请先确认 Vite 配置使用 `translationMemory.cache: sqlite()`，再按
-[SQLite 未复用译文时如何排查](/guide/advanced/translation-memory#sqlite-未复用译文时如何排查)逐项检查。
+[SQLite 未复用译文时如何排查](/guide/ai/translation-memory#sqlite-未复用译文时如何排查)逐项检查。

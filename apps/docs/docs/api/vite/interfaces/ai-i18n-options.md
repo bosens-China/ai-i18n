@@ -99,5 +99,5 @@ interface AiI18nOptions {
 - [语言分包与按需加载](/guide/basic/locale-loading)
 - [生成文件与 Git](/guide/basic/directory)
 - [TypeScript 与生成声明](/guide/quality/typescript)
-- [Translation Memory](/guide/advanced/translation-memory)
+- [Translation Memory](/guide/ai/translation-memory)
 - [ESLint](/guide/quality/eslint)
