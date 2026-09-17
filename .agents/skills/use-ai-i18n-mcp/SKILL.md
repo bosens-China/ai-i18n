@@ -10,9 +10,12 @@ files manually while the MCP tools are available.
 
 ## Read the right source
 
-For user-facing registration, product behavior, generated-file guidance, or integration
-troubleshooting, read `https://bosens-china.github.io/ai-i18n/llms.txt` and then the one relevant page.
-Do not load `llms-full.txt` by default or duplicate that guidance in this Skill.
+For product behavior, generated-file guidance, or integration troubleshooting, read
+`https://bosens-china.github.io/ai-i18n/llms.txt` and then the one relevant page. Do not load
+`llms-full.txt` by default or duplicate that guidance in this Skill.
+
+For Agent registration, MCP setup, plugin installation, and prompt templates, read
+[registration](references/registration.md).
 
 For MCP calls, read [Tool contracts](references/tool-contracts.md) before the first call. It is the
 Agent-only authority for message identity, inputs, pagination, batch behavior, write boundaries, and
