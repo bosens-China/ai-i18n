@@ -8,7 +8,7 @@ description: 接入 ai-i18n 生成声明，并排查虚拟模块、自动导入�
 
 ## 接入类型声明
 
-首次启动 Vite Dev Server 或执行 Build 后，插件会在 Vite root 下生成声明文件。默认路径是：
+首次启动 Vite 开发服务器或执行构建后，插件会在 Vite root 下生成声明文件。默认路径是：
 
 ```text
 src/ai-i18n.d.ts
@@ -105,7 +105,7 @@ TypeScript 项目都能包含的位置。Vue 自动导入需要同时包含主�
 
 ### 找不到 `virtual:ai-i18n`
 
-先启动一次 Vite Dev Server 或执行 Build，确认主声明已经生成。默认路径被移动后，确认
+先启动一次 Vite 开发服务器或执行构建，确认主声明已经生成。默认路径被移动后，确认
 新的 `dts` 路径仍在当前 TypeScript 项目的检查范围内。
 
 ### 找不到 `defineI18nMessages`

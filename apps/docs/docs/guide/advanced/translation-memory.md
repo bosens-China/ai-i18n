@@ -3,7 +3,7 @@ title: 翻译记忆
 description: 使用项目 JSON 保存译文，并用可选 SQLite 缓存跨项目复用候选
 ---
 
-Translation Memory 保存 Provider 或 Agent 产生的自动译文。项目自动译文始终写入
+翻译记忆保存 Provider 或 Agent 产生的自动译文。项目自动译文始终写入
 `i18n/translations/`，人工确认的最终措辞写入 `i18n/overrides/`，并优先于自动译文。
 
 ## 项目 JSON 是唯一事实来源

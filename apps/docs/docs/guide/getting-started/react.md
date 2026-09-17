@@ -1,6 +1,6 @@
 ---
 title: React 快速上手
-description: 从 create-vite 创建 React 项目，并完成 ai-i18n 配置、翻译与 Build 验证
+description: 从 create-vite 创建 React 项目，并完成 ai-i18n 配置、翻译与构建验证
 ---
 
 ## 开始前
@@ -97,7 +97,7 @@ pnpm build
 ```
 
 打开开发页面后切换语言。缺少目标译文时，`t()` 会先回退源码文案。首次接入后执行完整
-Build，确认入口可达源码均已提取，并检查以下文件：
+构建，确认入口可达源码均已提取，并检查以下文件：
 
 ```text
 src/ai-i18n.d.ts

@@ -16,7 +16,7 @@ diagnostics: {
 },
 ```
 
-然后使用项目原来的 `pnpm dev` 或 `pnpm build`。Dev 启动后打开页面或目标路由，
+然后使用项目原来的 `pnpm dev` 或 `pnpm build`。开发服务器启动后打开页面或目标路由，
 触发源码转换；只启动服务而不请求页面，通常只能看到初始化。
 终端会输出阶段汇总和报告路径。同一次启动持续更新 `logs/performance/<runId>.json`，
 正常关闭服务时刷新最后一份报告，下一次启动生成新文件。
@@ -70,7 +70,7 @@ pnpm perf:examples --runs=5
 ```
 
 演示地址为 Vanilla `http://localhost:51881`、Vue `http://localhost:51882`、
-React `http://localhost:51883`。三套演示的普通 Dev / Build 也默认开启报告。
+React `http://localhost:51883`。三套演示的普通开发服务器/构建也默认开启报告。
 只启动某一个演示时，先执行 `pnpm build`，再执行
 `pnpm --filter @ai-i18n/example-vue dev:perf`；名称也可换成 `example-react` 或 `example-vanilla`。
 演示使用配置中的 `performance: true`，不需要切换 mode。
@@ -148,9 +148,9 @@ diagnostics: {
 报告不含源码正文、译文、错误正文、凭据或机器绝对路径。报告写入失败不改变插件结果。
 旧会话不会自动删除，排障后可以清理报告目录。
 
-原有 `diagnostics.timing` 仍是独立的 Dev 慢阶段日志，默认阈值 50ms，保留文件同步的诊断能力；
+原有 `diagnostics.timing` 仍是独立的开发阶段慢日志，默认阈值 50ms，保留文件同步的诊断能力；
 `performance` 的启动/转换采集不受该阈值过滤。排障结束后移除配置或恢复普通启动命令即可。
 
-Build 的性能摘要在构建收尾时与默认文案统计合并输出，期间的诊断快照仍会落盘。
-Build Watch 每轮输出一次覆盖率；性能阶段统计累计当前会话。
+构建的性能摘要在构建收尾时与默认文案统计合并输出，期间的诊断快照仍会落盘。
+构建监听每轮输出一次覆盖率；性能阶段统计累计当前会话。
 `diagnostics.buildSummary: false` 只关闭文案统计，不影响已启用的性能采集。

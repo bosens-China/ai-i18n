@@ -1,6 +1,6 @@
 ---
 title: 通用常见问题
-description: 排查 ai-i18n 的安装兼容性、SSR、Dev 提取、语言加载与生成文件问题
+description: 排查 ai-i18n 的安装兼容性、SSR、开发环境提取、语言加载与生成文件问题
 ---
 
 Vue 模板、响应式更新和 `tRef()` 问题见 [Vue 常见问题](/guide/faq/vue)。React JSX、组件订阅
@@ -63,12 +63,12 @@ ai-i18n Runtime API。
 template 可以直接使用未绑定的 `t()`；组件自身同名 binding 会遮挡自动导入。详见
 [Vue 常见问题](/guide/faq/vue)。
 
-## 为什么 Dev 没有提取某个页面？
+## 为什么开发服务器没有提取某个页面？
 
-Vite Dev 只分析浏览器实际请求到的模块。懒路由尚未访问时，对应模块不会进入当前提取结果。
+Vite 开发服务器只分析浏览器实际请求到的模块。懒路由尚未访问时，对应模块不会进入当前提取结果。
 先访问目标页面，再检查 `extracted/*.json`。
 
-需要确认生产入口的完整覆盖范围时，运行一次 `vite build`。Build 只分析从入口可达的模块，
+需要确认生产入口的完整覆盖范围时，运行一次 `vite build`。构建只分析从入口可达的模块，
 不会扫描未被项目引用的文件。
 
 ## 为什么源码中的 `t()` 没有被提取，但调整 Vite 插件顺序后恢复了？
@@ -78,12 +78,12 @@ Vite 插件会按顺序转换模块。ai-i18n 已经运行在 `pre` 阶段，通
 
 按以下顺序排查：
 
-1. 运行一次完整 `vite build`，确认目标模块可从应用入口到达。Dev 未访问的懒路由不会参与处理。
+1. 运行一次完整 `vite build`，确认目标模块可从应用入口到达。开发服务器未访问的懒路由不会参与处理。
 2. 确认这段文案确实应由 ai-i18n 的 `t()` 翻译，而不是由另一个构建期宏自行处理。
-3. 临时禁用可能改写源码的前置插件并重新 Build。提取恢复时，说明该插件在 ai-i18n 之前移除了
+3. 临时禁用可能改写源码的前置插件并重新构建。提取恢复时，说明该插件在 ai-i18n 之前移除了
    调用。
 4. 如果 `t()` 确实属于 ai-i18n，把 `aiI18n()` 放在同阶段的源码改写插件之前，再检查两者是否
-   设置了更细的 hook 顺序。修改后重启 Dev 或重新 Build。
+   设置了更细的 hook 顺序。修改后重启开发服务器或重新构建。
 
 不要为了让 ai-i18n 提取而给其他插件拥有的宏字段添加 `t()`。例如权限插件本来就会翻译页面标题时，
 应保持它要求的静态值：
@@ -98,7 +98,7 @@ definePagePermissions({
 
 ## 为什么首次打开页面或懒路由很慢？
 
-浏览器显示 `304 Not Modified` 只表示缓存校验成功，不能单独说明耗时来自网络或 ai-i18n。需要定位时，临时开启 Dev 阶段耗时诊断：
+浏览器显示 `304 Not Modified` 只表示缓存校验成功，不能单独说明耗时来自网络或 ai-i18n。需要定位时，临时开启开发服务器阶段耗时诊断：
 
 ```ts
 aiI18n({
@@ -110,9 +110,9 @@ aiI18n({
 });
 ```
 
-需要统计启动、Build 或多次转换的整体分布时，使用[性能诊断](/guide/advanced/performance)中的 `diagnostics.performance`。
+需要统计启动、构建或多次转换的整体分布时，使用[性能诊断](/guide/advanced/performance)中的 `diagnostics.performance`。
 
-终端只输出达到阈值的阶段和相对 Vite root 的模块 ID。`timing: true` 使用 50ms 默认阈值；该功能默认关闭，且仅在 Vite Dev 生效。
+终端只输出达到阈值的阶段和相对 Vite root 的模块 ID。`timing: true` 使用 50ms 默认阈值；该功能默认关闭，且仅在 Vite 开发服务器生效。
 
 优先查看最慢的总阶段：`source-transform` 表示模块转换，`file-sync` 表示译文与生成文件同步。总阶段包含子阶段，不能把所有耗时直接相加；`file-sync` 也不代表浏览器一定被同步阻塞。
 
@@ -122,7 +122,7 @@ aiI18n({
 
 缺失翻译或值为 `null` 时，Runtime 固定回退到 source。检查
 项目 `i18n/translations/` 或 `i18n/overrides/` 中是否存在目标 locale 的有效译文，并让
-运行中的 Vite Dev 自动同步，或重新执行一次 Vite Build。
+运行中的 Vite 开发服务器自动同步，或重新执行一次 Vite 构建。
 
 可以通过 [AI 翻译](/guide/advanced/ai-translation)配置 Provider，也可以通过
 [接入 Agent](/guide/advanced/ai-tools)补齐缺失翻译。协议文件职责见
@@ -142,17 +142,17 @@ Promise 并提供重试入口。
 
 ## 生成文件是否需要提交？
 
-需要。权威译文与生成声明随源码提交，可重建的提取结果和语言包不提交。完整文件清单、Build
+需要。权威译文与生成声明随源码提交，可重建的提取结果和语言包不提交。完整文件清单、构建
 时机与 Monorepo 归属统一见[生成文件与 Git](/guide/basic/directory)；声明文件本身的作用见
 [TypeScript 与生成声明](/guide/quality/typescript)。
 
 ## 修改模型或提示词后，为什么没有重新翻译？
 
-Translation Memory 默认复用历史结果。插件不能可靠识别自定义 Translator 内部的模型、温度、提示词或
+翻译记忆默认复用历史结果。插件不能可靠识别自定义 Translator 内部的模型、温度、提示词或
 `baseURL`，也不会把这些配置写入缓存指纹。需要刷新一次时，在 Provider 中配置
 `cache: 'fresh'`。本次 Vite 进程会主动刷新已有自动译文，并继续复用本进程新生成的结果。该选项不影响
 MCP 或 AI Agent。完成后改回默认 `reuse`。详见
-[Translation Memory](/guide/advanced/translation-memory)。
+[翻译记忆](/guide/advanced/translation-memory)。
 
 ## 为什么 SQLite 没有复用另一个项目的译文？
 

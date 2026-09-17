@@ -25,7 +25,7 @@ aiI18n({
 });
 ```
 
-省略或设置 `provider.logging: false` 时，当前 Vite Dev 或 Build 进程不会创建、追加日志，也不会
+省略或设置 `provider.logging: false` 时，当前 Vite 开发服务器或构建进程不会创建、追加日志，也不会
 创建默认的 `logs/` 目录；翻译、提取、缓存和持久化照常执行。
 
 `logging: true` 写入 Vite 项目根目录下的 `logs/`。也可以直接用字符串指定目录：
@@ -49,9 +49,9 @@ PID 和进程序号：
 2026-08-06_13-46-44-834-p65013-1.log
 ```
 
-- 普通 Build 每次创建新的 Translator，因此通常生成一个新文件。
-- 同一 Dev、HMR 或 Build Watch 进程复用 Translator，后续批次继续追加到同一文件。
-- 日志写入失败只警告一次，不会让翻译或 Build 失败。
+- 普通构建每次创建新的 Translator，因此通常生成一个新文件。
+- 同一开发服务器、HMR 或构建监听进程复用 Translator，后续批次继续追加到同一文件。
+- 日志写入失败只警告一次，不会让翻译或构建失败。
 
 ## 按 batchId 阅读
 
@@ -85,7 +85,7 @@ PERSISTED
 - 有 REQUEST、没有 RESPONSE：优先检查超时、网络、认证、模型名与服务端错误。
 - 有 RESPONSE、随后 BATCH FAILED：检查返回格式、目标语言和占位符。
 - 有 VALIDATION、没有 STATE APPLIED：检查终端中是否有状态应用错误。
-- 有 STATE APPLIED、没有 PERSISTED：结合 Build/Dev 终端错误检查目录权限、文件冲突或存储失败。
+- 有 STATE APPLIED、没有 PERSISTED：结合构建/开发服务器终端错误检查目录权限、文件冲突或存储失败。
 - 已有 PERSISTED 但页面不更新：检查当前语言和语言加载状态，并刷新开发页面确认。
 
 给 AI 编码工具排障时，提供相关日志文件，并要求它先按 `batchId` 汇总上述阶段，再结合终端错误判断。

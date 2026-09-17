@@ -15,7 +15,7 @@ ai-i18n 提供两种补译方式：
 本页介绍 OpenAI-compatible Provider。未配置 Provider 时，ai-i18n 仍会提取文案和生成语言包；
 缺失译文会显示源码文案。
 
-未配置 Provider 时，Dev 控制台会按目标语言提示当前已发现的未翻译数量。同一文案及语境在多个
+未配置 Provider 时，开发服务器控制台会按目标语言提示当前已发现的未翻译数量。同一文案及语境在多个
 位置出现时只计一次；只要其中一个已发现位置没有适用的人工译文且自动译文缺失，就仍计为未翻译。
 这个数量不包含尚未发现的模块，不等于全项目总量，也不等于校对页的“待确认”数量。完整检查前请
 运行一次 `vite build`。
@@ -105,7 +105,7 @@ Provider 会固定维护翻译职责、`comment` 用法、不可改内容、占�
 ## 验证结果与失败处理
 
 Provider 只补齐缺失译文。翻译失败时，页面继续显示源码文案，不会阻塞本地开发。提交前运行一次完整
-Build，并检查关键页面和固定术语。
+构建，并检查关键页面和固定术语。
 
 需要让 CI 在翻译请求失败或仍有缺失译文时停止构建，可以设置 `provider.strict: true`。批次大小、
 并发、日志和刷新策略见 [`AiI18nProviderOptions`](/api/vite/type-aliases/ai-i18n-provider-options)。
@@ -114,8 +114,8 @@ Build，并检查关键页面和固定术语。
 
 Provider 的模型、`baseURL`、温度或 `style` 变化时，插件默认继续复用历史自动译文，不会尝试分析
 Translator 内部配置。需要让新配置刷新一次时，使用 `provider.cache: 'fresh'`；本进程生成的新结果仍会
-立即缓存，因此 Dev/HMR 不会重复请求。该选项只影响 Provider，不影响 MCP 或 AI Agent。完整配置见
-[Translation Memory](/guide/advanced/translation-memory)。
+立即缓存，因此开发服务器/HMR 不会重复请求。该选项只影响 Provider，不影响 MCP 或 AI Agent。完整配置见
+[翻译记忆](/guide/advanced/translation-memory)。
 
 ## 使用其他模型服务
 
