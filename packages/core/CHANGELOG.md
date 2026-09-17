@@ -1,5 +1,17 @@
 # @ai-i18n/core
 
+## [1.0.0-alpha.20](https://github.com/bosens-China/ai-i18n/compare/core-v1.0.0-alpha.19...core-v1.0.0-alpha.20) (2026-09-17)
+
+
+### Features
+
+* **vite:** 增加入口扫描缓存、构建统计与校对同步 ([350492f](https://github.com/bosens-China/ai-i18n/commit/350492fb41977fa9fb983fc8f7667d498e6e4b64))
+
+
+### Bug Fixes
+
+* **core:** 防止译文 JSON 重复键静默覆盖 ([d9e3bed](https://github.com/bosens-China/ai-i18n/commit/d9e3bedbd831f86a9ae11d40fbf17cc0ae1ea32c))
+
 ## [1.0.0-alpha.19](https://github.com/bosens-China/ai-i18n/compare/core-v1.0.0-alpha.18...core-v1.0.0-alpha.19) (2026-09-07)
 
 

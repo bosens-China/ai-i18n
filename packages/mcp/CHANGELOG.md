@@ -1,5 +1,25 @@
 # @ai-i18n/mcp
 
+## [1.0.0-alpha.25](https://github.com/bosens-China/ai-i18n/compare/mcp-v1.0.0-alpha.24...mcp-v1.0.0-alpha.25) (2026-09-17)
+
+
+### Features
+
+* **agent:** 打包三平台插件并同步 Skills 与使用文档 ([91da2af](https://github.com/bosens-China/ai-i18n/commit/91da2afdf87ae226d7b6aa5d8c53fe884ced48a1))
+* **vite:** 增加入口扫描缓存、构建统计与校对同步 ([350492f](https://github.com/bosens-China/ai-i18n/commit/350492fb41977fa9fb983fc8f7667d498e6e4b64))
+
+
+### Bug Fixes
+
+* **core:** 防止译文 JSON 重复键静默覆盖 ([d9e3bed](https://github.com/bosens-China/ai-i18n/commit/d9e3bedbd831f86a9ae11d40fbf17cc0ae1ea32c))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @ai-i18n/core bumped to 1.0.0-alpha.20
+
 ## [1.0.0-alpha.24](https://github.com/bosens-China/ai-i18n/compare/mcp-v1.0.0-alpha.23...mcp-v1.0.0-alpha.24) (2026-09-07)
 
 
