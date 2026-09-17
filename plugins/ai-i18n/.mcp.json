@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "ai-i18n": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@ai-i18n/mcp@1.0.0-alpha.25"
+      ]
+    }
+  }
+}

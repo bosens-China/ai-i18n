@@ -1,0 +1,19 @@
+{
+  "name": "ai-i18n",
+  "version": "1.0.0-alpha.25",
+  "description": "Entry scanning, translation Skills and bounded end-of-turn checks for ai-i18n.",
+  "author": {
+    "name": "yliu"
+  },
+  "interface": {
+    "displayName": "ai-i18n",
+    "shortDescription": "Scan and translate Vite application copy.",
+    "longDescription": "Integrate ai-i18n, scan reachable pages, and verify missing translations before completing a task.",
+    "developerName": "yliu",
+    "category": "Developer Tools",
+    "capabilities": [],
+    "defaultPrompt": "Use ai-i18n to scan and translate the selected Vite app."
+  },
+  "skills": "./skills/",
+  "mcpServers": "./.mcp.json"
+}
