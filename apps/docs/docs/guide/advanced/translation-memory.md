@@ -1,5 +1,5 @@
 ---
-title: Translation Memory
+title: 翻译记忆
 description: 使用项目 JSON 保存译文，并用可选 SQLite 缓存跨项目复用候选
 ---
 

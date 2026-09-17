@@ -20,7 +20,7 @@ hero:
 
 features:
   - title: 快速上手
-    details: 按 Vanilla、Vue 或 React 完成安装、Vite 配置和第一次 Build。
+    details: 按 Vanilla、Vue 或 React 完成安装、Vite 配置和第一次构建。
     link: /guide/getting-started/vue
   - title: 接入与使用
     details: 查找文案写法、自动导入、语言加载、生成文件和 Git 规则。

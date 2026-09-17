@@ -17,11 +17,11 @@
   {
     "type": "file",
     "name": "translation-memory",
-    "label": "Translation Memory"
+    "label": "翻译记忆"
   },
   {
     "type": "file",
     "name": "ai-tools",
-    "label": "接入 Agent"
+    "label": "AI Agent 接入"
   }
 ]

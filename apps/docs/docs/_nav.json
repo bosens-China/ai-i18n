@@ -5,6 +5,11 @@
     "activeMatch": "/guide/"
   },
   {
+    "text": "接入 AI",
+    "link": "/guide/advanced/ai-translation",
+    "activeMatch": "/guide/advanced/ai-translation|/guide/advanced/ai-tools|/guide/advanced/translation-memory|/guide/advanced/llm-logs"
+  },
+  {
     "text": "API",
     "link": "/api/",
     "activeMatch": "/api/"
