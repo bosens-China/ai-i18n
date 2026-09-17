@@ -3,10 +3,10 @@ title: AI Agent 接入
 description: 使用 AI 编码工具补齐和校对译文
 ---
 
-ai-i18n 为 Cursor、Codex、Claude Code 和 Antigravity 提供 Agent Skills 与 MCP 服务器，
-让 AI 编码工具可以在明确指令下扫描、补齐和校对译文，无需先运行完整构建。
+ai-i18n 为 Cursor、Codex、Claude Code 和 Antigravity 提供 Agent Skills 与 MCP 服务器。
+AI 编码工具可在明确指令下扫描、补齐和校对译文，无需先运行完整构建。
 
-如果你希望在开发或构建期间自动补齐缺失译文，请改用 [AI 翻译](/guide/advanced/ai-translation)
+如果你希望在开发或构建期间自动补齐缺失译文，请改用 [AI 翻译](/guide/ai/ai-translation)
 配置 OpenAI-compatible Provider。
 
 ## 适用场景
@@ -38,12 +38,13 @@ Agent 会区分自动译文与人工校对结果，并在修改前列出建议�
 | AI 翻译（Provider） | Vite 开发服务器/构建 | 开发或 CI 期间自动补齐   |
 | AI Agent + MCP      | 与编码工具交互时     | 受控批量补译、校对和审查 |
 
-两种方式的译文都写入项目 `translations/` 和 `overrides/` 分桶，遵循相同的 Git 提交规则。
+两种方式的译文都写入项目 `translations/` 和 `overrides/` 分桶。
+它们遵循相同的 Git 提交规则。
 
 ## Agent 用户详细配置
 
-如果你本身就是 Agent 用户，需要注册 MCP 服务器或安装本地插件，请查阅 ai-i18n 提供的
-Agent Skill 文档。业务应用代码中不需要包含这些配置。
+如果你本身就是 Agent 用户，请注册 MCP 服务器或安装本地插件。
+具体步骤见 ai-i18n 提供的 Agent Skill 文档。业务应用代码中不需要包含这些配置。
 
 生成文件与提交规则见 [生成文件与 Git](/guide/basic/directory)，
 人工译文优先级见 [补齐和确认译文](/guide/basic/translations)。

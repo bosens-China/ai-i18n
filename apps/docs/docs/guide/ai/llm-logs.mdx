@@ -1,9 +1,9 @@
 ---
 title: LLM 日志与排障
-description: 启用并阅读 OpenAI Provider 审查日志，用 batchId 定位翻译链路问题
+description: 启用 OpenAI Provider 审查日志，用 batchId 定位翻译问题
 ---
 
-OpenAI Provider 可以把每个翻译批次的模型输入、模型输出、校验和持久化状态写成普通文本日志。
+OpenAI Provider 可把每个翻译批次的模型输入、模型输出、校验和持久化状态写成普通文本日志。
 这些日志适合人工审查，也可以交给 AI 编码工具判断问题发生在哪个环节。
 
 ## 开启或关闭日志
@@ -25,8 +25,8 @@ aiI18n({
 });
 ```
 
-省略或设置 `provider.logging: false` 时，当前 Vite 开发服务器或构建进程不会创建、追加日志，也不会
-创建默认的 `logs/` 目录；翻译、提取、缓存和持久化照常执行。
+省略或设置 `provider.logging: false` 时，当前 Vite 开发服务器或构建进程不会创建或追加日志。
+它也不会创建默认的 `logs/` 目录。翻译、提取、缓存和持久化照常执行。
 
 `logging: true` 写入 Vite 项目根目录下的 `logs/`。也可以直接用字符串指定目录：
 
@@ -37,13 +37,12 @@ provider: {
 }
 ```
 
-相对字符串基于 Vite root 解析；绝对字符串保持不变。空字符串或只包含空白的字符串是无效配置，
-插件会在启动时报告双语错误。日志开关没有 OpenAI Provider 级的第二套优先级。
+相对字符串基于 Vite root 解析。绝对字符串保持不变。空字符串或只包含空白的字符串是无效配置，插件会在启动时报告双语错误。
+日志开关没有 OpenAI Provider 级的第二套优先级。
 
 ## 日志文件生命周期
 
-一个 `openAI()` Translator 实例在每个已解析目录中使用一个日志文件，文件名包含本地日期、时间、
-PID 和进程序号：
+一个 `openAI()` Translator 实例在每个已解析目录中使用一个日志文件。文件名包含本地日期、时间、PID 和进程序号：
 
 ```text
 2026-08-06_13-46-44-834-p65013-1.log
@@ -55,8 +54,7 @@ PID 和进程序号：
 
 ## 按 batchId 阅读
 
-同一翻译批次的每个日志块都带有相同 `batchId`。排障时先找到失败文案对应的 REQUEST 或
-BATCH FAILED，再沿相同 ID 阅读：
+同一翻译批次的每个日志块都带有相同 `batchId`。排障时先找到失败文案对应的 REQUEST 或 BATCH FAILED，再沿相同 ID 阅读：
 
 ```text
 BATCH SCHEDULED
@@ -78,7 +76,7 @@ PERSISTED
 | `BATCH FAILED`    | Translator、输出校验或后续批次处理的失败原因。                  |
 | `TRANSPORT ERROR` | 请求地址、状态、耗时与 SDK 暴露的网络错误。                     |
 
-并发批次可能交错写入同一个文件，所以不要只按相邻行判断请求与响应；始终按 `batchId` 关联。
+并发批次可能交错写入同一个文件。不要只按相邻行判断请求与响应，始终按 `batchId` 关联。
 
 ## 常见定位方式
 
@@ -88,11 +86,14 @@ PERSISTED
 - 有 STATE APPLIED、没有 PERSISTED：结合构建/开发服务器终端错误检查目录权限、文件冲突或存储失败。
 - 已有 PERSISTED 但页面不更新：检查当前语言和语言加载状态，并刷新开发页面确认。
 
-给 AI 编码工具排障时，提供相关日志文件，并要求它先按 `batchId` 汇总上述阶段，再结合终端错误判断。
+给 AI 编码工具排障时，请提供相关日志文件。要求它先按 `batchId` 汇总上述阶段，再结合终端错误判断。
 日志记录模型与 SDK 提供的审查信息，不是逐字节 HTTP 抓包。
 
 ## 安全与 Git 忽略
 
-日志包含待翻译业务文案、完整提示词和模型输出，不应提交到版本库。默认目录的忽略规则见
-[生成文件与 Git](/guide/basic/directory)；使用自定义目录时，也要忽略该目录。Provider 会脱敏显式
-API key，OpenAI SDK 会脱敏常见认证 Header；提交或分享日志前仍应人工检查业务敏感信息。
+日志包含待翻译业务文案、完整提示词和模型输出，不应提交到版本库。
+默认目录的忽略规则见 [生成文件与 Git](/guide/basic/directory)。
+使用自定义目录时，也要忽略该目录。
+
+Provider 会脱敏显式 API key。OpenAI SDK 会脱敏常见认证 Header。
+提交或分享日志前仍应人工检查业务敏感信息。

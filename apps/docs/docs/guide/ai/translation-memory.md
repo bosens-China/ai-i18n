@@ -1,6 +1,6 @@
 ---
 title: 翻译记忆
-description: 使用项目 JSON 保存译文，并用可选 SQLite 缓存跨项目复用候选
+description: 项目 JSON 保存译文，SQLite 缓存跨项目复用候选
 ---
 
 翻译记忆保存 Provider 或 Agent 产生的自动译文。项目自动译文始终写入
@@ -9,10 +9,12 @@ description: 使用项目 JSON 保存译文，并用可选 SQLite 缓存跨项�
 ## 项目 JSON 是唯一事实来源
 
 `translations/` 按目标语言和稳定 SHA-256 身份保存分桶 JSON。身份哈希的第一个十六进制字符决定
-`<locale>/<0-f>.json` 路径，因此每种语言最多有 16 个非空分桶，不需要集中清单。桶内条目继续使用
-完整哈希键，Git 冲突时可以区分同一桶中的不同目标；真正修改同一个键时需要确认最终译文。
-分桶顶层字段和每个条目的协议字段采用固定顺序，完整哈希键按固定码元排序。因此 Provider、MCP
-或 Vite 更新译文时，只会产生与内容及哈希位置有关的稳定 diff，不会因为对象字段重排制造额外变更。
+`<locale>/<0-f>.json` 路径。因此每种语言最多有 16 个非空分桶，不需要集中清单。
+桶内条目继续使用完整哈希键，Git 冲突时可以区分同一桶中的不同目标；真正修改同一个键时需要确认最终译文。
+
+分桶顶层字段和每个条目的协议字段采用固定顺序，完整哈希键按固定码元排序。
+因此 Provider、MCP 或 Vite 更新译文时，只会产生与内容及哈希位置有关的稳定 diff。
+对象字段重排不会制造额外变更。
 
 这些文件应随源码提交。团队成员、CI 和发布环境只依赖仓库内容，不依赖某台电脑上的数据库。
 
@@ -27,8 +29,8 @@ translationMemory: {
 }
 ```
 
-容量策略只淘汰当前源码不再引用的历史消息；活动消息始终保留，因此限制是软上限。容量不包含
-`overrides/`、`extracted/` 或 `locales/`。完整字段见
+容量策略只淘汰当前源码不再引用的历史消息。活动消息始终保留，因此限制是软上限。
+容量不包含 `overrides/`、`extracted/` 或 `locales/`。完整字段见
 [`AiI18nTranslationMemoryCapacityOptions`](/api/vite/interfaces/ai-i18n-translation-memory-capacity-options)。
 
 ## 可选：个人 SQLite 候选缓存
@@ -58,16 +60,19 @@ SQLite 是附加缓存，不是另一种项目存储模式。项目缺少某个�
 2. 没有候选或存在多个不同候选时，保持缺失，并交给 Provider 或人工处理。
 3. Provider 生成的新译文先写入项目 JSON，再回填个人缓存。
 
-因此删除数据库只会降低跨项目复用率，不会改变已经写入项目的译文或 CI 构建结果。项目不会生成
-`storage.json`，MCP 也始终读写项目 JSON，不直接依赖个人缓存。
+因此删除数据库只会降低跨项目复用率。它不会改变已经写入项目的译文，也不会影响 CI 构建结果。
+项目不会生成 `storage.json`，MCP 也始终读写项目 JSON，不直接依赖个人缓存。
 
 `better-sqlite3` 只属于 `@ai-i18n/sqlite`。未配置缓存的项目不需要安装该包，也不会通过 Core 或 Vite
 获得原生 SQLite 依赖。
 
-默认数据库文件为 `translation-memory.sqlite`：macOS 位于
-`~/Library/Application Support/ai-i18n/`，Linux 位于 `$XDG_DATA_HOME/ai-i18n/` 或
-`~/.local/share/ai-i18n/`，Windows 位于 `%LOCALAPPDATA%\ai-i18n\`。可以通过
-`AI_I18N_DATA_DIR` 或 `sqlite({ dataDirectory })` 指定其他目录；不要把数据库放进仓库。
+默认数据库文件为 `translation-memory.sqlite`：
+
+- macOS：`~/Library/Application Support/ai-i18n/`
+- Linux：`$XDG_DATA_HOME/ai-i18n/` 或 `~/.local/share/ai-i18n/`
+- Windows：`%LOCALAPPDATA%\ai-i18n\`
+
+可以通过 `AI_I18N_DATA_DIR` 或 `sqlite({ dataDirectory })` 指定其他目录。不要把数据库放进仓库。
 
 ## SQLite 未复用译文时如何排查
 
@@ -98,12 +103,13 @@ aiI18n({
 });
 ```
 
-`fresh` 只要求当前 Vite 进程向 Provider 刷新一次已有自动译文。新结果会写入项目分片，并在启用
-SQLite 时回填个人缓存；普通 HMR 和重复模块访问不会持续调用模型。完成重译后通常改回默认 `reuse`。
+`fresh` 只要求当前 Vite 进程向 Provider 刷新一次已有自动译文。新结果会写入项目分片。
+在启用 SQLite 时，新结果还会回填个人缓存。普通 HMR 和重复模块访问不会持续调用模型。
+完成重译后通常改回默认 `reuse`。
 
-如果模型请求期间通过 MCP 或其他方式修改了同一个自动译文，插件会保留项目中较新的值，
-不会用该请求的旧结果覆盖它；清空译文和空字符串也按已保存的修改处理。
+如果模型请求期间通过 MCP 或其他方式修改了同一个自动译文，插件会保留项目中较新的值。
+它不会用该请求的旧结果覆盖它。清空译文和空字符串也按已保存的修改处理。
 
-`provider.cache` 与 `translationMemory.cache` 含义不同：前者控制当前进程是否刷新 Provider，后者
+`provider.cache` 与 `translationMemory.cache` 含义不同。前者控制当前进程是否刷新 Provider，后者
 提供跨项目的候选查询。两者都不会覆盖人工 `overrides/`。若只想重置少量自动译文，使用 MCP 清除
 工具更合适。

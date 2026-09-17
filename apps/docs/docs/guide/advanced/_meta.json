@@ -1,27 +1,7 @@
 [
   {
     "type": "file",
-    "name": "ai-translation",
-    "label": "AI 翻译"
-  },
-  {
-    "type": "file",
-    "name": "llm-logs",
-    "label": "LLM 日志与排障"
-  },
-  {
-    "type": "file",
     "name": "performance",
     "label": "性能诊断"
-  },
-  {
-    "type": "file",
-    "name": "translation-memory",
-    "label": "翻译记忆"
-  },
-  {
-    "type": "file",
-    "name": "ai-tools",
-    "label": "AI Agent 接入"
   }
 ]

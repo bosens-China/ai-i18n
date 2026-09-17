@@ -1,7 +1,7 @@
 ---
 pageType: home
 title: ai-i18n
-description: 面向 Vite 的 AI 国际化插件，支持源码提取、翻译管理和多语言运行时。
+description: 面向 Vite 的 AI 国际化插件。支持源码提取、翻译管理和多语言运行时。
 
 hero:
   name: ai-i18n
@@ -20,17 +20,17 @@ hero:
 
 features:
   - title: 快速上手
-    details: 按 Vanilla、Vue 或 React 完成安装、Vite 配置和第一次构建。
+    details: 按 Vanilla、Vue 或 React 完成安装、Vite 配置和首次构建。
     link: /guide/getting-started/vue
   - title: 接入与使用
     details: 查找文案写法、自动导入、语言加载、生成文件和 Git 规则。
     link: /guide/basic/static-analysis/common
   - title: 工程质量
-    details: 接入 TypeScript 生成声明、ESLint 静态检查和 Vitest 测试。
+    details: 接入 TypeScript 生成声明，使用 ESLint 静态检查，并用 Vitest 测试。
     link: /guide/quality/typescript
-  - title: 翻译自动化
-    details: 选择应用内 Provider 或外部 Agent 补齐译文，并通过翻译校对固定关键措辞。
-    link: /guide/advanced/ai-translation
+  - title: AI 接入
+    details: 选择应用内 Provider 或外部 Agent 补齐译文。通过翻译校对固定关键措辞。
+    link: /guide/ai/ai-translation
   - title: 排查问题
     details: 按通用、Vue 和 React 场景定位接入与运行问题。
     link: /guide/faq/common

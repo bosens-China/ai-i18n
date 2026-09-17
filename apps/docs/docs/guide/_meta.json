@@ -16,6 +16,11 @@
   },
   {
     "type": "dir",
+    "name": "ai",
+    "label": "AI 接入"
+  },
+  {
+    "type": "dir",
     "name": "advanced",
     "label": "进阶"
   },
