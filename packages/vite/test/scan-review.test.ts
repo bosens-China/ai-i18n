@@ -152,16 +152,20 @@ it('rejects a scan changed in flight and a moved occurrence before watcher deliv
   vi.spyOn(vite.environments.client!, 'transformRequest').mockImplementation(
     async (...args) => {
       const result = await transform(...args);
-      if (!changed && args[0].endsWith('/main.ts')) {
+      if (api.scanning && !changed && args[0].endsWith('/main.ts')) {
         changed = true;
         await write(root, 'main.ts', text('提交'));
       }
       return result;
     },
   );
+  // 模拟预转换先于正式扫描发生，不能提前消费扫描中途修改的注入。
+  await vite.environments.client!.transformRequest('/main.ts');
+  expect(changed).toBe(false);
   await expect(ensureScan(vite, api)).rejects.toThrow(
     'Source changed during scanning',
   );
+  expect(changed).toBe(true);
   expect((await ensureScan(vite, api)).message_count).toBe(1);
   expect(api.state().snapshot().cache.messages['提交']).toBeDefined();
 });
