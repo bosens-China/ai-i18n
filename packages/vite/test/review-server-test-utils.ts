@@ -58,6 +58,7 @@ export async function start(
   root: string,
   pluginOptions: AiI18nOptions = options,
   reviewOptions: AiI18nReviewOptions = {},
+  runtime = runtimeEntry,
 ) {
   const vite = await createServer({
     root,
@@ -68,7 +69,7 @@ export async function start(
     resolve: {
       alias: {
         '@ai-i18n/vite/review/runtime': reviewRuntimeEntry,
-        '@ai-i18n/vite/runtime': runtimeEntry,
+        '@ai-i18n/vite/runtime': runtime,
       },
     },
     plugins: [aiI18n(pluginOptions), aiI18nReview(reviewOptions)],

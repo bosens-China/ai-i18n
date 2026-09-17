@@ -31,7 +31,14 @@ export function validateReviewTarget(
     target.message.comment ? { comment: target.message.comment } : undefined,
   );
   const cache = snapshot.cache.messages[messageId];
-  if (!cache || !sameReviewMessage(cache, target.message)) {
+  // 历史译文会保留；保存目标还必须在当前提取清单中有活动引用。
+  if (
+    !cache ||
+    !sameReviewMessage(cache, target.message) ||
+    !Object.keys(snapshot.extracted).some((file) =>
+      messageAppearsIn(snapshot, messageId, file),
+    )
+  ) {
     throw problem(
       'UNKNOWN_MESSAGE',
       404,

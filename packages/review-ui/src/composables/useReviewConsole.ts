@@ -24,6 +24,7 @@ const REVIEW_REFRESH_INTERVAL_MS = 1_000;
 export function useReviewConsole(
   copy: Readonly<Ref<ReviewCopy>>,
   interfaceLanguage: Readonly<Ref<ReviewUiLanguage>>,
+  scope: () => 'page' | 'all' = () => 'page',
 ) {
   const snapshot = shallowRef<ReviewSnapshot | null>(null);
   const locale = shallowRef('');
@@ -34,6 +35,9 @@ export function useReviewConsole(
   const toast = shallowRef<ToastState | null>(null);
   let toastTimer: ReturnType<typeof setTimeout> | undefined;
   let requestSequence = 0;
+  let pending = 0;
+  const refreshError = shallowRef('');
+  const refreshing = shallowRef(false);
 
   const searchableMessages = computed(() =>
     (snapshot.value?.messages ?? []).map((message) => ({
@@ -69,9 +73,13 @@ export function useReviewConsole(
   async function load({
     silent = false,
   }: ReviewLoadOptions = {}): Promise<void> {
+    // 轮询不能不断让尚未完成的扫描失效；切换范围的显式请求仍能覆盖旧请求。
+    if (silent && pending) return;
     const request = ++requestSequence;
+    pending++;
+    refreshing.value = true;
     try {
-      const response = await fetch('/__ai-i18n/api/messages', {
+      const response = await fetch(`/__ai-i18n/api/messages?scope=${scope()}`, {
         cache: 'no-store',
         headers: { Accept: 'application/json' },
       });
@@ -81,6 +89,7 @@ export function useReviewConsole(
       if (!response.ok) throw apiError(payload);
       if (request !== requestSequence) return;
       snapshot.value = payload;
+      refreshError.value = '';
       if (fileSuffix.value && !fileSuffixes.value.includes(fileSuffix.value)) {
         fileSuffix.value = '';
       }
@@ -88,6 +97,9 @@ export function useReviewConsole(
         locale.value = payload.locales[0]?.value ?? '';
       }
     } catch (error) {
+      if (request === requestSequence)
+        refreshError.value =
+          error instanceof Error ? error.message : copy.value.reviewDataFailed;
       if (!silent && request === requestSequence) {
         showToast(
           error instanceof Error ? error.message : copy.value.reviewDataFailed,
@@ -95,7 +107,9 @@ export function useReviewConsole(
         );
       }
     } finally {
-      loading.value = false;
+      pending--;
+      refreshing.value = pending > 0;
+      if (request === requestSequence) loading.value = false;
     }
   }
 
@@ -189,6 +203,8 @@ export function useReviewConsole(
     fileSuffix,
     query,
     loading: readonly(loading),
+    refreshing: readonly(refreshing),
+    refreshError: readonly(refreshError),
     toast: readonly(toast),
     visibleMessages,
     fileSuffixes,

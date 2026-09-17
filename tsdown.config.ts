@@ -3,7 +3,7 @@ import { defineConfig } from 'tsdown';
 export default defineConfig({
   workspace: { include: 'packages/*' },
   entry: [
-    'src/{index,vite,vue,react,client,runtime,review,review-runtime,review-i18n,vitest,bin,diagnostics,translation-memory}.ts',
+    'src/{index,vite,vue,react,client,runtime,review,review-runtime,review-i18n,vitest,bin,diagnostics,translation-memory,scan,agent}.ts',
   ],
   format: 'esm',
   platform: 'neutral',

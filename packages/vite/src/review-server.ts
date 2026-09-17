@@ -10,6 +10,7 @@ import path from 'node:path';
 import type { IncomingMessage } from 'node:http';
 import type { ViteDevServer } from 'vite';
 import { diagnosticMessage } from '@ai-i18n/analyzer';
+import { DuplicateJsonKeyError } from '@ai-i18n/core/translation-memory';
 import type { ReviewSnapshot } from '@ai-i18n/core';
 import { readReviewAsset } from './review-assets.js';
 import {
@@ -67,7 +68,15 @@ export async function configureReviewServer(
         return;
       }
       if (request.method === 'GET' && pathname === REVIEW_API_PATH) {
-        sendJson(response, 200, await service.snapshot());
+        sendJson(
+          response,
+          200,
+          await service.snapshot(
+            new URL(request.url!, 'http://review.local').searchParams.get(
+              'scope',
+            ) === 'all',
+          ),
+        );
         return;
       }
       if (request.method === 'GET' && pathname === REVIEW_EDITOR_PATH) {
@@ -114,14 +123,16 @@ export async function configureReviewServer(
       next();
     } catch (cause) {
       const error =
-        cause instanceof ReviewProblem
-          ? cause
-          : problem(
-              'INTERNAL_ERROR',
-              500,
-              '校对操作失败，请查看 Vite 控制台并重试。',
-              'The review operation failed. Check the Vite console and try again.',
-            );
+        cause instanceof DuplicateJsonKeyError
+          ? problem('DUPLICATE_JSON_KEY', 409, cause.zh, cause.en)
+          : cause instanceof ReviewProblem
+            ? cause
+            : problem(
+                'INTERNAL_ERROR',
+                500,
+                '校对操作失败，请查看 Vite 控制台并重试。',
+                'The review operation failed. Check the Vite console and try again.',
+              );
       if (!(cause instanceof ReviewProblem)) {
         server.config.logger.error(
           formatTerminalDiagnostic(

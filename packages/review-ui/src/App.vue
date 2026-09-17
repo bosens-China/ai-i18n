@@ -58,7 +58,11 @@ const {
 const isStandalone = props.mode === 'standalone';
 const { preference: themePreference, setPreference: setThemePreference } =
   useReviewTheme(props.root);
-const review = useReviewConsole(copy, interfaceLanguage);
+const review = useReviewConsole(
+  copy,
+  interfaceLanguage,
+  () => browseScope.value,
+);
 const drafts = useReviewDrafts();
 const scopes = reactive(new Map<string, ReviewScope>());
 const pageContext = hasReviewPageContext(props.mode);
@@ -119,6 +123,9 @@ const candidateMode = computed(() => candidateKeys.value !== null);
 const showAllFilters = computed(
   () => browseScope.value === 'all' && !candidateMode.value,
 );
+watch(browseScope, () => {
+  void review.load();
+});
 let stopAutoRefresh: (() => void) | undefined;
 watch(
   interfaceLanguage,
@@ -237,6 +244,15 @@ async function mutate(
       :total="total"
       :visible-count="visibleMessages.length"
     />
+    <p
+      v-if="review.refreshError.value || review.refreshing.value"
+      role="status"
+      class="m-0 px-4 py-2 text-sm text-textMuted"
+    >
+      {{
+        review.refreshError.value ? copy.catalogStale : copy.catalogRefreshing
+      }}
+    </p>
     <ReviewSettingsPanel
       v-if="workbenchTab === 'settings'"
       :copy="copy"

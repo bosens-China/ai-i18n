@@ -1,3 +1,7 @@
+import path from 'node:path';
+import fs from 'node:fs/promises';
+import { walkScanGraph } from './scan-graph.js';
+import { ensureScan } from './scan-catalog.js';
 import type { Plugin, ResolvedConfig } from 'vite';
 import { diagnosticMessage } from '@ai-i18n/analyzer';
 import { aiI18nPluginApi, type AiI18nPluginApi } from './plugin-api.js';
@@ -58,12 +62,39 @@ export function aiI18nReview(options: AiI18nReviewOptions = {}): Plugin {
 
     configureServer(server) {
       const api = requiredCore(core);
+      if (api.scanMode) return;
       return configureReviewServer(
         server,
         createReviewService({
           sourceLang: api.options.sourceLang,
           locales: api.options.locales,
           ready: api.ready,
+          async ensureCatalog(full) {
+            if (full || api.scanned || api.scanPending)
+              await ensureScan(server, api);
+          },
+          async refreshTarget(target) {
+            if (api.scanned) return;
+            // 保存前重读涉及的源码，不能靠尚未送达的 watcher 事件证明位置仍有效。
+            const files = Object.values(
+              api.state().snapshot().extracted,
+            ).filter((file) =>
+              file.messages.some(
+                (item) =>
+                  item.source === target.message.source &&
+                  item.comment === target.message.comment,
+              ),
+            );
+            for (const file of files) {
+              const absolute = path.resolve(server.config.root, file.source);
+              const graph = server.environments.client!.moduleGraph;
+              for (const node of graph.getModulesByFile(absolute) ?? [])
+                graph.invalidateModule(node);
+              if (await fs.stat(absolute).catch(() => null))
+                await walkScanGraph(server, [absolute]);
+              else api.state().remove(absolute);
+            }
+          },
           state: api.state,
           store: api.store,
           loadPersistedExtracted: () => api.store().loadExtracted(),
@@ -100,7 +131,7 @@ export function aiI18nReview(options: AiI18nReviewOptions = {}): Plugin {
     transformIndexHtml: {
       order: 'post',
       handler() {
-        if (!launcher) return [];
+        if (!launcher || core?.scanMode) return [];
         return [
           {
             tag: 'script',

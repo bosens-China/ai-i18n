@@ -4,6 +4,10 @@ import { aiI18nReview } from '../src/review';
 import { REVIEW_CLIENT_MODULE_PATH } from '../src/review-page';
 import { callHook, options, setupPlugin } from './plugin-test-utils';
 
+vi.mock('../src/scan-bridge', () => ({
+  startScanBridge: async () => async () => undefined,
+}));
+
 describe('@ai-i18n/vite plugin options and Review registration', () => {
   it('validates locale and persistence options', () => {
     const base = { sourceLang: 'zh-CN', locales: options.locales };
@@ -53,11 +57,11 @@ describe('@ai-i18n/vite plugin options and Review registration', () => {
     ).toThrow('[ai-i18n] provider.translator must be a function.');
   });
 
-  it('watches protocol files without registering the review plugin', () => {
+  it('watches protocol files without registering the review plugin', async () => {
     const { directory, plugin } = setupPlugin();
     const add = vi.fn();
 
-    callHook(plugin.configureServer, { watcher: { add } });
+    await callHook(plugin.configureServer, { watcher: { add } });
 
     expect(add).toHaveBeenCalledWith(directory);
   });

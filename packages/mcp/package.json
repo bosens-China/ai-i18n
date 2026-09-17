@@ -33,6 +33,10 @@
     "ai-i18n-mcp": "./dist/bin.js"
   },
   "exports": {
+    "./internal/agent": {
+      "types": "./dist/agent.d.ts",
+      "default": "./dist/agent.js"
+    },
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"

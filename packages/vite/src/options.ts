@@ -49,6 +49,8 @@ export interface AiI18nTimingDiagnosticsOptions {
 }
 
 export interface AiI18nDiagnosticsOptions {
+  /** Build 完成后输出有效译文覆盖率；默认开启。 */
+  buildSummary?: boolean;
   /** 显式开启 Dev 阶段耗时诊断；默认关闭。 */
   timing?: boolean | AiI18nTimingDiagnosticsOptions;
   /** Dev / Build 启动与转换的有界性能报告；不单独统计写入，默认关闭。 */

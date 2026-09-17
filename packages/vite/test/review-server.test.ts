@@ -23,6 +23,26 @@ import {
 
 // 本组会冷启动业务与 review-ui 两个 Vite 服务，CI 并发时需要独立于单元测试的时间预算。
 describe('review server', { timeout: 10_000 }, () => {
+  it('reports conflicting JSON keys with localized locations and preserves the file', async () => {
+    const root = await fixtureRoot();
+    const { origin } = await start(root);
+    const relative = 'i18n/overrides/en-US/a.json';
+    const raw = '{\n "version": 1,\n "version": 2\n}';
+    await write(root, relative, raw);
+    const response = await fetch(`${origin}/__ai-i18n/api/messages`);
+    expect(response.status).toBe(409);
+    await expect(response.json()).resolves.toMatchObject({
+      error: {
+        code: 'DUPLICATE_JSON_KEY',
+        zh: expect.stringContaining('重复键 /version'),
+        en: expect.stringContaining('at 3:2 (first at 2:2)'),
+      },
+    });
+    await expect(fs.readFile(path.join(root, relative), 'utf8')).resolves.toBe(
+      raw,
+    );
+  });
+
   it('serves the local review-ui source through its own Vite HMR channel', async () => {
     const explicitReviewUiDirectory = process.env.AI_I18N_REVIEW_UI_DIR;
     delete process.env.AI_I18N_REVIEW_UI_DIR;

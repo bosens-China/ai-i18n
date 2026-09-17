@@ -1,3 +1,5 @@
+import path from 'node:path';
+import { startScanBridge } from './scan-bridge.js';
 import {
   type NormalizedHotChannel,
   type Plugin,
@@ -5,7 +7,7 @@ import {
   type ViteDevServer,
 } from 'vite';
 import type { TranslationMemoryFile } from '@ai-i18n/core';
-import { createBuildWatchState } from './build-watch.js';
+import { createPluginBuildHooks } from './plugin-build-hooks.js';
 import { optimizeDevRuntimeDependencies } from './dev-optimize-deps.js';
 import { createDevUpdateSender } from './dev-updates.js';
 import {
@@ -29,8 +31,6 @@ import {
 import { html as createHtmlExtractor, type HtmlExtractor } from './html.js';
 import { createHtmlTransformHandler } from './html-transform.js';
 import { createHotUpdateHandler } from './hot-update.js';
-import { injectBuiltLocaleHints } from './locale-loading.js';
-import { renderLocaleChunk } from './locale-module-loader.js';
 import { ProjectState } from './project-state.js';
 import type { ProviderCoordinator } from './provider-coordinator.js';
 import { normalizeProjectId } from './project-paths.js';
@@ -38,6 +38,7 @@ import type { AiI18nOptions } from './options.js';
 import { createPluginProvider } from './plugin-provider.js';
 import {
   AI_I18N_PLUGIN_API,
+  trackPluginTransforms,
   type AiI18nPlugin,
   type AiI18nPluginApi,
 } from './plugin-api.js';
@@ -80,13 +81,15 @@ export function aiI18n(options: AiI18nOptions): Plugin {
   let devHot: NormalizedHotChannel | undefined;
   let devServer: ViteDevServer | undefined;
   let warnedSsr = false;
+  const transforms = trackPluginTransforms();
+  let closeScanBridge: (() => Promise<void>) | undefined;
   const { currentState, currentStore } = createPluginStateAccessors(
     () => state,
     () => store,
   );
   const performanceDiagnostics = createPerformanceDiagnostics(
     options.diagnostics?.performance,
-    () => config,
+    () => (api.scanMode ? undefined : config),
     () => framework,
     options.directory,
   );
@@ -99,7 +102,8 @@ export function aiI18n(options: AiI18nOptions): Plugin {
   );
   const devTiming = createDevTimingReporter(options.diagnostics?.timing, {
     performance: performanceDiagnostics?.recorder,
-    enabled: () => config?.command === 'serve',
+    enabled: () =>
+      !api.scanMode && !api.scanning && config?.command === 'serve',
     log: (message) => config?.logger.info(message),
   });
   const devPersistence = createPluginPersistence(
@@ -117,7 +121,7 @@ export function aiI18n(options: AiI18nOptions): Plugin {
   const {
     sendTranslationUpdates,
     sendLocaleUpdates,
-    requestMissingTranslations,
+    requestMissingTranslations: requestDevTranslations,
     dispose: disposeDevUpdates,
   } = createDevUpdateSender({
     options: normalized,
@@ -134,24 +138,38 @@ export function aiI18n(options: AiI18nOptions): Plugin {
     translationEvent: TRANSLATION_UPDATE_EVENT,
     localeEvent: LOCALE_UPDATE_EVENT,
   });
+  const requestMissingTranslations = (moduleIds: readonly string[]) => {
+    if (!api.scanMode && !api.scanning) requestDevTranslations(moduleIds);
+  };
+  const persist = (moduleId: string) => {
+    if (!api.scanMode && !api.scanning) devPersistence.schedule(moduleId);
+  };
 
-  const buildWatch = createBuildWatchState({
-    sourcePattern: SOURCE_RE,
-    ready: () => ready,
-    state: currentState,
-    store: currentStore,
-    requestMissingTranslations,
-  });
-  const reconcile = (moduleIds: Iterable<string>, complete = false) =>
-    devTiming.measure('build-reconcile', '<project>', () =>
-      buildWatch.reconcile(moduleIds, complete),
-    );
   const flushProvider = () =>
     devTiming.measure(
       'provider-flush',
       '<project>',
       () => coordinator?.flush() ?? Promise.resolve(),
     );
+
+  const { hooks: buildHooks, reconcile } = createPluginBuildHooks({
+    config: () => config,
+    ready: () => ready,
+    state: currentState,
+    store: currentStore,
+    normalized,
+    summary: options.diagnostics?.buildSummary !== false,
+    timing: devTiming,
+    performance: performanceDiagnostics,
+    closeStore: () => store?.close(),
+    requestMissingTranslations,
+    flushProvider,
+    flushPersistence: () => devPersistence.flush(),
+    dispose() {
+      disposeDevUpdates();
+      return closeScanBridge?.();
+    },
+  });
 
   const handleHotUpdate = createHotUpdateHandler({
     sourcePattern: SOURCE_RE,
@@ -195,7 +213,7 @@ export function aiI18n(options: AiI18nOptions): Plugin {
       warn();
     },
     runStateTask,
-    persist: (moduleId) => devPersistence.schedule(moduleId),
+    persist,
   });
   const transformIndexHtml = createHtmlTransformHandler({
     ...(htmlExtractor ? { extractor: htmlExtractor } : {}),
@@ -206,7 +224,7 @@ export function aiI18n(options: AiI18nOptions): Plugin {
     store: currentStore,
     requestMissingTranslations,
     flush: flushProvider,
-    persist: (moduleId) => devPersistence.schedule(moduleId),
+    persist,
     setDevHot(hot) {
       devHot = hot;
     },
@@ -233,9 +251,24 @@ export function aiI18n(options: AiI18nOptions): Plugin {
   });
 
   const api: AiI18nPluginApi = {
+    scanMode: false,
+    scanOptions: {
+      ...normalized,
+      framework: options.framework,
+      autoImport,
+      html: options.html,
+      directory: options.directory,
+    },
+    scanIgnored: [],
+    scanIgnores: (file) => performanceDiagnostics?.owns(file) ?? false,
     options: normalized,
     ready: () => ready,
     state: currentState,
+    replaceState(next) {
+      state = next;
+    },
+    flushProvider,
+    settleTransforms: transforms.settle,
     store: currentStore,
     persistedCache: () => reviewCache,
     runStateTask,
@@ -255,7 +288,13 @@ export function aiI18n(options: AiI18nOptions): Plugin {
     configResolved(resolved) {
       return measureSetup('config-resolved', () => {
         config = resolved;
-        performanceDiagnostics?.validateDirectory();
+        api.scanIgnored = [
+          path.resolve(
+            resolved.root,
+            typeof options.dts === 'string' ? options.dts : 'src/ai-i18n.d.ts',
+          ),
+        ];
+        if (!api.scanMode) performanceDiagnostics?.validateDirectory();
         framework = resolveFramework(resolved.plugins, options.framework);
         translationHooks = frameworkTranslationHooks(framework, autoImport);
         state = new ProjectState(normalizeRoot(resolved.root), normalized);
@@ -269,10 +308,11 @@ export function aiI18n(options: AiI18nOptions): Plugin {
             ...(options.directory ? { directory: options.directory } : {}),
             cleanupMissingSourceFiles:
               options.cleanup?.missingSourceFiles ?? true,
-            cleanupOrphanMessages: options.cleanup?.orphanMessages ?? false,
-            translationMemory,
+            cleanupOrphanMessages:
+              !api.scanMode && (options.cleanup?.orphanMessages ?? false),
+            translationMemory: api.scanMode ? {} : translationMemory,
             timing: devTiming,
-            ...(translationMemory.capacity
+            ...(!api.scanMode && translationMemory.capacity
               ? { capacity: translationMemory.capacity }
               : {}),
           },
@@ -281,7 +321,7 @@ export function aiI18n(options: AiI18nOptions): Plugin {
         ready = initializePlugin(
           resolved,
           framework,
-          options,
+          api.scanMode ? { ...options, dts: false } : options,
           store,
           state,
           devTiming,
@@ -291,7 +331,7 @@ export function aiI18n(options: AiI18nOptions): Plugin {
         // 部分工具只执行 configResolved 后即释放临时 root；保留 rejection 供后续 hook 抛出，
         // 同时登记观察者，避免未进入任何 hook 时产生 unhandled rejection。
         void ready.catch(() => undefined);
-        if (options.provider) {
+        if (options.provider && !api.scanMode) {
           coordinator = createPluginProvider({
             provider: options.provider,
             providerCache,
@@ -309,8 +349,9 @@ export function aiI18n(options: AiI18nOptions): Plugin {
       });
     },
 
-    configureServer(server) {
+    async configureServer(server) {
       devServer = server;
+      if (!api.scanMode) closeScanBridge = await startScanBridge(server, api);
       return measureSetup('configure-server', () => {
         // Dev 注册不再依附虚拟注册模块，目录观察必须独立存在，才能接收 MCP 与校对页写入。
         server.watcher.add(currentStore().directory);
@@ -320,57 +361,30 @@ export function aiI18n(options: AiI18nOptions): Plugin {
       });
     },
 
-    async buildStart() {
-      if (config?.command === 'build') {
-        await devTiming.measure('build-start', '<project>', () =>
-          buildWatch.buildStart(this.meta.watchMode),
-        );
-      }
-    },
-
-    async watchChange(id, change) {
-      if (config?.command === 'build' && this.meta.watchMode) {
-        await buildWatch.watchChange(id, change.event);
-      }
-    },
+    ...buildHooks,
 
     ...virtualModuleHooks,
 
     transform: {
       filter: { id: SOURCE_RE },
-      handler: handleTransformSource,
-    },
-
-    async renderChunk(code, chunk) {
-      return devTiming.measure('locale-render', '<project>', () =>
-        renderLocaleChunk(this, code, chunk.facadeModuleId, {
-          project: currentState(),
-          store: currentStore(),
-          flush: flushProvider,
-          reconcile,
-        }),
-      );
+      handler(...args) {
+        return transforms.track(handleTransformSource.apply(this, args));
+      },
     },
 
     transformIndexHtml: {
       order: 'pre',
       handler(html, context) {
-        return devTiming.measure('html-transform', '<html>', () =>
-          transformIndexHtml.call(this, html, context),
+        return transforms.track(
+          devTiming.measure('html-transform', '<html>', () =>
+            transformIndexHtml.call(this, html, context),
+          ),
         );
       },
     },
 
-    generateBundle: {
-      order: 'post',
-      async handler(_outputOptions, bundle) {
-        if (config?.command !== 'build') return;
-        await reconcile(this.getModuleIds(), true);
-        injectBuiltLocaleHints(bundle, config, normalized);
-      },
-    },
-
-    hotUpdate(options) {
+    async hotUpdate(options) {
+      await api.scanPending?.catch(() => undefined);
       // 报告自身的写入不再触发采集，避免周期性 HMR / 报告自激。
       if (performanceDiagnostics?.owns(options.file)) return [];
       const moduleId = config
@@ -381,17 +395,6 @@ export function aiI18n(options: AiI18nOptions): Plugin {
       );
     },
 
-    async closeBundle() {
-      try {
-        disposeDevUpdates();
-        await devPersistence.flush();
-        if (config?.command !== 'build' || !config.build.watch) {
-          await store?.close();
-        }
-      } finally {
-        await performanceDiagnostics?.close();
-      }
-    },
     [AI_I18N_PLUGIN_API]: api,
   };
   return plugin;

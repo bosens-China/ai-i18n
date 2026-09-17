@@ -40,6 +40,7 @@ export function createPerformanceDiagnostics(
   let warned = false;
   let closed = false;
   let writing = false;
+  let lastSummary: string | undefined;
   const recorder = new PerformanceRecorder(maxSamples, () => {
     dirty = true;
     schedule();
@@ -104,12 +105,12 @@ export function createPerformanceDiagnostics(
           .relative(config()!.root, file)
           .split(path.sep)
           .join('/');
-        config()!.logger.info(
-          diagnosticMessage(
-            `[ai-i18n:performance] ${report.completedCount} 个阶段，进行中 ${report.activeCount}；${summary}\n报告：${relativeFile}（累计阶段不可相加作为总耗时）`,
-            `[ai-i18n:performance] ${report.completedCount} spans, ${report.activeCount} active; ${summary}\nReport: ${relativeFile} (stage totals overlap; do not sum as wall time)`,
-          ),
+        lastSummary = diagnosticMessage(
+          `[ai-i18n:performance] ${report.completedCount} 个阶段，进行中 ${report.activeCount}；${summary}\n报告：${relativeFile}（累计阶段不可相加作为总耗时）`,
+          `[ai-i18n:performance] ${report.completedCount} spans, ${report.activeCount} active; ${summary}\nReport: ${relativeFile} (stage totals overlap; do not sum as wall time)`,
         );
+        // Build 的快照照常落盘，终端摘要由构建收尾统一输出。
+        if (config()!.command !== 'build') config()!.logger.info(lastSummary);
       })
       .catch(() => {
         if (warned) return;
@@ -134,6 +135,12 @@ export function createPerformanceDiagnostics(
 
   return {
     recorder,
+    summary: () => lastSummary,
+    async flush() {
+      dirty = true;
+      await flush();
+      if (dirty) await flush();
+    },
     validateDirectory,
     owns(file: string): boolean {
       if (!config()) return false;

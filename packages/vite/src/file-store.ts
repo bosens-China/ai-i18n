@@ -306,7 +306,10 @@ export class FileStore {
       file.messages.map((message) => message.id),
     );
     const cache = await this.measure('translation-memory-sync', options, () =>
-      this.memory.update(snapshot, activeMessageIds),
+      this.memory.update(
+        snapshot,
+        options.preserveHistory ? undefined : activeMessageIds,
+      ),
     );
     const activeExtracted = new Set(Object.keys(snapshot.extracted));
     const staleSources = options.complete

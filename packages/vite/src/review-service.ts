@@ -46,6 +46,8 @@ interface ReviewServiceOptions {
   sourceLang: string;
   locales: readonly LangOption[];
   ready: () => Promise<void>;
+  ensureCatalog?: (full: boolean) => Promise<void>;
+  refreshTarget?: (target: ReviewOverrideTarget) => Promise<void>;
   state: () => ProjectState;
   store: () => FileStore;
   loadPersistedExtracted?: () => Promise<readonly ExtractedFile[]>;
@@ -56,7 +58,7 @@ interface ReviewServiceOptions {
 }
 
 export interface ReviewService {
-  snapshot(): Promise<ReviewSnapshot>;
+  snapshot(full?: boolean): Promise<ReviewSnapshot>;
   setOverride(update: ReviewOverrideUpdate): Promise<ReviewMutationResult>;
   deleteOverride(target: ReviewOverrideTarget): Promise<ReviewMutationResult>;
 }
@@ -64,16 +66,9 @@ export interface ReviewService {
 export function createReviewService(
   options: ReviewServiceOptions,
 ): ReviewService {
-  let persistedExtracted: Promise<readonly ExtractedFile[]> | undefined;
-
-  function loadPersistedExtracted(): Promise<readonly ExtractedFile[]> {
-    return (persistedExtracted ??=
-      options.loadPersistedExtracted?.() ?? Promise.resolve([]));
-  }
-
   async function projectSnapshot(): Promise<ProjectSnapshot> {
     const snapshot = options.state().snapshot();
-    const persisted = await loadPersistedExtracted();
+    const persisted = (await options.loadPersistedExtracted?.()) ?? [];
     if (!persisted.length) return snapshot;
 
     // 已在 Dev 转换过的模块始终以实时分析结果为准，也要遮蔽旧快照中的空提取记录。
@@ -96,10 +91,17 @@ export function createReviewService(
     };
   }
 
-  async function snapshot(): Promise<ReviewSnapshot> {
+  async function snapshot(full = false): Promise<ReviewSnapshot> {
     await options.ready();
+    await options.ensureCatalog?.(full);
+    const project = await projectSnapshot();
+    const persisted = await options.store().load();
+    project.cache.messages = {
+      ...project.cache.messages,
+      ...persisted.messages,
+    };
     return createReviewSnapshot(
-      await projectSnapshot(),
+      project,
       await options.store().loadOverrides(),
       options.sourceLang,
       options.locales,
@@ -111,6 +113,8 @@ export function createReviewService(
     value: string | undefined,
   ): Promise<ReviewMutationResult> {
     await options.ready();
+    await options.ensureCatalog?.(false);
+    await options.refreshTarget?.(target);
     return options.runStateTask(async () => {
       await options.flushPersistence();
       const project = options.state();

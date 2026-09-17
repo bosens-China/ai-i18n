@@ -162,7 +162,11 @@ export function createSourceTransformHandler(
         if (config?.command !== 'build') {
           dependencies.persist(moduleId);
         }
-        dependencies.requestMissingTranslations(update.affectedModuleIds);
+        // 扫描只提取不请求翻译；首次真实访问即使命中分析缓存，也必须检查本模块缺译。
+        dependencies.requestMissingTranslations([
+          moduleId,
+          ...update.affectedModuleIds,
+        ]);
         // 只注入没有本地 symbol 的值引用，避免覆盖用户自己的同名函数或变量。
         const autoImportModule =
           !autoImport || extraction?.autoImportCode === undefined

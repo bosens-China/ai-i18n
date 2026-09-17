@@ -102,3 +102,32 @@ describe('review console refresh', () => {
     expect(review.toast.value?.message).toBe('中文错误');
   });
 });
+
+it('does not starve a slow scan with polls, preserves old results on failure and recovers', async () => {
+  let resolve: (value: unknown) => void = () => undefined;
+  const fetchMock = vi.fn().mockImplementationOnce(
+    () =>
+      new Promise((done) => {
+        resolve = done;
+      }),
+  );
+  vi.stubGlobal('fetch', fetchMock);
+  const review = useReviewConsole(
+    shallowRef(copy),
+    interfaceLanguage,
+    () => 'all',
+  );
+  const first = review.load();
+  await review.load({ silent: true });
+  expect(fetchMock).toHaveBeenCalledOnce();
+  expect(fetchMock.mock.calls[0]?.[0]).toContain('scope=all');
+  resolve({ ok: true, json: async () => snapshot });
+  await first;
+  fetchMock.mockRejectedValueOnce(new Error('broken source'));
+  await review.load({ silent: true });
+  expect(review.snapshot.value).toEqual(snapshot);
+  expect(review.refreshError.value).toBe('broken source');
+  fetchMock.mockResolvedValueOnce({ ok: true, json: async () => snapshot });
+  await review.load({ silent: true });
+  expect(review.refreshError.value).toBe('');
+});

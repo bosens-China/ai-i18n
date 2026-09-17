@@ -33,6 +33,10 @@
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
+    "./internal/scan": {
+      "types": "./dist/scan.d.ts",
+      "default": "./dist/scan.js"
+    },
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"

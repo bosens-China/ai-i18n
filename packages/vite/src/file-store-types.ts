@@ -23,6 +23,8 @@ export interface FileStoreOptions {
 export interface FileStoreLoadOptions {
   preferredSources?: readonly string[];
   complete?: boolean;
+  /** 扫描只更新活动引用，不执行历史清理或容量淘汰。 */
+  preserveHistory?: boolean;
   changedSources?: readonly string[];
   timingModuleId?: string;
 }

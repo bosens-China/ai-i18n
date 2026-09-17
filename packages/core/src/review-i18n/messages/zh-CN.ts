@@ -48,6 +48,8 @@ export const zhCNReviewCopy = {
   chooseExactOccurrence: '请先在左侧选择准确的文件位置，再保存当前位置译文。',
   saved: '人工译文已保存。',
   removed: '人工译文已移除。',
+  catalogRefreshing: '正在刷新文案清单…',
+  catalogStale: '刷新失败，当前结果可能已过期。修复后会自动重试。',
   reviewDataFailed: '无法读取校对数据。',
   shortcutSave: '保存',
   shortcutContinue: '保存并继续',

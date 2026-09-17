@@ -36,6 +36,8 @@ export type ReviewCopyTextKey =
   | 'remove'
   | 'removed'
   | 'resizeWorkbench'
+  | 'catalogRefreshing'
+  | 'catalogStale'
   | 'reviewDataFailed'
   | 'reviewQueue'
   | 'reviewTitle'

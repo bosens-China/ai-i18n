@@ -53,6 +53,9 @@ export const enUSReviewCopy = {
     'Select the exact file, line, and column from the locate results before saving an occurrence override.',
   saved: 'Reviewed translation saved.',
   removed: 'Reviewed translation removed.',
+  catalogRefreshing: 'Refreshing the message catalog…',
+  catalogStale:
+    'Refresh failed. Results may be outdated. Retrying automatically.',
   reviewDataFailed: 'The review data could not be loaded.',
   shortcutSave: 'Save',
   shortcutContinue: 'Save & Next',
