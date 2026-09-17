@@ -4,6 +4,7 @@ import { runtimeMessageId } from '@ai-i18n/core';
 import { transactTranslationOverrides } from '@ai-i18n/core/translation-memory';
 import { describe, expect, it, vi } from 'vitest';
 import { extractedPath } from '../src/file-store-paths';
+import { aiI18nPluginApi } from '../src/plugin-api';
 import { objectHandler, setupPlugin } from './plugin-test-utils';
 import {
   firstTranslationShard,
@@ -49,6 +50,47 @@ async function setup() {
 }
 
 describe('managed file hot update read races', () => {
+  it('reads the final translation when consecutive writes share one watcher event', async () => {
+    const { plugin, directory, hotSend, update } = await setup();
+    const api = aiI18nPluginApi(plugin)!;
+    await api.runStateTask(api.flushPersistence);
+    const shard = await firstTranslationShard(directory);
+    const memory = await readTestTranslationMemory(directory);
+    memory.messages['保存']!.translations['en-US'] = 'First';
+    // 内存磁盘让本用例只控制事件顺序，不再依赖真实文件 IO 的快慢。
+    const store = api.store();
+    const overrides = await store.loadOverrides();
+    vi.spyOn(store, 'load').mockImplementation(async () =>
+      structuredClone(memory),
+    );
+    vi.spyOn(store, 'loadOverrides').mockResolvedValue(overrides);
+    vi.spyOn(store, 'loadOptions').mockResolvedValue({});
+    vi.spyOn(store, 'sync').mockImplementation(
+      async (snapshot) => snapshot.cache,
+    );
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+    try {
+      // 只投递第一次事件；紧随其后的外部写入被 watcher 合并，不会再通知。
+      const pending = update(shard, 'update', async () =>
+        JSON.stringify(memory),
+      );
+      await vi.advanceTimersByTimeAsync(25);
+      memory.messages['保存']!.translations['en-US'] = 'External value';
+      await vi.advanceTimersByTimeAsync(25);
+      await pending;
+      expect(hotSend).toHaveBeenLastCalledWith('ai-i18n:update', {
+        moduleId: 'src/race.ts',
+        messages: expect.objectContaining({
+          'en-US': expect.objectContaining({
+            [runtimeMessageId('src/race.ts', '保存')]: 'External value',
+          }),
+        }),
+      });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it.each([
     ['translations', 'create'],
     ['translations', 'update'],

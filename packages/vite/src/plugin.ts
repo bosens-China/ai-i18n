@@ -384,6 +384,10 @@ export function aiI18n(options: AiI18nOptions): Plugin {
     },
 
     async hotUpdate(options) {
+      // watcher 会合并 50ms 内的 change，窗口结束后再读 JSON，避免漏掉紧随其后的外部写入。
+      // 等待不占状态队列；随后再等扫描，避免延迟的事件进入扫描的临时状态。
+      if (currentStore().manages(options.file))
+        await new Promise<void>((resolve) => setTimeout(resolve, 50));
       await api.scanPending?.catch(() => undefined);
       // 报告自身的写入不再触发采集，避免周期性 HMR / 报告自激。
       if (performanceDiagnostics?.owns(options.file)) return [];
