@@ -60,10 +60,13 @@ it('refreshes unvisited routes, removes old references, rejects stale saves and 
   expect(save.status).toBe(404);
   await write(root, 'pages/added.ts', text('新增'));
   expect((await snapshot()).messages).toHaveLength(2);
+  // 单独验证扫描回滚，避免源码 HMR 先把待恢复状态更新成这份故意损坏的输入。
+  await vite.watcher.unwatch(path.join(root, 'pages/lazy.ts'));
   await write(root, 'pages/lazy.ts', 'export const broken = ;');
   await expect(ensureScan(vite, api)).rejects.toThrow();
   expect(api.state().snapshot().cache.messages['提交']).toBeDefined();
   await write(root, 'pages/lazy.ts', 'export {};');
+  vite.watcher.add(path.join(root, 'pages/lazy.ts'));
   await fs.rename(
     path.join(root, 'pages/added.ts'),
     path.join(root, 'pages/renamed.ts'),
@@ -152,7 +155,7 @@ it('rejects a scan changed in flight and a moved occurrence before watcher deliv
   vi.spyOn(vite.environments.client!, 'transformRequest').mockImplementation(
     async (...args) => {
       const result = await transform(...args);
-      if (api.scanning && !changed && args[0].endsWith('/main.ts')) {
+      if (api.scanning && !changed && args[0].split('?')[0] === '/main.ts') {
         changed = true;
         await write(root, 'main.ts', text('提交'));
       }
@@ -162,6 +165,10 @@ it('rejects a scan changed in flight and a moved occurrence before watcher deliv
   // 模拟预转换先于正式扫描发生，不能提前消费扫描中途修改的注入。
   await vite.environments.client!.transformRequest('/main.ts');
   expect(changed).toBe(false);
+  // 强制覆盖已收到 HMR 的情况：Vite 会给 HTML 入口附加 ?t= 时间戳。
+  vite.environments.client!.moduleGraph.getModuleById(
+    path.join(root, 'main.ts'),
+  )!.lastHMRTimestamp = Date.now();
   await expect(ensureScan(vite, api)).rejects.toThrow(
     'Source changed during scanning',
   );
