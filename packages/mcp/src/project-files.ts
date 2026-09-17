@@ -9,6 +9,8 @@ import {
 } from '@ai-i18n/core';
 import {
   openTranslationMemoryStore,
+  parseProtocolJson,
+  DuplicateJsonKeyError,
   readTranslationOverrides,
   type TranslationMemoryStore,
 } from '@ai-i18n/core/translation-memory';
@@ -64,8 +66,9 @@ export async function readJsonRequired(file: string): Promise<unknown> {
     throw error;
   }
   try {
-    return JSON.parse(content) as unknown;
-  } catch {
+    return parseProtocolJson(content, file).value;
+  } catch (error) {
+    if (error instanceof DuplicateJsonKeyError) throw error;
     fail('INVALID_PROTOCOL_JSON', { file: path.basename(file) });
   }
 }

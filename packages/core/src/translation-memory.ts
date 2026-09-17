@@ -17,3 +17,5 @@ export type {
   TranslationMemoryCandidateCacheAdapter,
   TranslationMemoryCandidateTarget,
 } from './translation-memory-store-types.js';
+
+export { parseProtocolJson, DuplicateJsonKeyError } from './protocol-json.js';

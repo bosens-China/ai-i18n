@@ -1,4 +1,8 @@
 import type { ExtractedFile } from '@ai-i18n/core';
+import {
+  parseProtocolJson,
+  DuplicateJsonKeyError,
+} from '@ai-i18n/core/translation-memory';
 import { diagnosticMessage } from '@ai-i18n/analyzer';
 import { writeFile } from 'atomically';
 import { listJsonFiles, readJson, readText, stableJson } from './json-files.js';
@@ -36,7 +40,9 @@ export async function writeProtocolJson(
 ): Promise<string | undefined> {
   const content = stableJson(value);
   try {
-    if ((await readText(file)) === content) return undefined;
+    const current = await readText(file);
+    if (current === content) return undefined;
+    if (current !== undefined) parseProtocolJson(current, file);
     await writeFile(file, content, {
       encoding: 'utf8',
       chown: false,
@@ -44,6 +50,7 @@ export async function writeProtocolJson(
     });
     return content;
   } catch (error) {
+    if (error instanceof DuplicateJsonKeyError) throw error;
     const message = error instanceof Error ? error.message : String(error);
     throw new Error(
       diagnosticMessage(

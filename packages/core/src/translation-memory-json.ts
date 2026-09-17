@@ -49,13 +49,19 @@ export class JsonTranslationMemoryStore {
     await fs.mkdir(this.translationsDirectory, { recursive: true });
     return withFileLock(this.translationsDirectory, async () => {
       await this.recover();
-      const current = await this.readCurrent();
+      let duplicates = false;
+      const current = await this.readCurrent(() => {
+        duplicates = true;
+      });
       const draft = structuredClone(current);
       await update(draft);
       draft.version = 1;
       draft.revision = current.revision;
       parseTranslationMemoryFile(draft);
-      if (stableJson(draft.messages) === stableJson(current.messages)) {
+      if (
+        !duplicates &&
+        stableJson(draft.messages) === stableJson(current.messages)
+      ) {
         return draft;
       }
       draft.revision = revisionFor(draft.messages);
@@ -87,10 +93,15 @@ export class JsonTranslationMemoryStore {
 
   close(): void {}
 
-  private async readCurrent(): Promise<TranslationMemoryFile> {
+  private async readCurrent(
+    onDuplicates?: () => void,
+  ): Promise<TranslationMemoryFile> {
     const messages: Record<string, CacheMessage> = Object.create(null);
     for (const file of await listAtomicJsonFiles(this.translationsDirectory)) {
-      const bucket = parseTranslationBucket(await readJson(file), file);
+      const bucket = parseTranslationBucket(
+        await readJson(file, onDuplicates),
+        file,
+      );
       const bucketName = path.basename(file, '.json');
       const expected = this.bucketPath(bucket.locale, bucketName);
       if (path.resolve(file) !== path.resolve(expected)) {

@@ -4,6 +4,7 @@ import { createRequire } from 'node:module';
 import os from 'node:os';
 import path from 'node:path';
 import { writeFile } from 'atomically';
+import { parseProtocolJson } from './protocol-json.js';
 
 const JOURNAL = '.transaction.json';
 const { waitForLock, unlock } = createRequire(import.meta.url)(
@@ -41,9 +42,18 @@ export async function withFileLock<T>(
   }
 }
 
-export async function readJson(file: string): Promise<unknown | undefined> {
+export async function readJson(
+  file: string,
+  onDuplicates?: () => void,
+): Promise<unknown | undefined> {
+  const document = await readJsonDocument(file);
+  if (document?.duplicateCount) onDuplicates?.();
+  return document?.value;
+}
+
+async function readJsonDocument(file: string) {
   try {
-    return JSON.parse(await fs.readFile(file, 'utf8')) as unknown;
+    return parseProtocolJson(await fs.readFile(file, 'utf8'), file);
   } catch (error) {
     if (hasCode(error, 'ENOENT')) return undefined;
     throw error;
@@ -73,10 +83,22 @@ export async function syncAtomicJsonFiles<T>(
 ): Promise<void> {
   await fs.mkdir(directory, { recursive: true });
   const existing = await listAtomicJsonFiles(directory);
+  // 先检查整组现存文件，日志恢复或删除旧分桶也不能覆盖尚未解决的重复键冲突。
+  const documents = new Map<
+    string,
+    Awaited<ReturnType<typeof readJsonDocument>>
+  >();
+  for (const file of new Set([...existing, ...desired.keys()])) {
+    documents.set(file, await readJsonDocument(file));
+  }
   for (const [file, entry] of desired) {
     const serialized = serialize(entry);
-    const current = await readJson(file);
-    if (current !== undefined && stableJson(current) === stableJson(entry)) {
+    const current = documents.get(file);
+    if (
+      current &&
+      !current.duplicateCount &&
+      stableJson(current.value) === stableJson(entry)
+    ) {
       continue;
     }
     await fs.mkdir(path.dirname(file), { recursive: true });

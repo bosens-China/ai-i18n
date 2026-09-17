@@ -47,11 +47,15 @@ export async function transactAtomicTranslationOverrides(
   await fs.mkdir(directory, { recursive: true });
   return withFileLock(directory, async () => {
     await recover(directory);
-    const current = await readCurrent(directory);
+    let duplicates = false;
+    const current = await readCurrent(directory, () => {
+      duplicates = true;
+    });
     const draft = structuredClone(current);
     await update(draft);
     const normalized = parseTranslationOverridesFile(draft);
-    if (stableJson(normalized) === stableJson(current)) return normalized;
+    if (!duplicates && stableJson(normalized) === stableJson(current))
+      return normalized;
     await writeFile(journalPath(directory), stableJson(normalized), {
       encoding: 'utf8',
       chown: false,
@@ -70,10 +74,14 @@ export async function translationOverrideFiles(
 
 async function readCurrent(
   directory: string,
+  onDuplicates?: () => void,
 ): Promise<TranslationOverridesFile> {
   const entries = new Map<string, AtomicOverride>();
   for (const file of await translationOverrideFiles(directory)) {
-    const bucket = parseOverrideBucket(await readJson(file), file);
+    const bucket = parseOverrideBucket(
+      await readJson(file, onDuplicates),
+      file,
+    );
     const bucketName = path.basename(file, '.json');
     const expected = bucketPath(directory, bucket.locale, bucketName);
     if (path.resolve(file) !== path.resolve(expected)) {

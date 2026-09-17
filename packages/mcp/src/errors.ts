@@ -1,3 +1,5 @@
+import { DuplicateJsonKeyError } from '@ai-i18n/core/translation-memory';
+
 export type McpErrorDetails = Record<string, unknown>;
 
 export class McpToolError extends Error {
@@ -15,6 +17,17 @@ export function fail(code: string, details: McpErrorDetails = {}): never {
 }
 
 export function errorPayload(error: unknown): McpErrorDetails {
+  if (error instanceof DuplicateJsonKeyError) {
+    return {
+      error_code: 'DUPLICATE_JSON_KEY',
+      file: error.file,
+      json_pointer: error.pointer,
+      first: error.first,
+      duplicate: error.duplicate,
+      next_action:
+        'Conflicting values share one JSON key. Ask the user which value to keep at the reported file and positions, resolve the duplicate, then retry. Do not choose by key order or run Build to overwrite it.',
+    };
+  }
   if (!(error instanceof McpToolError)) {
     return {
       error_code: 'UNEXPECTED_ERROR',
@@ -40,27 +53,27 @@ const ERROR_NEXT_ACTIONS: Record<string, string> = {
   I18N_DIRECTORY_NOT_ABSOLUTE:
     'Resolve the target Vite root and aiI18n.directory, then retry with the resulting absolute i18n_directory.',
   I18N_DIRECTORY_NOT_FOUND:
-    'Confirm the target Vite app, run one full Vite Build, then retry with its absolute i18n_directory.',
+    'Confirm the target Vite app, refresh extraction with the use-ai-i18n-mcp Skill entry scan or a full Vite Build, then retry with its absolute i18n_directory.',
   I18N_DIRECTORY_NOT_DIRECTORY:
     'Resolve i18n_directory to the ai-i18n directory instead of a file, then retry.',
   REQUIRED_PROTOCOL_FILE_MISSING:
-    'Run one full Vite Build for the target app, then retry the same MCP call once.',
+    'Refresh extraction with the use-ai-i18n-mcp Skill entry scan or a full Vite Build for the target app, then retry the same MCP call once.',
   REQUIRED_PROTOCOL_DIRECTORY_MISSING:
-    'Run one full Vite Build for the target app, then retry the same MCP call once.',
+    'Refresh extraction with the use-ai-i18n-mcp Skill entry scan or a full Vite Build for the target app, then retry the same MCP call once.',
   INVALID_PROTOCOL_JSON:
-    'Restore or repair the named JSON file, run one full Vite Build, then retry.',
+    'Restore or repair the named JSON file, refresh extraction with the use-ai-i18n-mcp Skill entry scan or a full Vite Build, then retry.',
   INVALID_PROTOCOL_FILE:
-    'Restore or repair the named protocol file, run one full Vite Build, then retry.',
+    'Restore or repair the named protocol file, refresh extraction with the use-ai-i18n-mcp Skill entry scan or a full Vite Build, then retry.',
   PROTOCOL_PATH_NOT_DIRECTORY:
-    'Restore the named protocol path as a directory, run one full Vite Build, then retry.',
+    'Restore the named protocol path as a directory, refresh extraction with the use-ai-i18n-mcp Skill entry scan or a full Vite Build, then retry.',
   DUPLICATE_EXTRACTED_SOURCE:
-    'Run one full Vite Build for the target app to migrate legacy extracted filenames, then retry. If it persists, report conflicting_files.',
+    'Refresh extraction with the use-ai-i18n-mcp Skill entry scan or a full Vite Build for the target app to migrate legacy extracted filenames, then retry. If it persists, report conflicting_files.',
   MESSAGE_ID_SOURCE_CONFLICT:
-    'Run one full Vite Build with a clean extracted directory, then retry. Report the conflicting sources if it persists.',
+    'Refresh extraction with the use-ai-i18n-mcp Skill entry scan or a full Vite Build with a clean extracted directory, then retry. Report the conflicting sources if it persists.',
   MESSAGE_MISSING_FROM_TRANSLATIONS:
-    'Run one full Vite Build for the target app, then list translations again.',
+    'Refresh extraction with the use-ai-i18n-mcp Skill entry scan or a full Vite Build for the target app, then list translations again.',
   MESSAGE_METADATA_MISMATCH:
-    'Run one full Vite Build for the target app, then list translations again.',
+    'Refresh extraction with the use-ai-i18n-mcp Skill entry scan or a full Vite Build for the target app, then list translations again.',
   SOURCE_FILE_NOT_FOUND:
     'Call ai_i18n_list_translations with view summary and without source_files, then copy an exact returned source_file before retrying.',
   MESSAGE_NOT_FOUND:

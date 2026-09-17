@@ -1,7 +1,11 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { diagnosticMessage } from '@ai-i18n/analyzer';
-import { stableJson } from '@ai-i18n/core/translation-memory';
+import {
+  stableJson,
+  parseProtocolJson,
+  DuplicateJsonKeyError,
+} from '@ai-i18n/core/translation-memory';
 
 export { stableJson };
 
@@ -9,8 +13,9 @@ export async function readJson(file: string): Promise<unknown | undefined> {
   const content = await readText(file);
   if (content === undefined) return undefined;
   try {
-    return JSON.parse(content) as unknown;
-  } catch {
+    return parseProtocolJson(content, file).value;
+  } catch (error) {
+    if (error instanceof DuplicateJsonKeyError) throw error;
     throw new Error(
       diagnosticMessage(
         `[ai-i18n] JSON 文件“${file}”无效。`,
