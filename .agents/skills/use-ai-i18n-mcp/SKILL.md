@@ -14,7 +14,7 @@ For product behavior, generated-file guidance, or integration troubleshooting, r
 `https://bosens-china.github.io/ai-i18n/llms.txt` and then the one relevant page. Do not load
 `llms-full.txt` by default or duplicate that guidance in this Skill.
 
-For Agent registration, MCP setup, plugin installation, and prompt templates, read
+For Agent registration, MCP setup, Codex-only plugin installation, and prompt templates, read
 [registration](references/registration.md).
 
 For MCP calls, read [Tool contracts](references/tool-contracts.md) before the first call. It is the

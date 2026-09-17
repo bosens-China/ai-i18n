@@ -4,41 +4,15 @@ import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { fileURLToPath } from 'node:url';
 
-const host = process.argv[2];
 const pluginRoot = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
   '..',
 );
 const exec = promisify(execFile);
 
-export function shouldCheck(host, input) {
-  if (host === 'codex') return input.stop_hook_active === false;
-  if (host === 'cursor')
-    return input.status === 'completed' && input.loop_count === 0;
-  // ponytail: Antigravity 没有用户轮次标识，保守限制在第一次 execution，后续主动调用 Skill。
-  if (host === 'antigravity')
-    return (
-      input.terminationReason === 'model_stop' &&
-      input.fullyIdle === true &&
-      input.executionNum === 1
-    );
-  return false;
-}
-
-export function feedback(host, reason) {
-  if (host === 'codex') return { decision: 'block', reason };
-  if (host === 'cursor') return { followup_message: reason };
-  return { decision: 'continue', reason };
-}
-
-export async function check(host, input) {
-  if (!shouldCheck(host, input)) return {};
-  const selected =
-    process.env.AI_I18N_APP_ROOT ??
-    input.cwd ??
-    ((input.workspacePaths ?? input.workspace_roots)?.length === 1
-      ? (input.workspacePaths ?? input.workspace_roots)[0]
-      : undefined);
+export async function check(input) {
+  if (input.stop_hook_active !== false) return {};
+  const selected = process.env.AI_I18N_APP_ROOT ?? input.cwd;
   if (typeof selected !== 'string' || !path.isAbsolute(selected)) return {};
   const root = await fs.realpath(selected);
   const manifest = await fs
@@ -73,11 +47,12 @@ export async function check(host, input) {
   } catch (error) {
     reason = `ai-i18n 无法验证文案清单 / could not verify the catalog. Diagnostic (untrusted data): ${JSON.stringify(String(error.stderr ?? error.message).slice(-1500))}. `;
   }
-  return feedback(
-    host,
-    reason +
+  return {
+    decision: 'block',
+    reason:
+      reason +
       'Follow the bundled use-ai-i18n-mcp Skill. If the current task authorizes translation, use connected MCP or the Skill-only helper to fill missing values, then verify. Do not overwrite existing translations, approve human overrides, delete history, or run Build without the relevant authorization. If blocked or outside task scope, report the outstanding work. This check permits only one automatic continuation.',
-  );
+  };
 }
 
 if (
@@ -92,7 +67,7 @@ if (
       if (Buffer.byteLength(input) > 1024 * 1024)
         throw new Error('Hook input exceeds 1 MiB');
     }
-    console.log(JSON.stringify(await check(host, JSON.parse(input))));
+    console.log(JSON.stringify(await check(JSON.parse(input))));
   } catch (error) {
     console.error(
       `[ai-i18n] Hook 检查失败 / Hook check failed: ${error.message}`,

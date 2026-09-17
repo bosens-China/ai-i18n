@@ -67,6 +67,6 @@ console.log(t`你好，${user.name}！`);
 See the [documentation](https://bosens-china.github.io/ai-i18n/) for framework setup,
 translation providers, MCP integration, and API references.
 
-Agent plugin bundles for Codex, Cursor, and Antigravity share the integration/translation Skills,
-MCP configuration, and bounded end checks. See [plugin setup and updates](plugins/ai-i18n/README.md).
-Build local bundles with `pnpm plugins:build`.
+The Agent plugin supports **Codex only**, bundling integration/translation Skills, MCP configuration,
+and bounded end checks. Cursor, Claude Code, and Antigravity can use standalone Skills and MCP;
+the plugin does not support those hosts. See [plugin setup and updates](plugins/ai-i18n/README.md).

@@ -3,15 +3,16 @@ title: AI Agent 接入
 description: 使用 AI 编码工具补齐和校对译文
 ---
 
-ai-i18n 为 Cursor、Codex、Claude Code 和 Antigravity 提供 Agent Skills 与 MCP 服务器。
+ai-i18n 为 Cursor、Codex、Claude Code 和 Antigravity 提供 Agent Skill 与 MCP 服务器。
 AI 编码工具可在明确指令下扫描、补齐和校对译文，无需先运行完整构建。
+**Agent 插件仅支持 Codex，不支持 Cursor、Claude Code 或 Antigravity**；其他工具使用独立 Skill 与 MCP。
 
 如果你希望在开发或构建期间自动补齐缺失译文，请改用 [AI 翻译](/guide/ai/ai-translation)
 配置 OpenAI-compatible Provider。
 
 ## 适用场景
 
-Agent 模式适合以下团队：
+Agent 模式适合以下场景：
 
 - 批量补齐缺失译文；
 - 在代码审查或迭代时按需校对；
@@ -19,7 +20,8 @@ Agent 模式适合以下团队：
 
 ## 使用方式
 
-在目标 Vite 应用完成 ai-i18n 接入后，安装 ai-i18n 提供的 Agent Skills：
+在目标 Vite 应用完成 ai-i18n 接入后，Codex 用户可[安装插件](#安装-codex-插件)，
+一次加载以下 Skill、MCP 和任务结束检查；其他工具单独安装 Skill：
 
 - `integrate-ai-i18n`：检查接入、配置和生成文件。
 - `use-ai-i18n-mcp`：扫描文案、补译和人工校对。
@@ -30,6 +32,38 @@ Agent 模式适合以下团队：
 > 不要覆盖已有译文；需要人工确认时，请先列出建议措辞。
 
 Agent 会区分自动译文与人工校对结果，并在修改前列出建议措辞。
+
+## 安装 Codex 插件
+
+使用支持插件命令的 Codex CLI，在终端执行：
+
+```sh
+codex plugin marketplace add bosens-China/ai-i18n --ref plugin-marketplace
+codex plugin add ai-i18n@ai-i18n
+```
+
+这会从仓库的插件市场分支安装完整插件，无需克隆源码或运行打包命令。
+按 Codex 提示启用插件并信任任务结束检查，然后开始新任务，确认两份 Skill 与 MCP 可用。
+若以前单独安装过相同 Skill 或注册过同名 MCP，请保留一份有效配置，避免重复加载。
+插件不会升级业务应用里的 npm 依赖。
+
+在 Monorepo 中，请从目标应用目录启动 Codex；如果需要从仓库根目录启动，先设置
+`AI_I18N_APP_ROOT` 为目标应用的绝对路径。需要非默认 Vite 配置或运行模式时，可同时设置
+`AI_I18N_CONFIG`、`AI_I18N_MODE`。插件不会自动选择子应用。
+
+任务正常结束时，插件检查当前应用的缺译，并最多让 Agent 自动继续一次。
+Agent 只按当前任务授权补译；检查失败会报告，不会被当成零缺译。
+未启用结束检查时，仍可主动要求 Agent 使用 Skill 扫描和补译。
+
+### 更新插件
+
+```sh
+codex plugin marketplace upgrade ai-i18n
+codex plugin add ai-i18n@ai-i18n
+```
+
+更新后开始新任务；如 Codex 提示结束检查有变化，重新确认信任。
+Skill 和脚本随插件更新，业务应用的 npm 依赖需要单独管理。
 
 ## 与 AI 翻译 Provider 的区别
 
@@ -43,7 +77,7 @@ Agent 会区分自动译文与人工校对结果，并在修改前列出建议�
 
 ## Agent 用户详细配置
 
-如果你本身就是 Agent 用户，请注册 MCP 服务器或安装本地插件。
+如果你本身就是 Agent 用户，可注册 MCP 服务器，或按上文安装 Codex 插件。
 具体步骤见 ai-i18n 提供的 Agent Skill 文档。业务应用代码中不需要包含这些配置。
 
 生成文件与提交规则见 [生成文件与 Git](/guide/basic/directory)，

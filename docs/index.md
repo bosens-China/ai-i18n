@@ -21,7 +21,7 @@
 - [发布与 CI](./release.md)
 - [Agent 插件与清单新鲜度](./prd/agent-plugin.md)
 
-## 进行中需求
+## 进行中的需求
 
 暂无。
 

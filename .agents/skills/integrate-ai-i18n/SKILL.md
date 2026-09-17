@@ -123,7 +123,7 @@ optional features only when requested or already configured.
 Report the selected app, changes made, commands run, remaining unsupported scope, and any decisions
 that still need user input.
 
-When distributing this integration through an Agent plugin, use its bundled Skills in place; do not
+When distributing this integration through the Codex-only Agent plugin, use its bundled Skills in place; do not
 copy them into the app or silently upgrade npm dependencies with the plugin. End-check handling and
 target selection are owned by use-ai-i18n-mcp. Check installed internal scan/helper capabilities;
 report a version mismatch rather than patching node_modules.

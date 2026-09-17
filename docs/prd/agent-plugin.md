@@ -2,15 +2,19 @@
 
 ## 当前决策
 
-- Agent 插件携带两份既有 Skills、扫描/helper 脚本与 MCP 配置；平台声明保持薄层，
-  源码权威仍是 `.agents/skills`，不复制 Skill 到消费仓库。应用 npm 依赖与插件分别更新。
-- 当前支持构建 Codex、Cursor、Antigravity 三种目录产物；构建命令为 `pnpm plugins:build`。
-  宿主实际加载、Hook 信任与启用遵循宿主要求，不把结构校验等同于宿主安装实测。
+- Agent 插件携带两份既有 Skill、扫描与辅助脚本，以及 MCP 配置。平台配置只负责声明插件组件。
+  Skill 源码统一维护在 `.agents/skills` 中，不复制到应用仓库。应用 npm 依赖与插件分别更新。
+- 插件仅支持 Codex；Cursor、Claude Code、Antigravity 继续使用独立 Skill 与 MCP，不构建其他宿主插件。
+- `pnpm plugins:build` 只生成 `dist/codex-marketplace/`，市场清单位于
+  `.agents/plugins/marketplace.json`，完整插件位于 `plugins/ai-i18n/`。
+  `main` 保留源码；CI 将快照发布至 `plugin-marketplace`，用户从该分支安装，无需克隆源码构建。
+- Skill 与插件脚本变更会触发市场发布。发布前，先核实插件指定的 MCP 版本已在 npm 发布。
+  MCP 在 npm 发布成功后，工作流会更新市场。
+  工作流与手动重跑入口见 [发布与 CI](../release.md)。应用依赖不随插件升级。
 - 正常结束检查只针对明确的目标应用，缺译或检查失败反馈给当前 Agent 一次，按当前任务授权补译。
   不独立调用模型、覆盖已有译文、确认人工结果或删除历史；不处理中止后的自动继续。
-- Codex 使用 stop_hook_active，Cursor 使用 loop_count 和 loop_limit 限制继续；Antigravity
-  缺少文档化用户轮次标识，保守只检查第一次正常、完全空闲的 execution，后续主动使用 Skill。
-  Antigravity Hook 在安装目录生成绝对路径，不假定未文档化的插件根变量。
+- Codex 仅在 `stop_hook_active: false` 时检查，自动继续后不再阻塞。宿主加载、Hook 信任与启用遵循
+  宿主要求，不把结构校验等同于宿主安装实测。
 
 ## 扫描复用与 Dev 协调
 
@@ -40,7 +44,7 @@
 
 ## 权威入口
 
-- [应用开发者的插件安装与更新](../../apps/docs/docs/guide/advanced/ai-tools.mdx#通过-agent-插件使用)
+- [Agent 插件安装与更新](../../.agents/skills/use-ai-i18n-mcp/references/registration.md)
 - [插件产物与宿主安装边界](../../plugins/ai-i18n/README.md)
 - [应用开发者的校对流程](../../apps/docs/docs/guide/basic/translation-review.md)
 - [Agent 扫描契约](../../.agents/skills/use-ai-i18n-mcp/references/scanning.md)

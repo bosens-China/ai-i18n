@@ -1,0 +1,39 @@
+name: Codex plugin marketplace
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.agents/skills/integrate-ai-i18n/**'
+      - '.agents/skills/use-ai-i18n-mcp/**'
+      - 'plugins/ai-i18n/**'
+      - 'scripts/build-agent-plugins.mjs'
+      - 'scripts/publish-codex-marketplace.sh'
+      - '.github/workflows/plugin-marketplace.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: plugin-marketplace
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec vitest run scripts/test/agent-plugins.test.ts
+      - run: pnpm plugins:build
+      - run: bash scripts/publish-codex-marketplace.sh
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

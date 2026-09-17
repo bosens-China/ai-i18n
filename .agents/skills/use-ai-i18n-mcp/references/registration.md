@@ -1,19 +1,19 @@
 # ai-i18n Agent 注册与插件安装
 
-本参考面向直接使用 Cursor、Codex、Claude Code 或 Antigravity 的开发者。应用开发者不需要
-在业务代码中配置以下内容；普通 AI 翻译接入请阅读产品文档的 **AI 翻译**页面。
+本参考供 Agent 执行 Skill 安装、MCP 注册与 Codex 插件安装。先识别用户宿主和已授权范围，
+保留已有配置；普通 AI 翻译 Provider 接入转交 `integrate-ai-i18n`。
 
 ---
 
 开始前，请先在目标 Vite 应用中完成 ai-i18n 接入。Skill 可以从应用入口扫描文案，
 覆盖尚未访问的懒加载页面，无需为了补译先运行一次完整 `vite build`。
 
-你可以选择[安装 Agent 插件](#通过-agent-插件使用)，一次加载 Skills、MCP 和任务结束检查；
-也可以按下文单独安装 Skills，再按需注册 MCP。插件已携带这两份 Skills，无需重复安装。
+使用 Codex 时，可以选择[安装 Agent 插件](#通过-agent-插件使用)，一次加载 Skill、MCP 和任务结束检查；
+也可以按下文单独安装 Skill，再按需注册 MCP。插件已携带这两份 Skill，无需重复安装。
 
-## 安装 Skills
+## 安装 Skill
 
-推荐在项目根目录安装 ai-i18n 提供的 Skills：
+推荐在项目根目录安装 ai-i18n 提供的 Skill：
 
 ```sh
 npx skills add bosens-China/ai-i18n --skill use-ai-i18n-mcp integrate-ai-i18n -y
@@ -24,7 +24,7 @@ npx skills add bosens-China/ai-i18n --skill use-ai-i18n-mcp integrate-ai-i18n -y
 - “使用 `integrate-ai-i18n` 检查这个 Vite 应用的接入。”
 - “使用 `use-ai-i18n-mcp` 补齐缺失的英文翻译，不要覆盖已有译文。”
 
-Skills 会引导 Agent 选择正确的 Vite 应用，并区分自动译文与人工校对结果。
+Skill 会引导 Agent 选择正确的 Vite 应用，并区分自动译文与人工校对结果。
 
 ## 只使用 Skill
 
@@ -129,130 +129,38 @@ Cursor 和 Antigravity 对自定义本地 STDIO 服务器均使用配置文件�
 
 ## 通过 Agent 插件使用
 
-仓库提供 Codex、Cursor 和 Antigravity 插件打包，携带相同的接入 Skill、补译 Skill 和 MCP 配置。
-全局安装后仍只检查当前应用；monorepo 中应先明确目标应用，不会自动遍历所有子项目。
+插件仅支持 Codex，不支持 Cursor、Claude Code 或 Antigravity。其他宿主使用上面的独立 Skill / MCP 流程，
+不要为它们生成插件目录或承诺自动结束检查。
 
-结束检查发现缺译时，会把结果交回当前 Agent 一次，由它按任务授权补译并验证；扫描失败也会报告，
-不会把失败当成已全部翻译。Hook 不直接调用模型，不无限重试，也不自动改写人工校对结果。
-宿主未启用 Hook 时仍可主动使用 Skill。Antigravity 当前适配只在会话的首次正常执行结束时自动检查，
-后续任务需主动要求 Agent 使用 Skill 检查缺译。
+### 安装与验证
 
-### 获取插件
+1. 确认用户要求安装插件，目标为 Codex，且 CLI 提供 `plugin` 命令。
+2. 从已发布的市场分支安装，不克隆 `main`、不要求用户构建源码、不用 Release zip：
 
-当前提供本地打包安装，尚未提供 ai-i18n 插件市场的一键安装入口。
-在 ai-i18n 源码仓库运行以下命令；这是打包插件，不会构建你的业务应用：
+   ```sh
+   codex plugin marketplace add bosens-China/ai-i18n --ref plugin-marketplace
+   codex plugin add ai-i18n@ai-i18n
+   codex plugin list
+   ```
 
-```sh
-pnpm plugins:build
-```
+3. 按宿主提示启用并信任 Hook，开始新任务，确认 `integrate-ai-i18n`、`use-ai-i18n-mcp` 和 MCP 可用。
+   检查同名 MCP 和独立 Skill 的重复副本；保留有效配置，不擅自删除用户配置。
+4. 核对应用安装的 `@ai-i18n/vite/internal/scan`；仅使用 Skill 补译时，还需要
+   `@ai-i18n/mcp/internal/agent`。缺少能力时报告版本不匹配，不修改 `node_modules` 或静默升级依赖。
+5. 目标应用选择、自动继续上限及写入授权按 SKILL.md 直接链接的 `plugin-hooks.md` 执行。
+   安装成功不代表扫描或补译已成功；显式扫描后复查剩余缺译。
 
-如果还没有源码，请先获取 [ai-i18n 仓库](https://github.com/bosens-China/ai-i18n)，
-切换到包含插件功能的版本，再运行上述命令。三个平台分别使用以下产物，安装时需要复制完整目录，
-包括以点开头的配置文件；不要直接安装源码中的 `plugins/ai-i18n` 目录。
+市场不可用或 CLI 不支持插件命令时，报告具体失败，可使用独立 Skill / MCP，
+不要把源码目录或 zip 当成等价安装方式。结构测试不能替代宿主实际安装验证。
 
-| 平台            | 打包后的目录                             |
-| --------------- | ---------------------------------------- |
-| Codex           | `dist/agent-plugins/codex/ai-i18n`       |
-| Cursor          | `dist/agent-plugins/cursor/ai-i18n`      |
-| Antigravity 2.0 | `dist/agent-plugins/antigravity/ai-i18n` |
-
-目标应用需要安装包含入口扫描能力的 ai-i18n 版本。若这项能力尚未发布，请使用本仓库构建的对应包；
-仅安装插件不能让旧版本应用获得扫描能力。以下终端示例适用于 macOS / Linux，均从源码仓库根目录执行。
-
-### 安装到 Codex
-
-先复制到个人插件目录：
+### 更新
 
 ```sh
-mkdir -p ~/.codex/plugins/ai-i18n ~/.agents/plugins
-cp -R dist/agent-plugins/codex/ai-i18n/. ~/.codex/plugins/ai-i18n/
+codex plugin marketplace upgrade ai-i18n
+codex plugin add ai-i18n@ai-i18n
 ```
 
-创建 `~/.agents/plugins/marketplace.json`，内容如下。如果该文件已经存在，保留原有 `name` 和其他
-插件，只把下面的 ai-i18n 条目加入 `plugins` 数组，不要覆盖整份文件。
+刷新市场后更新安装副本，必要时重新信任 Hook，并开始新任务验证。
+Skill 与脚本随插件更新；应用 npm 依赖独立管理，不随着插件静默升级。
 
-```json
-{
-  "name": "ai-i18n-local",
-  "plugins": [
-    {
-      "name": "ai-i18n",
-      "source": {
-        "source": "local",
-        "path": "./.codex/plugins/ai-i18n"
-      },
-      "policy": {
-        "installation": "AVAILABLE",
-        "authentication": "ON_INSTALL"
-      },
-      "category": "Productivity"
-    }
-  ]
-}
-```
-
-使用支持插件命令的 Codex CLI 安装：
-
-```sh
-codex plugin add ai-i18n@ai-i18n-local
-codex plugin list
-```
-
-若沿用已有目录配置，把命令中的 `ai-i18n-local` 换成文件实际的 `name`。
-个人目录会被自动发现，无需额外执行 `marketplace add`。按宿主提示启用并信任 Hook，然后开始新任务。
-本地目录的配置方式见 [Codex 官方插件文档](https://developers.openai.com/plugins/build/plugins#install-a-local-plugin-manually)。
-
-### 安装到 Cursor
-
-复制到 Cursor 的本地插件目录：
-
-```sh
-mkdir -p ~/.cursor/plugins/local/ai-i18n
-cp -R dist/agent-plugins/cursor/ai-i18n/. ~/.cursor/plugins/local/ai-i18n/
-```
-
-重启 Cursor，或执行 **Developer: Reload Window**，在 **Customize** 中检查 Skills 和 MCP。
-团队策略需要允许本地插件导入；如果安装了同名市场插件，它会优先于本地副本。
-加载规则见 [Cursor 官方插件文档](https://cursor.com/docs/plugins#test-plugins-locally)。
-
-### 安装到 Antigravity
-
-以下示例全局安装到 Antigravity 2.0：
-
-```sh
-mkdir -p ~/.gemini/config/plugins/ai-i18n
-cp -R dist/agent-plugins/antigravity/ai-i18n/. ~/.gemini/config/plugins/ai-i18n/
-node ~/.gemini/config/plugins/ai-i18n/scripts/configure-antigravity.mjs
-```
-
-也可以把完整目录放入目标应用的 `.agents/plugins/ai-i18n`，仅供该工作区使用；
-随后在这个最终安装位置执行 `node .agents/plugins/ai-i18n/scripts/configure-antigravity.mjs`。
-配置脚本会生成 Hook 所需的本机路径，移动插件或更换 Node 安装路径后需要重新运行。
-目录规则见 [Antigravity 官方插件文档](https://www.antigravity.google/docs/plugins#2-manually-adding-plugins)。
-
-### 确认启用与选择应用
-
-安装后开启新任务，确认宿主能看到 `integrate-ai-i18n`、`use-ai-i18n-mcp`，并且 MCP 连接成功。
-若以前手动注册过同名 MCP，请保留一份有效连接。可先使用本页的补译提示词验证，再检查任务结束后的反馈。
-需要自动结束检查时，还需在宿主中启用 Hook，并确保宿主进程能够执行 `node` 和 `npx`。
-
-对于 Monorepo，提示词应明确目标应用；自动结束检查还需要从该应用目录启动宿主，
-或者在启动宿主前设置 `AI_I18N_APP_ROOT` 为应用绝对路径。需要指定 Vite 配置或 mode 时，
-同时设置 `AI_I18N_CONFIG`、`AI_I18N_MODE`。目录不明确时检查会跳过，不会猜选子应用。
-
-当前已验证打包结构和脚本，尚未完成三个宿主的实际安装验证。宿主未加载插件或不支持 Hook 时，
-仍可使用本页的独立 Skills / MCP 方式；不要把没有结束提示当成已经全部翻译。
-
-### 更新插件和 Skills
-
-本地安装不会随着仓库变化自动更新。获取新版源码后重新运行 `pnpm plugins:build`，
-用对应平台的新产物替换原插件目录；保留自己的应用选择设置，不要把新目录嵌套进旧目录。
-
-- **Codex**：更新目录后再次运行 `codex plugin add ai-i18n@实际marketplace名称`，重新加载宿主并开始新任务。
-  如 Hook 有变更，按宿主提示重新信任。若同版本本地修改未刷新，在安装副本的
-  `.codex-plugin/plugin.json` 中将 `version` 的 `+` 后缀替换为新的 `codex.local-时间戳`，再安装。
-- **Cursor**：替换目录后执行 **Developer: Reload Window**，确认加载的是本地副本。
-- **Antigravity**：替换目录后重新运行 `configure-antigravity.mjs`，重新加载宿主并开启新会话。
-
-Skills 和脚本随插件一起更新；原先独立安装的 Skills 不会被插件更新，切换方式时应移除或停用重复副本。
-应用中的 npm 依赖单独管理。若插件提示应用版本缺少扫描能力，更新兼容的应用依赖后再执行。
+官方格式与安装边界见 [Codex 插件文档](https://developers.openai.com/plugins/build/plugins)。

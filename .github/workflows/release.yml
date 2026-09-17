@@ -186,3 +186,26 @@ jobs:
             dist_tag=$([[ "$version" == *-* ]] && printf '%s' "${version#*-}" | cut -d. -f1 || printf 'latest')
             npm publish "$tarball" --access public --tag "$dist_tag"
           done < "$RUNNER_TEMP/npm-pack/publish-order.txt"
+
+  plugin-marketplace:
+    needs: [publish]
+    if: success()
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    concurrency:
+      group: plugin-marketplace
+      cancel-in-progress: false
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm plugins:build
+      - run: bash scripts/publish-codex-marketplace.sh
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
