@@ -56,8 +56,9 @@ It sets the selected fields to `null` without removing messages, locales, or hum
 Use orphan tools only when the user explicitly requests an orphan audit or cleanup. They are not part
 of ordinary translation, human review, or completion verification.
 
-1. Run one full Vite Build for the selected app. Dev extraction is incomplete until every module is
-   requested and is not safe evidence for deletion.
+1. Run one full Vite Build for the selected app. Browser-driven Dev extraction is incomplete, and
+   the Skill scan uses the Dev graph rather than Build-only conditions; neither replaces this
+   production graph check before deletion.
 2. Call `ai_i18n_list_orphan_messages`, follow every page in the requested scope, and show the user the
    messages and retained translations.
 3. After the user explicitly approves deletion, copy the returned opaque `orphan_id` values into
@@ -118,6 +119,10 @@ To remove a human value, list it first and pass the returned opaque `override_id
 - A missing local SQLite database does not change MCP results because every accepted cache candidate
   must already have been copied into project JSON by Vite.
 - Human review tools modify only project `overrides/` buckets through the project store.
+- Identical duplicate JSON keys are cleaned during the next normal transaction, even with no business
+  changes. Cleanup is not a changed-translation count. Lists do not write merely to deduplicate;
+  preexisting journal recovery is unchanged. Conflicting values return `DUPLICATE_JSON_KEY`;
+  use the error recovery reference linked from `SKILL.md` for the approved repair boundary.
 - MCP does not modify `extracted/` or `locales/`.
 - `MESSAGE_NOT_FOUND` may include up to five exact public message candidates. Treat them as read-only
   navigation help; choose and copy a complete candidate only when it matches the intended source and

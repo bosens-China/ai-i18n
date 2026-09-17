@@ -150,3 +150,7 @@ diagnostics: {
 
 原有 `diagnostics.timing` 仍是独立的 Dev 慢阶段日志，默认阈值 50ms，保留文件同步的诊断能力；
 `performance` 的启动/转换采集不受该阈值过滤。排障结束后移除配置或恢复普通启动命令即可。
+
+Build 的性能摘要在构建收尾时与默认文案统计合并输出，期间的诊断快照仍会落盘。
+Build Watch 每轮输出一次覆盖率；性能阶段统计累计当前会话。
+`diagnostics.buildSummary: false` 只关闭文案统计，不影响已启用的性能采集。

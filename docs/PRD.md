@@ -30,7 +30,7 @@
 - 基础 Vite 包保持框架中立。Vue 与 React 适配器按最终框架模式按需启用，不把框架运行时带入 Vanilla 项目。
 - 浏览器源码提取仅支持 ESM。Vanilla 支持 `.js`、`.mjs`、`.ts`、`.mts`；Vue 与 React 额外支持 `.jsx`、`.tsx`，Vue 额外支持 `.vue`。`.cjs`、`.cts`、`require()` 与 `module.exports` 不在支持范围内；Vite 对配置文件和 CommonJS 依赖的兼容不会扩大插件的源码提取范围。
 - 每个 Vite build 处理其入口可达的本地源码，包括 Vite root 外由 Vite 解析的 workspace 源码；协议中的 source 始终是相对当前 Vite root 的 POSIX 路径，不保存机器绝对路径。`node_modules` 中的预构建依赖不属于该范围。
-- `extracted/` 物理文件名固定为标准化 source 的 SHA-256；JSON 内的 source 是查找权威，文件监听与 MCP 不从 hash 反推路径。完整 Build 以全量 snapshot 清理旧版本遗留的非规范物理文件并重新生成当前格式，Dev 增量流程不据此扩大删除范围。
+- `extracted/` 物理文件名固定为标准化 source 的 SHA-256；JSON 内的 source 是查找权威，文件监听与 MCP 不从 hash 反推路径。完整 Build 与成功入口扫描以全量 snapshot 清理旧版本遗留的非规范物理文件并重新生成当前格式，Dev 增量流程不据此扩大删除范围。
 - Vue SFC 可以在 `<script>`、`<script setup>`、Options API 的 `computed` / `methods` 与 HTML template 中直接调用 `t()`；Pug 等预处理 template 暂不分析。开启自动导入时，Vite 分别向 script 词法作用域和 template 可见的 setup 作用域注入真实 binding，并生成独立的 Vue template 类型桥；纯 Options template 不需要 `methods: { t }`。关闭自动导入时，`<script setup>` 的显式 import 可直接供 template 使用，纯 Options template 仍通过 `methods: { t }` 暴露显式导入。组件已有同名 binding 继续优先，改名导入映射同样支持；`this.t`、`this.$t`、mixin 与 `globalProperties` 不属于 ai-i18n 支持的静态提取写法。
 - 服务端渲染不在支持范围内。浏览器 Runtime 使用应用级状态，服务端共享会造成跨请求状态污染。
 - 解析器采用 Yuku。它已经通过正确性、性能和跨平台准入；不把解析器选择暴露为公共配置，避免形成无收益的兼容面。
@@ -105,6 +105,11 @@
   消费方按需把它序列化为整理好的 JSON，但不把聚合结果持久化为第二份项目事实。
 - 分片身份和路径由内容确定，内存 revision 也由当前内容稳定派生，不依赖集中计数器。
   单次事务先写完整 journal，再原子提交变化分片；进程中断后由 journal 恢复。
+- 协议 JSON 读取检查同一对象内的重复键，含嵌套与转义等价键。相同值允许读取，由下次正常
+  写入清理，存储事务即使无业务变化也不能跳过去重；查询不为去重写盘，原有 journal 恢复不变。
+  值冲突时保留文件并拒绝当前操作，报告路径、JSON Pointer 与两处行列，不自动选择值。
+  Vite、Review、MCP 与 Provider 复用 Core 校验和事务；提交或恢复前预检现有分片，避免覆盖冲突。
+  不新增清理配置或命令，不要求完整 Build；不去重数组、跨文件文案或不同 comment/覆盖范围。
 - 自动译文分桶固定以 `version`、`locale`、`entries` 写入顶层字段；条目固定以 `id`、`source`、
   `sourceLang`、可选 `comment`、`value` 写入，动态哈希键按固定码元排序。协议字段不使用字典序重排，
   避免一次 MCP、Provider 或 Vite 写入产生无关 Git diff。
@@ -145,7 +150,7 @@
   scoped 兼容路径。Build 与 Build Watch 继续使用原有静态注册链路，虚拟 scope/registration 模块必须
   合并进业务 chunk，不能成为独立 facade 或逐源码浏览器请求。MCP、Provider 和校对写入后，由 Dev
   独立观察 i18n 目录与 Translation Memory
-  文件并通过 HMR 更新已激活模块；完整 Build 仍是 MCP 首次使用和 orphan 审计的全量依据。
+  文件并通过 HMR 更新已激活模块；普通 MCP 补译可用 Skill 入口扫描刷新清单；orphan 审计仍以完整 Build 为依据。
 - Dev 译文更新在公共通知链路失效受影响的业务模块或按需语言模块转换缓存；热更新与后续页面
   请求必须读取一致的新值，不通过强制整页刷新修复缓存。该规则同时适用于 Provider、MCP 与人工校对。
 - 未配置 Provider 的 Dev 缺失统计只读当前已发现模块，按消息与目标语言去重；任一已发现出现位置
@@ -168,6 +173,11 @@
   Build `load()` 等待，可能覆盖子模块的嵌套转换。Dev 必须在 importer 首次返回前完成依赖分析并刷新
   当前注册，避免合法跨文件静态值只更新内存状态却留下缓存的错误产物。不能把整段耗时视为插件自身的
   解析 CPU；只有多个真实大型项目证明它稳定处于用户可见关键路径，且能与子模块加载分离归因时才重新评估。
+- Build 默认输出本轮收集的去重文案数、含文案文件数和各目标语言的有效已译/缺译数，
+  可用 `diagnostics.buildSummary: false` 关闭。有效覆盖包含人工覆盖，同一消息全部出现位置
+  均有有效译文才算已译；源语言不计入目标统计。汇总不触发翻译或改变缺译失败策略。
+- Build 文案汇总与显式启用的性能摘要合并输出；Watch 每轮刷新覆盖率，性能统计累计当前会话。
+  Provider 与持久化仍沿用原生命周期，关闭文案汇总不关闭性能采集，阶段耗时不能相加作为总耗时。
 - `diagnostics.performance` 是独立于 Dev 慢日志、默认关闭的 Dev / Build 性能报告。开启后采集配置、
   初始化读取与内存恢复、HTML/源码转换、状态队列等待/执行及 Provider 批次；不单独统计写入和持久化
   排队，但上层经过时间仍包含必要 I/O 等待。报告维护父子关系、状态与工作量，分析缓存命中不代表整个转换跳过。
@@ -219,10 +229,10 @@
 - 校对 UI 不依赖在线或未随包提供的 Web Font；外层入口壳与内层工作台统一使用操作系统无衬线字体，
   并显式回退到苹方、微软雅黑、Noto Sans CJK SC 与思源黑体。中文语义标签使用无衬线字体，等宽字体只用于
   路径、Token、语言代码、计数和快捷键；界面字重使用稳定的 600/700 档位，紧凑路径辅助文字不小于 10 px。
-- 校对页面首次读取时只读既有 `extracted/` 与 Translation Memory 快照作为初始列表，不扫描源码、
-  不触发 Provider，也不写入业务 Runtime 状态；Dev 实际转换的模块始终优先，且会遮蔽同源旧记录。没有
-  既有快照时，列表只随当前 Dev 已访问模块渐进增长。校对操作按全局、精确文件或精确出现位置范围原子更新
-  `overrides/` 中对应分桶的条目并触发 HMR，不注册到 Build、Build Watch、Preview 或生产产物。
+- 当前页面校对沿用 Dev 已处理结果；全部页面与独立页按需确保入口可达清单，未访问源码修改也会自动更新。
+  源码新鲜度、扫描复用、失败恢复与 Agent 插件边界见 [Agent 插件与清单新鲜度](./prd/agent-plugin.md)。
+  校对操作按全局、精确文件或精确出现位置原子更新 `overrides/` 并触发 HMR，保存前复验文案与位置；
+  不注册到 Build、Build Watch、Preview 或生产产物。
 - 校对 UI 在发布包中由 Vite 插件携带预构建静态资源，与业务应用的框架和 UI 依赖隔离；仓库本地
   Dev 会自动把私有 review-ui workspace 挂到业务 Vite Server，并通过独立 HMR 通道刷新源码改动，
   无需先构建或复制。内部 UI workspace 包保持私有，不作为面向应用开发者的安装入口。
@@ -303,6 +313,14 @@
   客户端给出一键命令；未收录到客户端 MCP Store 的本地 stdio 服务继续使用该客户端的配置文件。
 - Agent 必须先确认目标 Vite 应用，再结合启动目录、Vite root 与 directory 计算最终绝对 i18n 目录。monorepo 中每个 Vite build 独立处理。
 - MCP 读取目标 build 的完整 extracted 集合，因此同一目录同时包含应用源码和它实际消费的本地 workspace 源码；纯源码子包不是独立 MCP 目标。
+- 普通补译优先由 Skill 附带脚本从所选应用入口扫描，覆盖静态导入、静态懒加载、可展开 glob
+  和可达本地 workspace 源码；不增加公开 CLI。使用 Vite Dev 转换而不打包、运行页面或调用 Provider，
+  独立扫描跳过个人缓存、历史清理、声明生成及 Review；有活动 Dev 时统一交给该进程，配置与 Dev 插件仍会执行。
+- 扫描全部成功后才重建活动清单并登记缺译槽位，保留既有译文和人工覆盖；解析失败、提取诊断、
+  不确定动态导入或未支持的内联脚本翻译会阻止提交部分清单。Build 专用模块图仍需完整 Build 验证，
+  扫描不能替代孤立清理前的生产图审查。具体边界见 [Agent 补译](../apps/docs/docs/guide/advanced/ai-tools.mdx)。
+- 无 Host MCP 连接时，Skill 通过目标应用安装的 MCP 包在进程内复用 list/set 工具及校验，
+  无需注册服务器；不另建文件写入协议，人工覆盖、清空与孤立删除仍走 Host MCP。
 - MCP 的公开消息身份是 source 与可选静态 comment 组成的对象；内部编码后的 message ID
   不暴露给调用方，source_file 也不参与写入身份。
 - 相同消息跨文件共享一份自动翻译。列表按消息聚合，默认省略 source_files 与 occurrence；显式请求时
@@ -319,7 +337,7 @@
   页面结果，应用与文件级进度统计继续描述完整选择范围，summary 不接受消息文本过滤。
 - 精确消息身份不存在时，MCP 可以返回少量只读候选，优先相同 source 的不同 comment、规范化等价
   和有限编辑距离；候选不能自动授权或替代写入目标。重复 extracted source 错误返回全部冲突物理
-  文件供诊断，实际迁移由完整 Build 完成，MCP 仍不修改 extracted。
+  文件供诊断，实际迁移由入口扫描或完整 Build 完成，MCP 仍不修改 extracted。
 - 孤立 Translation Memory 使用独立的只读列表与破坏性删除工具。普通补译、校对和验证不得自动
   进入该流程；用户明确要求后，Agent 先完成完整 Build 和全量审查，再取得删除授权。删除只接受
   列表返回的 opaque ID，在写入前整批复验消息仍未被源码引用，并且不联动删除人工 overrides。

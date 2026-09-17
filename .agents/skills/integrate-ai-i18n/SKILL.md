@@ -49,7 +49,12 @@ UI library into the target solely for Review. The host is a Web Component with S
 UnoCSS must stay inside that root rather than being added to the application's global CSS pipeline.
 In Dev, verify the bottom launcher on a real business page, the workbench flush with the viewport
 bottom, the default current-page scope, switching to all extracted copy, and the absence of the
-launcher when the Review plugin is removed. The height preference is browser-local UI state and must
+launcher when the Review plugin is removed. Current-page opening must not start a whole-app scan. All-page and standalone views ensure a complete
+entry-reachable catalog and refresh unvisited source edits automatically. Verify adding, changing and
+removing one lazy-page t() without visiting that page. An error banner means the visible snapshot may
+be outdated; fix parsing and wait for recovery before validating counts. Saving revalidates source
+identity and exact locations; never migrate an old occurrence override to a new line automatically.
+The height preference is browser-local UI state and must
 not enter Vite config. Review settings also keep theme and interface-language preferences browser-local:
 verify switching between browser default, Chinese, and English updates the workbench and outer shell
 without changing the application's Runtime language. For multiple target locales, verify the locale rail precedes search and status
@@ -80,8 +85,8 @@ the project depend on a local database.
 
 This Skill owns package installation, Vite configuration, Runtime source integration, and integration
 verification. Do not write translation or human review values as part of an integration-only task.
-When the user also requests Agent-assisted translation or review, complete the Build first, then use
-the `use-ai-i18n-mcp` Skill and its approval rules.
+When the user also requests Agent-assisted translation or review, use the `use-ai-i18n-mcp` Skill after integration; it refreshes the entry graph without requiring
+a full Build merely to register copy. Keep a real Build when validating production integration.
 
 ## Apply the smallest complete setup
 
@@ -98,11 +103,15 @@ the `use-ai-i18n-mcp` Skill and its approval rules.
 6. Preserve existing component style. Do not convert Vue Options API to Composition API solely for
    ai-i18n, and do not add React subscriptions to non-component utilities.
 
+Build coverage is enabled by default; preserve it unless the user requests `diagnostics.buildSummary: false`.
+It reports effective coverage after Provider work, including overrides. A missing count is a cue to
+use the translation Skill, not permission to configure a Provider or overwrite translations.
+
 For startup overhead and stage attribution, follow [Performance diagnosis](references/performance.md).
 
 ## Verify and report
 
-For `ENOENT`, stale translations after a Dev update, or incomplete Dev counts, follow
+For `ENOENT`, conflicting JSON keys, stale translations after a Dev update, or incomplete Dev counts, follow
 [Dev file recovery](references/dev-file-recovery.md).
 
 Run the target app's lint, type check, relevant tests, and full Vite Build in proportion to the
@@ -113,3 +122,8 @@ optional features only when requested or already configured.
 
 Report the selected app, changes made, commands run, remaining unsupported scope, and any decisions
 that still need user input.
+
+When distributing this integration through an Agent plugin, use its bundled Skills in place; do not
+copy them into the app or silently upgrade npm dependencies with the plugin. End-check handling and
+target selection are owned by use-ai-i18n-mcp. Check installed internal scan/helper capabilities;
+report a version mismatch rather than patching node_modules.

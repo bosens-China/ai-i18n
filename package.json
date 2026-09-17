@@ -36,7 +36,8 @@
     "test": "turbo run test --filter=./packages/* && vitest run scripts/test --config vitest.config.ts",
     "release:verify": "pnpm build && tsx scripts/release-packages.ts verify",
     "perf:examples": "pnpm build && tsx scripts/performance/run.ts",
-    "examples:perf": "pnpm build && pnpm --parallel --filter \"@ai-i18n/example-*\" dev:perf"
+    "examples:perf": "pnpm build && pnpm --parallel --filter \"@ai-i18n/example-*\" dev:perf",
+    "plugins:build": "node scripts/build-agent-plugins.mjs"
   },
   "devDependencies": {
     "@arethetypeswrong/core": "0.18.5",

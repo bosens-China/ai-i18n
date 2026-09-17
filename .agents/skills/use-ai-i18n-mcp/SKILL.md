@@ -1,11 +1,11 @@
 ---
 name: use-ai-i18n-mcp
-description: Use the eight local ai-i18n MCP tools to inspect missing or orphaned translations, update project Translation Memory JSON shards, and manage reviewed override shards. Use when working with ai_i18n_list_translations, ai_i18n_set_translations, ai_i18n_clear_translations, ai_i18n_list_orphan_messages, ai_i18n_delete_orphan_messages, ai_i18n_list_overrides, ai_i18n_set_overrides, or ai_i18n_delete_overrides, especially when a monorepo requires resolving one Vite app's i18n directory first.
+description: Scan a Vite app from its entries without a full Build, then use Skill-only helpers or the eight local ai-i18n MCP tools to inspect missing or orphaned translations, update project Translation Memory JSON shards, and manage reviewed override shards. Use when working with ai_i18n_list_translations, ai_i18n_set_translations, ai_i18n_clear_translations, ai_i18n_list_orphan_messages, ai_i18n_delete_orphan_messages, ai_i18n_list_overrides, ai_i18n_set_overrides, or ai_i18n_delete_overrides, especially when a monorepo requires resolving one Vite app's i18n directory first.
 ---
 
 # Use ai-i18n MCP
 
-Use the locate → list → update → verify workflow. Do not scan for i18n directories or edit generated
+Use the locate → scan when needed → list → update → verify workflow. Do not scan for i18n directories or edit generated
 files manually while the MCP tools are available.
 
 ## Read the right source
@@ -17,14 +17,15 @@ Do not load `llms-full.txt` by default or duplicate that guidance in this Skill.
 For MCP calls, read [Tool contracts](references/tool-contracts.md) before the first call. It is the
 Agent-only authority for message identity, inputs, pagination, batch behavior, write boundaries, and
 authorization. Read [Error recovery](references/recovery.md) only after a returned `next_action` is
-insufficient or when a tool or protocol file is unavailable.
+insufficient, when a tool or protocol file is unavailable, or when `DUPLICATE_JSON_KEY` requires
+an approved protocol-file repair.
 
 ## Locate the target app
 
 1. Identify the Vite app the user wants to change. In a monorepo, do not treat the repository root
    or a similarly named `i18n/` directory as the target.
 2. Read the app's `package.json`, package scripts, and `vite.config.*` as text. Do not execute the
-   Vite config.
+   Vite config merely to locate the app; the explicit scan step below loads it.
 3. Resolve Vite `root` from the command's working directory. Resolve a relative `aiI18n({ directory })`
    against that root; use an absolute `directory` unchanged. The default directory is `i18n`.
 4. Pass the resulting absolute path as `i18n_directory`.
@@ -33,7 +34,7 @@ If more than one Vite app is plausible, ask the user which app to use before cal
 The app's framework mode and `autoImport` setting affect source integration but do not change the MCP
 directory contract. Do not add or remove Runtime imports as part of a translation-only MCP task.
 Dev may inline ordinary static named Runtime imports, while Build keeps its static registration modules;
-neither behavior changes the requirement to use a full Build for a complete extracted set.
+neither behavior makes browser-driven Dev extraction cover unvisited pages.
 When package installation, Vite configuration, or Runtime source integration is incomplete or
 requested, use the `integrate-ai-i18n` Skill before starting this translation workflow.
 
@@ -42,15 +43,17 @@ Vite build. Treat source-only packages as `source_files` within the consuming ap
 targets. Never point two Vite builds at one i18n directory; call the tools once per selected app.
 Use tool-returned `source_file` values; never decode or guess a source path from a physical filename.
 
-Run the selected app's full Vite Build before first use when extraction is missing or empty, and after
-source, branch, or extraction configuration changes that make it stale. Do not execute Vite config
-merely to locate the directory. Never open or edit Translation Memory storage directly.
+For first use, a complete translation audit, or stale extraction after source, branch, or configuration
+changes, follow [Entry scan and Skill-only translation](references/scanning.md). Prefer the Skill scan
+over a full Build. Repeat the helper after source edits and before final verification; it decides whether extraction can be reused. Never edit
+Translation Memory storage directly. If Host MCP is unavailable, the same reference provides the
+Skill-only list/set path without registering a server.
 
 When that app's Vite Dev Server is running, successful MCP Translation Memory or override writes are
 observed and applied to its in-memory Runtime through HMR, including occurrence-scoped override edits
 and deletions. This convenience does not make the Dev
-catalog a complete source set: first use, complete audits, and orphan decisions still require the
-full Build above. Do not restart Dev or edit generated locale files merely to expose an MCP write.
+catalog a complete source set: ordinary full translation needs the entry scan above; destructive
+orphan decisions still require a full Build. Do not restart Dev or edit generated locale files merely to expose an MCP write.
 
 When the target explicitly registers `aiI18nReview()`, its Vite Dev console is the preferred interface
 for a person interactively choosing a small number of review values. Use the in-page launcher when page
@@ -60,14 +63,16 @@ to one occurrence; when runtime-rendered copy has multiple candidates, the perso
 exact file, line, and column rather than accepting an inferred first match. This Skill remains the
 authority when an Agent performs batch work,
 automates writes, audits the complete extracted set, or acts on explicit user-approved wording.
-The embedded workbench's default current-page scope can be switched to all extracted copy; the standalone
-workbench starts with all extracted copy and has no page picker. Multiple picker matches enter a
+The embedded workbench's default current-page scope uses Dev results; switching to all copy ensures an entry-reachable catalog without Build; the standalone
+workbench starts with the same complete entry scan and has no page picker. Multiple picker matches enter a
 file and occurrence locate hierarchy instead of selecting the first result. Both paths write the same project `overrides/` shards; do not run MCP review writes concurrently with an open
 review-console save operation.
 
 Performance diagnosis and plugin on/off comparisons belong to `integrate-ai-i18n`. Startup/transform reports
 omit individual write stages and do not prove persistence completion. Reports are diagnostic artifacts outside the i18n protocol directory; they are not MCP inputs or evidence that
 a full extracted catalog exists. Do not change translations to address a timing anomaly.
+
+When invoked by a plugin end check, follow [Plugin end checks](references/plugin-hooks.md).
 
 ## Execute the workflow
 

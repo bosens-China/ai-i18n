@@ -16,8 +16,13 @@ MCP 不扫描 workspace，也不执行 Vite 配置。Agent 必须先确认目标
 
 MCP 会校验绝对路径、目录是否存在，以及项目 `translations/`、`overrides/` 和 `extracted/`
 是否符合当前协议。MCP 始终读写项目 JSON，不读取个人 SQLite 候选缓存，也不读取或执行 Vite 配置。
-`extracted/` 是不提交 Git 的本地 Build 产物。首次使用，或者切换分支和修改提取相关配置后，
-先运行目标应用的一次完整 Vite Build。Dev 只包含浏览器实际请求过的模块。
+`extracted/` 是不提交 Git 的本地派生文件。首次使用，或者切换分支和修改提取相关配置后，
+使用 `use-ai-i18n-mcp` Skill 的入口扫描刷新；无需为了普通补译执行完整 Build。
+Dev 只包含浏览器实际请求过的模块。扫描采用 Vite Dev 转换流程，构建专用模块图与
+孤立清理仍需完整 Build。MCP 本身仍只读取清单，不执行扫描或 Vite 配置。
+
+只有 Skill 而没有 Host MCP 连接时，可在目标应用安装本包，由 Skill 内部脚本复用
+同一套 list/set 工具校验与存储完成普通补译。无需注册服务器，不提供额外公开 CLI。
 
 MCP 宿主可以直接执行 npm 包：
 
@@ -70,6 +75,12 @@ server 使用 stdio 通信，标准输出专用于 MCP 协议。
 批量 `updates` 或 `targets` 中重复出现同一个未知字段时，参数校验只返回一条合并错误，包含
 出现次数、首次位置、合法字段和下一步修改方式。业务错误返回稳定 `error_code` 的同时也会返回
 可直接执行的 `next_action`；Agent 应优先按该动作恢复，再使用错误码文档兜底。
+
+协议 JSON 中同一对象的重复键若值不同，返回 `DUPLICATE_JSON_KEY`，包含绝对 `file`、
+`json_pointer`、`first` 与 `duplicate` 两处位置（`line`、`column` 均从 1 开始）。保留冲突文件，
+确认应保留的值并修复后再重试，不能用 Build 或按出现顺序覆盖。相同值重复键允许读取，在该
+存储的下一次正常写入事务中清理，包括业务值未变化的事务；查询不主动去重，原有日志恢复不变。
+清理不计入译文变更数量，MCP 仍不写入 `extracted/` 或 `locales/`。
 
 普通翻译更新示例：
 

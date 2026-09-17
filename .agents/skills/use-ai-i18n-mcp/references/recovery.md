@@ -2,8 +2,8 @@
 
 ## Empty or stale extraction
 
-If the first translation list returns no source files, run one full Build for the same target app and
-retry once. If the retry remains empty, report that the build has no extracted messages. Do not scan
+If the first translation list returns no source files, run the entry scan described in the Skill for the same target app and
+retry once. If the scan succeeds and the retry remains empty, report that the selected entries have no extracted messages. Do not scan
 sibling apps.
 
 ## MCP errors
@@ -13,11 +13,12 @@ server does not return that field.
 
 | Error | Recovery |
 | --- | --- |
+| `DUPLICATE_JSON_KEY` | Follow the conflicting JSON key procedure below; do not scan or Build to overwrite it. |
 | `I18N_DIRECTORY_NOT_FOUND` or `I18N_DIRECTORY_NOT_ABSOLUTE` | Recompute Vite root plus `aiI18n.directory`, then use an absolute path. |
-| `REQUIRED_PROTOCOL_FILE_MISSING` or `REQUIRED_PROTOCOL_DIRECTORY_MISSING` | Run one full Build for the same app and retry once. |
-| `INVALID_PROTOCOL_JSON`, `INVALID_PROTOCOL_FILE`, or `PROTOCOL_PATH_NOT_DIRECTORY` | Restore or repair the reported protocol path, run one full Build, then retry. |
-| `DUPLICATE_EXTRACTED_SOURCE` | Run one full Build so Vite migrates legacy filenames, then retry. If it persists, report `conflicting_files`; MCP must not delete them. |
-| `MESSAGE_ID_SOURCE_CONFLICT`, `MESSAGE_MISSING_FROM_TRANSLATIONS`, or `MESSAGE_METADATA_MISMATCH` | Rebuild with a clean extracted directory, then list again. Report the returned details if the error persists. |
+| `REQUIRED_PROTOCOL_FILE_MISSING` or `REQUIRED_PROTOCOL_DIRECTORY_MISSING` | Run the Skill entry scan for the same app and retry once. |
+| `INVALID_PROTOCOL_JSON`, `INVALID_PROTOCOL_FILE`, or `PROTOCOL_PATH_NOT_DIRECTORY` | Restore or repair the reported protocol path, refresh with the Skill entry scan or a full Build, then retry. |
+| `DUPLICATE_EXTRACTED_SOURCE` | Run the Skill entry scan so Vite migrates legacy filenames, then retry. If it persists, report `conflicting_files`; MCP must not delete them. |
+| `MESSAGE_ID_SOURCE_CONFLICT`, `MESSAGE_MISSING_FROM_TRANSLATIONS`, or `MESSAGE_METADATA_MISMATCH` | Refresh with the Skill entry scan or a full Build using a clean extracted directory, then list again. Report the returned details if the error persists. |
 | `SOURCE_FILE_NOT_FOUND` | List with `view: "summary"` and without the filter, then copy an exact returned `source_file`. |
 | `MESSAGE_NOT_FOUND` | Inspect returned `suggestions`; copy a complete candidate only if its source and comment match the intended message. Otherwise list again and copy the exact returned `message` object. |
 | `MESSAGE_NOT_FOUND_IN_SOURCE_FILE` | List again with `include_source_files: true`, then keep only exact files that contain the selected message. |
@@ -39,6 +40,16 @@ server does not return that field.
 SQLite cache failures belong to the Vite process, not MCP recovery. MCP always uses project JSON; do
 not install `@ai-i18n/sqlite` or `better-sqlite3` merely to make an MCP operation work.
 
+## Conflicting JSON keys
+
+`DUPLICATE_JSON_KEY` identifies `file`, `json_pointer`, and the `first` and `duplicate` key positions.
+Both position fields use 1-based lines and columns. Read the raw text at those locations and show the
+conflicting values; `JSON.parse` alone discards earlier values and cannot establish the intended one.
+Use an already explicit user decision or ask which value to retain. Only then make a minimal repair
+to that file and retry the original list or write. This approved repair is the exception to the normal
+ban on direct protocol-file edits. Preserve unrelated entries and coordinate with active writers.
+Do not choose by order, rewrite a parsed copy, delete journals, or run scan/Build to bypass the conflict.
+
 ## Vite HMR reports a missing transaction journal
 
 If an MCP write succeeds but Vite reports `ENOENT` for `.transaction.json`, verify the write with
@@ -58,5 +69,7 @@ do not rewrite successful values, touch generated files, or infer a complete cat
 
 ## Tool unavailable
 
-If the MCP tools are unavailable, explain that `@ai-i18n/mcp` must be registered locally. Do not
-silently replace the workflow with broad source-tree editing or direct protocol-file writes.
+For ordinary list/set translation, use the Skill-only helper described in the scanning reference
+linked by `SKILL.md`. Review, clear, and orphan operations still require Host MCP. If the installed
+package lacks the internal helper, report the version mismatch and update within the task scope;
+do not replace the workflow with source-tree editing or direct protocol-file writes.
