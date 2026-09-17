@@ -1,5 +1,29 @@
 # @ai-i18n/vite
 
+## [1.0.0-alpha.35](https://github.com/bosens-China/ai-i18n/compare/vite-v1.0.0-alpha.34...vite-v1.0.0-alpha.35) (2026-09-17)
+
+
+### Features
+
+* **agent:** 打包三平台插件并同步 Skills 与使用文档 ([91da2af](https://github.com/bosens-China/ai-i18n/commit/91da2afdf87ae226d7b6aa5d8c53fe884ced48a1))
+* **vite:** 增加入口扫描缓存、构建统计与校对同步 ([350492f](https://github.com/bosens-China/ai-i18n/commit/350492fb41977fa9fb983fc8f7667d498e6e4b64))
+
+
+### Bug Fixes
+
+* **core:** 防止译文 JSON 重复键静默覆盖 ([d9e3bed](https://github.com/bosens-China/ai-i18n/commit/d9e3bedbd831f86a9ae11d40fbf17cc0ae1ea32c))
+* **vite:** 修复连续写入译文时丢失 Dev 更新 ([946aad4](https://github.com/bosens-China/ai-i18n/commit/946aad4c7bafbba76091be05653c9e4946135806))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @ai-i18n/analyzer bumped to 1.0.0-alpha.29
+    * @ai-i18n/core bumped to 1.0.0-alpha.20
+  * devDependencies
+    * @ai-i18n/sqlite bumped to 1.0.0-alpha.9
+
 ## [1.0.0-alpha.34](https://github.com/bosens-China/ai-i18n/compare/vite-v1.0.0-alpha.33...vite-v1.0.0-alpha.34) (2026-09-16)
 
 
