@@ -66,7 +66,7 @@ Build 的结果。
 显式 API key 由 Provider 脱敏，常见认证 Header 由 OpenAI SDK 脱敏。日志不等同于逐字节 HTTP
 抓包，也无法记录服务或 SDK 没有暴露的内部响应正文。
 
-完整阅读与排障方法见 [LLM 日志与排障](/guide/ai/llm-logs)。
+完整阅读与排障方法见 [LLM 日志与排障](/ai/llm-logs)。
 
 ## style
 
@@ -83,4 +83,4 @@ Build 的结果。
 - 如何利用 `comment` 消除歧义。
 
 不要在 `style` 中重复定义返回 JSON 的字段、数组长度或占位符协议。完整示例见
-[AI 翻译](/guide/ai/ai-translation#编写翻译风格)。
+[AI 翻译](/ai/ai-translation#编写翻译风格)。

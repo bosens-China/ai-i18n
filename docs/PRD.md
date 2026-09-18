@@ -5,6 +5,7 @@
 ## 文档边界
 
 - 用户可见的 API、配置和接入流程以 apps/docs 为准。
+- 文档站按顶层目录生成独立侧栏：通用接入位于 `/guide`，AI 接入位于 `/ai`。
 - 公开 TypeScript 类型与 API 参考当前继续手写维护；Zod Schema 只负责运行时校验，不作为文档生成来源。
 - Rspress 发布 `llms.txt` 精简索引与 `llms-full.txt` 完整正文。Agent 默认先读取
   `llms.txt`，再按任务读取具体用户页面；不默认加载完整正文。
@@ -318,7 +319,7 @@
   独立扫描跳过个人缓存、历史清理、声明生成及 Review；有活动 Dev 时统一交给该进程，配置与 Dev 插件仍会执行。
 - 扫描全部成功后才重建活动清单并登记缺译槽位，保留既有译文和人工覆盖；解析失败、提取诊断、
   不确定动态导入或未支持的内联脚本翻译会阻止提交部分清单。Build 专用模块图仍需完整 Build 验证，
-  扫描不能替代孤立清理前的生产图审查。具体边界见 [Agent 补译](../apps/docs/docs/guide/ai/ai-tools.mdx)。
+  扫描不能替代孤立清理前的生产图审查。具体边界见 [Agent 补译](../apps/docs/docs/ai/ai-tools.mdx)。
 - 无 Host MCP 连接时，Skill 通过目标应用安装的 MCP 包在进程内复用 list/set 工具及校验，
   无需注册服务器；不另建文件写入协议，人工覆盖、清空与孤立删除仍走 Host MCP。
 - MCP 的公开消息身份是 source 与可选静态 comment 组成的对象；内部编码后的 message ID

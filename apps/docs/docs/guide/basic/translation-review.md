@@ -155,7 +155,7 @@ t('保存', { comment: '保存状态' });
 页面回退显示原文。
 
 少量关键措辞适合使用校对页面。批量补译与自动化操作更适合使用
-[AI 翻译](/guide/ai/ai-translation)或 [Agent + MCP](/guide/ai/ai-tools)。
+[AI 翻译](/ai/ai-translation)或 [Agent + MCP](/ai/ai-tools)。
 
 ## 使用边界
 

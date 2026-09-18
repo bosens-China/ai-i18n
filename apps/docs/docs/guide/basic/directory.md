@@ -59,7 +59,7 @@ logs/
 
 `logs/` 与 `*.log` 是 OpenAI Provider 的本地日志，可能包含业务文案。使用自定义日志目录时也要
 忽略该目录。日志内容与分享前检查见
-[LLM 日志与排障](/guide/ai/llm-logs)。
+[LLM 日志与排障](/ai/llm-logs)。
 
 每个目标语言最多生成 16 个非空分桶，条目按稳定 SHA-256 身份分配。分桶可以随源码提交，也便于在
 PR 中审查译文变化；团队成员与 CI 拉取同一份仓库后，可以直接复用已经提交的自动译文和人工译文。
@@ -71,7 +71,7 @@ PR 中审查译文变化；团队成员与 CI 拉取同一份仓库后，可以�
 安装 `@ai-i18n/sqlite` 并配置 `translationMemory.cache: sqlite()` 时，个人数据库位于用户目录。
 它不提交 Git。缓存命中的候选仍会补写进项目 `translations/`。因此新机器和 CI 继续使用已经提交的项目
 译文。详情见
-[翻译记忆](/guide/ai/translation-memory)。
+[翻译记忆](/ai/translation-memory)。
 
 声明文件的作用和自定义路径见
 [TypeScript 与生成声明](/guide/quality/typescript)。
@@ -79,7 +79,7 @@ PR 中审查译文变化；团队成员与 CI 拉取同一份仓库后，可以�
 ## 什么时候扫描，什么时候构建
 
 开发服务器只处理浏览器实际访问过的模块。准备用 Agent 批量补译时，可以让
-[翻译 Skill](/guide/ai/ai-tools) 从应用入口扫描。这不需要先运行完整构建。
+[翻译 Skill](/ai/ai-tools) 从应用入口扫描。这不需要先运行完整构建。
 首次补译、切换分支、修改源码或提取配置后，以及 `extracted/` 缺失或过期时，都应刷新扫描。
 扫描覆盖可静态到达的本地依赖和懒加载页面。未引用的文件不会进入清单。
 
@@ -120,7 +120,7 @@ packages/
 ## 缺译时会发生什么
 
 目标语言缺少译文时，页面会显示源码文案。你可以配置
-[AI 翻译](/guide/ai/ai-translation)，也可以按
+[AI 翻译](/ai/ai-translation)，也可以按
 [补齐和确认译文](/guide/basic/translations)手动处理。
 
 同一句原文在不同语境下需要不同译法时，为 `t()` 提供 `comment`：

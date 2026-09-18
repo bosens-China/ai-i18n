@@ -6,8 +6,8 @@
   },
   {
     "text": "接入 AI",
-    "link": "/guide/ai/ai-translation",
-    "activeMatch": "/guide/ai/"
+    "link": "/ai/ai-translation",
+    "activeMatch": "/ai/"
   },
   {
     "text": "API",

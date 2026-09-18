@@ -39,4 +39,4 @@ translationMemory: {
 提交 Git。缓存候选命中后会补写项目 `translations/`；`overrides/` 仍保留在项目内并拥有最高优先级。
 
 Provider 的进程级刷新通过 `provider.cache` 配置，不属于存储选项，也不影响 MCP。完整行为和选型建议见
-[Translation Memory](/guide/ai/translation-memory)。
+[Translation Memory](/ai/translation-memory)。

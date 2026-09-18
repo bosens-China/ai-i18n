@@ -8,21 +8,21 @@ ai-i18n 不会用空字符串代替缺失译文。缺译时页面会回退显示
 ## 推荐流程
 
 1. 运行 `vite dev` 并打开需要校对的业务页面，让相关模块进入当前开发模块图。
-2. 选择一种补译方式：配置 [AI 翻译](/guide/ai/ai-translation)，或使用
-   [Agent + MCP](/guide/ai/ai-tools)。
+2. 选择一种补译方式：配置 [AI 翻译](/ai/ai-translation)，或使用
+   [Agent + MCP](/ai/ai-tools)。
 3. 如已注册 `aiI18nReview()`，点击业务页面右下角图标检查当前页。也可以打开开发服务器控制台打印的独立地址，检查全部文案。
 4. 对不满意或需要固定的译文保存人工校对结果。
 5. 再运行一次构建，并提交源码、`translations/` 与 `overrides/`。
 
 运行中的 Vite 开发服务器会更新当前已访问页面的文案。它不需要重启，也不需要手工编辑生成的语言包。
 开发服务器仍只包含浏览器访问过的模块。批量补译可先用
-[翻译 Skill](/guide/ai/ai-tools) 扫描入口。生产提交前的集成验证仍使用完整构建。
+[翻译 Skill](/ai/ai-tools) 扫描入口。生产提交前的集成验证仍使用完整构建。
 
 ## 自动翻译与人工译文
 
 自动翻译写入 `i18n/translations/` 分桶。人工确认的译文写入 `i18n/overrides/` 分桶，并且
 始终优先显示。SQLite 只可作为个人候选缓存。命中结果仍会补写项目 JSON，详见
-[翻译记忆](/guide/ai/translation-memory)。
+[翻译记忆](/ai/translation-memory)。
 
 适合人工校对的情况包括：
 
@@ -51,7 +51,7 @@ t('保存', { comment: '保存状态' });
 
 不要直接编辑 SQLite 数据库或 `i18n/extracted/`、`i18n/locales/`。前者只是个人候选缓存，后两者都是
 构建产物。项目译文的存储方式、缓存边界与 Git 协作规则见
-[翻译记忆](/guide/ai/translation-memory) 和[生成文件与 Git](/guide/basic/directory)。
+[翻译记忆](/ai/translation-memory) 和[生成文件与 Git](/guide/basic/directory)。
 
 ## 提交前检查
 

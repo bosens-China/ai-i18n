@@ -7,10 +7,10 @@ import { PackageManagerTabs } from '@rspress/core/theme';
 
 ai-i18n 提供两种补译方式：
 
-| 方式                              | 适用场景                                         |
-| --------------------------------- | ------------------------------------------------ |
-| OpenAI Provider                   | 希望在 Vite 开发或构建时自动补齐缺失译文。       |
-| [Agent + MCP](/guide/ai/ai-tools) | 希望由 AI 编码工具在明确指令下检查、补译和校对。 |
+| 方式                        | 适用场景                                         |
+| --------------------------- | ------------------------------------------------ |
+| OpenAI Provider             | 希望在 Vite 开发或构建时自动补齐缺失译文。       |
+| [Agent + MCP](/ai/ai-tools) | 希望由 AI 编码工具在明确指令下检查、补译和校对。 |
 
 本页介绍 OpenAI-compatible Provider。未配置 Provider 时，ai-i18n 仍会提取文案和生成语言包。
 缺失译文会显示源码文案。
@@ -85,7 +85,7 @@ AI_API_KEY=replace-me
 本地无认证模型可以省略 `AI_API_KEY`。
 
 需要审查模型请求或排查翻译失败，请配置 `provider.logging`，再查看
-[LLM 日志与排障](/guide/ai/llm-logs)。
+[LLM 日志与排障](/ai/llm-logs)。
 
 ## 编写翻译风格
 
@@ -119,7 +119,7 @@ Provider 的模型、`baseURL`、温度或 `style` 变化时，插件默认继�
 它不会尝试分析 Translator 内部配置。需要让新配置刷新一次时，使用
 `provider.cache: 'fresh'`。本进程生成的新结果仍会立即缓存，因此开发服务器/HMR 不会重复请求。
 该选项只影响 Provider，不影响 MCP 或 AI Agent。完整配置见
-[翻译记忆](/guide/ai/translation-memory)。
+[翻译记忆](/ai/translation-memory)。
 
 ## 使用其他模型服务
 

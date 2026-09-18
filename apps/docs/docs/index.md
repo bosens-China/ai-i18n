@@ -30,7 +30,7 @@ features:
     link: /guide/quality/typescript
   - title: AI 接入
     details: 选择应用内 Provider 或外部 Agent 补齐译文。通过翻译校对固定关键措辞。
-    link: /guide/ai/ai-translation
+    link: /ai/ai-translation
   - title: 排查问题
     details: 按通用、Vue 和 React 场景定位接入与运行问题。
     link: /guide/faq/common

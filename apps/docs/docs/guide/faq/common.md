@@ -128,8 +128,8 @@ aiI18n({
 `i18n/overrides/` 中是否存在目标 locale 的有效译文。并让运行中的 Vite 开发服务器自动同步，
 或重新执行一次 Vite 构建。
 
-可以通过 [AI 翻译](/guide/ai/ai-translation)配置 Provider，也可以通过
-[接入 Agent](/guide/ai/ai-tools)补齐缺失翻译。协议文件职责见
+可以通过 [AI 翻译](/ai/ai-translation)配置 Provider，也可以通过
+[接入 Agent](/ai/ai-tools)补齐缺失翻译。协议文件职责见
 [生成文件与 Git](/guide/basic/directory)。
 
 ## 为什么按需加载语言包时切换失败？
@@ -156,7 +156,7 @@ Promise 并提供重试入口。
 `baseURL`，也不会把这些配置写入缓存指纹。需要刷新一次时，在 Provider 中配置
 `cache: 'fresh'`。本次 Vite 进程会主动刷新已有自动译文，并继续复用本进程新生成的结果。
 该选项不影响 MCP 或 AI Agent。完成后改回默认 `reuse`。详见
-[翻译记忆](/guide/ai/translation-memory)。
+[翻译记忆](/ai/translation-memory)。
 
 ## 为什么 SQLite 没有复用另一个项目的译文？
 
@@ -164,4 +164,4 @@ SQLite 不会复用所有历史译文。当前项目尚无译文时，原文、�
 并且只能存在一个译文候选。多个候选可能代表不同语境，ai-i18n 会保持缺失，不会自动猜测。
 
 请先确认 Vite 配置使用 `translationMemory.cache: sqlite()`，再按
-[SQLite 未复用译文时如何排查](/guide/ai/translation-memory#sqlite-未复用译文时如何排查)逐项检查。
+[SQLite 未复用译文时如何排查](/ai/translation-memory#sqlite-未复用译文时如何排查)逐项检查。
