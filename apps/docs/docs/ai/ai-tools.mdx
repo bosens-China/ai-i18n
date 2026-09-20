@@ -81,10 +81,89 @@ Skill 和脚本随插件更新，业务应用的 npm 依赖需要单独管理。
 两种方式的译文都写入项目 `translations/` 和 `overrides/` 分桶。
 它们遵循相同的 Git 提交规则。
 
-## Agent 用户详细配置
+## 独立使用 Skill 与 MCP
 
-如果你本身就是 Agent 用户，可注册 MCP 服务器，或按上文安装 Codex 插件。
-具体步骤见 ai-i18n 提供的 Agent Skill 文档。业务应用代码中不需要包含这些配置。
+Cursor、Claude Code 和 Antigravity 不需要 Codex 插件，也可以独立使用 ai-i18n。
+Codex 用户如果不需要任务结束检查，也可以采用相同方式，只安装 Skill 并按需注册 MCP。
+
+### 安装 Skill
+
+在项目根目录运行：
+
+```sh
+npx skills add bosens-China/ai-i18n --skill use-ai-i18n-mcp integrate-ai-i18n -y
+```
+
+普通补译只需要 Skill。请使用项目现有的包管理器，将 `@ai-i18n/mcp@alpha`
+安装为目标 Vite 应用的开发依赖。Agent 会在进程内复用 MCP 的读写能力，无需在编码工具中注册服务器。
+
+如果需要人工覆盖、清空译文或清理孤立译文，再按下文注册 MCP 服务器。
+
+### 注册 MCP 服务器
+
+MCP 使用本地 STDIO 连接。不同 Agent 使用相同的启动命令：
+
+```sh
+npx -y @ai-i18n/mcp@alpha
+```
+
+请按所用 Agent 选择一种配置方式。已有同名服务器时保留一份有效配置，避免重复启动。
+
+#### Codex
+
+```sh
+codex mcp add ai-i18n -- npx -y @ai-i18n/mcp@alpha
+```
+
+也可以在 `~/.codex/config.toml` 或项目的 `.codex/config.toml` 中加入：
+
+```toml
+[mcp_servers.ai_i18n]
+command = "npx"
+args = ["-y", "@ai-i18n/mcp@alpha"]
+```
+
+#### Cursor
+
+在项目的 `.cursor/mcp.json` 或全局 `~/.cursor/mcp.json` 中加入：
+
+```json
+{
+  "mcpServers": {
+    "ai-i18n": {
+      "command": "npx",
+      "args": ["-y", "@ai-i18n/mcp@alpha"]
+    }
+  }
+}
+```
+
+#### Claude Code
+
+```sh
+claude mcp add --transport stdio --scope local ai-i18n -- npx -y @ai-i18n/mcp@alpha
+```
+
+#### Antigravity
+
+在项目的 `.agents/mcp_config.json` 中加入以下内容。若希望所有项目共用，可改为全局
+`~/.gemini/config/mcp_config.json`：
+
+```json
+{
+  "mcpServers": {
+    "ai-i18n": {
+      "command": "npx",
+      "args": ["-y", "@ai-i18n/mcp@alpha"]
+    }
+  }
+}
+```
+
+在 Antigravity IDE 中，也可以从 Agent 面板的 **MCP Servers → Manage MCP Servers → View raw config**
+打开同一份配置。ai-i18n 尚未收录在 Antigravity MCP Store，需要添加自定义服务器。
+
+配置完成后，重新启动 Agent 或当前任务，再发送前文示例中的补译指令。
 
 生成文件与提交规则见 [生成文件与 Git](/guide/basic/directory)，
 人工译文优先级见 [补齐和确认译文](/guide/basic/translations)。
