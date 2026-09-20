@@ -1,9 +1,9 @@
 {
-  "packages/analyzer": "1.0.0-alpha.29",
+  "packages/analyzer": "1.0.0-alpha.30",
   "packages/core": "1.0.0-alpha.20",
-  "packages/eslint": "1.0.0-alpha.32",
+  "packages/eslint": "1.0.0-alpha.33",
   "packages/mcp": "1.0.0-alpha.25",
   "packages/openai": "1.0.0-alpha.22",
   "packages/sqlite": "1.0.0-alpha.9",
-  "packages/vite": "1.0.0-alpha.36"
+  "packages/vite": "1.0.0-alpha.37"
 }

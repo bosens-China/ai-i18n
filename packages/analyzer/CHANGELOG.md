@@ -1,5 +1,12 @@
 # @ai-i18n/analyzer
 
+## [1.0.0-alpha.30](https://github.com/bosens-China/ai-i18n/compare/analyzer-v1.0.0-alpha.29...analyzer-v1.0.0-alpha.30) (2026-09-20)
+
+
+### Bug Fixes
+
+* **analyzer:** 修复 Vue 默认值文案的源码位置映射 ([10f2ea3](https://github.com/bosens-China/ai-i18n/commit/10f2ea3db1ddaae65bdc0079538ff6f9a5b2dd92))
+
 ## [1.0.0-alpha.29](https://github.com/bosens-China/ai-i18n/compare/analyzer-v1.0.0-alpha.28...analyzer-v1.0.0-alpha.29) (2026-09-17)
 
 
