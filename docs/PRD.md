@@ -87,6 +87,7 @@
 - 人工覆盖以 `source`、可选静态 `comment`、目标语言和一种作用范围表达。范围只能是
   当前 Vite 应用全局、精确源码文件，或相对 Vite root 的标准化 POSIX 文件路径加 1-based
   行号与 0-based 列号组成的精确出现位置；不支持绝对路径、路径片段或 glob。
+- Vue `withDefaults` 静态默认值的文案位置必须回到原始 SFC；编译器复制片段缺少映射时按属性名及原始表达式补齐，不能使用生成代码行号或按重复文案猜测位置。Build、Dev 与独立扫描遵守同一约定。
 - 最终译文优先级固定为：出现位置 + comment、出现位置默认、文件 + comment、文件默认、全局 +
   comment、全局默认、AI Translation Memory、source fallback；更精确范围始终覆盖较宽范围。
 - 人工校对必须写入 `overrides/`，不污染项目自动译文或个人候选缓存。空字符串是有效人工译文；

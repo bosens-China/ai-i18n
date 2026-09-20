@@ -7,6 +7,7 @@ import vueJsx from '@vitejs/plugin-vue-jsx';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { build } from 'vite';
 import { aiI18n } from '../src';
+import { scanProject } from '../src/scan';
 import { buildOutputItems } from './build-output';
 import { extractedTestPath } from './extracted-test-path';
 
@@ -194,3 +195,60 @@ const label = useLabel()
 async function readJson(file: string): Promise<Record<string, unknown>> {
   return JSON.parse(await fs.readFile(file, 'utf8')) as Record<string, unknown>;
 }
+
+it('keeps hoisted default locations identical in Build and standalone scan', async () => {
+  const root = await fs.realpath(
+    await fs.mkdtemp(path.join(os.tmpdir(), 'ai-i18n-defaults-')),
+  );
+  tempDirs.push(root);
+  const source = `<template><button>{{ actionText }}</button></template>
+<script setup lang="ts">
+withDefaults(defineProps<{ actionText?: string }>(), {
+  actionText: t('执行'),
+});
+</script>`;
+  await fs.writeFile(
+    path.join(root, 'index.html'),
+    '<script type="module" src="/main.ts"></script>',
+  );
+  await fs.writeFile(
+    path.join(root, 'main.ts'),
+    "import App from './App.vue'; console.log(App);",
+  );
+  await fs.writeFile(path.join(root, 'App.vue'), source);
+  const config = () => ({
+    root,
+    configFile: false as const,
+    logLevel: 'silent' as const,
+    resolve: {
+      alias: {
+        '@ai-i18n/vite/runtime': path.resolve('packages/vite/src/runtime.ts'),
+        '@ai-i18n/vite/vue': path.resolve('packages/vite/src/vue.ts'),
+        vue: path.resolve(
+          'packages/vite/node_modules/vue/dist/vue.runtime.esm-bundler.js',
+        ),
+      },
+    },
+    plugins: [
+      aiI18n({
+        sourceLang: 'zh-CN',
+        locales: [{ value: 'zh-CN', label: '中文' }],
+        autoImport: true,
+      }),
+      vuePlugin(),
+    ],
+    build: { write: false },
+  });
+  const readCatalog = async () =>
+    JSON.parse(await fs.readFile(extractedTestPath(root, 'App.vue'), 'utf8'));
+  await build(config());
+  const built = await readCatalog();
+  expect(built.messages).toEqual([
+    expect.objectContaining({
+      id: '执行',
+      locations: [{ line: 4, column: 14 }],
+    }),
+  ]);
+  await scanProject(config());
+  expect(await readCatalog()).toEqual(built);
+});

@@ -22,6 +22,7 @@ import {
   templateImportMetadata,
   vueCompileError,
 } from './vue-analysis-support.js';
+import { createVueDefaultLocationMapper } from './vue-default-locations.js';
 import { findHoistedAutoImportCandidates } from './vue-hoisted-auto-imports.js';
 import { findVueTemplateRuntimeBinding } from './vue-runtime-template-bindings.js';
 import { findVueRuntimeImports } from './vue-runtime-imports.js';
@@ -273,7 +274,16 @@ export function analyzeVueSource(
       autoImportCode: autoImportCompiled?.content ?? '',
       autoImportLang: scriptLanguage(autoImportCompiled?.lang),
       mapLocation: compiled.map
-        ? createSourceMapLocationMapper(compiled.map as unknown as RawSourceMap)
+        ? createSourceMapLocationMapper(
+            compiled.map as unknown as RawSourceMap,
+            createVueDefaultLocationMapper(
+              source,
+              descriptor.scriptSetup,
+              compiled.scriptSetupAst ?? [],
+              compiled.content,
+              scriptLanguage(compiled.lang),
+            ),
+          )
         : identityLocation,
       ...registrationMetadata,
       macroCalls,
@@ -309,12 +319,15 @@ function findMacroCalls(
   });
 }
 
-function createSourceMapLocationMapper(map: RawSourceMap) {
+function createSourceMapLocationMapper(
+  map: RawSourceMap,
+  fallback?: (location: SourceLocation) => SourceLocation | undefined,
+) {
   const consumer = new SourceMapConsumer(map);
   return (location: SourceLocation): SourceLocation => {
     const original = consumer.originalPositionFor(location);
     return original.line == null || original.column == null
-      ? location
+      ? (fallback?.(location) ?? location)
       : { line: original.line, column: original.column };
   };
 }

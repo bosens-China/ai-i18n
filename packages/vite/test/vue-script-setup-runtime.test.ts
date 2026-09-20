@@ -16,6 +16,7 @@ withDefaults(defineProps<Props>(), { searchText: t('查询') })
     );
 
     const result = await transform(source, '/workspace/src/SearchButtons.vue');
+    expect(result!.code).toContain('t.__aiI18nAt(`3:49`)');
     const descriptor = parse(result!.code, {
       filename: 'SearchButtons.vue',
     }).descriptor;
