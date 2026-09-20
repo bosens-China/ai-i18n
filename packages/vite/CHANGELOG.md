@@ -1,5 +1,12 @@
 # @ai-i18n/vite
 
+## [1.0.0-alpha.36](https://github.com/bosens-China/ai-i18n/compare/vite-v1.0.0-alpha.35...vite-v1.0.0-alpha.36) (2026-09-20)
+
+
+### Bug Fixes
+
+* **vite:** 修复入口扫描兼容性并透传配置加载器 ([a56c9b1](https://github.com/bosens-China/ai-i18n/commit/a56c9b1d961cac50fd6ba2597ba6e3802cf50c83))
+
 ## [1.0.0-alpha.35](https://github.com/bosens-China/ai-i18n/compare/vite-v1.0.0-alpha.34...vite-v1.0.0-alpha.35) (2026-09-17)
 
 
