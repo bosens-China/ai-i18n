@@ -3,7 +3,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
-import { expect, it } from 'vitest';
+import { expect, it, vi } from 'vitest';
 
 const exec = promisify(execFile);
 it('packages the Codex marketplace and permits only one continuation', async () => {
@@ -77,14 +77,44 @@ it('packages the Codex marketplace and permits only one continuation', async () 
     );
     await fs.writeFile(
       path.join(pkg, 'scan.mjs'),
-      `export async function scanProject() { console.log('config diagnostic'); return { i18n_directory: '/app/i18n', locales: [{locale:'en-US', missing:1}] }; }`,
+      `export async function scanProject(config, entries) { console.log('config diagnostic'); return { config, entries, i18n_directory: '/app/i18n', locales: [{locale:'en-US', missing:config.configLoader === 'runner' ? 2 : 1}] }; }`,
     );
+    for (const loader of [undefined, 'bundle', 'runner', 'native']) {
+      const { stdout } = await exec(process.execPath, [
+        path.join(installed, 'skills/use-ai-i18n-mcp/scripts/scan.mjs'),
+        '--root',
+        root,
+        '--config',
+        'vite.custom.ts',
+        '--mode',
+        'test',
+        '--entry',
+        'main.ts',
+        ...(loader ? ['--configLoader', loader] : []),
+      ]);
+      const result = JSON.parse(stdout.trim().split('\n').at(-1)!);
+      expect(result.config).toEqual({
+        logLevel: 'warn',
+        configFile: path.join(root, 'vite.custom.ts'),
+        mode: 'test',
+        ...(loader ? { configLoader: loader } : {}),
+      });
+      expect(result.entries).toEqual(['main.ts']);
+    }
     expect(
       await bundled.check({ cwd: root, stop_hook_active: false }),
     ).toMatchObject({
       decision: 'block',
       reason: expect.stringContaining('en-US=1'),
     });
+    vi.stubEnv('AI_I18N_CONFIG_LOADER', 'runner');
+    expect(
+      await bundled.check({ cwd: root, stop_hook_active: false }),
+    ).toMatchObject({
+      decision: 'block',
+      reason: expect.stringContaining('en-US=2'),
+    });
+    vi.unstubAllEnvs();
     expect(await bundled.check({ cwd: root, stop_hook_active: true })).toEqual(
       {},
     );
@@ -130,6 +160,7 @@ it('packages the Codex marketplace and permits only one continuation', async () 
       reason: expect.stringContaining('could not verify'),
     });
   } finally {
+    vi.unstubAllEnvs();
     await fs.rm(root, { recursive: true, force: true });
   }
 });

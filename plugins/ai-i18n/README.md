@@ -29,6 +29,7 @@ codex plugin add ai-i18n@ai-i18n
 安装范围由宿主决定，可以全局安装；每次检查只针对当前应用。
 若工作区根目录不是目标应用的命令执行目录，请在启动 Codex 前设置 `AI_I18N_APP_ROOT`。
 该变量的值为目标应用的绝对路径。需要非默认配置或运行模式时，同时设置 `AI_I18N_CONFIG` 和 `AI_I18N_MODE`。
+应用显式指定配置加载器时，用 `AI_I18N_CONFIG_LOADER` 沿用 `bundle`、`runner` 或 `native`。
 未明确应用或目录未直接声明 `@ai-i18n/vite` 时跳过，不会自动选择 Monorepo 中的子应用。
 
 ## 实际流程

@@ -7,7 +7,8 @@ scan and helper exports before assuming compatibility. Plugin updates do not upg
 The Stop script only checks the selected app. It uses the absolute `AI_I18N_APP_ROOT` override or the
 Codex cwd; only a directory directly declaring `@ai-i18n/vite` qualifies.
 For a monorepo root that is not the selected app, use the explicit app root and preserve config/mode
-with `AI_I18N_CONFIG` / `AI_I18N_MODE`. Do not guess a sub-app or register multiple competing MCP servers.
+with `AI_I18N_CONFIG` / `AI_I18N_MODE`; preserve an explicit configuration loader with
+`AI_I18N_CONFIG_LOADER` (`bundle`, `runner`, or `native`). Do not guess a sub-app or register multiple competing MCP servers.
 
 The script calls the scan helper, which coordinates Dev and cache reuse. Its feedback is advisory:
 use the current task's translation authorization, read the existing tool contracts, list missing

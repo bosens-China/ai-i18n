@@ -32,6 +32,8 @@ export async function check(input) {
   if (process.env.AI_I18N_CONFIG)
     args.push('--config', process.env.AI_I18N_CONFIG);
   if (process.env.AI_I18N_MODE) args.push('--mode', process.env.AI_I18N_MODE);
+  if (process.env.AI_I18N_CONFIG_LOADER)
+    args.push('--configLoader', process.env.AI_I18N_CONFIG_LOADER);
   let reason;
   try {
     const { stdout } = await exec(process.execPath, args, {

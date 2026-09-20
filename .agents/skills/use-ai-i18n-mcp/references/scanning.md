@@ -11,7 +11,12 @@ node <skill-directory>/scripts/scan.mjs --root <absolute-app-command-directory>
 
 `--root` is the working directory of the app's Vite command, not an override of `vite.config.root`.
 The script loads that app's installed `@ai-i18n/vite` and Vite config. Preserve an existing command's
-`--config` and `--mode` by passing them to the script. The default mode is `development`.
+`--config`, `--mode`, and `--configLoader` by passing them to the script. The default mode is
+`development`; omit `--configLoader` to keep Vite's default. Supported loaders are `bundle`,
+`runner`, and `native`. If the app uses `vite --configLoader runner`, pass
+`--configLoader runner` to this helper too. Read the app command as text and pass its explicit flags;
+the helper does not infer them from package scripts. Do not execute package scripts to discover a
+loader or switch loaders automatically. The programmatic `scanProject` entry accepts Vite's InlineConfig.
 
 The scanner uses the client Dev transformation pipeline, starting from configured build inputs,
 library entries, or `index.html`. It follows static imports, static dynamic imports, and globs after
@@ -62,8 +67,17 @@ from a prior successful command alone. The shared scanner reuses a successful ca
 entry, configuration, environment and output digests match. It still reads current translations and
 overrides. Cache deletion is safe; missing/modified extracted data and unknown custom transform
 plugins force a rescan. This first cache hashes input content and skips extraction, not all file IO.
-Reachable files outside the fingerprinted app/pnpm workspace disable reuse. Scan errors and edits
-during scanning do not produce a valid cache hit. Review all-page scope and plugin Stop checks use
+Reachable files outside the fingerprinted app/pnpm workspace disable reuse. Unreadable unrelated
+paths (including broken links) also disable reuse; a required source/configuration read failure still
+fails the scan. Cache hashing remains conservative and may read workspace files outside the entry graph.
+Commit validation separately checks consumed source, configuration/environment, and candidate-file
+additions/deletions. Declaration outputs (`*.d.ts`, `*.d.mts`, `*.d.cts`), `*.tsbuildinfo`, `*.log`, and
+files under `.agents`, `.vscode`, `.idea`, `.gemini`, `.claude`, or `.cache` are exempt from candidate
+additions/deletions; an actually consumed file still receives source validation. Unrelated content
+edits and these generated artifacts do not alone block publication, but any fingerprint change
+prevents saving a reusable result. Other candidate additions/deletions conservatively require retry,
+even if not yet reachable, so new glob pages cannot silently disappear from the catalog.
+Scan errors and edits during scanning do not produce a valid cache hit. Review all-page scope and plugin Stop checks use
 this same implementation; do not build a separate Skill-side cache.
 
 After a successful scan, use Host MCP when connected. Ordinary translation needs no additional Build.

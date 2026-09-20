@@ -22,6 +22,9 @@ or executable behavior, follow the target project and report the discrepancy.
 
 Read the target app's `package.json`, `vite.config.*`, TypeScript config, entry files, and framework
 plugin setup. Confirm that the app matches the current public support requirements before editing it.
+Preserve an explicit Vite configuration loader when handing off to Agent scanning; follow the
+`use-ai-i18n-mcp` scanning reference for helper arguments and failure recovery. Do not change the
+app's loader merely because it is a monorepo.
 
 In a monorepo, identify one target Vite build. Ask the user only when more than one app is plausible,
 or when a new setup has no source and target language decision that can be inferred from existing

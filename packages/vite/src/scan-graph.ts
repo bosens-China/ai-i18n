@@ -40,6 +40,7 @@ export function scanEntries(
 export async function walkScanGraph(
   server: ViteDevServer,
   entries: readonly string[],
+  trackFile?: (file: string) => Promise<void>,
 ) {
   const environment = server.environments.client;
   if (!environment)
@@ -53,6 +54,7 @@ export async function walkScanGraph(
   const visited = new Set<string>();
   const files = new Set<string>(entries);
   for (const file of entries) {
+    await trackFile?.(file);
     if (!file.endsWith('.html')) {
       queue.push(`/@fs/${normalizePath(file)}`);
       continue;
@@ -102,7 +104,13 @@ export async function walkScanGraph(
       node.type === 'css'
     )
       continue;
-    if (path.isAbsolute(id)) files.add(id.split('?')[0]!);
+    if (path.isAbsolute(id)) {
+      const file = id.split('?')[0]!;
+      files.add(file);
+      // 仍转换以完成 Dev 预打包调度，但预打包输出不属于需要冻结的应用源码。
+      if (!id.startsWith(normalizePath(server.config.cacheDir) + '/'))
+        await trackFile?.(file);
+    }
     const result = await environment.transformRequest(url);
     if (!result)
       throw new Error(

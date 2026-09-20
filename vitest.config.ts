@@ -3,6 +3,7 @@ import { configDefaults, defineConfig } from 'vitest/config';
 const viteIntegrationTests = [
   'packages/vite/test/scan.test.ts',
   'packages/vite/test/scan-review.test.ts',
+  'packages/vite/test/scan-compatibility.test.ts',
   'packages/vite/test/build-summary.test.ts',
   'packages/vite/test/build-watch.test.ts',
   'packages/vite/test/dev-translation-updates.test.ts',

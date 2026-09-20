@@ -7,7 +7,13 @@ import { ProjectState } from './project-state.js';
 import type { AiI18nPluginApi } from './plugin-api.js';
 import { scanEntries, walkScanGraph } from './scan-graph.js';
 import { summarizeProject } from './build-summary.js';
-import { canReuseScan, digest, scanInputs } from './scan-cache.js';
+import {
+  canReuseScan,
+  digest,
+  scanCandidates,
+  scanFile,
+  scanInputs,
+} from './scan-cache.js';
 
 export type ScanResult = Awaited<ReturnType<typeof scanCatalog>>;
 
@@ -69,7 +75,10 @@ async function scanCatalog(
     .then((text) => JSON.parse(text) as { key: string; output: string })
     .catch(() => undefined);
   let reused =
-    canReuseScan(server) && cached?.key === key && cached.output === output();
+    before.complete &&
+    canReuseScan(server) &&
+    cached?.key === key &&
+    cached.output === output();
   // 活动 Dev 首次必须建自己的模块图，不能只把磁盘结果塞进缺少依赖关系的 Analyzer。
   if (!api.scanMode && !api.scanned) reused = false;
   if (!reused) {
@@ -86,7 +95,15 @@ async function scanCatalog(
       api.state().hydrateCache(await store.load());
       api.state().hydrateOverrides(await store.loadOverrides());
       server.environments.client!.moduleGraph.invalidateAll();
-      const ids = await walkScanGraph(server, entryFiles);
+      const consumed = new Map<string, string | undefined>();
+      const trackFile = async (file: string) => {
+        file = path.resolve(file);
+        if (!consumed.has(file))
+          consumed.set(file, before.files.get(file) ?? (await scanFile(file)));
+      };
+      for (const file of server.config.configFileDependencies)
+        await trackFile(file);
+      const ids = await walkScanGraph(server, entryFiles, trackFile);
       const active = new Set([...ids].map((id) => api.state().normalizeId(id)));
       const warnings = [...api.state().modules]
         .filter(([id]) => active.has(id))
@@ -99,7 +116,17 @@ async function scanCatalog(
           ),
         );
       const after = await scanInputs(server, api);
-      if (before.hash !== after.hash)
+      // 内容变化只校验消费输入；候选集合增删仍保守阻止提交，避免漏掉 glob 新页面。
+      const changed = await Promise.all(
+        [...consumed].map(
+          async ([file, value]) => value !== (await scanFile(file)),
+        ),
+      );
+      if (
+        before.context !== after.context ||
+        scanCandidates(before.files) !== scanCandidates(after.files) ||
+        changed.some(Boolean)
+      )
         throw new Error(
           diagnosticMessage(
             '[ai-i18n] 扫描期间源码发生变化，请重试；清单未提交。',
@@ -116,11 +143,17 @@ async function scanCatalog(
         );
       });
       extracted.splice(0, extracted.length, ...(await store.loadExtracted()));
-      // root 外的消费源码无法由本次摘要覆盖，不写可命中的记录。
-      const covered = [...ids].every(
-        (id) => !path.isAbsolute(id) || id.startsWith(before.root + path.sep),
+      // 不完整摘要、忽略目录中的消费输入和扫描期间的任何变化都不能成为缓存命中。
+      const covered = [...consumed].every(
+        ([file, value]) => value === undefined || before.files.has(file),
       );
-      if (covered) {
+      if (
+        before.complete &&
+        after.complete &&
+        covered &&
+        before.hash === after.hash &&
+        canReuseScan(server)
+      ) {
         await fs.mkdir(path.dirname(filename), { recursive: true });
         await fs.writeFile(filename, JSON.stringify({ key, output: output() }));
       }

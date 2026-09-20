@@ -8,6 +8,7 @@ const { values } = parseArgs({
     root: { type: 'string', default: process.cwd() },
     config: { type: 'string' },
     mode: { type: 'string' },
+    configLoader: { type: 'string' },
     entry: { type: 'string', multiple: true },
   },
 });
@@ -25,6 +26,7 @@ try {
         ? { configFile: path.resolve(root, values.config) }
         : {}),
       ...(values.mode ? { mode: values.mode } : {}),
+      ...(values.configLoader ? { configLoader: values.configLoader } : {}),
     },
     values.entry,
   );
