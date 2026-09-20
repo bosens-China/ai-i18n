@@ -1,5 +1,24 @@
 # @ai-i18n/vite
 
+## [1.0.0-alpha.37](https://github.com/bosens-China/ai-i18n/compare/vite-v1.0.0-alpha.36...vite-v1.0.0-alpha.37) (2026-09-20)
+
+
+### Bug Fixes
+
+* **analyzer:** 修复 Vue 默认值文案的源码位置映射 ([10f2ea3](https://github.com/bosens-China/ai-i18n/commit/10f2ea3db1ddaae65bdc0079538ff6f9a5b2dd92))
+
+
+### Performance Improvements
+
+* **vite:** 合并扫描分析并省略浏览器注册工作 ([2ae3ee8](https://github.com/bosens-China/ai-i18n/commit/2ae3ee85e51e21036b74eec6da2a5c9f52fa5081))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @ai-i18n/analyzer bumped to 1.0.0-alpha.30
+
 ## [1.0.0-alpha.36](https://github.com/bosens-China/ai-i18n/compare/vite-v1.0.0-alpha.35...vite-v1.0.0-alpha.36) (2026-09-20)
 
 
