@@ -35,3 +35,11 @@ try {
   console.error(error instanceof Error ? error.message : String(error));
   process.exitCode = 1;
 }
+
+// 扫描 API 已完成持久化与关闭；第三方插件遗留句柄不应阻塞独立命令退出。
+// 先排空管道输出，避免 Agent 收到截断的 JSON 或错误信息。
+await Promise.all([
+  new Promise((resolve) => process.stdout.write('', resolve)),
+  new Promise((resolve) => process.stderr.write('', resolve)),
+]);
+process.exit(process.exitCode ?? 0);

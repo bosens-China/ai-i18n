@@ -53,6 +53,9 @@ recovered through the existing store; never claim that every filesystem write is
 
 On success, read the final JSON line: `root`, `i18n_directory`, `mode`, `entries`, `file_count`,
 `message_count`, `reused`, and per-locale `translated` / `missing`. Use its absolute `i18n_directory` for tools.
+The standalone helper waits for the scan API to settle and flushes stdout/stderr before exiting
+with status 0 on success or nonzero on failure, even if application plugins leave listeners alive.
+This process boundary belongs only to the helper; programmatic `scanProject` never exits its host.
 Counts describe effective coverage including human overrides; MCP's translation lists describe
 automatic Translation Memory and can still show null slots covered by human rules.
 
