@@ -63,7 +63,8 @@ it('extracts entry, lazy routes, glob pages and shared constants without Build o
     'index.html': '<script type="module" src="/main.ts"></script>',
     'main.ts':
       "import { t } from 'virtual:ai-i18n'; import { LABEL } from '@texts'; console.log(t(LABEL)); void import('./lazy'); console.log(import.meta.glob('./pages/*.ts'));",
-    'texts.ts': "export const LABEL = '首页';",
+    'texts.ts': "export { LABEL } from './labels';",
+    'labels.ts': "export const LABEL = '首页';",
     'lazy.ts': "import { t } from 'virtual:ai-i18n'; console.log(t('懒加载'));",
     'pages/settings.ts':
       "import { t } from 'virtual:ai-i18n'; console.log(t('设置'));",
@@ -74,7 +75,18 @@ it('extracts entry, lazy routes, glob pages and shared constants without Build o
   const input = config(root, translator);
   const generateBundle = vi.fn();
   input.plugins.push({ name: 'no-build', generateBundle });
+  const transformed: string[] = [];
+  input.plugins.push({
+    name: 'capture-scan-code',
+    enforce: 'post',
+    transform(code, id) {
+      if (id.endsWith('/main.ts')) transformed.push(code);
+    },
+  });
   const result = await scanProject(input);
+  expect(transformed).toHaveLength(1);
+  expect(transformed[0]).not.toContain('__registerModule');
+  expect(transformed[0]).not.toContain('__aiI18nAt');
   expect(result).toMatchObject({
     file_count: 3,
     message_count: 3,

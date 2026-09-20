@@ -145,6 +145,8 @@
 ### Vite 生命周期与 Provider
 
 - Dev 渐进处理浏览器实际请求到的模块；Build 以入口可达模块图进行完整处理；Build Watch 复用未变化的分析结果并在必要时校准活动集合。
+- Vite 依赖解析仍记录尚未加载的本地路径，但只有有效分析关联变化才触发额外重算；
+  目标首次加载或已有依赖改向时仍刷新受影响文案，不能以性能优化跳过跨文件提取。
 - Dev 模块消息随原业务模块同步注册到共享 Runtime，不再请求每源码注册虚拟模块；普通自动导入与
   普通静态命名的显式 `virtual:ai-i18n` import 都从共享 Runtime 创建文件 scope。Vue 编译期宏引用的
   binding、namespace、动态 import、直接 re-export、纯副作用和混合 type/未知导出的 import 保留模块级

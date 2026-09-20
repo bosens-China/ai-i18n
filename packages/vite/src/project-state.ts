@@ -75,6 +75,7 @@ export class ProjectState {
   constructor(
     readonly root: string,
     readonly options: NormalizedAiI18nOptions,
+    public deferAnalysis = false,
   ) {
     this.analyzer = new Analyzer({
       resolve: (specifier, importer) =>
@@ -124,7 +125,17 @@ export class ProjectState {
     } else {
       this.autoImportRuntime.delete(moduleId);
     }
-    const affectedModuleIds = this.refresh(moduleId);
+    if (this.deferAnalysis) {
+      const result = {
+        messages: [],
+        warnings: [],
+        dependencies: [],
+        pending: false,
+      };
+      this.modules.set(moduleId, result);
+      return { moduleId, result, affectedModuleIds: [] };
+    }
+    const affectedModuleIds = this.refresh([moduleId]);
     return {
       moduleId,
       result: this.modules.get(moduleId)!,
@@ -165,7 +176,7 @@ export class ProjectState {
     this.locationMappers.delete(moduleId);
     this.translationHooks.delete(moduleId);
     this.autoImportRuntime.delete(moduleId);
-    const affected = dependents.flatMap((dependent) => this.refresh(dependent));
+    const affected = this.refresh(dependents);
     return [...new Set([moduleId, ...affected])];
   }
 
@@ -368,10 +379,16 @@ export class ProjectState {
     );
   }
 
-  private refresh(startModuleId: string): string[] {
+  /** 扫描收齐入口依赖后一次关联、提取；完成后恢复 Dev 的即时更新。 */
+  finishAnalysis(): void {
+    this.deferAnalysis = false;
+    this.refresh(this.analyzer.modules.keys());
+  }
+
+  private refresh(moduleIds: Iterable<string>): string[] {
     this.analyzer.link();
     const affected: string[] = [];
-    const queue = [startModuleId];
+    const queue = [...moduleIds];
     const visited = new Set<string>();
     while (queue.length) {
       const moduleId = queue.shift()!;

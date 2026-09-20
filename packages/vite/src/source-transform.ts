@@ -35,6 +35,7 @@ interface SourceTransformDependencies {
   config(): ResolvedConfig | undefined;
   ready(): Promise<void>;
   state(): ProjectState;
+  scanning(): boolean;
   moduleId(id: string): string;
   timing: DevTimingReporter;
   framework(): AiI18nFramework;
@@ -98,6 +99,7 @@ export function createSourceTransformHandler(
       : false;
     const translationHooks = dependencies.translationHooks();
     const project = dependencies.state();
+    const scanning = dependencies.scanning();
     const previousResult = project.modules.get(normalizedId);
     const initialUpdate = await dependencies.timing.measure(
       'state-transaction',
@@ -195,7 +197,7 @@ export function createSourceTransformHandler(
           frameworkAutoImports(framework),
         );
         const runtimeImports =
-          config?.command === 'serve'
+          config?.command === 'serve' && !scanning
             ? (
                 extraction?.runtimeImports ??
                 findRuntimeImportDeclarations(currentModule)
@@ -214,7 +216,7 @@ export function createSourceTransformHandler(
             : []),
         ];
         const needsRegistration = Boolean(
-          result.messages.length || result.pending,
+          !scanning && (result.messages.length || result.pending),
         );
         const registrationMessages =
           config?.command === 'serve' && needsRegistration
@@ -255,13 +257,13 @@ export function createSourceTransformHandler(
               runtimeImports,
               templateImports,
               needsRegistration,
-              dev: config?.command === 'serve',
+              dev: config?.command === 'serve' && !scanning,
               ...(registrationMessages ? { registrationMessages } : {}),
               preserveAutoImportBindings: autoImports.some((name) =>
                 hoistedAutoImportCandidates.has(name),
               ),
               macroCalls,
-              occurrenceLocations: result.messages.flatMap(
+              occurrenceLocations: (scanning ? [] : result.messages).flatMap(
                 (message) => message.locations,
               ),
             }),

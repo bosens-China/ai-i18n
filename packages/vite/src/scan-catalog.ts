@@ -90,7 +90,9 @@ async function scanCatalog(
       await api.flushProvider();
       await api.runStateTask(api.flushPersistence);
       await api.settleTransforms(() =>
-        api.replaceState(new ProjectState(server.config.root, api.options)),
+        api.replaceState(
+          new ProjectState(server.config.root, api.options, api.scanMode),
+        ),
       );
       api.state().hydrateCache(await store.load());
       api.state().hydrateOverrides(await store.loadOverrides());
@@ -104,6 +106,10 @@ async function scanCatalog(
       for (const file of server.config.configFileDependencies)
         await trackFile(file);
       const ids = await walkScanGraph(server, entryFiles, trackFile);
+      if (api.state().deferAnalysis) {
+        await api.settleTransforms();
+        await api.runStateTask(() => api.state().finishAnalysis());
+      }
       const active = new Set([...ids].map((id) => api.state().normalizeId(id)));
       const warnings = [...api.state().modules]
         .filter(([id]) => active.has(id))

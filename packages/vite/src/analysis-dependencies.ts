@@ -25,8 +25,11 @@ export async function resolveAnalysisDependencies(
   const analyzed = await runStateTask(() => project.analyzer.module(moduleId));
   if (!analyzed) return changed;
 
-  for (const imported of analyzed.imports) {
-    const resolved = await context.resolve(imported.specifier, importer, {
+  // re-export 也需要 Vite 的解析结果，不能依赖 Analyzer 猜测别名路径。
+  for (const imported of [...analyzed.imports, ...analyzed.exports]) {
+    const specifier = imported.specifier;
+    if (specifier === null) continue;
+    const resolved = await context.resolve(specifier, importer, {
       skipSelf: true,
     });
     if (!resolved || resolved.external || resolved.id.startsWith('\0')) {
@@ -36,9 +39,26 @@ export async function resolveAnalysisDependencies(
     const resolvedId = normalizePath(resolved.id.replaceAll('\\', '/'));
     context.addWatchFile(resolvedId);
     changed =
-      (await runStateTask(() =>
-        project.setResolution(importer, imported.specifier, resolvedId),
-      )) || changed;
+      (await runStateTask(() => {
+        if (project.deferAnalysis) {
+          project.setResolution(importer, specifier, resolvedId);
+          return false;
+        }
+        const previousTarget = imported.resolvedModule;
+        const resolutionChanged = project.setResolution(
+          importer,
+          specifier,
+          resolvedId,
+        );
+        const targetId = project.normalizeId(resolvedId);
+        // 仅记录未加载的路径不会改变分析图；目标加载后再刷新。
+        return (
+          resolutionChanged &&
+          Boolean(
+            previousTarget || (targetId && project.analyzer.module(targetId)),
+          )
+        );
+      })) || changed;
     const targetId = project.normalizeId(resolvedId);
     const shouldLoad = await runStateTask(
       () => pending && Boolean(targetId && !project.analyzer.module(targetId)),

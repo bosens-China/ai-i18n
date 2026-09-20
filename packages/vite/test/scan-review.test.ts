@@ -198,6 +198,8 @@ it('keeps Provider translation available when a scanned page is later visited', 
   const api = vite.config.plugins.map(aiI18nPluginApi).find(Boolean)!;
   await ensureScan(vite, api);
   expect(translator).not.toHaveBeenCalled();
-  await vite.transformRequest('/main.ts');
+  const visited = await vite.transformRequest('/main.ts');
+  expect(visited?.code).toContain('__registerModule');
+  expect(visited?.code).toContain('__aiI18nAt');
   await vi.waitFor(() => expect(translator).toHaveBeenCalledOnce());
 });

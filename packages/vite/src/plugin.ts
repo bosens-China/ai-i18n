@@ -195,6 +195,7 @@ export function aiI18n(options: AiI18nOptions): Plugin {
     config: () => config,
     ready: () => ready,
     state: currentState,
+    scanning: () => api.scanMode && Boolean(api.scanning),
     moduleId: (id) =>
       config
         ? (normalizeProjectId(config.root, id) ?? '<unknown>')
