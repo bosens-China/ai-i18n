@@ -39,6 +39,7 @@ interface AiI18nDiagnosticsOptions {
 
 默认在成功 Build 结束后输出一次，等待本轮 Provider 工作与持久化完成；Build Watch 每轮刷新。
 未配置 Provider 或 Provider 未能补齐时，仍会如实显示未翻译数量，汇总本身不会触发翻译。
+关闭汇总不影响独立的 `failOnMissingTranslations` 构建门禁。
 
 文案按原文与 `comment` 的身份去重，文件数只包含有文案的文件。每个目标语言分别统计，
 不计源语言；同一条消息只有在全部使用位置都具备有效译文时才算已翻译。有效译文包含自动

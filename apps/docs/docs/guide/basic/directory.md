@@ -122,6 +122,7 @@ packages/
 目标语言缺少译文时，页面会显示源码文案。你可以配置
 [AI 翻译](/ai/ai-translation)，也可以按
 [补齐和确认译文](/guide/basic/translations)手动处理。
+需要在发布前保证译文齐全时，可设置 `failOnMissingTranslations: true`，让缺译的 Build 失败。
 
 同一句原文在不同语境下需要不同译法时，为 `t()` 提供 `comment`：
 

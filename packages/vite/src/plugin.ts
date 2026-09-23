@@ -159,6 +159,7 @@ export function aiI18n(options: AiI18nOptions): Plugin {
     store: currentStore,
     normalized,
     summary: options.diagnostics?.buildSummary !== false,
+    failOnMissingTranslations: options.failOnMissingTranslations ?? false,
     timing: devTiming,
     performance: performanceDiagnostics,
     closeStore: () => store?.close(),

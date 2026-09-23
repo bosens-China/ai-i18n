@@ -1,4 +1,5 @@
 import type { Plugin, ResolvedConfig } from 'vite';
+import { diagnosticMessage } from '@ai-i18n/analyzer';
 import { formatBuildSummary, summarizeProject } from './build-summary.js';
 import { createBuildWatchState } from './build-watch.js';
 import type { DevTimingReporter } from './dev-timing.js';
@@ -17,6 +18,7 @@ interface BuildDependencies {
   store(): FileStore;
   normalized: NormalizedAiI18nOptions;
   summary: boolean;
+  failOnMissingTranslations: boolean;
   timing: DevTimingReporter;
   performance: ReturnType<typeof createPerformanceDiagnostics>;
   requestMissingTranslations(moduleIds: readonly string[]): void;
@@ -95,7 +97,27 @@ export function createPluginBuildHooks(options: BuildDependencies) {
       async handler(_outputOptions, bundle) {
         const config = options.config();
         if (config?.command !== 'build') return;
+        if (options.failOnMissingTranslations) await options.flushProvider();
         await reconcile(this.getModuleIds(), true);
+        if (
+          options.failOnMissingTranslations &&
+          this.environment.name === 'client'
+        ) {
+          const missing = summarizeProject(options.state()).locales.filter(
+            (locale) => locale.missing > 0,
+          );
+          if (missing.length) {
+            const counts = missing
+              .map(({ locale, missing }) => `${locale}: ${missing}`)
+              .join(', ');
+            throw new Error(
+              diagnosticMessage(
+                `[ai-i18n] 构建失败：存在未翻译文案（${counts}）。`,
+                `[ai-i18n] Build failed: missing translations (${counts}).`,
+              ),
+            );
+          }
+        }
         injectBuiltLocaleHints(bundle, config, options.normalized);
         generated = this.environment.name === 'client';
       },

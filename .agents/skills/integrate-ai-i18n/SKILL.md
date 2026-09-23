@@ -109,6 +109,9 @@ a full Build merely to register copy. Keep a real Build when validating producti
 Build coverage is enabled by default; preserve it unless the user requests `diagnostics.buildSummary: false`.
 It reports effective coverage after Provider work, including overrides. A missing count is a cue to
 use the translation Skill, not permission to configure a Provider or overwrite translations.
+Preserve an existing `failOnMissingTranslations` choice. Enable it only when the user requests a
+Build gate for missing translations; it is independent of `provider.strict` and the summary switch.
+For the option's Agent defaults, follow [Optional features](references/optional-features.md).
 
 For startup overhead and stage attribution, follow [Performance diagnosis](references/performance.md).
 

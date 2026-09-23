@@ -1,5 +1,8 @@
 # Review 开关示例
 
+三个示例均开启 `failOnMissingTranslations: true`；运行 `pnpm examples:build` 时，任一目标语言
+仍有缺译就会使对应示例构建失败。
+
 三个示例分别演示 `aiI18nReview()` 的终端 URL 提示与页面入口开关：
 
 | 示例    | `printUrl` | `launcher` | 预期行为                                             |

@@ -51,6 +51,10 @@ changes, follow [Entry scan and Skill-only translation](references/scanning.md).
 over a full Build. Repeat the helper after source edits and before final verification; it decides whether extraction can be reused. Never edit
 Translation Memory storage directly. If Host MCP is unavailable, the same reference provides the
 Skill-only list/set path without registering a server.
+If the target app enables `failOnMissingTranslations`, a Build with remaining missing target-locale
+values fails after Provider work. Keep that gate enabled; scan and list missing entries here, fill them
+through the normal authorized workflow, then rerun the Build. A failed gated Build does not prove its
+application bundle was emitted.
 
 When that app's Vite Dev Server is running, successful MCP Translation Memory or override writes are
 observed and applied to its in-memory Runtime through HMR, including occurrence-scoped override edits

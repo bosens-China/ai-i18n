@@ -94,6 +94,11 @@ Build 专用的页面生成和生产集成仍需真实 Build 验证。没有 Hos
 设置 `diagnostics: { buildSummary: false }` 可关闭。启用 `diagnostics.performance` 后，
 性能摘要会与文案统计合并输出，阶段耗时不能直接相加。Watch 每轮刷新文案统计。
 
+需要缺译时阻止打包，可设置顶层 `failOnMissingTranslations: true`（默认 `false`）。
+Build 会等待 Provider 并按当前入口可达文案检查全部目标语言；任一语言仍缺译时抛错并显示
+各语言缺译数量。该选项无需 Provider，也不受 `diagnostics.buildSummary` 控制；Dev 保持源码回退行为。
+`provider.strict` 只处理 Provider 翻译批次失败或返回 `null`，不代替最终覆盖检查。
+
 ## Dev 慢阶段诊断
 
 性能诊断默认关闭。首次打开页面或懒路由明显变慢时，可临时开启阶段耗时日志：

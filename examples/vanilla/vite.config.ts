@@ -10,6 +10,7 @@ export default defineConfig({
       aiI18n({
         diagnostics: { performance: mode !== 'benchmark-on' },
         sourceLang: 'zh-CN',
+        failOnMissingTranslations: true,
         locales: [
           { value: 'zh-CN', label: '中文' },
           { value: 'en-US', label: 'English' },

@@ -73,6 +73,8 @@ export interface AiI18nOptions {
   loading?: AiI18nLocaleLoadingOptions;
   translationMemory?: AiI18nTranslationMemoryOptions;
   provider?: AiI18nProviderOptions;
+  /** Build 中存在目标语言缺译时失败；默认关闭。 */
+  failOnMissingTranslations?: boolean;
   directory?: string;
   cleanup?: AiI18nCleanupOptions;
   diagnostics?: AiI18nDiagnosticsOptions;
