@@ -6,6 +6,7 @@ import type {
 } from 'vite';
 import type { TranslationHookBinding } from './extractor.js';
 import type { DevStateTaskRunner } from './dev-state-queue.js';
+import type { DevTimingReporter } from './dev-timing.js';
 import type { FileStore } from './file-store.js';
 import {
   extractFrameworkSource,
@@ -16,6 +17,7 @@ import { sourceUpdateOptions } from './plugin-utils.js';
 import { isNotFound } from './json-files.js';
 import { isInternalStoreFile } from './file-store-paths.js';
 import type { ProjectState } from './project-state.js';
+import { normalizeProjectId } from './project-paths.js';
 
 interface HotUpdateDependencies {
   sourcePattern: RegExp;
@@ -36,6 +38,35 @@ interface HotUpdateDependencies {
 type HotUpdateContext = MinimalPluginContextWithoutEnvironment & {
   environment: DevEnvironment;
 };
+
+export function wrapHotUpdate(
+  handler: ReturnType<typeof createHotUpdateHandler>,
+  options: {
+    store(): FileStore;
+    scanPending(): Promise<unknown> | undefined;
+    ignores(file: string): boolean;
+    root(): string | undefined;
+    timing: DevTimingReporter;
+  },
+) {
+  return async function hotUpdate(
+    this: HotUpdateContext,
+    update: HotUpdateOptions,
+  ) {
+    // 文件事件合并后再读，避免读到外部连续写入的中间状态。
+    if (options.store().manages(update.file))
+      await new Promise<void>((resolve) => setTimeout(resolve, 50));
+    await options.scanPending()?.catch(() => undefined);
+    if (options.ignores(update.file)) return [];
+    const root = options.root();
+    const moduleId = root
+      ? (normalizeProjectId(root, update.file) ?? '<project>')
+      : '<project>';
+    return options.timing.measure('hot-update', moduleId, () =>
+      handler.call(this, update),
+    );
+  };
+}
 
 export function createHotUpdateHandler(dependencies: HotUpdateDependencies) {
   return async function hotUpdate(

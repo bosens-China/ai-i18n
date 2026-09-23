@@ -59,11 +59,11 @@ Key pages to review:
 
 **For TypeScript (recommended):**
 - **TypeScript SDK**: Use WebFetch to load `https://raw.githubusercontent.com/modelcontextprotocol/typescript-sdk/main/README.md`
-- [⚡ TypeScript Guide](./reference/node_mcp_server.md) - TypeScript patterns and examples
+- [⚡ TypeScript Tools Guide](./reference/node-mcp-tools.md) - TypeScript patterns and examples
 
 **For Python:**
 - **Python SDK**: Use WebFetch to load `https://raw.githubusercontent.com/modelcontextprotocol/python-sdk/main/README.md`
-- [🐍 Python Guide](./reference/python_mcp_server.md) - Python patterns and examples
+- [🐍 Python Tools Guide](./reference/python-mcp-tools.md) - Python patterns and examples
 
 #### 1.4 Plan Your Implementation
 
@@ -80,8 +80,8 @@ Prioritize comprehensive API coverage. List endpoints to implement, starting wit
 #### 2.1 Set Up Project Structure
 
 See language-specific guides for project setup:
-- [⚡ TypeScript Guide](./reference/node_mcp_server.md) - Project structure, package.json, tsconfig.json
-- [🐍 Python Guide](./reference/python_mcp_server.md) - Module organization, dependencies
+- [⚡ TypeScript Tools](./reference/node-mcp-tools.md) and [responses/configuration](./reference/node-mcp-responses.md)
+- [🐍 Python Tools](./reference/python-mcp-tools.md) - Module organization and dependencies
 
 #### 2.2 Implement Core Infrastructure
 
@@ -152,7 +152,7 @@ See language-specific guides for detailed testing approaches and quality checkli
 
 After implementing your MCP server, create comprehensive evaluations to test its effectiveness.
 
-**Load [✅ Evaluation Guide](./reference/evaluation.md) for complete evaluation guidelines.**
+**Load [✅ Evaluation Design](./reference/evaluation-design.md) and [running instructions](./reference/evaluation-running.md).**
 
 #### 4.1 Understand Evaluation Purpose
 
@@ -213,24 +213,10 @@ Load these resources as needed during development:
 - **TypeScript SDK**: Fetch from `https://raw.githubusercontent.com/modelcontextprotocol/typescript-sdk/main/README.md`
 
 ### Language-Specific Implementation Guides (Load During Phase 2)
-- [🐍 Python Implementation Guide](./reference/python_mcp_server.md) - Complete Python/FastMCP guide with:
-  - Server initialization patterns
-  - Pydantic model examples
-  - Tool registration with `@mcp.tool`
-  - Complete working examples
-  - Quality checklist
-
-- [⚡ TypeScript Implementation Guide](./reference/node_mcp_server.md) - Complete TypeScript guide with:
-  - Project structure
-  - Zod schema patterns
-  - Tool registration with `server.registerTool`
-  - Complete working examples
-  - Quality checklist
+- TypeScript: [tools and project structure](./reference/node-mcp-tools.md), [responses and configuration](./reference/node-mcp-responses.md), [complete example](./reference/node-mcp-example.md), [advanced features and checklist](./reference/node-mcp-advanced.md)
+- Python: [tools and project structure](./reference/python-mcp-tools.md), [complete example](./reference/python-mcp-example.md), [advanced features and checklist](./reference/python-mcp-advanced.md)
 
 ### Evaluation Guide (Load During Phase 4)
-- [✅ Evaluation Guide](./reference/evaluation.md) - Complete evaluation creation guide with:
-  - Question creation guidelines
-  - Answer verification strategies
-  - XML format specifications
-  - Example questions and answers
-  - Running an evaluation with the provided scripts
+- [Evaluation design and format](./reference/evaluation-design.md)
+- [Examples and verification](./reference/evaluation-examples.md)
+- [Running and troubleshooting](./reference/evaluation-running.md)

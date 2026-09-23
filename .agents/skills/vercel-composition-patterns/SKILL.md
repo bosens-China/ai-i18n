@@ -84,6 +84,6 @@ Each rule file contains:
 - Correct code example with explanation
 - Additional context and references
 
-## Full Compiled Document
+## Rule Index
 
-For the complete guide with all rules expanded: `AGENTS.md`
+Use [AGENTS.md](./AGENTS.md) to find the relevant rule in `rules/`; each rule file contains its complete guidance and examples.

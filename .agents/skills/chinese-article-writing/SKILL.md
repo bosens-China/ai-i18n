@@ -52,7 +52,7 @@ description: Create, rewrite, polish, and proofread Chinese articles, technical 
 - 数字、百分比、货币、范围表达：读取 [数值规范](./references/number.md)
 - 标点、引号、括号、破折号、省略号：读取 [标点符号规范](./references/marks.md)
 - 技术文档、手册、知识库结构：读取 [文档体系规范](./references/structure.md)
-- 长文写作、技术分享、需要模仿语气时：读取 [语气示例](./references/sample-article.md)
+- 长文写作、技术分享、需要模仿语气时：读取 [语气示例：设计思路](./references/sample-article.md)；涉及实现细节时再读 [语气示例：实现与体验](./references/sample-article-implementation.md)
 
 `sample-article.md` 只用于参考表达节奏、段落组织和技术叙述语气，不要复用其中的主题、观点或具体内容。
 

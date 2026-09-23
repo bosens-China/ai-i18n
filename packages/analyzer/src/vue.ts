@@ -2,10 +2,9 @@ import type {
   compileTemplate as compileVueTemplate,
   compileScript as compileVueScript,
   parse as parseVue,
-  SFCBlock,
   SFCDescriptor,
 } from '@vue/compiler-sfc';
-import { SourceMapConsumer, type RawSourceMap } from 'source-map-js';
+import type { RawSourceMap } from 'source-map-js';
 import {
   analyzeModule,
   findDefineI18nMessagesCalls,
@@ -23,6 +22,14 @@ import {
   vueCompileError,
 } from './vue-analysis-support.js';
 import { createVueDefaultLocationMapper } from './vue-default-locations.js';
+import {
+  countLines,
+  createBlockLocationMapper,
+  createBlockSourceMapLocationMapper,
+  createCombinedLocationMapper,
+  createSourceMapLocationMapper,
+  identityLocation,
+} from './vue-location-mappers.js';
 import { findHoistedAutoImportCandidates } from './vue-hoisted-auto-imports.js';
 import { findVueTemplateRuntimeBinding } from './vue-runtime-template-bindings.js';
 import { findVueRuntimeImports } from './vue-runtime-imports.js';
@@ -319,70 +326,8 @@ function findMacroCalls(
   });
 }
 
-function createSourceMapLocationMapper(
-  map: RawSourceMap,
-  fallback?: (location: SourceLocation) => SourceLocation | undefined,
-) {
-  const consumer = new SourceMapConsumer(map);
-  return (location: SourceLocation): SourceLocation => {
-    const original = consumer.originalPositionFor(location);
-    return original.line == null || original.column == null
-      ? (fallback?.(location) ?? location)
-      : { line: original.line, column: original.column };
-  };
-}
-
-function createBlockLocationMapper(block: SFCBlock) {
-  return (location: SourceLocation): SourceLocation => ({
-    line: block.loc.start.line + location.line - 1,
-    column:
-      location.column + (location.line === 1 ? block.loc.start.column - 1 : 0),
-  });
-}
-
-function createBlockSourceMapLocationMapper(
-  block: SFCBlock,
-  map: RawSourceMap,
-) {
-  const mapLocation = createSourceMapLocationMapper(map);
-  const mapBlockLocation = createBlockLocationMapper(block);
-  return (location: SourceLocation): SourceLocation =>
-    mapBlockLocation(mapLocation(location));
-}
-
-function createCombinedLocationMapper(
-  script: SFCBlock,
-  templateMapper: (location: SourceLocation) => SourceLocation,
-  templateLineOffset: number,
-  templateLineCount: number,
-) {
-  const scriptMapper = createBlockLocationMapper(script);
-  const scriptLineCount = countLines(script.content);
-  return (location: SourceLocation): SourceLocation => {
-    if (location.line <= scriptLineCount) return scriptMapper(location);
-    if (
-      location.line > templateLineOffset &&
-      location.line <= templateLineOffset + templateLineCount
-    ) {
-      return templateMapper({
-        line: location.line - templateLineOffset,
-        column: location.column,
-      });
-    }
-    return location;
-  };
-}
-
 function scriptLanguage(lang: string | undefined): AnalysisLanguage {
   return lang === 'ts' || lang === 'tsx' || lang === 'jsx' ? lang : 'js';
-}
-
-function identityLocation(location: SourceLocation): SourceLocation {
-  return location;
-}
-
-function countLines(value: string): number {
-  return value.split('\n').length;
 }
 
 function uniqueAnalysisName(

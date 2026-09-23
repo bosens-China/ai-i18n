@@ -5,10 +5,7 @@ import {
   type TranslationValue,
   resolveTranslationOverride,
 } from '@ai-i18n/core';
-import {
-  diagnosticMessage,
-  type TranslationAutoImports,
-} from '@ai-i18n/analyzer';
+import type { TranslationAutoImports } from '@ai-i18n/analyzer';
 import { Analyzer, analyzeModule, extractMessages } from './yuku-analyzer.js';
 import type { ExtractResult, ExtractedMessage } from './yuku-analyzer.js';
 import type { SourceLocation, TranslationHookBinding } from './extractor.js';
@@ -32,7 +29,10 @@ import {
   ProviderTranslationState,
 } from './provider-translation-state.js';
 import { normalizeProjectId, resolutionKey } from './project-paths.js';
-import { occurrenceMessageEntries } from './occurrence-registration.js';
+import {
+  localeRegistration,
+  moduleRegistration,
+} from './occurrence-registration.js';
 import {
   registrationLoadFiles,
   registrationWatchFiles,
@@ -303,48 +303,25 @@ export class ProjectState {
   }
 
   registration(moduleId: string, localeValue?: string): ModuleMessages | null {
-    const result = this.modules.get(moduleId);
-    if (!result?.messages.length) return null;
-    const locales = localeValue
-      ? this.options.locales.filter((locale) => locale.value === localeValue)
-      : this.options.locales;
-
-    return Object.fromEntries(
-      locales.map((locale) => [
-        locale.value,
-        Object.fromEntries(
-          result.messages.flatMap((message) =>
-            occurrenceMessageEntries(moduleId, message, (location) =>
-              locale.value === this.options.sourceLang
-                ? message.source
-                : this.translation(message, locale.value, moduleId, location),
-            ),
-          ),
-        ),
-      ]),
+    return moduleRegistration(
+      this.modules.get(moduleId),
+      moduleId,
+      this.options.locales,
+      this.options.sourceLang,
+      (message, locale, file, occurrence) =>
+        this.translation(message, locale, file, occurrence),
+      localeValue,
     );
   }
 
   localeMessages(locale: string): Record<string, TranslationValue> {
-    if (
-      locale === this.options.sourceLang ||
-      !this.options.locales.some((option) => option.value === locale)
-    ) {
-      throw new RangeError(
-        diagnosticMessage(
-          `[ai-i18n] 不支持目标 locale“${locale}”。`,
-          `[ai-i18n] Unsupported target locale "${locale}".`,
-        ),
-      );
-    }
-    return Object.fromEntries(
-      [...this.modules].flatMap(([moduleId, result]) =>
-        result.messages.flatMap((message) =>
-          occurrenceMessageEntries(moduleId, message, (location) =>
-            this.translation(message, locale, moduleId, location),
-          ),
-        ),
-      ),
+    return localeRegistration(
+      this.modules,
+      locale,
+      this.options.locales,
+      this.options.sourceLang,
+      (message, value, file, occurrence) =>
+        this.translation(message, value, file, occurrence),
     );
   }
 

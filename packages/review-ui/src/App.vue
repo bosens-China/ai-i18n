@@ -14,6 +14,7 @@ import type {
   ReviewWorkbenchSelection,
 } from '@ai-i18n/core';
 import ReviewFilterRail from './components/ReviewFilterRail.vue';
+import ReviewCatalogStatus from './components/ReviewCatalogStatus.vue';
 import ReviewHeader from './components/ReviewHeader.vue';
 import ReviewLocaleRail from './components/ReviewLocaleRail.vue';
 import ReviewLocateResults from './components/ReviewLocateResults.vue';
@@ -23,6 +24,7 @@ import ReviewWorkbenchTabs from './components/ReviewWorkbenchTabs.vue';
 import type { ReviewWorkbenchTab } from './components/ReviewWorkbenchTabs.vue';
 import WorkbenchList from './components/WorkbenchList.vue';
 import ReviewStudioPane from './components/ReviewStudioPane.vue';
+import ReviewToast from './components/ReviewToast.vue';
 import { useReviewConsole } from './composables/useReviewConsole';
 import { useReviewDrafts } from './composables/useReviewDrafts';
 import { useReviewI18n } from './composables/useReviewI18n';
@@ -123,9 +125,7 @@ const candidateMode = computed(() => candidateKeys.value !== null);
 const showAllFilters = computed(
   () => browseScope.value === 'all' && !candidateMode.value,
 );
-watch(browseScope, () => {
-  void review.load();
-});
+watch(browseScope, () => void review.load());
 let stopAutoRefresh: (() => void) | undefined;
 watch(
   interfaceLanguage,
@@ -158,9 +158,7 @@ onMounted(() => {
   void review.load();
   stopAutoRefresh = review.startAutoRefresh();
 });
-onUnmounted(() => {
-  stopAutoRefresh?.();
-});
+onUnmounted(() => stopAutoRefresh?.());
 watch(
   () => props.host.selection,
   (next) => {
@@ -244,15 +242,11 @@ async function mutate(
       :total="total"
       :visible-count="visibleMessages.length"
     />
-    <p
-      v-if="review.refreshError.value || review.refreshing.value"
-      role="status"
-      class="m-0 px-4 py-2 text-sm text-textMuted"
-    >
-      {{
-        review.refreshError.value ? copy.catalogStale : copy.catalogRefreshing
-      }}
-    </p>
+    <ReviewCatalogStatus
+      :copy="copy"
+      :error="review.refreshError.value"
+      :refreshing="review.refreshing.value"
+    />
     <ReviewSettingsPanel
       v-if="workbenchTab === 'settings'"
       :copy="copy"
@@ -401,15 +395,5 @@ async function mutate(
     </main>
   </div>
 
-  <div
-    v-if="review.toast.value"
-    class="absolute z-30 right-6 bottom-6 max-w-[420px] px-4.5 py-3 rounded-xl border border-line bg-bgOverlay text-ink shadow-2xl text-sm leading-snug"
-    :class="{
-      'border-statusRed/40 bg-statusRedBg text-statusRed':
-        review.toast.value.error,
-    }"
-    role="status"
-  >
-    {{ review.toast.value.message }}
-  </div>
+  <ReviewToast :toast="review.toast.value" />
 </template>

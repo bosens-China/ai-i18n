@@ -8,32 +8,11 @@ A structured repository for creating and maintaining React Best Practices optimi
   - `_sections.md` - Section metadata (titles, impacts, descriptions)
   - `_template.md` - Template for creating new rules
   - `area-description.md` - Individual rule files
-- `src/` - Build scripts and utilities
-- `metadata.json` - Document metadata (version, organization, abstract)
-- __`AGENTS.md`__ - Compiled output (generated)
-- __`test-cases.json`__ - Test cases for LLM evaluation (generated)
+- [`AGENTS.md`](./AGENTS.md) - Topic index linking to the rule files
 
 ## Getting Started
 
-1. Install dependencies:
-   ```bash
-   pnpm install
-   ```
-
-2. Build AGENTS.md from rules:
-   ```bash
-   pnpm build
-   ```
-
-3. Validate rule files:
-   ```bash
-   pnpm validate
-   ```
-
-4. Extract test cases:
-   ```bash
-   pnpm extract-tests
-   ```
+Start with [SKILL.md](./SKILL.md), then use [AGENTS.md](./AGENTS.md) to open only the rules needed for the task.
 
 ## Creating a New Rule
 
@@ -49,7 +28,7 @@ A structured repository for creating and maintaining React Best Practices optimi
    - `advanced-` for Advanced Patterns (Section 8)
 3. Fill in the frontmatter and content
 4. Ensure you have clear examples with explanations
-5. Run `pnpm build` to regenerate AGENTS.md and test-cases.json
+5. Add the rule to the topic index in `AGENTS.md`
 
 ## Rule File Structure
 
@@ -87,9 +66,7 @@ Reference: [Link](https://example.com)
 
 - Files starting with `_` are special (excluded from build)
 - Rule files: `area-description.md` (e.g., `async-parallel.md`)
-- Section is automatically inferred from filename prefix
-- Rules are sorted alphabetically by title within each section
-- IDs (e.g., 1.1, 1.2) are auto-generated during build
+- Group rules by filename prefix in `AGENTS.md`
 
 ## Impact Levels
 
@@ -100,13 +77,6 @@ Reference: [Link](https://example.com)
 - `LOW-MEDIUM` - Low-medium gains
 - `LOW` - Incremental improvements
 
-## Scripts
-
-- `pnpm build` - Compile rules into AGENTS.md
-- `pnpm validate` - Validate all rule files
-- `pnpm extract-tests` - Extract test cases for LLM evaluation
-- `pnpm dev` - Build and validate
-
 ## Contributing
 
 When adding or modifying rules:
@@ -115,8 +85,7 @@ When adding or modifying rules:
 2. Follow the `_template.md` structure
 3. Include clear bad/good examples with explanations
 4. Add appropriate tags
-5. Run `pnpm build` to regenerate AGENTS.md and test-cases.json
-6. Rules are automatically sorted by title - no need to manage numbers!
+5. Add or update the link in `AGENTS.md`
 
 ## Acknowledgments
 
