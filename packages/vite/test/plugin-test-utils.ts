@@ -50,18 +50,21 @@ export function setupPlugin(
       missingSourceFiles: false,
     },
   });
-  callHook<void>(plugin.configResolved, {
+  const config = {
     root,
     command: 'serve',
     plugins: vitePlugins,
     logger: { info: timingInfo },
-  } as unknown as ResolvedConfig);
+  } as unknown as ResolvedConfig;
+  callHook<void>(plugin.configResolved, config);
   let closed = false;
   const close = async () => {
     if (closed) return;
     closed = true;
     pluginClosers.delete(close);
-    await callHook<Promise<void>>(plugin.closeBundle);
+    await objectHandler<() => Promise<void>>(plugin.closeBundle).call({
+      environment: { getTopLevelConfig: () => config },
+    });
   };
   pluginClosers.add(close);
   const handler = objectHandler<
