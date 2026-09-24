@@ -82,7 +82,7 @@ export function aiI18n(options: AiI18nOptions): Plugin {
   let devServer: ViteDevServer | undefined;
   let warnedSsr = false;
   const transforms = trackPluginTransforms();
-  let closeScanBridge: (() => Promise<void>) | undefined;
+  const closeScanBridges = new Map<ResolvedConfig, () => Promise<void>>();
   const { currentState, currentStore } = createPluginStateAccessors(
     () => state,
     () => store,
@@ -166,9 +166,11 @@ export function aiI18n(options: AiI18nOptions): Plugin {
     requestMissingTranslations,
     flushProvider,
     flushPersistence: () => devPersistence.flush(),
-    dispose() {
+    dispose(closedConfig) {
       disposeDevUpdates();
-      return closeScanBridge?.();
+      const close = closeScanBridges.get(closedConfig);
+      closeScanBridges.delete(closedConfig);
+      return close?.();
     },
   });
 
@@ -353,7 +355,8 @@ export function aiI18n(options: AiI18nOptions): Plugin {
 
     async configureServer(server) {
       devServer = server;
-      if (!api.scanMode) closeScanBridge = await startScanBridge(server, api);
+      if (!api.scanMode)
+        closeScanBridges.set(server.config, await startScanBridge(server, api));
       return measureSetup('configure-server', () => {
         // Dev 注册不再依附虚拟注册模块，目录观察必须独立存在，才能接收 MCP 与校对页写入。
         server.watcher.add(currentStore().directory);

@@ -2,7 +2,12 @@ import path from 'node:path';
 import fs from 'node:fs/promises';
 import { expect, it, vi } from 'vitest';
 import type { ReviewSnapshot } from '@ai-i18n/core';
-import { fixtureRoot, start, write } from './review-server-test-utils';
+import {
+  fixtureRoot,
+  start,
+  startListening,
+  write,
+} from './review-server-test-utils';
 import { aiI18nPluginApi } from '../src/plugin-api';
 import { ensureScan } from '../src/scan-catalog';
 import { scanWithDev } from '../src/scan-bridge';
@@ -13,6 +18,23 @@ import {
 
 const text = (source: string) =>
   `import { t } from 'virtual:ai-i18n'; console.log(t('${source}'));`;
+
+it('hands the scan bridge to a restarted Dev server', async () => {
+  const root = await fixtureRoot();
+  await write(
+    root,
+    'index.html',
+    '<script type="module" src="/main.ts"></script>',
+  );
+  await write(root, 'main.ts', text('保存'));
+  const { vite } = await startListening(root);
+  const previousConfig = vite.config;
+
+  await vite.restart();
+
+  expect(vite.config).not.toBe(previousConfig);
+  expect((await scanWithDev(vite))?.message_count).toBe(1);
+});
 it('refreshes unvisited routes, removes old references, rejects stale saves and recovers after errors', async () => {
   const root = await fixtureRoot();
   await write(

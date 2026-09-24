@@ -11,6 +11,7 @@ import { withFileLock } from '@ai-i18n/core/translation-memory';
 import type { AiI18nPluginApi } from './plugin-api.js';
 import { ensureScan, type ScanResult } from './scan-catalog.js';
 
+const activeServers = new Map<string, ViteDevServer>();
 const rootPath = (server: ViteDevServer) => realpathSync(server.config.root);
 const configPath = (server: ViteDevServer) =>
   server.config.configFile && realpathSync(server.config.configFile);
@@ -30,7 +31,18 @@ export async function startScanBridge(
     const token = randomBytes(32).toString('hex');
     const filename = descriptor(server);
     const previous = await readDescriptor(filename);
-    if (previous && alive(previous.pid))
+    // Vite 先创建新 Server 再关闭旧 Server；仅允许正在重启的旧实例交接。
+    const restarting = Boolean(
+      (
+        activeServers.get(filename) as
+          (ViteDevServer & { _restartPromise?: Promise<void> }) | undefined
+      )?._restartPromise,
+    );
+    if (
+      previous &&
+      alive(previous.pid) &&
+      !(previous.pid === process.pid && restarting)
+    )
       throw new Error(
         diagnosticMessage(
           '[ai-i18n] 此应用已有活动 Dev，请复用该进程或为另一个实例配置独立 cacheDir 和 i18n 目录。',
@@ -80,9 +92,12 @@ export async function startScanBridge(
       }),
       { mode: 0o600 },
     );
+    activeServers.set(filename, server);
     return async () => {
       bridge.closeAllConnections();
       await new Promise<void>((resolve) => bridge.close(() => resolve()));
+      if (activeServers.get(filename) === server)
+        activeServers.delete(filename);
       if ((await readDescriptor(filename))?.token === token)
         await fs.rm(filename, { force: true });
     };

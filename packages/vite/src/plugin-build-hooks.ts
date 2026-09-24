@@ -24,7 +24,7 @@ interface BuildDependencies {
   requestMissingTranslations(moduleIds: readonly string[]): void;
   flushProvider(): Promise<void>;
   flushPersistence(): Promise<void>;
-  dispose(): void | Promise<void>;
+  dispose(config: ResolvedConfig): void | Promise<void>;
   closeStore(): Promise<void> | undefined;
 }
 
@@ -132,9 +132,9 @@ export function createPluginBuildHooks(options: BuildDependencies) {
       report();
     },
     async closeBundle() {
-      const config = options.config();
+      const config = this.environment.getTopLevelConfig();
       try {
-        await options.dispose();
+        await options.dispose(config);
         await options.flushPersistence();
         if (config?.command !== 'build' || !config.build.watch)
           await options.closeStore();
