@@ -102,6 +102,8 @@ it('reuses extraction but reads new translations, and invalidates a changed cata
   );
   const api = vite.config.plugins.map(aiI18nPluginApi).find(Boolean)!;
   expect((await ensureScan(vite, api)).reused).toBe(false);
+  // 后续手动扫描磁盘变化，关闭文件监听以免异步 HMR 抢先重建提取清单。
+  await vite.watcher.close();
   const transform = vi.spyOn(vite.environments.client!, 'transformRequest');
   expect((await ensureScan(vite, api)).reused).toBe(true);
   expect(transform).not.toHaveBeenCalled();
