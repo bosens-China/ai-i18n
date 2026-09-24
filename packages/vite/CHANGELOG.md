@@ -1,5 +1,12 @@
 # @ai-i18n/vite
 
+## [1.0.0-alpha.39](https://github.com/bosens-China/ai-i18n/compare/vite-v1.0.0-alpha.38...vite-v1.0.0-alpha.39) (2026-09-24)
+
+
+### Bug Fixes
+
+* **vite:** 修复 Dev 重启时扫描服务误判占用 ([90df070](https://github.com/bosens-China/ai-i18n/commit/90df070682ebc5360592735b5702eed76cf70716))
+
 ## [1.0.0-alpha.38](https://github.com/bosens-China/ai-i18n/compare/vite-v1.0.0-alpha.37...vite-v1.0.0-alpha.38) (2026-09-24)
 
 
