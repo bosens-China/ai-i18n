@@ -1,5 +1,12 @@
 # @ai-i18n/vite
 
+## [1.0.0-alpha.38](https://github.com/bosens-China/ai-i18n/compare/vite-v1.0.0-alpha.37...vite-v1.0.0-alpha.38) (2026-09-24)
+
+
+### Features
+
+* **vite:** 支持构建缺译时失败 ([880ff44](https://github.com/bosens-China/ai-i18n/commit/880ff44efe84c52952ac89eaa579f89d486b90d1))
+
 ## [1.0.0-alpha.37](https://github.com/bosens-China/ai-i18n/compare/vite-v1.0.0-alpha.36...vite-v1.0.0-alpha.37) (2026-09-20)
 
 
