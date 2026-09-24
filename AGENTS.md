@@ -16,6 +16,7 @@
 - 重点部分添加注释，注释用中文
 - 插件、ESLint 等面向开发者的提示、警告与报错文案必须适配中英文国际化，不得新增仅支持单一语言的消息
 - 确保代码行数尽量不超过400行，超出考虑拆分
+- 400 行审查只处理本仓库维护的代码、文档和 ai-i18n 自有 Skill（`integrate-ai-i18n`、`use-ai-i18n-mcp`）；跳过第三方 `.agents/skills`、`CHANGELOG.md` 等自动生成文件
 - 代码修改结束后记得允许eslint和ts检查，更改多个文件的时候考虑运行测试用例
 - 当项目规则、MCP 工具契约、Vite 配置方式或 Vue、React、Vanilla 接入流程发生变化时，必须同步检查并更新 `.agents/skills/use-ai-i18n-mcp` 与 `.agents/skills/integrate-ai-i18n`
 - 使用pnpm请尊重本机版本

@@ -10,7 +10,8 @@ lifting state, and composing internals.
   - `_sections.md` - Section metadata (titles, impacts, descriptions)
   - `_template.md` - Template for creating new rules
   - `area-description.md` - Individual rule files
-- [`AGENTS.md`](./AGENTS.md) - Topic index linking to the rule files
+- `metadata.json` - Document metadata (version, organization, abstract)
+- **`AGENTS.md`** - Compiled output (generated)
 
 ## Rules
 
