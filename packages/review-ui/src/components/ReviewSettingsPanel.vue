@@ -50,7 +50,7 @@ const themeOptions = [
         <button
           v-for="option in themeOptions"
           :key="option.value"
-          class="theme-segment segment-option h-9 px-2 text-center"
+          class="theme-segment segment-option px-2 text-center"
           type="button"
           role="radio"
           :aria-pressed="preference === option.value"
@@ -76,7 +76,7 @@ const themeOptions = [
         <button
           v-for="option in languageOptions"
           :key="option.value"
-          class="segment-option h-9 px-2 text-center"
+          class="segment-option px-2 text-center"
           type="button"
           role="radio"
           :aria-pressed="languagePreference === option.value"

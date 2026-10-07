@@ -1,18 +1,122 @@
+.btn-primary,
+.btn-quiet,
+.btn-icon {
+  height: var(--review-button-height, 32px);
+  border-radius: var(--review-button-radius, 8px);
+}
+
+.btn-primary {
+  border-color: var(
+    --review-primary-button-border,
+    var(--review-button-border, transparent)
+  );
+  color: var(
+    --review-primary-button-text,
+    var(--review-button-text, var(--_review-on-accent))
+  );
+  background: var(
+    --review-primary-button-bg,
+    var(--review-button-bg, var(--_review-accent-surface))
+  );
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: var(
+    --review-primary-button-bg-hover,
+    var(--review-button-bg-hover, var(--_review-accent-surface-hover))
+  );
+}
+
+.btn-quiet {
+  border-color: var(
+    --review-quiet-button-border,
+    var(--review-button-border, var(--_review-border))
+  );
+  color: var(
+    --review-quiet-button-text,
+    var(--review-button-text, var(--_review-danger))
+  );
+  background: var(
+    --review-quiet-button-bg,
+    var(--review-button-bg, var(--_review-bg-subtle))
+  );
+}
+
+.btn-quiet:hover:not(:disabled) {
+  border-color: var(
+    --review-quiet-button-border-hover,
+    var(--review-button-border-hover, var(--_review-danger))
+  );
+  background: var(
+    --review-quiet-button-bg-hover,
+    var(--review-button-bg-hover, var(--_review-danger-soft))
+  );
+}
+
+.btn-icon {
+  width: var(--review-button-height, 32px);
+  border-color: var(
+    --review-icon-button-border,
+    var(--review-button-border, var(--_review-border))
+  );
+  color: var(
+    --review-icon-button-text,
+    var(--review-button-text, var(--_review-text-muted))
+  );
+  background: var(
+    --review-icon-button-bg,
+    var(--review-button-bg, var(--_review-bg-subtle))
+  );
+}
+
+.btn-icon:hover:not(:disabled) {
+  border-color: var(
+    --review-icon-button-border-hover,
+    var(--review-button-border-hover, var(--_review-border-strong))
+  );
+  color: var(
+    --review-icon-button-text-hover,
+    var(--review-button-text-hover, var(--_review-text))
+  );
+  background: var(
+    --review-icon-button-bg-hover,
+    var(--review-button-bg-hover, var(--_review-bg-subtle-hover))
+  );
+}
+
+.review-tab {
+  height: var(--review-tab-height, 36px);
+  color: var(--review-tab-text, var(--_review-text-muted));
+}
+
+.review-tab:hover,
+.review-tab[aria-selected='true'] {
+  color: var(--review-tab-text-active, var(--_review-text));
+}
+
+.review-tab[aria-selected='true'] {
+  border-bottom-color: var(--review-tab-indicator, var(--_review-accent));
+}
+
 .review-tab[aria-selected='true'] .review-scope-count {
-  color: var(--review-accent);
+  color: var(--review-tab-indicator, var(--_review-accent));
 }
 
 .review-progress-fill {
   height: 100%;
   border-radius: inherit;
-  background: linear-gradient(90deg, var(--review-accent), var(--review-cyan));
+  background: linear-gradient(
+    90deg,
+    var(--_review-accent-surface),
+    var(--_review-accent-secondary)
+  );
   transition: width 240ms ease-out;
 }
 
 .locate-header {
   background: linear-gradient(
     90deg,
-    var(--review-accent-soft),
+    var(--_review-accent-soft),
     transparent 72%
   );
 }
@@ -22,7 +126,7 @@
   content: '';
   position: absolute;
   left: 3px;
-  background: var(--review-cyan);
+  background: var(--_review-accent-secondary);
 }
 
 .location-rail::before {
@@ -38,10 +142,41 @@
   height: 7px;
   border-radius: 50%;
   transform: translateX(-3px);
-  box-shadow: 0 0 0 3px rgb(6 182 212 / 14%);
+  box-shadow: 0 0 0 3px
+    color-mix(in srgb, var(--_review-accent-secondary) 14%, transparent);
+}
+
+.segment-option,
+.filter-segment,
+.scope-segment,
+.theme-segment {
+  height: var(--review-segment-height, 28px);
+  border-radius: var(--review-segment-radius, 6px);
+  color: var(--review-segment-text, var(--_review-text-muted));
+  background: var(--review-segment-bg, transparent);
+}
+
+.segment-option:hover,
+.filter-segment:hover,
+.scope-segment:hover,
+.theme-segment:hover {
+  color: var(--review-segment-text-hover, var(--_review-text));
+  background: var(--review-segment-bg-hover, var(--_review-bg-subtle-hover));
+}
+
+.review-settings-panel .segment-option,
+.review-settings-panel .theme-segment {
+  height: var(
+    --review-settings-segment-height,
+    var(--review-segment-height, 36px)
+  );
 }
 
 /* 提高状态选择器的优先级，避免 hover 工具类覆盖当前选择。 */
+.segment-option[aria-pressed='true'],
+.segment-option[aria-pressed='true']:hover,
+.segment-option[aria-checked='true'],
+.segment-option[aria-checked='true']:hover,
 .filter-segment[aria-pressed='true'],
 .filter-segment[aria-pressed='true']:hover,
 .scope-segment[aria-pressed='true'],
@@ -50,16 +185,20 @@
 .theme-segment[aria-pressed='true']:hover,
 .theme-segment[aria-checked='true'],
 .theme-segment[aria-checked='true']:hover {
-  color: #fff;
-  background: var(--review-accent);
+  color: var(--review-segment-text-active, var(--_review-on-accent));
+  background: var(--review-segment-bg-active, var(--_review-accent-surface));
 }
 
 /* 输入焦点只改变颜色与阴影，避免编辑时发生布局位移。 */
 .review-input {
+  border-color: var(--review-input-border, var(--_review-border));
+  border-radius: var(--review-input-radius, 8px);
+  color: var(--review-input-text, var(--_review-text));
+  background: var(--review-input-bg, var(--_review-bg-subtle));
   outline: none;
   box-shadow:
-    inset 0 0 0 0 rgb(59 130 246 / 0%),
-    0 0 0 0 rgb(59 130 246 / 0%);
+    inset 0 0 0 0 transparent,
+    0 0 0 0 transparent;
   transition:
     border-color 200ms ease-out,
     background-color 200ms ease-out,
@@ -67,12 +206,19 @@
 }
 
 .review-input:focus {
-  border-color: var(--review-accent);
-  background-color: var(--review-bg-surface);
+  border-color: var(--review-input-border-focus, var(--_review-accent));
+  background-color: var(--review-input-bg-focus, var(--_review-bg-surface));
   box-shadow:
-    inset 0 0 0 1px var(--review-accent-soft),
-    0 0 0 3px var(--review-accent-soft),
-    var(--review-shadow-soft);
+    inset 0 0 0 1px var(--review-input-focus-glow, var(--_review-accent-soft)),
+    0 0 0 3px var(--review-input-focus-glow, var(--_review-accent-soft)),
+    var(--_review-shadow-soft);
+}
+
+.review-filter-search .review-input {
+  border-radius: var(
+    --review-filter-input-radius,
+    var(--review-input-radius, 6px)
+  );
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -88,14 +234,14 @@
 }
 
 ::-webkit-scrollbar-track {
-  background: var(--review-bg-base);
+  background: var(--_review-bg-base);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--review-line-focus);
+  background: var(--_review-border-strong);
   border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--review-muted);
+  background: var(--_review-text-muted);
 }

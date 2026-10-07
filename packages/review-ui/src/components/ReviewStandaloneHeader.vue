@@ -40,10 +40,10 @@ const remainingSummary = computed(() =>
             stroke-width="2.25"
             stroke-linecap="round"
           />
-          <circle cx="29" cy="27.5" r="6.25" fill="var(--review-bg-surface)" />
+          <circle cx="29" cy="27.5" r="6.25" fill="var(--_review-bg-surface)" />
           <path
             d="m26.2 27.5 1.8 1.8 3.8-4.2"
-            stroke="var(--review-cyan)"
+            stroke="var(--_review-accent-secondary)"
             stroke-width="2.2"
             stroke-linecap="round"
             stroke-linejoin="round"
@@ -52,7 +52,7 @@ const remainingSummary = computed(() =>
       </span>
       <div class="min-w-0">
         <p
-          class="m-0 font-mono text-[10px] font-bold tracking-[0.14em] text-cyan uppercase"
+          class="m-0 font-mono text-[10px] font-bold tracking-[0.14em] text-accentSecondary uppercase"
         >
           {{ copy.standaloneEyebrow }}
         </p>

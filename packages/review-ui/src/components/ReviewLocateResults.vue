@@ -44,9 +44,11 @@ const groups = computed(() => {
 
 <template>
   <section class="locate-results flex-1 min-h-0 flex flex-col bg-bgSurface">
-    <header class="locate-header flex-none px-3 py-2.5 border-b border-cyan/25">
+    <header
+      class="locate-header flex-none px-3 py-2.5 border-b border-accentSecondary/25"
+    >
       <button
-        class="inline-flex cursor-pointer items-center gap-1.5 border-0 bg-transparent p-0 text-[11px] leading-[1.2] font-bold text-accent hover:text-cyan"
+        class="inline-flex cursor-pointer items-center gap-1.5 border-0 bg-transparent p-0 text-[11px] leading-[1.2] font-bold text-accent hover:text-accentSecondary"
         type="button"
         @click="emit('back')"
       >
@@ -54,7 +56,9 @@ const groups = computed(() => {
         {{ copy.backToBrowse }}
       </button>
       <div class="mt-2 flex items-center justify-between gap-2">
-        <strong class="text-xs text-cyan">{{ copy.locateResults }}</strong>
+        <strong class="text-xs text-accentSecondary">{{
+          copy.locateResults
+        }}</strong>
         <span class="font-mono text-[10px] text-dimmed">
           {{ copy.candidateSummary(candidateKeys.size) }}
         </span>
@@ -88,7 +92,7 @@ const groups = computed(() => {
             <span class="block text-xs font-bold text-ink truncate">
               {{ entry.message.message.source }}
             </span>
-            <span class="block mt-1 font-mono text-[10px] text-cyan">
+            <span class="block mt-1 font-mono text-[10px] text-accentSecondary">
               L{{ entry.target.location.line }}:C{{
                 entry.target.location.column + 1
               }}

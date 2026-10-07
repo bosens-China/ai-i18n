@@ -1,63 +1,93 @@
+.review-locale-option {
+  height: var(--review-locale-height, 28px);
+  border-color: var(--review-locale-border, transparent);
+  border-radius: var(--review-locale-radius, 7px);
+  color: var(--review-locale-text, var(--_review-text-muted));
+  background: var(--review-locale-bg, transparent);
+}
+
+.review-locale-option:hover {
+  color: var(--review-locale-text-hover, var(--_review-text));
+  background: var(--review-locale-bg-hover, var(--_review-bg-subtle-hover));
+}
+
 /* 选中层级依赖主题色混合，保留为语义状态而不是拆散到模板。 */
 .review-locale-option[aria-pressed='true'] {
-  border-color: color-mix(in srgb, var(--review-accent) 42%, transparent);
-  color: #fff;
-  background: var(--review-accent);
-  box-shadow: 0 3px 10px var(--review-accent-soft);
+  border-color: var(--review-locale-border-active, transparent);
+  color: var(--review-locale-text-active, var(--_review-on-accent));
+  background: var(--review-locale-bg-active, var(--_review-accent-surface));
+  box-shadow: var(
+    --review-locale-shadow-active,
+    0 3px 10px var(--_review-accent-soft)
+  );
 }
 
 .workbench-list-item {
+  background: var(--review-list-item-bg, transparent);
   transition:
     background-color 180ms ease,
     box-shadow 180ms ease;
 }
 
 .workbench-list-item:hover {
-  background: color-mix(
-    in srgb,
-    var(--review-accent) 3%,
-    var(--review-bg-surface)
+  background: var(
+    --review-list-item-bg-hover,
+    color-mix(in srgb, var(--_review-accent) 3%, var(--_review-bg-surface))
   );
 }
 
 .workbench-list-location {
-  color: color-mix(in srgb, var(--review-cyan) 64%, var(--review-muted));
+  color: var(
+    --review-list-location-text,
+    color-mix(
+      in srgb,
+      var(--_review-accent-secondary) 64%,
+      var(--_review-text-muted)
+    )
+  );
 }
 
 .workbench-list-vscode {
-  border-color: color-mix(in srgb, #1f9cf0 38%, var(--review-line));
-  color: #1f9cf0;
-  background: color-mix(in srgb, #1f9cf0 8%, transparent);
+  border-color: var(
+    --review-editor-link-border,
+    color-mix(in srgb, #1f9cf0 38%, var(--_review-border))
+  );
+  color: var(--review-editor-link-text, #1f9cf0);
+  background: var(
+    --review-editor-link-bg,
+    color-mix(in srgb, #1f9cf0 8%, transparent)
+  );
 }
 
 .workbench-list-vscode:hover {
-  border-color: #1f9cf0;
-  color: #fff;
-  background: #1685c9;
+  border-color: var(--review-editor-link-border-hover, #1f9cf0);
+  color: var(--review-editor-link-text-hover, #fff);
+  background: var(--review-editor-link-bg-hover, #1685c9);
 }
 
 .workbench-list-select:focus-visible,
 .workbench-list-vscode:focus-visible,
 .review-locale-option:focus-visible {
-  outline: 2px solid var(--review-accent);
+  outline: 2px solid var(--_review-accent);
   outline-offset: -2px;
 }
 
 .workbench-list-item.selected {
-  background: color-mix(
-    in srgb,
-    var(--review-accent) 7%,
-    var(--review-bg-surface)
+  background: var(
+    --review-list-item-bg-selected,
+    color-mix(in srgb, var(--_review-accent) 7%, var(--_review-bg-surface))
   );
   box-shadow: inset 2px 0 0
-    color-mix(in srgb, var(--review-accent) 72%, transparent);
+    var(
+      --review-list-item-indicator,
+      color-mix(in srgb, var(--_review-accent) 72%, transparent)
+    );
 }
 
 .workbench-list-item.selected:hover {
-  background: color-mix(
-    in srgb,
-    var(--review-accent) 9%,
-    var(--review-bg-surface)
+  background: var(
+    --review-list-item-bg-selected-hover,
+    color-mix(in srgb, var(--_review-accent) 9%, var(--_review-bg-surface))
   );
 }
 

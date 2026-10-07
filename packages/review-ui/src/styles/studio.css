@@ -1,8 +1,13 @@
 /* 卡片阴影同时包含外投影和内高光，作为完整视觉效果集中维护。 */
 .review-editor-card {
-  box-shadow:
+  border-color: var(--review-editor-border, var(--_review-border-strong));
+  border-radius: var(--review-editor-radius, 10px);
+  background: var(--review-editor-bg, var(--_review-bg-surface));
+  box-shadow: var(
+    --review-editor-shadow,
     0 10px 30px rgb(2 6 23 / 16%),
-    inset 0 1px 0 var(--review-grid-line);
+    inset 0 1px 0 var(--_review-grid-line)
+  );
 }
 
 /* 独立页把编辑器呈现为校样纸张，青色批注线只在此处承担视觉识别。 */
@@ -10,7 +15,8 @@
   position: relative;
   height: 100%;
   min-height: 0;
-  border-left: 3px solid var(--review-cyan);
+  border-left: 3px solid
+    var(--review-editor-rail, var(--_review-accent-secondary));
 }
 
 .review-editor-spacious::before {
@@ -21,10 +27,15 @@
   left: -6px;
   width: 9px;
   height: 9px;
-  border: 2px solid var(--review-bg-base);
+  border: 2px solid var(--_review-bg-base);
   border-radius: 50%;
-  background: var(--review-cyan);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--review-cyan) 18%, transparent);
+  background: var(--review-editor-rail, var(--_review-accent-secondary));
+  box-shadow: 0 0 0 3px
+    color-mix(
+      in srgb,
+      var(--review-editor-rail, var(--_review-accent-secondary)) 18%,
+      transparent
+    );
 }
 
 .review-editor-textarea {

@@ -178,7 +178,7 @@ function insertToken(token: string): void {
           </p>
           <button
             v-if="automatic !== null"
-            class="mt-1 p-0 border-0 bg-transparent text-accent text-xs font-bold hover:text-cyan hover:underline transition-colors"
+            class="mt-1 p-0 border-0 bg-transparent text-accent text-xs font-bold hover:text-accentSecondary hover:underline transition-colors"
             type="button"
             @click="useAutomatic"
           >
@@ -253,7 +253,7 @@ function insertToken(token: string): void {
 
       <p
         v-if="requireOccurrence && !scope.location"
-        class="m-0 p-2.5 rounded-lg border border-cyan/40 bg-cyan/10 text-cyan text-xs leading-relaxed"
+        class="m-0 p-2.5 rounded-lg border border-accentSecondary/40 bg-accentSecondary/10 text-accentSecondary text-xs leading-relaxed"
         role="status"
       >
         {{ copy.chooseExactOccurrence }}
@@ -298,7 +298,11 @@ function insertToken(token: string): void {
             {{ primaryLabel }}
           </button>
           <button
-            class="btn-primary bg-accentDark hover:bg-accent"
+            class="btn-primary"
+            style="
+              --review-primary-button-bg: var(--_review-accent-surface-hover);
+              --review-primary-button-bg-hover: var(--_review-accent-surface);
+            "
             type="button"
             :disabled="!canSave"
             :aria-busy="busy"

@@ -22,6 +22,14 @@ describe('review UI build', () => {
     expect(source).not.toContain('process.env');
     expect(source).toMatch(/\.review-root\[data-theme=dark\]/);
     expect(source).toMatch(/\.review-root\[data-theme=light\]/);
+    expect(source).toMatch(
+      /--_review-accent:\s*var\(--review-accent,\s*#60a5fa\)/,
+    );
+    expect(source).toMatch(
+      /--review-button-bg,\s*var\(--_review-accent-surface\)/,
+    );
+    expect(source).toContain('--review-editor-border');
+    expect(source).not.toContain('--review-cyan');
     expect(files).not.toContain('review-ui.css');
     expect(files).not.toContain('index.html');
   });

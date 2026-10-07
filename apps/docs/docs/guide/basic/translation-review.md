@@ -95,9 +95,58 @@ Vite 开发服务器启动后，控制台会打印完整的 Review 地址。也�
 
 只有一个目标语言时，工作台直接使用该语言，不再显示语言选择控件。
 
-“待确认 / 已确认”表示当前语言是否已有人工译文，与自动译文是否缺失无关。同一消息只要有一个
-范围的人工译文就会标为“已确认”，不代表所有出现位置都已覆盖。自动译文为 `null` 表示尚无自动
-译文。如果当前位置有有效人工译文，业务页面仍会使用它。两者都没有时才回退原文。
+## 自定义页面内校对外观
+
+页面内工作台使用 Shadow DOM 隔离样式。应用样式不能直接选择工作台内部元素，但可以在
+`ai-i18n-review` 宿主上设置公开 CSS Token；这些值会同时传给外层面板和内部工作台：
+
+```css
+ai-i18n-review {
+  --review-accent: #7c3aed;
+  --review-accent-surface: #6d28d9;
+  --review-accent-surface-hover: #5b21b6;
+  --review-on-accent: #fff;
+  --review-font-sans: Inter, 'PingFang SC', sans-serif;
+}
+```
+
+全局 Token 按用途分组：
+
+| 用途       | Token                                                                                                                                                    |
+| ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 页面与表面 | `--review-bg-base`、`--review-bg-surface`、`--review-bg-overlay`、`--review-bg-subtle`、`--review-bg-subtle-hover`                                       |
+| 文字与字体 | `--review-text`、`--review-text-muted`、`--review-text-subtle`、`--review-font-sans`、`--review-font-mono`                                               |
+| 边界与阴影 | `--review-border`、`--review-border-strong`、`--review-shadow-soft`、`--review-shadow-panel`                                                             |
+| 强调色     | `--review-accent`、`--review-accent-surface`、`--review-accent-surface-hover`、`--review-accent-soft`、`--review-on-accent`、`--review-accent-secondary` |
+| 状态色     | `--review-success`、`--review-success-soft`、`--review-warning`、`--review-warning-soft`、`--review-danger`、`--review-danger-soft`                      |
+
+未设置的 Token 会根据深色或浅色主题使用内置默认值。`accent` 用于文字和焦点，
+`accent-surface` 用于按钮等填充控件，`on-accent` 用于填充控件上的文字；分别设置它们可以维持足够的
+文字对比度。
+
+需要只调整一种组件时，使用组件 Token。组件 Token 未设置时自动回退到对应的全局 Token：
+
+| 组件     | Token 前缀与常用字段                                                                                                                                              |
+| -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 按钮     | `--review-button-*` 提供通用尺寸与颜色；`--review-primary-button-*`、`--review-quiet-button-*`、`--review-icon-button-*` 覆盖对应变体                             |
+| 分段控件 | `--review-segment-*`：`bg`、`bg-hover`、`bg-active`、`text`、`text-hover`、`text-active`、`height`、`radius`；设置面板高度可用 `--review-settings-segment-height` |
+| 输入框   | `--review-input-*`：`bg`、`bg-focus`、`text`、`border`、`border-focus`、`focus-glow`、`radius`；筛选框圆角可用 `--review-filter-input-radius`                     |
+| 主 Tab   | `--review-tab-*`：`text`、`text-active`、`indicator`、`height`                                                                                                    |
+| 语言选项 | `--review-locale-*`：`bg`、`bg-hover`、`bg-active`、`text`、`text-hover`、`text-active`、`border`、`border-active`、`height`、`radius`                            |
+| 文案列表 | `--review-list-item-*`、`--review-list-location-text`、`--review-editor-link-*`                                                                                   |
+| 编辑器   | `--review-editor-bg`、`--review-editor-border`、`--review-editor-radius`、`--review-editor-shadow`、`--review-editor-rail`                                        |
+
+例如，只替换按钮填充色而保留其余主题：
+
+```css
+ai-i18n-review {
+  --review-primary-button-bg: #6d28d9;
+  --review-primary-button-bg-hover: #5b21b6;
+}
+```
+
+不要通过 `reviewShadow` 查询内部元素或注入样式；内部结构不是公开 API。独立校对页与页面内工作台使用
+相同默认 Token，但不会加载业务应用的全局 CSS。
 
 页面会在当前浏览器会话中按文案、目标语言和作用范围保留未保存输入。切换筛选、搜索、语言或作用
 范围后再返回，仍可继续原来的编辑。刷新或关闭校对页面前，仍应保存需要保留的修改。

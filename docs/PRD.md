@@ -240,11 +240,15 @@
   `virtual:ai-i18n` Runtime，不在构建或运行时触发 Provider，确保翻译系统异常时 Review 仍可独立排障。
 - 校对 UI 不依赖在线或未随包提供的 Web Font；外层入口壳与内层工作台统一使用操作系统无衬线字体，
   并显式回退到苹方、微软雅黑、Noto Sans CJK SC 与思源黑体。中文语义标签使用无衬线字体，等宽字体只用于
-  路径、模板占位符、语言代码、计数和快捷键；界面字重使用稳定的 600/700 档位，紧凑路径辅助文字不小于 10 px。
-- 当前页面校对沿用 Dev 已处理结果；全部页面与独立页按需确保入口可达清单，未访问源码修改也会自动更新。
-  源码新鲜度、扫描复用、失败恢复与 Agent 插件边界见 [Agent 插件与清单新鲜度](./prd/agent-plugin.md)。
-  校对操作按全局、精确文件或精确出现位置原子更新 `overrides/` 并触发 HMR，保存前复验文案与位置；
-  不注册到 Build、Build Watch、Preview 或生产产物。
+  路径、Token、语言代码、计数和快捷键；界面字重使用稳定的 600/700 档位，紧凑路径辅助文字不小于 10 px。
+- 页面内校对 Web Component 通过公开的 `--review-*` CSS Token 接受宿主主题输入，外层面板与 Shadow DOM
+  工作台共享同一语义颜色和字体来源；主题默认值只写入内部解析别名，不覆盖宿主继承值。按钮、分段控件、
+  输入框、Tabs、语言选项、文案列表与编辑器使用组件 Token 回退到全局 Token，并允许内部 Vue 单根组件通过
+  根节点 `style` 对单个实例覆盖；不增加并行的 JavaScript Token Provider 或 Vite 主题配置。
+- 校对页面首次读取时只读既有 `extracted/` 与 Translation Memory 快照作为初始列表，不扫描源码、
+  不触发 Provider，也不写入业务 Runtime 状态；Dev 实际转换的模块始终优先，且会遮蔽同源旧记录。没有
+  既有快照时，列表只随当前 Dev 已访问模块渐进增长。校对操作按全局、精确文件或精确出现位置范围原子更新
+  `overrides/` 中对应分桶的条目并触发 HMR，不注册到 Build、Build Watch、Preview 或生产产物。
 - 校对 UI 在发布包中由 Vite 插件携带预构建静态资源，与业务应用的框架和 UI 依赖隔离；仓库本地
   Dev 会自动把私有 review-ui workspace 挂到业务 Vite Server，并通过独立 HMR 通道刷新源码改动，
   无需先构建或复制。内部 UI workspace 包保持私有，不作为面向应用开发者的安装入口。

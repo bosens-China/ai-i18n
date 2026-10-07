@@ -54,6 +54,11 @@ never restore the removed `review` core option. Do not add tokens, authenticatio
 Its UI assets and internal Vue implementation are bundled with `@ai-i18n/vite`; do not install Vue or a
 UI library into the target solely for Review. The host is a Web Component with Shadow DOM, and its
 UnoCSS must stay inside that root rather than being added to the application's global CSS pipeline.
+When the user requests Review styling, set the documented public `--review-*` custom properties on the
+`ai-i18n-review` host. Never query `reviewShadow`, target internal selectors, inject CSS into the shadow
+root, or add token props/configuration that duplicate native CSS inheritance. Component-family tokens
+may narrow a change to buttons, segments, inputs, tabs, locales, lists, or the editor; omitted component
+tokens must continue to fall back to global theme tokens.
 In Dev, verify the bottom launcher on a real business page, the workbench flush with the viewport
 bottom, the default current-page scope, switching to all extracted copy, and the absence of the
 launcher when the Review plugin is removed. Current-page opening must not start a whole-app scan. All-page and standalone views ensure a complete
