@@ -116,11 +116,15 @@
   `sourceLang`、可选 `comment`、`value` 写入，动态哈希键按固定码元排序。协议字段不使用字典序重排，
   避免一次 MCP、Provider 或 Vite 写入产生无关 Git diff。
 - `@ai-i18n/sqlite` 只提供可选个人 Translation Memory 候选缓存，通过
-  `translationMemory.cache: sqlite()` 启用。SQLite 和 `better-sqlite3` 不进入 Core、MCP 或默认项目路径。
+  `translationMemory.cache: sqlite()` 启用。SQLite 和 `better-sqlite3` 不进入 Core 或默认项目路径；
+  MCP 仅在显式查询候选时动态加载当前应用安装的 SQLite 包；翻译目录位于应用外时由调用方提供应用目录。
 - 缓存按 sourceLang、targetLang、source 与 comment 查询。只有去重后恰好一个候选时才自动
   复用；无候选或多候选保持缺失，交给 Provider 或人工处理，不按时间自动选优。
 - 缓存命中的值必须先写入项目 `translations/` 才能使用；Provider 结果也先提交项目 JSON，
-  再回填缓存。缓存故障或删除只能降低复用率，不能改变已提交的译文、构建产物或 Runtime 行为。
+  再同步缓存。同项目改译或清空会使旧值退出候选，其他项目仍持有的值继续可用。孤儿历史默认保留，
+  `sqlite({ pruneOrphans: true })` 仅清理当前项目的孤儿记录。查询不验证来源项目仍存在。
+  缓存打开失败在下次同步重试；同一项目的 Vite JSON 与 SQLite 同步串行执行。缓存故障或删除只能
+  降低复用率，不能改变已提交的译文、构建产物或 Runtime 行为。
 - SQLite 使用平台用户数据目录中的单个数据库，允许 `AI_I18N_DATA_DIR` 覆盖。引擎使用
   better-sqlite3，当前只需候选表、参数化固定查询、SQLite 事务、约束与索引，不引入 ORM。
 
@@ -137,8 +141,8 @@
   locale 消息并保留未访问模块；依赖全量活动集合的 orphan/capacity 清理由完整同步校准。外部协议
   文件变更、Provider 结果、人工校对和关闭生命周期先 flush 待写快照；浏览器模块注册直接读取已排序的
   ProjectState，避免旧异步结果覆盖或为普通后台写入重复扫描目录。
-- 产品尚未发布正式版，不保留旧单文件、旧 manifest、存储标记、SQLite 项目绑定或旧 MCP
-  工具参数的读取和迁移兼容。
+- 产品尚未发布正式版，不保留旧单文件、旧 manifest、存储标记或旧 MCP 工具参数的读取和迁移兼容。
+  旧 SQLite 缓存升级时保留无来源记录，但在项目重新同步前不提供为候选。
 - sourceLang 变更时，当前实现会在 comment 一致且历史候选唯一时尽力复用历史翻译；候选不唯一时保持缺失，不猜测。这是保守兼容行为，不构成公开的稳定迁移承诺。
 - Translation Memory 的容量限制与 orphan 清理只淘汰非活动历史消息，不能为满足上限而破坏当前源码仍引用的译文。
 - 容量限制属于 translationMemory.capacity，按当前项目的逻辑 Translation Memory 快照计算；provider.cache 只控制当前 Vite 进程的自动译文刷新，两者不能混用。
@@ -352,7 +356,8 @@
 - 列表默认请求 100 条并允许提高到 500 条；响应大小保护只能减少完整记录数量，不能截断单条
   或破坏游标推进。
 - MCP 只读取 `extracted/` 以校验消息归属；自动翻译工具只修改 `translations/`，人工工具
-  只修改 `overrides/`。MCP 不读写个人 SQLite 缓存，不修改 `extracted/` 或 `locales/`，也不执行 Vite 配置。
+  只修改 `overrides/`。可选候选工具显式只读 SQLite，至多返回十个有效建议，不自动选用或写入。
+  MCP 不修改 `extracted/` 或 `locales/`，也不执行 Vite 配置。
 - MCP 不读取 `provider.cache`。Vite 的进程级 Provider 刷新不能过滤、阻止或覆盖在途 Agent 写入。
 - Provider 结果在项目锁内校验旧值，提交成功后消费对应写入意图；外部修改、清空或空字符串不能被旧内存快照恢复。
 - 工具名、字段和稳定错误码使用英文；Agent 按用户语言解释结果。每次调用只返回一份紧凑 JSON 文本。

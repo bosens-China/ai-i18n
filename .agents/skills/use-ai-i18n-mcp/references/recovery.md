@@ -30,6 +30,9 @@ server does not return that field.
 | `TRANSLATION_CONFLICT` | Re-list current values. Set `overwrite_existing: true` only with explicit user approval. |
 | `TEMPLATE_TOKEN_MISMATCH` | Compare `expected_tokens` and `received_tokens`; add every entry from `missing_tokens`, remove every entry from `unexpected_tokens`, then retry. Repeated tokens are significant. |
 | `UNKNOWN_LOCALE` | Use locale values from `aiI18n({ locales })`, not display labels. |
+| `SQLITE_ADAPTER_NOT_FOUND` or `SQLITE_ADAPTER_OUTDATED` | Install or update `@ai-i18n/sqlite` in the target app only if optional SQLite suggestions are requested; ordinary translation tools do not need it. |
+| `SQLITE_DATA_DIRECTORY_NOT_ABSOLUTE` | Pass the absolute SQLite data directory, or omit the field to use the default location. |
+| `SQLITE_APP_DIRECTORY_NOT_ABSOLUTE` | Pass the absolute selected Vite app directory as `app_directory`, or omit it when `i18n_directory` is inside the app. |
 | `INVALID_CURSOR` | Restart the corresponding list without the cursor. |
 | `INVALID_OVERRIDE_ID` | List overrides again and copy the returned ID exactly. |
 | `INVALID_ORPHAN_ID` | Run a full Build, list orphan messages again, and copy the returned ID exactly. |
@@ -37,8 +40,8 @@ server does not return that field.
 | `ORPHAN_ID_CONFLICT` | Stop cleanup and report the returned error details; do not retry deletion. |
 | `DUPLICATE_TARGET` | Remove repeated targets and retry. |
 
-SQLite cache failures belong to the Vite process, not MCP recovery. MCP always uses project JSON; do
-not install `@ai-i18n/sqlite` or `better-sqlite3` merely to make an MCP operation work.
+Ordinary MCP translation operations still use project JSON. SQLite errors from the optional
+suggestion tool do not make its candidates authoritative or change existing project translations.
 
 ## Conflicting JSON keys
 

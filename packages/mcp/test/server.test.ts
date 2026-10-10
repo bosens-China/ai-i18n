@@ -16,7 +16,7 @@ afterEach(async () => {
   await cleanupFixtures();
 });
 
-test('registers eight focused tools without legacy mode or output schemas', async () => {
+test('registers focused tools without legacy mode or output schemas', async () => {
   const server = createAiI18nMcpServer();
   const client = new Client({ name: 'ai-i18n-mcp-test', version: '0.0.0' });
   const [clientTransport, serverTransport] =
@@ -30,6 +30,7 @@ test('registers eight focused tools without legacy mode or output schemas', asyn
     const tools = await client.listTools();
     expect(tools.tools.map((tool) => tool.name)).toEqual([
       'ai_i18n_list_translations',
+      'ai_i18n_list_cache_candidates',
       'ai_i18n_set_translations',
       'ai_i18n_clear_translations',
       'ai_i18n_list_orphan_messages',

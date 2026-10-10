@@ -3,7 +3,7 @@ import os from 'node:os';
 import path from 'node:path';
 import type { TranslationBatchEvent, Translator } from '@ai-i18n/core';
 import type { TranslationMemoryCandidateCacheAdapter } from '@ai-i18n/core/translation-memory';
-import { sqlite } from '@ai-i18n/sqlite';
+import { listSqliteCandidates, sqlite } from '@ai-i18n/sqlite';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { build } from 'vite';
 import { aiI18n } from '../src';
@@ -109,6 +109,48 @@ describe('Translation Memory Vite storage', () => {
     ).resolves.toBeUndefined();
   });
 
+  it('stops suggesting replaced or cleared values while retaining orphans', async () => {
+    const root = await fixture('sqlite-lifecycle');
+    const dataDirectory = path.join(root, 'user-data');
+    const cache = sqlite({ dataDirectory });
+    const target = { source: '保存', sourceLang: 'zh-CN', targetLang: 'en-US' };
+    await buildProject(root, translator('Old'), { cache });
+
+    await updateTestTranslationMemory(path.join(root, 'i18n'), (memory) => {
+      memory.messages['保存']!.translations['en-US'] = 'New';
+    });
+    await buildProject(root, undefined, { cache });
+    await expect(
+      listSqliteCandidates(target, { dataDirectory }),
+    ).resolves.toEqual(['New']);
+
+    await updateTestTranslationMemory(path.join(root, 'i18n'), (memory) => {
+      memory.messages['保存']!.translations['en-US'] = null;
+    });
+    await buildProject(root, undefined, { cache });
+    await expect(
+      listSqliteCandidates(target, { dataDirectory }),
+    ).resolves.toEqual([]);
+    await updateTestTranslationMemory(path.join(root, 'i18n'), (memory) => {
+      memory.messages['保存']!.translations['en-US'] = 'New';
+    });
+    await buildProject(root, undefined, { cache });
+
+    await fs.writeFile(path.join(root, 'src/main.ts'), "import './other';");
+    await fs.writeFile(path.join(root, 'src/other.ts'), 'export {};');
+    await buildProject(root, undefined, { cache, cleanupOrphans: true });
+    await expect(
+      listSqliteCandidates(target, { dataDirectory }),
+    ).resolves.toEqual(['New']);
+
+    await buildProject(root, undefined, {
+      cache: sqlite({ dataDirectory, pruneOrphans: true }),
+    });
+    await expect(
+      listSqliteCandidates(target, { dataDirectory }),
+    ).resolves.toEqual([]);
+  });
+
   it('keeps an Agent write made while a fresh Provider request is in flight', async () => {
     const root = await fixture('fresh-concurrent-write');
     await buildProject(root, translator('Old'));
@@ -141,6 +183,7 @@ async function buildProject(
     cache?: TranslationMemoryCandidateCacheAdapter;
     providerCache?: 'reuse' | 'fresh';
     logging?: boolean | string;
+    cleanupOrphans?: boolean;
   },
 ): Promise<void> {
   await build({
@@ -168,6 +211,9 @@ async function buildProject(
         ...(options?.cache
           ? { translationMemory: { cache: options.cache } }
           : {}),
+        ...(options?.cleanupOrphans === undefined
+          ? {}
+          : { cleanup: { orphanMessages: options.cleanupOrphans } }),
       }),
     ],
   });

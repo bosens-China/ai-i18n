@@ -103,6 +103,14 @@ const ERROR_NEXT_ACTIONS: Record<string, string> = {
     'Call ai_i18n_list_overrides again and copy the returned override_id exactly before retrying.',
   INVALID_ORPHAN_ID:
     'Run one full Vite Build, call ai_i18n_list_orphan_messages again, and copy the returned orphan_id exactly.',
+  SQLITE_ADAPTER_NOT_FOUND:
+    'Install @ai-i18n/sqlite in the selected Vite app, or omit the optional cache candidate lookup. Ordinary MCP translation tools do not require SQLite.',
+  SQLITE_ADAPTER_OUTDATED:
+    'Update @ai-i18n/sqlite in the selected Vite app before using cache candidate suggestions.',
+  SQLITE_DATA_DIRECTORY_NOT_ABSOLUTE:
+    'Pass an absolute data_directory matching sqlite({ dataDirectory }), or omit it to use AI_I18N_DATA_DIR or the platform default.',
+  SQLITE_APP_DIRECTORY_NOT_ABSOLUTE:
+    'Pass the absolute Vite app directory as app_directory, or omit it when i18n_directory is inside the app.',
   ORPHAN_MESSAGE_REACTIVATED:
     'Do not delete the returned orphan_ids. Run one full Vite Build, list orphan messages again, show the refreshed result to the user, and request deletion approval again.',
   ORPHAN_ID_CONFLICT:

@@ -15,7 +15,8 @@ MCP 不扫描 workspace，也不执行 Vite 配置。Agent 必须先确认目标
 标准化 `source`，不会从 hash 文件名推断源码路径。
 
 MCP 会校验绝对路径、目录是否存在，以及项目 `translations/`、`overrides/` 和 `extracted/`
-是否符合当前协议。MCP 始终读写项目 JSON，不读取个人 SQLite 候选缓存，也不读取或执行 Vite 配置。
+是否符合当前协议。普通翻译工具只读写项目 JSON；可选候选工具可显式只读个人 SQLite。
+MCP 不读取或执行 Vite 配置。
 `extracted/` 是不提交 Git 的本地派生文件。首次使用，或者切换分支和修改提取相关配置后，
 使用 `use-ai-i18n-mcp` Skill 的入口扫描刷新；无需为了普通补译执行完整 Build。
 Dev 只包含浏览器实际请求过的模块。扫描采用 Vite Dev 转换流程，构建专用模块图与
@@ -45,6 +46,11 @@ server 使用 stdio 通信，标准输出专用于 MCP 协议。
   每个 `source_file` 对应的完整 `locations`；MCP 不读取或返回源码片段。`missing` 与 `all`
   视图还可使用大小写不敏感的 `source_contains` 和 `translation_contains` 在分页前筛选消息；
   后者只检查 `locales` 选中的非空译文。
+- `ai_i18n_list_cache_candidates`：可选、只读地查询本机 SQLite 中某条消息和 locale 的有效
+  候选。传入精确 `message`、`locale` 与绝对 `i18n_directory`；自定义数据库目录时再传绝对
+  `data_directory`。如果翻译目录位于应用之外，还需传入绝对 `app_directory`，以便从该应用
+  加载 `@ai-i18n/sqlite`。最多返回十个不同译值和 `has_more`，不会自动采用、排序选优或写入项目。
+  目标应用需要安装 `@ai-i18n/sqlite`；候选查询不检查来源项目是否还存在。
 - `ai_i18n_set_translations`：默认只填充 `null`；显式传
   `overwrite_existing: true` 时允许覆盖非空译文。写入目标使用列表返回的
   `message: { source, comment? }`，调用方不接触内部 message ID。单语言批次可在顶层提供
@@ -103,7 +109,8 @@ server 使用 stdio 通信，标准输出专用于 MCP 协议。
 ## 写入边界
 
 - 翻译工具只修改项目 `translations/` 分桶；人工校对工具只修改项目 `overrides/` 分桶。
-- 可选 SQLite 只由 Vite 用作个人候选缓存；MCP 不读取或写入数据库。
+- 可选 SQLite 由 Vite 同步。MCP 仅在显式调用候选工具时只读 SQLite；普通工具不访问数据库。
+  若 MCP 在 Vite 未运行时改写项目 JSON，SQLite 会在下次 Dev 或 Build 同步时更新。
 - MCP 不读取 Vite 的 `provider.cache`；Provider 是否刷新进程缓存，不改变 Agent 的列表、写入或清除行为。
 - MCP 不修改 `extracted/` 或 `locales/`。
 - 每批写入都取得跨进程锁，在锁内重读并校验最新文件，然后按字段原子更新。
@@ -132,11 +139,13 @@ server 使用 stdio 通信，标准输出专用于 MCP 协议。
 普通补译、校对或验证任务不得自动检查或删除孤立消息。只有用户明确要求审查或清理时，Agent
 才执行以下流程：
 
-1. 运行目标应用的一次完整 Vite Build。Dev 只处理已访问模块，不能作为安全清理依据。
+1. 临时设置 `cleanup.orphanMessages: false`，再运行目标应用的一次完整 Vite Build。普通 Build
+   默认清理孤儿；Dev 只处理已访问模块，不能作为安全清理依据。
 2. 完整翻页读取 `ai_i18n_list_orphan_messages`，向用户展示数量、消息和仍保存的译文。
 3. 用户明确批准具体清理范围后，原样复制 `orphan_id` 到
    `ai_i18n_delete_orphan_messages`；不得自行构造 ID。
 4. 再次列出孤立消息，验证删除结果。
+5. 恢复原来的 Build 清理配置。
 
 孤立消息工具只读写当前 Translation Memory。`overrides/` 中的孤立人工值继续通过 override
 列表与删除工具独立审查，不能随 Translation Memory 联动删除。运行清理期间不要并行执行 Build

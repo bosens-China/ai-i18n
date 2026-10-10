@@ -1,11 +1,13 @@
+import fs from 'node:fs/promises';
 import path from 'node:path';
 import type { CacheMessage, TranslationMemoryFile } from '@ai-i18n/core';
 import {
-  type TranslationMemoryCandidate,
+  type TranslationMemoryCandidateState,
   type TranslationMemoryCandidateCache,
   type TranslationMemoryCandidateTarget,
   openTranslationMemoryStore,
   type TranslationMemoryStore,
+  withFileLock,
 } from '@ai-i18n/core/translation-memory';
 import { diagnosticMessage } from '@ai-i18n/analyzer';
 import { enforceCacheCapacity } from './cache-capacity.js';
@@ -60,6 +62,21 @@ export class FileStoreMemory {
   ): Promise<TranslationMemoryFile> {
     const store = await this.getStore();
     const cache = await this.getCandidateCache();
+    if (!this.options.translationMemory?.cache)
+      return this.updateCurrent(store, undefined, snapshot, activeMessageIds);
+    // 同项目的 Vite 进程必须按同一顺序完成 JSON 和 SQLite 同步。
+    const directory = await fs.realpath(this.directory);
+    return withFileLock(path.join(directory, '.cache-sync'), () =>
+      this.updateCurrent(store, cache, snapshot, activeMessageIds),
+    );
+  }
+
+  private async updateCurrent(
+    store: TranslationMemoryStore,
+    cache: TranslationMemoryCandidateCache | undefined,
+    snapshot?: ProjectSnapshot,
+    activeMessageIds?: readonly string[],
+  ): Promise<TranslationMemoryFile> {
     const pendingProvider = new Map<string, PendingProviderTranslation>();
     for (const [id, message] of Object.entries(
       snapshot?.cache.messages ?? {},
@@ -79,7 +96,6 @@ export class FileStoreMemory {
         );
       }
       this.ensureCurrentLocales(memory.messages);
-      if (cache) await this.fillFromCandidateCache(cache, memory.messages);
       if (activeMessageIds) {
         removeOrphanMessages(
           memory,
@@ -99,11 +115,20 @@ export class FileStoreMemory {
       if (this.providerFields.get(key) === pending)
         this.providerFields.delete(key);
     }
+    let current = persistent;
+    if (cache && (await this.syncCandidates(cache, persistent.messages))) {
+      current = await store.transact(async (memory) => {
+        // 项目 JSON 并发变化后，跳过旧缓存快照的回填。
+        if (memory.revision === persistent.revision)
+          await this.fillFromCandidateCache(cache, memory.messages);
+      });
+      if (current.revision !== persistent.revision)
+        await this.syncCandidates(cache, current.messages);
+    }
     this.updateManagedFiles(
       (await store.watchFiles()).map((file) => path.resolve(file)),
     );
-    if (cache) await this.rememberCandidates(cache, persistent.messages);
-    return persistent;
+    return current;
   }
 
   async close(): Promise<void> {
@@ -124,7 +149,13 @@ export class FileStoreMemory {
   private getCandidateCache(): Promise<
     TranslationMemoryCandidateCache | undefined
   > {
-    return (this.candidateCache ??= this.openCandidateCache());
+    if (!this.candidateCache) {
+      this.candidateCache = this.openCandidateCache().then((cache) => {
+        if (!cache) this.candidateCache = undefined;
+        return cache;
+      });
+    }
+    return this.candidateCache;
   }
 
   private async openCandidateCache(): Promise<
@@ -133,7 +164,7 @@ export class FileStoreMemory {
     const adapter = this.options.translationMemory?.cache;
     if (!adapter) return undefined;
     try {
-      return await adapter.open();
+      return await adapter.open(this.directory);
     } catch (cause) {
       this.warnCandidateCache(cause);
       return undefined;
@@ -175,24 +206,23 @@ export class FileStoreMemory {
     }
   }
 
-  private async rememberCandidates(
+  private async syncCandidates(
     cache: TranslationMemoryCandidateCache,
     messages: Record<string, CacheMessage>,
-  ): Promise<void> {
-    const candidates: TranslationMemoryCandidate[] = [];
+  ): Promise<boolean> {
+    const candidates: TranslationMemoryCandidateState[] = [];
     for (const message of Object.values(messages)) {
       for (const [locale, value] of Object.entries(message.translations)) {
-        if (value !== null) {
-          candidates.push({ ...candidateTarget(message, locale), value });
-        }
+        candidates.push({ ...candidateTarget(message, locale), value });
       }
     }
-    if (!candidates.length) return;
     try {
       // 项目 JSON 已提交后再回填；缓存失败不能回滚项目事实。
-      await cache.remember(candidates);
+      await cache.sync(candidates);
+      return true;
     } catch (cause) {
       this.warnCandidateCache(cause);
+      return false;
     }
   }
 

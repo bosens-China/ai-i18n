@@ -15,6 +15,7 @@ export type {
   TranslationMemoryCandidate,
   TranslationMemoryCandidateCache,
   TranslationMemoryCandidateCacheAdapter,
+  TranslationMemoryCandidateState,
   TranslationMemoryCandidateTarget,
 } from './translation-memory-store-types.js';
 

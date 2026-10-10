@@ -1,6 +1,6 @@
 ---
 name: use-ai-i18n-mcp
-description: Scan a Vite app from its entries without a full Build, then use Skill-only helpers or the eight local ai-i18n MCP tools to inspect missing or orphaned translations, update project Translation Memory JSON shards, and manage reviewed override shards. Use when working with ai_i18n_list_translations, ai_i18n_set_translations, ai_i18n_clear_translations, ai_i18n_list_orphan_messages, ai_i18n_delete_orphan_messages, ai_i18n_list_overrides, ai_i18n_set_overrides, or ai_i18n_delete_overrides, especially when a monorepo requires resolving one Vite app's i18n directory first.
+description: Scan a Vite app from its entries without a full Build, then use Skill-only helpers or the nine local ai-i18n MCP tools to inspect missing or orphaned translations, optionally suggest SQLite candidates, update project Translation Memory JSON shards, and manage reviewed override shards. Use when working with ai_i18n_list_translations, ai_i18n_list_cache_candidates, ai_i18n_set_translations, ai_i18n_clear_translations, ai_i18n_list_orphan_messages, ai_i18n_delete_orphan_messages, ai_i18n_list_overrides, ai_i18n_set_overrides, or ai_i18n_delete_overrides, especially when a monorepo requires resolving one Vite app's i18n directory first.
 ---
 
 # Use ai-i18n MCP
@@ -86,6 +86,8 @@ When invoked by a plugin end check, follow [Plugin end checks](references/plugin
 1. List missing translations with only the resolved `i18n_directory` on the first call.
 2. Follow every page unless the user requested a sample or narrower scope.
 3. Write ordinary translations without overwriting existing non-null values.
+   If the user requests suggestions and SQLite is installed for the app, query candidates explicitly;
+   inspect conflicts and context before choosing a value. A suggestion never authorizes a write.
 4. Clear automatic translations or change human review values only when the user explicitly requests
    or approves that action.
 5. Repeat the matching list operation to verify the result.

@@ -82,6 +82,12 @@ Skill 和脚本随插件更新，业务应用的 npm 依赖需要单独管理。
 两种方式的译文都写入项目 `translations/` 和 `overrides/` 分桶。
 它们遵循相同的 Git 提交规则。
 
+如果应用启用了[个人 SQLite 翻译记忆](/ai/translation-memory)，Agent 还可以通过 MCP 显式查询
+某条文案的候选译文。候选只用于参考，不会自动写入项目；需要使用时再让 Agent 选择并正常补译。
+同一文案存在不同译法时，请结合上下文决定。查询不检查候选来源项目是否仍在电脑上。
+如果翻译目录设在应用目录之外，请同时告诉 Agent 目标 Vite 应用的目录，以便它找到该应用安装的
+SQLite 包。
+
 ## 独立使用 Skill 与 MCP
 
 Cursor、Claude Code 和 Antigravity 不需要 Codex 插件，也可以独立使用 ai-i18n。

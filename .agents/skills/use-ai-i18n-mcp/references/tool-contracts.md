@@ -51,6 +51,24 @@ mix the two forms in one call. Apply the same locale rule to clear targets and o
 Use `ai_i18n_clear_translations` only when the user asks to reset specific automatic translations.
 It sets the selected fields to `null` without removing messages, locales, or human reviews.
 
+## Optional SQLite suggestions
+
+Call `ai_i18n_list_cache_candidates` only when the user wants candidate wording or local cache
+evidence. Pass the exact public `message`, one configured `locale`, and the selected absolute
+`i18n_directory`. If the app uses a custom SQLite directory, pass its absolute path as
+`data_directory`; otherwise omit it. If `i18n_directory` is outside the Vite app, pass that app's
+absolute directory as `app_directory` so the server resolves its installed `@ai-i18n/sqlite`.
+Otherwise omit `app_directory`.
+
+This is a read-only request. It returns the current project value, up to ten distinct eligible
+candidate values, and `has_more`. It does not select a winner or write to project JSON or SQLite.
+If `has_more` is true, tell the user that the list is truncated. Do not infer a unique value from
+the first ten. Source project existence is not checked. Same-project changed or cleared values
+are ineligible, but historical orphan values remain eligible by default. Explain conflicts and
+use `ai_i18n_set_translations` only when the user has authorized the chosen wording.
+If an MCP write occurs while Vite is not running, SQLite reflects it after the app's next Dev or
+Build synchronization; do not present an older suggestion as current project truth.
+
 ## Orphan Translation Memory
 
 Use orphan tools only when the user explicitly requests an orphan audit or cleanup. They are not part
@@ -111,13 +129,13 @@ To remove a human value, list it first and pass the returned opaque `override_id
 ## Write and verification boundaries
 
 - Translation tools always modify committed project `translations/` buckets through the project
-  store. Never calculate bucket keys or edit bucket JSON directly. MCP never reads or writes the
-  optional personal SQLite candidate cache and never creates a storage marker.
+  store. Never calculate bucket keys or edit bucket JSON directly. Only the optional candidate
+  tool reads SQLite; MCP never writes it or creates a storage marker.
 - Project-store writes keep Translation Memory protocol fields in their fixed schema order and sort
   dynamic entry hashes deterministically. Treat resulting hash-position changes as storage formatting;
   do not reorder or rewrite bucket JSON manually.
-- A missing local SQLite database does not change MCP results because every accepted cache candidate
-  must already have been copied into project JSON by Vite.
+- A missing local SQLite database gives the optional suggestion tool no candidates. Ordinary MCP
+  translation results still come from project JSON.
 - Human review tools modify only project `overrides/` buckets through the project store.
 - Identical duplicate JSON keys are cleaned during the next normal transaction, even with no business
   changes. Cleanup is not a changed-translation count. Lists do not write merely to deduplicate;
