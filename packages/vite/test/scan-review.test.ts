@@ -57,6 +57,8 @@ it('refreshes unvisited routes, removes old references, rejects stale saves and 
     };
   });
   const { origin, vite } = await start(root);
+  // 本用例由手动扫描推进，避免 HMR 抢先消费后续故意损坏的输入。
+  await vite.watcher.close();
   const api = vite.config.plugins.map(aiI18nPluginApi).find(Boolean)!;
   const snapshot = async () => {
     const response = await fetch(`${origin}/__ai-i18n/api/messages?scope=all`);
@@ -82,13 +84,10 @@ it('refreshes unvisited routes, removes old references, rejects stale saves and 
   expect(save.status).toBe(404);
   await write(root, 'pages/added.ts', text('新增'));
   expect((await snapshot()).messages).toHaveLength(2);
-  // 单独验证扫描回滚，避免源码 HMR 先把待恢复状态更新成这份故意损坏的输入。
-  await vite.watcher.unwatch(path.join(root, 'pages/lazy.ts'));
   await write(root, 'pages/lazy.ts', 'export const broken = ;');
   await expect(ensureScan(vite, api)).rejects.toThrow();
   expect(api.state().snapshot().cache.messages['提交']).toBeDefined();
   await write(root, 'pages/lazy.ts', 'export {};');
-  vite.watcher.add(path.join(root, 'pages/lazy.ts'));
   await fs.rename(
     path.join(root, 'pages/added.ts'),
     path.join(root, 'pages/renamed.ts'),
