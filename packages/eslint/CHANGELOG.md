@@ -1,5 +1,19 @@
 # @ai-i18n/eslint-plugin
 
+## [1.0.0](https://github.com/bosens-China/ai-i18n/compare/eslint-plugin-v1.0.0-alpha.33...eslint-plugin-v1.0.0) (2026-10-10)
+
+
+### Features
+
+* 发布首个正式版本 ([d03393c](https://github.com/bosens-China/ai-i18n/commit/d03393c23d860343df8bc1f7587a6cbad2810e2d))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @ai-i18n/analyzer bumped to 1.0.0
+
 ## [1.0.0-alpha.33](https://github.com/bosens-China/ai-i18n/compare/eslint-plugin-v1.0.0-alpha.32...eslint-plugin-v1.0.0-alpha.33) (2026-09-20)
 
 

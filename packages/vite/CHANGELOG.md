@@ -1,5 +1,26 @@
 # @ai-i18n/vite
 
+## [1.0.0](https://github.com/bosens-China/ai-i18n/compare/vite-v1.0.0-alpha.39...vite-v1.0.0) (2026-10-10)
+
+
+### Features
+
+* **sqlite:** 保留翻译缓存并提供 MCP 项目候选 ([70d0d0b](https://github.com/bosens-China/ai-i18n/commit/70d0d0b0b8180d4bb264e5b278eb40497679e0a7))
+* **sqlite:** 支持项目候选同步、自动复用与审查选择 ([38818e3](https://github.com/bosens-China/ai-i18n/commit/38818e32fc83d7d92d3746d26f03b0e45b7d7e68))
+* **vite:** 默认提取 HTML 并简化语言分包配置 ([653af79](https://github.com/bosens-China/ai-i18n/commit/653af797f09b195e72a9b72ec945b3a51532f5d4))
+* **vite:** 默认清理构建中的孤儿译文 ([35f08f5](https://github.com/bosens-China/ai-i18n/commit/35f08f5c93050d6943afdf148076dfc8eabfd8ab))
+* 发布首个正式版本 ([d03393c](https://github.com/bosens-China/ai-i18n/commit/d03393c23d860343df8bc1f7587a6cbad2810e2d))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @ai-i18n/analyzer bumped to 1.0.0
+    * @ai-i18n/core bumped to 1.0.0
+  * devDependencies
+    * @ai-i18n/sqlite bumped to 1.0.0
+
 ## [1.0.0-alpha.39](https://github.com/bosens-China/ai-i18n/compare/vite-v1.0.0-alpha.38...vite-v1.0.0-alpha.39) (2026-09-24)
 
 
