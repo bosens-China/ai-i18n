@@ -19,6 +19,8 @@ interface AiI18nDiagnosticsOptions {
 }
 ```
 
+省略 `diagnostics` 时，构建汇总仍默认开启；耗时日志和性能报告默认关闭，仅在排障时启用。
+
 ## 字段
 
 | 字段           | 默认值  | 作用                                                                            |

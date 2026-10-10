@@ -169,7 +169,7 @@ it('handles inline HTML, multiple entries, virtual routes and Vue auto imports',
   });
   const input = config(root);
   input.plugins = [
-    aiI18n({ sourceLang: 'zh-CN', locales, autoImport: true, html: true }),
+    aiI18n({ sourceLang: 'zh-CN', locales, autoImport: true }),
     vue(),
     {
       name: 'virtual-routes',

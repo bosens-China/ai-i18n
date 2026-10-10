@@ -116,7 +116,7 @@ globalThis.changeLanguage = setLang`,
       plugin: {
         defaultLang: 'en-US',
         html: true,
-        loading: {},
+        loading: true,
       },
     });
     const items = buildOutputItems(output);
@@ -145,7 +145,7 @@ globalThis.changeLanguage = setLang`,
     );
 
     const output = await buildFixture(root, {
-      plugin: { loading: {} },
+      plugin: { loading: true },
     });
     const items = buildOutputItems(output);
     const html = assetSource(items, 'index.html');

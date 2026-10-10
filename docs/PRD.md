@@ -38,7 +38,7 @@
 
 ### 显式提取与消息标识
 
-- 插件只提取显式的 t()、tagged template、Vue tRef()、Vue tComputed() 和受支持的静态文案树调用；不会猜测普通文本、JSXText 或业务属性是否需要翻译。
+- 插件只提取显式的 t()、tagged template、Vue tRef()、Vue tComputed() 和受支持的静态文案树调用；不会猜测普通文本、JSXText 或业务属性是否需要翻译。HTML 显式翻译表达式默认提取，`html: false` 关闭；无标记页面不注入翻译 Runtime。
 - 标注为 `I18nRuntime['t']` 的函数参数或局部函数值不属于可提取 Runtime binding；Analyzer、Vite 与 ESLint 对其直接调用发出中英文诊断，引导开发者直接使用 `virtual:ai-i18n` 导入或 `useI18n()` 返回的 `t`。普通同名函数不据此报警，也不根据 TypeScript 类型追踪运行时实参来源。
 - 消息 ID 由 source 与可选的静态 comment 构成，不包含文件路径。相同语义可复用 Translation Memory；需要区分语义时必须传入 comment。
 - 缺失译文保持 null，Runtime 回退 source 文案。Provider 与普通补译只补缺失字段，不能静默覆盖已提交译文。
@@ -71,7 +71,7 @@
 
 ### 语言加载
 
-- 未配置 loading 时，所有语言随 Runtime 注册。配置 loading 后，目标语言按 locale 拆分为独立资源。
+- loading 省略或 false 时，所有语言随 Runtime 注册；true 或对象开启按 locale 分包，对象定制 preload/prefetch。非源语言的 defaultLang 自动 preload，默认不开启异步语言加载。
 - getLangLoadState() 提供 idle、loading、error 的稳定快照；Vue 与 React 的 useI18n() 同时暴露加载状态、布尔值和错误，纯 Vue Options 通过 i18nComputed() 读取同一状态源。
 - 并发切换采用 last-call-wins。过期请求的完成或失败不能覆盖最新目标语言的状态。
 

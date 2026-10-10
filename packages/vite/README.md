@@ -39,6 +39,10 @@ aiI18n({
 });
 ```
 
+最小配置默认生成声明、提取 HTML 中显式的 `t()` 并输出 Build 覆盖率。无需重复声明框架；
+自动导入、持久化、分包和 Provider 按需配置。HTML 可用 `html: false` 关闭或通过对象定制属性。
+常用与高级选项见[配置参考](https://bosens-china.github.io/ai-i18n/api/vite/interfaces/ai-i18n-options)。
+
 ## 翻译校对
 
 翻译校对通过独立 Vite 插件显式启用：
@@ -283,7 +287,8 @@ aiI18n({
 });
 ```
 
-配置 `loading` 后，每个目标 locale 会生成独立 Vite chunk。`preload` 使用
+`loading: true` 或对象启用分包，`false` 或省略保持全语言注册。对象可配置资源提示，
+空对象使用默认分包策略。开启后，每个目标 locale 会生成独立 Vite chunk。`preload` 使用
 `modulepreload` 尽早准备模块，`prefetch` 以较低优先级提示浏览器缓存。其他目标语言在首次
 `setLang()` 时加载。source locale 不生成语言资产，也不能出现在两个列表中。
 

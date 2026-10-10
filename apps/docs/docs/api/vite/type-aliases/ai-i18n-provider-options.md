@@ -35,6 +35,10 @@ type AiI18nProviderOptions = {
 | `strict`         | `boolean`                                         | 否   | `false`   | 在 flush 时抛出翻译失败或仍有 `null` 的错误。 |
 | `logging`        | `boolean \| string`                               | 否   | `false`   | 关闭日志，或启用并选择日志目录。              |
 
+批次长度、并发和防抖属于高级调度配置，通常保留默认值，仅在服务限流或请求大小限制时调整。
+`strict` 在 flush 时检查 Provider 批次失败或返回 `null`；需要阻止整个应用缺译发布时，使用
+顶层 `failOnMissingTranslations`，它不要求配置 Provider。
+
 `debounceMs` 必须大于或等于 `0`。`batchLength` 和 `maxConcurrency` 必须是正整数。
 
 Vite 按消息的“缺失 locale 集合”分组，再按 `batchLength` 切分。一个批次失败时，其他成功

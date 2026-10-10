@@ -38,7 +38,7 @@ normalized POSIX paths and occurrence line/column values relative to this Vite r
 them to machine-specific absolute paths or guess moved locations during integration.
 
 Do not enable optional behavior by default. Keep explicit imports and omit automatic translation,
-automatic imports, language persistence, locale loading, cache cleanup, HTML extraction, Dev timing
+automatic imports, language persistence, locale loading, cache cleanup, Dev timing
 diagnostics, ESLint, and test integration unless the user requests them. Do not remove an optional feature that is already
 configured. When an optional feature is requested, read [Agent defaults for optional features](references/optional-features.md)
 and the matching public documentation page.

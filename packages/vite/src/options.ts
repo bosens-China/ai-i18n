@@ -71,7 +71,8 @@ export interface AiI18nOptions {
   locales: readonly LangOption[];
   /** 持久化用户语言偏好；true 使用默认 key。 */
   persist?: boolean | AiI18nPersistOptions;
-  loading?: AiI18nLocaleLoadingOptions;
+  /** 默认不分包；true 使用默认分包策略，对象可配置 preload/prefetch。 */
+  loading?: boolean | AiI18nLocaleLoadingOptions;
   translationMemory?: AiI18nTranslationMemoryOptions;
   provider?: AiI18nProviderOptions;
   /** Build 中存在目标语言缺译时失败；默认关闭。 */
@@ -79,5 +80,6 @@ export interface AiI18nOptions {
   directory?: string;
   cleanup?: AiI18nCleanupOptions;
   diagnostics?: AiI18nDiagnosticsOptions;
+  /** 默认提取 HTML 中显式的翻译表达式；false 关闭。 */
   html?: boolean | HtmlExtractorOptions;
 }

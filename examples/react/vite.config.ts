@@ -21,7 +21,6 @@ export default defineConfig({
           { value: 'en-US', label: 'English' },
         ],
         autoImport: true,
-        html: true,
       }),
     // 两种入口提示都关闭；独立 Review 页面仍可通过固定 URL 访问。
     !mode.startsWith('benchmark-') &&

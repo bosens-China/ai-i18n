@@ -21,15 +21,9 @@ ai-i18n 只处理明确传给翻译 API 的文案，不会猜测哪些普通文�
 `.cjs`、`.cts`，也不识别通过 `require()` 获得的翻译 API。Vite 对配置文件或依赖中
 CommonJS 的兼容，不代表这些文件会参与 ai-i18n 提取。
 
-`index.html` 默认不参与提取。设置 `html: true` 后，插件会分析完整的 `t()` 文本节点，
-以及 `alt`、`aria-label`、`placeholder`、`title` 属性：
-
-```ts
-aiI18n({
-  // 省略 sourceLang 与 locales 等基础配置。
-  html: true,
-});
-```
+HTML 入口默认参与提取。插件分析完整的静态 `t()` 文本节点，以及 `alt`、`aria-label`、
+`placeholder`、`title` 属性中的翻译表达式。设置 `html: false` 可关闭，传入
+`html: { attributes: [...] }` 可替换默认属性白名单。没有翻译标记的页面不注入翻译 Runtime。
 
 普通 HTML 文本、混合文本（例如 `前缀 t('保存')`）、非白名单属性和内联脚本不会由
 HTML 提取器处理。

@@ -15,7 +15,6 @@ export default defineConfig({
           { value: 'zh-CN', label: '中文' },
           { value: 'en-US', label: 'English' },
         ],
-        html: true,
       }),
     // 保留终端中的 Review 地址，但不向业务页面注入右下角入口。
     !mode.startsWith('benchmark-') &&

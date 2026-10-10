@@ -28,7 +28,7 @@ import {
   SOURCE_RE,
   type AiI18nFramework,
 } from './framework.js';
-import { html as createHtmlExtractor, type HtmlExtractor } from './html.js';
+import { html as createHtmlExtractor } from './html.js';
 import { createHtmlTransformHandler } from './html-transform.js';
 import { createHotUpdateHandler, wrapHotUpdate } from './hot-update.js';
 import { ProjectState } from './project-state.js';
@@ -66,9 +66,10 @@ export function aiI18n(options: AiI18nOptions): Plugin {
     options.translationMemory,
   );
   const providerCache = normalizeProviderCache(options.provider?.cache);
-  const htmlExtractor: HtmlExtractor | undefined = options.html
-    ? createHtmlExtractor(options.html === true ? {} : options.html)
-    : undefined;
+  const htmlExtractor =
+    options.html === false
+      ? undefined
+      : createHtmlExtractor(options.html === true ? undefined : options.html);
   const autoImport = options.autoImport ?? false;
   let framework: AiI18nFramework = options.framework ?? 'vanilla';
   let translationHooks = frameworkTranslationHooks(framework, autoImport);

@@ -21,8 +21,7 @@ export default defineConfig({
           { value: 'ja-JP', label: '日本語' },
         ],
         autoImport: false,
-        loading: {},
-        html: true,
+        loading: true,
       }),
     // 注入业务页面右下角入口，但不在终端打印 Review 地址。
     !mode.startsWith('benchmark-') &&

@@ -3,7 +3,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { runtimeMessageId, type Translator } from '@ai-i18n/core';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { build } from 'vite';
+import { build, createServer } from 'vite';
 import { aiI18n } from '../src';
 import { buildOutputItems } from './build-output';
 import { extractedTestPath } from './extracted-test-path';
@@ -19,7 +19,40 @@ afterEach(async () => {
 });
 
 describe('HTML extractor integration', () => {
-  it('transforms a Vite HTML entry and writes translated protocol files', async () => {
+  it.each([
+    { html: undefined, source: '<title>普通标题</title>' },
+    { html: false, source: "<title>t('首页')</title>" },
+  ])(
+    'does not inject a translation bridge for %j',
+    async ({ html, source }) => {
+      const root = await fs.mkdtemp(path.join(os.tmpdir(), 'ai-i18n-html-'));
+      tempDirs.push(root);
+      await fs.writeFile(path.join(root, 'index.html'), source);
+      const server = await createServer({
+        root,
+        configFile: false,
+        logLevel: 'silent',
+        server: { middlewareMode: true },
+        plugins: [
+          aiI18n({
+            sourceLang: 'zh-CN',
+            locales: [{ value: 'zh-CN', label: '中文' }],
+            html,
+          }),
+        ],
+      });
+      try {
+        const transformed = await server.transformIndexHtml('/', source);
+        expect(transformed).toContain(source);
+        expect(transformed).not.toContain('data-ai-i18n');
+        expect(transformed).not.toContain('@ai-i18n/vite/runtime');
+      } finally {
+        await server.close();
+      }
+    },
+  );
+
+  it('transforms a Vite HTML entry by default and writes translated protocol files', async () => {
     const temporaryRoot = await fs.mkdtemp(
       path.join(os.tmpdir(), 'ai-i18n-html-'),
     );
@@ -61,7 +94,6 @@ describe('HTML extractor integration', () => {
             { value: 'zh-CN', label: '中文' },
             { value: 'en-US', label: 'English' },
           ],
-          html: true,
           provider: { translator, batchLength: 12_000, strict: true },
         }),
       ],

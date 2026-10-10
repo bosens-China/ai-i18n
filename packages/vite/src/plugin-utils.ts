@@ -38,7 +38,7 @@ export function normalizeOptions(options: {
   defaultLang?: string;
   locales: readonly LangOption[];
   persist?: boolean | { key: string };
-  loading?: AiI18nLocaleLoadingOptions;
+  loading?: boolean | AiI18nLocaleLoadingOptions;
 }): NormalizedAiI18nOptions {
   const locales = options.locales.map((locale) => ({ ...locale }));
   const values = new Set(locales.map((locale) => locale.value));
@@ -77,7 +77,12 @@ export function normalizeOptions(options: {
   }
   const persist = normalizePersist(options.persist);
   const loading = options.loading
-    ? normalizeLoading(options.loading, values, options.sourceLang, defaultLang)
+    ? normalizeLoading(
+        options.loading === true ? {} : options.loading,
+        values,
+        options.sourceLang,
+        defaultLang,
+      )
     : undefined;
   return {
     sourceLang: options.sourceLang,

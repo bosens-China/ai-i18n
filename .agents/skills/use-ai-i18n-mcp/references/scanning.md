@@ -24,7 +24,7 @@ Vite expands them, including reachable local workspace source outside the app ro
 HTML module imports and the configured Vue/React plugins without executing browser page code.
 The current source extractor does not extract translation calls inside HTML inline scripts; the
 scan rejects inline Runtime imports or unbound translation APIs. Move those calls to a separate
-JS/TS module before retrying. Static HTML text extraction still follows the configured `html` option.
+JS/TS module before retrying. Static HTML translation expressions are extracted by default; preserve an explicit `html: false` or custom attribute allowlist. No HTML inline script extraction is added.
 
 Use repeatable `--entry <path>` only to specify the app's known complete entry set when it cannot be
 inferred. Paths are relative to resolved Vite root. Explicit entries replace inferred entries:
