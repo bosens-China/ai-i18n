@@ -6,6 +6,7 @@ import type {
   TranslationMemoryCandidateCacheAdapter,
 } from '@ai-i18n/core/translation-memory';
 import { afterEach, expect, test, vi } from 'vitest';
+import { openTranslationMemoryStore } from '@ai-i18n/core/translation-memory';
 import { FileStoreMemory } from '../src/file-store-memory';
 
 const roots: string[] = [];
@@ -30,7 +31,11 @@ test('retries opening the optional cache after an initial failure', async () => 
     .mockRejectedValueOnce(new Error('temporarily unavailable'))
     .mockResolvedValue(cache);
   const warnings = vi.fn<(message: string) => void>();
-  const memory = createMemory(directory, { cache: 'sqlite', open }, warnings);
+  const memory = createMemory(
+    directory,
+    { cache: 'sqlite', open, list: cache.list },
+    warnings,
+  );
   try {
     await memory.update();
     await memory.update();
@@ -59,6 +64,7 @@ test('serializes SQLite synchronization for the same project', async () => {
   });
   const adapter: TranslationMemoryCandidateCacheAdapter = {
     cache: 'sqlite',
+    list: cache.list,
     open: async () => cache,
   };
   const first = createMemory(directory, adapter);
@@ -82,6 +88,7 @@ function candidateCache(
   sync: () => Promise<void> = async () => undefined,
 ): TranslationMemoryCandidateCache {
   return {
+    list: async () => ({ candidates: [], hasMore: false }),
     sync: vi.fn(sync),
     findUnique: async (targets) => targets.map(() => undefined),
     close: () => undefined,
@@ -113,3 +120,31 @@ async function temporaryDirectory(): Promise<string> {
   await fs.mkdir(directory);
   return directory;
 }
+
+test('does not persist a cache candidate that loses template tokens', async () => {
+  const directory = await temporaryDirectory();
+  const source = '你好 {{0}}';
+  const store = await openTranslationMemoryStore(directory);
+  await store.transact((memory) => {
+    memory.messages[source] = {
+      source,
+      sourceLang: 'zh-CN',
+      translations: { 'en-US': null },
+    };
+  });
+  store.close();
+  const cache = candidateCache();
+  cache.findUnique = async () => ['Hello'];
+  const memory = createMemory(directory, {
+    cache: 'sqlite',
+    list: cache.list,
+    open: async () => cache,
+  });
+  try {
+    expect(
+      (await memory.update()).messages[source]!.translations['en-US'],
+    ).toBeNull();
+  } finally {
+    await memory.close();
+  }
+});

@@ -60,14 +60,27 @@ evidence. Pass the exact public `message`, one configured `locale`, and the sele
 absolute directory as `app_directory` so the server resolves its installed `@ai-i18n/sqlite`.
 Otherwise omit `app_directory`.
 
-This is a read-only request. It returns the current project value, up to ten distinct eligible
-candidate values, and `has_more`. It does not select a winner or write to project JSON or SQLite.
-If `has_more` is true, tell the user that the list is truncated. Do not infer a unique value from
-the first ten. Source project existence is not checked. Same-project changed or cleared values
-are ineligible, but historical orphan values remain eligible by default. Explain conflicts and
-use `ai_i18n_set_translations` only when the user has authorized the chosen wording.
-If an MCP write occurs while Vite is not running, SQLite reflects it after the app's next Dev or
-Build synchronization; do not present an older suggestion as current project truth.
+This is read-only. The response contains current_automatic_value, candidates with value/sources/
+sources_has_more, has_more, next_offset, and automatic_value computed from ALL eligible values.
+Sources include project, kind (automatic/reviewed), and optional file/location. Follow next_offset
+using offset. To read more sources for one value, pass that exact value and increase source_offset
+by the number already returned. Each candidate/source page is bounded to ten. Never infer uniqueness
+from a partial page, rank by recency/votes, or treat source scope as the destination scope.
+Reviewed-only values cannot auto-fill; any conflicting reviewed value blocks unique automatic reuse.
+Source project existence is not checked. Use the normal authorized set/override tools to adopt a value.
+The human review workbench offers the same suggestions, filling a draft before explicit save.
+
+## Personal cache management
+
+Use ai_i18n_list_cache_projects only for requested cache inspection/cleanup. Pass the same directory
+parameters; offset pages contain at most 50 project/records/orphans/synced_at items and has_more.
+Use exact returned project paths, including paths that no longer exist.
+
+ai_i18n_clean_cache accepts scope orphans/project/all and project_directory for the first two only.
+First omit preview_token to preview records and token without deletion. Execute only within explicit
+user authorization for that scope by returning token in preview_token. A changed cache requires a
+new preview. This deletes only SQLite contributions; project JSON stays intact and a future sync
+can contribute current values again. Never clean the cache during ordinary translation verification.
 
 ## Orphan Translation Memory
 
@@ -130,14 +143,17 @@ To remove a human value, list it first and pass the returned opaque `override_id
 ## Write and verification boundaries
 
 - Translation tools always modify committed project `translations/` buckets through the project
-  store. Never calculate bucket keys or edit bucket JSON directly. Only the optional candidate
-  tool reads SQLite; MCP never writes it or creates a storage marker.
+  store. Never calculate bucket keys or edit bucket JSON directly. Writes then parse the selected app
+  config and synchronize its enabled personal cache without Dev, extraction or Provider calls.
+  Pass absolute app_directory for external i18n directories; otherwise the server locates vite.config.*
+  in parent directories. No config means the next Dev/Build sync handles it. Cache failure is a stderr
+  warning after committed project writes. Never create a storage marker.
 - Project-store writes keep Translation Memory protocol fields in their fixed schema order and sort
   dynamic entry hashes deterministically. Treat resulting hash-position changes as storage formatting;
   do not reorder or rewrite bucket JSON manually.
 - A missing local SQLite database gives the optional suggestion tool no candidates. Ordinary MCP
   translation results still come from project JSON.
-- Human review tools modify only project `overrides/` buckets through the project store.
+- Human review tools write project `overrides/` buckets through the store, then synchronize reviewed-only candidates.
 - Identical duplicate JSON keys are cleaned during the next normal transaction, even with no business
   changes. Cleanup is not a changed-translation count. Lists do not write merely to deduplicate;
   preexisting journal recovery is unchanged. Conflicting values return `DUPLICATE_JSON_KEY`;

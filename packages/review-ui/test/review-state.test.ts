@@ -5,6 +5,7 @@ import {
   currentReviewOccurrence,
   reviewAction,
   reviewBaseline,
+  reviewEffectiveValue,
 } from '../src/review-state';
 
 const message: ReviewMessage = {
@@ -68,4 +69,25 @@ describe('review state', () => {
     expect(reviewAction(true, '确认', '确认')).toBe('saved');
     expect(reviewAction(true, '确定', '确认')).toBe('save');
   });
+});
+
+it('marks the inherited effective value without replacing the editing baseline', () => {
+  const message = {
+    message: { source: '保存' },
+    translations: { 'en-US': 'Save' },
+    occurrences: [],
+    overrides: [
+      { locale: 'en-US', value: 'Global' },
+      { locale: 'en-US', file: 'src/a.ts', value: '' },
+    ],
+  };
+  expect(
+    reviewEffectiveValue(message, 'en-US', {
+      file: 'src/a.ts',
+      location: { line: 1, column: 0 },
+    }),
+  ).toBe('');
+  expect(reviewEffectiveValue(message, 'en-US', { file: 'src/b.ts' })).toBe(
+    'Global',
+  );
 });

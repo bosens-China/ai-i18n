@@ -139,7 +139,7 @@ describe('Translation Memory Vite storage', () => {
     await buildProject(root, undefined, { cache });
     await expect(
       listSqliteCandidates(target, { dataDirectory }),
-    ).resolves.toEqual(['New']);
+    ).resolves.toMatchObject({ candidates: [{ value: 'New' }] });
 
     await updateTestTranslationMemory(path.join(root, 'i18n'), (memory) => {
       memory.messages['保存']!.translations['en-US'] = null;
@@ -147,7 +147,7 @@ describe('Translation Memory Vite storage', () => {
     await buildProject(root, undefined, { cache });
     await expect(
       listSqliteCandidates(target, { dataDirectory }),
-    ).resolves.toEqual([]);
+    ).resolves.toMatchObject({ candidates: [] });
     await updateTestTranslationMemory(path.join(root, 'i18n'), (memory) => {
       memory.messages['保存']!.translations['en-US'] = 'New';
     });
@@ -158,14 +158,14 @@ describe('Translation Memory Vite storage', () => {
     await buildProject(root, undefined, { cache });
     await expect(
       listSqliteCandidates(target, { dataDirectory }),
-    ).resolves.toEqual(['New']);
+    ).resolves.toMatchObject({ candidates: [{ value: 'New' }] });
 
     await buildProject(root, undefined, {
       cache: sqlite({ dataDirectory, pruneOrphans: true }),
     });
     await expect(
       listSqliteCandidates(target, { dataDirectory }),
-    ).resolves.toEqual([]);
+    ).resolves.toMatchObject({ candidates: [] });
   });
 
   it('keeps an Agent write made while a fresh Provider request is in flight', async () => {

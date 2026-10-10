@@ -1,6 +1,21 @@
 import type { ReviewCopy } from '../types.js';
 
 export const enUSReviewCopy = {
+  cacheCandidates: 'Historical suggestions',
+  cacheCandidatesHint:
+    'Choose a suggestion to fill the draft, then save in the selected scope.',
+  cacheCandidatesEmpty: 'No exact historical suggestions.',
+  cacheCandidatesFailed: 'Could not load suggestions. Retry.',
+  cacheCandidatesLoading: 'Loading suggestions…',
+  useCandidate: 'Use translation',
+  currentValue: 'Currently applied',
+  moreCandidates: 'More suggestions',
+  moreSources: 'More sources',
+  retry: 'Retry',
+  automaticSource: 'Automatic',
+  reviewedSource: 'Reviewed',
+  emptyTranslation: '(empty translation)',
+
   search: 'Search source, translation, context, or file…',
   filtersLabel: 'Filter messages',
   localesLabel: 'Target locales',

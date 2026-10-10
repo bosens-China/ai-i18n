@@ -21,7 +21,9 @@ interface BuildDependencies {
   failOnMissingTranslations: boolean;
   timing: DevTimingReporter;
   performance: ReturnType<typeof createPerformanceDiagnostics>;
-  requestMissingTranslations(moduleIds: readonly string[]): void;
+  requestMissingTranslations(
+    moduleIds: readonly string[],
+  ): void | Promise<void>;
   flushProvider(): Promise<void>;
   flushPersistence(): Promise<void>;
   dispose(config: ResolvedConfig): void | Promise<void>;

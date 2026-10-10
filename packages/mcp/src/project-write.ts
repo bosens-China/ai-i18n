@@ -1,4 +1,5 @@
 import path from 'node:path';
+import { syncProjectCacheAfterWrite } from './project-cache-sync.js';
 import {
   atomicOverrideKey,
   atomicOverrides,
@@ -40,6 +41,8 @@ type LocalizedTranslationTarget = TranslationTarget & { locale: string };
 export async function setTranslations(
   input: SetTranslationsInput,
 ): Promise<SetResult> {
+  if (input.app_directory && !path.isAbsolute(input.app_directory))
+    fail('SQLITE_APP_DIRECTORY_NOT_ABSOLUTE');
   const updates = resolveBatchLocales(input.updates, input.default_locale);
   const project = await loadProject(input.i18n_directory);
   const resolved = resolveTargets(project, updates);
@@ -101,6 +104,7 @@ export async function setTranslations(
       }
     }
   });
+  await syncProjectCacheAfterWrite(project.directory, input.app_directory);
   return setResult(
     targets,
     addedCount,
@@ -113,6 +117,8 @@ export async function setTranslations(
 export async function clearTranslations(
   input: ClearTranslationsInput,
 ): Promise<ClearResult> {
+  if (input.app_directory && !path.isAbsolute(input.app_directory))
+    fail('SQLITE_APP_DIRECTORY_NOT_ABSOLUTE');
   const requestedTargets = resolveBatchLocales(
     input.targets,
     input.default_locale,
@@ -135,6 +141,7 @@ export async function clearTranslations(
       }
     }
   });
+  await syncProjectCacheAfterWrite(project.directory, input.app_directory);
   return {
     cleared_count: clearedCount,
     unchanged_count: unchangedCount,
@@ -146,6 +153,8 @@ export async function clearTranslations(
 export async function setOverrides(
   input: SetOverridesInput,
 ): Promise<SetResult> {
+  if (input.app_directory && !path.isAbsolute(input.app_directory))
+    fail('SQLITE_APP_DIRECTORY_NOT_ABSOLUTE');
   const updates = resolveBatchLocales(input.updates, input.default_locale);
   const project = await loadProject(input.i18n_directory);
   const { targets, deduplicatedCount } = deduplicateTargets(
@@ -216,6 +225,7 @@ export async function setOverrides(
       overrides.rules = overridesFromAtomic(entries.values()).rules;
     },
   );
+  await syncProjectCacheAfterWrite(project.directory, input.app_directory);
   return setResult(
     targets,
     addedCount,
@@ -254,6 +264,8 @@ function subtractTokens(tokens: string[], matchedTokens: string[]): string[] {
 export async function deleteOverrides(
   input: DeleteOverridesInput,
 ): Promise<DeleteResult> {
+  if (input.app_directory && !path.isAbsolute(input.app_directory))
+    fail('SQLITE_APP_DIRECTORY_NOT_ABSOLUTE');
   const project = await loadProject(input.i18n_directory);
   const targets = input.override_ids.map(decodeOverrideId);
   rejectDuplicateTargets(targets, overrideTargetKey);
@@ -279,6 +291,7 @@ export async function deleteOverrides(
       }
     },
   );
+  await syncProjectCacheAfterWrite(project.directory, input.app_directory);
   return {
     deleted_count: deletedCount,
     unchanged_count: unchangedCount,

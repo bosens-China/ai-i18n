@@ -3,12 +3,14 @@ import { computed, shallowRef, useTemplateRef } from 'vue';
 import type { ReviewMessage, ReviewMutation } from '@ai-i18n/core';
 import type { ReviewCopy } from '@ai-i18n/core/review-i18n';
 import ReviewScopeTabs from './ReviewScopeTabs.vue';
+import ReviewCacheCandidates from './ReviewCacheCandidates.vue';
 import {
   activeOverride as findActiveOverride,
   currentReviewOccurrence,
   mutationScope,
   reviewAction,
   reviewBaseline,
+  reviewEffectiveValue,
   type ReviewScope,
 } from '../review-state';
 import { extractTokens, validateTokens } from '../tokens';
@@ -53,7 +55,12 @@ const action = computed(() =>
   reviewAction(Boolean(activeOverride.value), props.draft, baseline.value),
 );
 const tokens = computed(() => extractTokens(props.message.message.source));
-const hasDraft = computed(() => props.draft.trim().length > 0);
+const hasDraft = computed(
+  () =>
+    props.draft !== baseline.value ||
+    props.draft.length > 0 ||
+    automatic.value === '',
+);
 const dirty = computed(() => hasDraft.value && action.value !== 'saved');
 const validTokens = computed(() =>
   validateTokens(props.message.message.source, props.draft),
@@ -179,6 +186,16 @@ function insertToken(token: string): void {
           </button>
         </div>
       </div>
+
+      <ReviewCacheCandidates
+        v-if="message.cacheCandidatesEnabled"
+        :message="message.message"
+        :locale="locale"
+        :current-value="reviewEffectiveValue(message, locale, scope)"
+        :copy="copy"
+        :disabled="busy"
+        @use="emit('updateDraft', $event)"
+      />
 
       <div
         v-if="tokens.length"

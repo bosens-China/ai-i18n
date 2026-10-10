@@ -117,3 +117,5 @@ async function flattenPlugins(
   }
   return result;
 }
+
+export { syncProjectCache } from './cache-sync.js';

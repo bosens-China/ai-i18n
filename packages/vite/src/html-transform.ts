@@ -26,7 +26,9 @@ interface HtmlTransformDependencies {
   ready(): Promise<void>;
   state(): ProjectState;
   store(): FileStore;
-  requestMissingTranslations(moduleIds: readonly string[]): void;
+  requestMissingTranslations(
+    moduleIds: readonly string[],
+  ): void | Promise<void>;
   runStateTask: DevStateTaskRunner;
   persist(moduleId: string): void;
   flush(): Promise<void>;
@@ -76,7 +78,7 @@ export function createHtmlTransformHandler(
       if (config?.command !== 'build') {
         dependencies.persist(update.moduleId);
       }
-      dependencies.requestMissingTranslations([update.moduleId]);
+      await dependencies.requestMissingTranslations([update.moduleId]);
       if (config?.command === 'build') {
         await dependencies.flush();
         project.hydrateOverrides(await dependencies.store().loadOverrides());

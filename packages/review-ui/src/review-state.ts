@@ -129,3 +129,27 @@ export function reviewAction(
   if (!hasOverride) return 'confirm';
   return draft === baseline ? 'saved' : 'save';
 }
+
+/** 当前范围继承更宽的人工覆盖；候选标记不能把自动基线误当成最终展示值。 */
+export function reviewEffectiveValue(
+  message: ReviewMessage,
+  locale: string,
+  scope: ReviewScope,
+): string {
+  const overrides = message.overrides.filter(
+    (item) =>
+      item.locale === locale &&
+      (!item.file || item.file === scope.file) &&
+      (!item.location ||
+        (item.location.line === scope.location?.line &&
+          item.location.column === scope.location?.column)),
+  );
+  const rank = (item: ReviewOverride) =>
+    item.location ? 2 : item.file ? 1 : 0;
+  overrides.sort((a, b) => rank(b) - rank(a));
+  return (
+    overrides[0]?.value ??
+    message.translations[locale] ??
+    message.message.source
+  );
+}

@@ -139,8 +139,19 @@ export function aiI18n(options: AiI18nOptions): Plugin {
     translationEvent: TRANSLATION_UPDATE_EVENT,
     localeEvent: LOCALE_UPDATE_EVENT,
   });
-  const requestMissingTranslations = (moduleIds: readonly string[]) => {
-    if (!api.scanMode && !api.scanning) requestDevTranslations(moduleIds);
+  const requestMissingTranslations = async (moduleIds: readonly string[]) => {
+    if (api.scanMode || api.scanning) return;
+    if (translationMemory.cache && providerCache !== 'fresh') {
+      const project = currentState();
+      const affected = project.hydrateCache(
+        await currentStore().syncMemory(project.snapshot()),
+      );
+      if (affected.length) {
+        sendTranslationUpdates(affected);
+        sendLocaleUpdates(normalized.locales.map((locale) => locale.value));
+      }
+    }
+    requestDevTranslations(moduleIds);
   };
   const persist = (moduleId: string) => {
     if (!api.scanMode && !api.scanning) devPersistence.schedule(moduleId);
@@ -257,6 +268,10 @@ export function aiI18n(options: AiI18nOptions): Plugin {
 
   const api: AiI18nPluginApi = {
     scanMode: false,
+    cacheOptions: {
+      adapter: translationMemory.cache,
+      directory: options.directory,
+    },
     scanOptions: {
       ...normalized,
       framework: options.framework,
@@ -291,6 +306,7 @@ export function aiI18n(options: AiI18nOptions): Plugin {
       measureSetup('config', () => optimizeDevRuntimeDependencies(environment)),
 
     configResolved(resolved) {
+      if (api.cacheMode) return;
       return measureSetup('config-resolved', () => {
         config = resolved;
         api.scanIgnored = [

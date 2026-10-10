@@ -41,7 +41,9 @@ interface SourceTransformDependencies {
   framework(): AiI18nFramework;
   autoImport(): boolean;
   translationHooks(): readonly TranslationHookBinding[];
-  requestMissingTranslations(moduleIds: readonly string[]): void;
+  requestMissingTranslations(
+    moduleIds: readonly string[],
+  ): void | Promise<void>;
   runStateTask: DevStateTaskRunner;
   persist(moduleId: string): void;
   setDevHot(hot: NormalizedHotChannel): void;
@@ -165,7 +167,7 @@ export function createSourceTransformHandler(
           dependencies.persist(moduleId);
         }
         // 扫描只提取不请求翻译；首次真实访问即使命中分析缓存，也必须检查本模块缺译。
-        dependencies.requestMissingTranslations([
+        await dependencies.requestMissingTranslations([
           moduleId,
           ...update.affectedModuleIds,
         ]);

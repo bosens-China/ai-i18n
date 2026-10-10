@@ -31,6 +31,8 @@ test('registers focused tools without legacy mode or output schemas', async () =
     expect(tools.tools.map((tool) => tool.name)).toEqual([
       'ai_i18n_list_translations',
       'ai_i18n_list_cache_candidates',
+      'ai_i18n_list_cache_projects',
+      'ai_i18n_clean_cache',
       'ai_i18n_set_translations',
       'ai_i18n_clear_translations',
       'ai_i18n_list_orphan_messages',

@@ -1,8 +1,14 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import type { CacheMessage, TranslationMemoryFile } from '@ai-i18n/core';
 import {
-  type TranslationMemoryCandidateState,
+  hasSameTemplateTokens,
+  type CacheMessage,
+  type TranslationMemoryFile,
+} from '@ai-i18n/core';
+import {
+  readTranslationOverrides,
+  translationMemoryCandidates,
+  type TranslationMemoryCandidateQuery,
   type TranslationMemoryCandidateCache,
   type TranslationMemoryCandidateTarget,
   openTranslationMemoryStore,
@@ -131,6 +137,18 @@ export class FileStoreMemory {
     return current;
   }
 
+  async listCandidates(
+    target: TranslationMemoryCandidateTarget,
+    query?: TranslationMemoryCandidateQuery,
+  ) {
+    return (
+      this.options.translationMemory?.cache?.list(target, query) ?? {
+        candidates: [],
+        hasMore: false,
+      }
+    );
+  }
+
   async close(): Promise<void> {
     await this.store?.then(
       (store) => store.close(),
@@ -197,7 +215,11 @@ export class FileStoreMemory {
       );
       for (const [index, value] of values.entries()) {
         const target = targets[index];
-        if (target && value !== undefined) {
+        if (
+          target &&
+          value !== undefined &&
+          hasSameTemplateTokens(target.query.source, value)
+        ) {
           target.translations[target.locale] = value;
         }
       }
@@ -210,15 +232,17 @@ export class FileStoreMemory {
     cache: TranslationMemoryCandidateCache,
     messages: Record<string, CacheMessage>,
   ): Promise<boolean> {
-    const candidates: TranslationMemoryCandidateState[] = [];
-    for (const message of Object.values(messages)) {
-      for (const [locale, value] of Object.entries(message.translations)) {
-        candidates.push({ ...candidateTarget(message, locale), value });
-      }
-    }
     try {
       // 项目 JSON 已提交后再回填；缓存失败不能回滚项目事实。
-      await cache.sync(candidates);
+      await cache.sync(
+        translationMemoryCandidates(
+          messages,
+          await readTranslationOverrides(
+            path.join(this.directory, 'overrides'),
+          ),
+          this.options.sourceLang,
+        ),
+      );
       return true;
     } catch (cause) {
       this.warnCandidateCache(cause);

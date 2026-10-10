@@ -11,6 +11,34 @@ export interface TranslationMemoryCandidate extends TranslationMemoryCandidateTa
 
 export interface TranslationMemoryCandidateState extends TranslationMemoryCandidateTarget {
   value: string | null;
+  kind?: 'automatic' | 'reviewed';
+  file?: string;
+  location?: { line: number; column: number };
+}
+
+export interface TranslationMemoryCandidateSource {
+  project: string;
+  kind: 'automatic' | 'reviewed';
+  file?: string;
+  location?: { line: number; column: number };
+}
+
+export interface TranslationMemoryCandidateDetails {
+  value: string;
+  sources: TranslationMemoryCandidateSource[];
+  sourcesHasMore: boolean;
+}
+
+export interface TranslationMemoryCandidatePage {
+  candidates: TranslationMemoryCandidateDetails[];
+  hasMore: boolean;
+  automaticValue?: string;
+}
+
+export interface TranslationMemoryCandidateQuery {
+  offset?: number;
+  sourceOffset?: number;
+  value?: string;
 }
 
 export interface TranslationMemoryCandidateCache {
@@ -18,10 +46,18 @@ export interface TranslationMemoryCandidateCache {
     targets: readonly TranslationMemoryCandidateTarget[],
   ): Promise<Array<string | undefined>>;
   sync(candidates: readonly TranslationMemoryCandidateState[]): Promise<void>;
+  list(
+    target: TranslationMemoryCandidateTarget,
+    query?: TranslationMemoryCandidateQuery,
+  ): Promise<TranslationMemoryCandidatePage>;
   close(): void;
 }
 
 export interface TranslationMemoryCandidateCacheAdapter {
   readonly cache: 'sqlite';
+  list(
+    target: TranslationMemoryCandidateTarget,
+    query?: TranslationMemoryCandidateQuery,
+  ): Promise<TranslationMemoryCandidatePage>;
   open(projectDirectory: string): Promise<TranslationMemoryCandidateCache>;
 }

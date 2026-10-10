@@ -3,7 +3,7 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 import { z } from 'zod';
 import { errorPayload } from './errors.js';
-import { listCacheCandidates } from './project-candidates.js';
+import { registerCacheTools } from './cache-tools.js';
 import { deleteOrphanMessages, listOrphanMessages } from './project-orphans.js';
 import { listOverrides, listTranslations } from './project-read.js';
 import {
@@ -141,24 +141,12 @@ export function createAiI18nMcpServer(): McpServer {
     async (input) => callTool(() => listTranslations(input)),
   );
 
-  server.registerTool(
-    'ai_i18n_list_cache_candidates',
-    {
-      title: 'List optional SQLite translation candidates',
-      description:
-        'Read up to ten distinct eligible SQLite suggestions for one exact active message and locale. This optional tool never writes project JSON or SQLite, and suggestions must be chosen explicitly before using set_translations. Requires @ai-i18n/sqlite installed in the target app. Pass app_directory when i18n_directory is outside the app, and data_directory when sqlite({ dataDirectory }) differs from the default.',
-      inputSchema: z
-        .object({
-          i18n_directory: DirectorySchema,
-          message: MessageReferenceSchema,
-          locale: LocaleSchema,
-          data_directory: DirectorySchema.optional(),
-          app_directory: DirectorySchema.optional(),
-        })
-        .strict(),
-      annotations: readAnnotations,
-    },
-    async (input) => callTool(() => listCacheCandidates(input)),
+  registerCacheTools(
+    server,
+    DirectorySchema,
+    MessageReferenceSchema,
+    callTool,
+    readAnnotations,
   );
 
   server.registerTool(
@@ -170,6 +158,7 @@ export function createAiI18nMcpServer(): McpServer {
       inputSchema: z
         .object({
           i18n_directory: DirectorySchema,
+          app_directory: DirectorySchema.optional(),
           default_locale: LocaleSchema.describe(
             'Optional locale applied to every update. When provided, omit locale from every updates item.',
           ).optional(),
@@ -191,6 +180,7 @@ export function createAiI18nMcpServer(): McpServer {
       inputSchema: z
         .object({
           i18n_directory: DirectorySchema,
+          app_directory: DirectorySchema.optional(),
           default_locale: LocaleSchema.describe(
             'Optional locale applied to every target. When provided, omit locale from every targets item.',
           ).optional(),
@@ -230,6 +220,7 @@ export function createAiI18nMcpServer(): McpServer {
       inputSchema: z
         .object({
           i18n_directory: DirectorySchema,
+          app_directory: DirectorySchema.optional(),
           orphan_ids: OrphanIdsSchema,
         })
         .strict(),
@@ -268,6 +259,7 @@ export function createAiI18nMcpServer(): McpServer {
       inputSchema: z
         .object({
           i18n_directory: DirectorySchema,
+          app_directory: DirectorySchema.optional(),
           default_locale: LocaleSchema.describe(
             'Optional locale applied to every update. When provided, omit locale from every updates item.',
           ).optional(),
@@ -288,6 +280,7 @@ export function createAiI18nMcpServer(): McpServer {
       inputSchema: z
         .object({
           i18n_directory: DirectorySchema,
+          app_directory: DirectorySchema.optional(),
           override_ids: z.array(z.string().min(1).max(16_384)).min(1).max(500),
         })
         .strict(),

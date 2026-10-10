@@ -30,7 +30,9 @@ interface HotUpdateDependencies {
   localeLoading: boolean;
   sendTranslationUpdates(moduleIds: readonly string[]): void;
   sendLocaleUpdates(locales: readonly string[]): void;
-  requestMissingTranslations(moduleIds: readonly string[]): void;
+  requestMissingTranslations(
+    moduleIds: readonly string[],
+  ): void | Promise<void>;
   flushPersistence(): Promise<void>;
   runStateTask: DevStateTaskRunner;
 }
@@ -120,7 +122,7 @@ export function createHotUpdateHandler(dependencies: HotUpdateDependencies) {
         } else {
           dependencies.sendTranslationUpdates(updated);
         }
-        dependencies.requestMissingTranslations(updated);
+        await dependencies.requestMissingTranslations(updated);
         return [];
       }
       if (!dependencies.sourcePattern.test(options.file)) return;
@@ -158,7 +160,7 @@ export function createHotUpdateHandler(dependencies: HotUpdateDependencies) {
       const cache = await fileStore.sync(project.snapshot());
       project.hydrateCache(cache);
       project.hydrateOverrides(await fileStore.loadOverrides());
-      dependencies.requestMissingTranslations(affected);
+      await dependencies.requestMissingTranslations(affected);
       if (localeSnapshot) {
         dependencies.sendLocaleUpdates(changedLocales(project, localeSnapshot));
       } else {

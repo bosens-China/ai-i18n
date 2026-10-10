@@ -107,7 +107,9 @@ export function normalizeTranslationMemory(
       !('cache' in cache) ||
       cache.cache !== 'sqlite' ||
       !('open' in cache) ||
-      typeof cache.open !== 'function')
+      typeof cache.open !== 'function' ||
+      !('list' in cache) ||
+      typeof cache.list !== 'function')
   ) {
     throw new Error(
       diagnosticMessage(

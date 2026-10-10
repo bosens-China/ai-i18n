@@ -2,7 +2,8 @@
 
 本地 stdio MCP server，为 Agent 提供 ai-i18n 翻译与人工校对的查询、设置和删除能力。
 
-MCP 不扫描 workspace，也不执行 Vite 配置。Agent 必须先确认目标 Vite 应用，读取它的
+MCP 不扫描 workspace；启动与列表查询不执行 Vite 配置。写入后的可选缓存同步会解析应用配置。
+Agent 必须先确认目标 Vite 应用，读取它的
 `vite.config.*` 和启动脚本，再将 Vite `root` 与 `aiI18n({ directory })`（默认 `i18n`）
 解析为最终绝对 `i18n_directory`。在 monorepo 中，每个 Vite build 分开处理，不能把仓库
 根目录或第一个同名目录当成协议目录。
@@ -15,7 +16,7 @@ MCP 不扫描 workspace，也不执行 Vite 配置。Agent 必须先确认目标
 标准化 `source`，不会从 hash 文件名推断源码路径。
 
 MCP 会校验绝对路径、目录是否存在，以及项目 `translations/`、`overrides/` 和 `extracted/`
-是否符合当前协议。普通翻译工具只读写项目 JSON；可选候选工具可显式只读个人 SQLite。
+是否符合当前协议。项目 JSON 是写入权威；成功写入后同步已启用缓存。候选工具只读个人 SQLite，管理工具负责显式清理。
 MCP 不读取或执行 Vite 配置。
 `extracted/` 是不提交 Git 的本地派生文件。首次使用，或者切换分支和修改提取相关配置后，
 使用 `use-ai-i18n-mcp` Skill 的入口扫描刷新；无需为了普通补译执行完整 Build。
@@ -49,8 +50,16 @@ server 使用 stdio 通信，标准输出专用于 MCP 协议。
 - `ai_i18n_list_cache_candidates`：可选、只读地查询本机 SQLite 中某条消息和 locale 的有效
   候选。传入精确 `message`、`locale` 与绝对 `i18n_directory`；自定义数据库目录时再传绝对
   `data_directory`。如果翻译目录位于应用之外，还需传入绝对 `app_directory`，以便从该应用
-  加载 `@ai-i18n/sqlite`。最多返回十个不同译值和 `has_more`，不会自动采用、排序选优或写入项目。
+  加载 `@ai-i18n/sqlite`。每页最多十个不同译值，返回 `candidates: [{ value, sources, sources_has_more }]`、
+  `current_automatic_value`、`automatic_value`、`has_more`、`next_offset`。来源包含 project、kind 和可选
+  file/location。用 `offset` 继续候选分页；用精确 `value` 和 `source_offset` 继续该译值的来源分页。
+  `automatic_value` 从全部候选计算，不能从当前页推断唯一性。不会自动采用或写入项目。
   目标应用需要安装 `@ai-i18n/sqlite`；候选查询不检查来源项目是否还存在。
+- `ai_i18n_list_cache_projects`：同样接受 i18n_directory、可选 app_directory/data_directory，
+  每页五十个来源项目，可传 offset；返回 projects、has_more，列出 project、records、orphans、synced_at。
+- `ai_i18n_clean_cache`：相同目录参数加 scope（orphans/project/all），前两者必须传列表返回的
+  project_directory；all 必须省略。默认只预览，返回 records、token、executed: false。
+  用户授权后通过 preview_token 回传 token 执行；缓存变化须重新预览。只修改 SQLite，不改项目 JSON。
 - `ai_i18n_set_translations`：默认只填充 `null`；显式传
   `overwrite_existing: true` 时允许覆盖非空译文。写入目标使用列表返回的
   `message: { source, comment? }`，调用方不接触内部 message ID。单语言批次可在顶层提供
@@ -109,8 +118,11 @@ server 使用 stdio 通信，标准输出专用于 MCP 协议。
 ## 写入边界
 
 - 翻译工具只修改项目 `translations/` 分桶；人工校对工具只修改项目 `overrides/` 分桶。
-- 可选 SQLite 由 Vite 同步。MCP 仅在显式调用候选工具时只读 SQLite；普通工具不访问数据库。
-  若 MCP 在 Vite 未运行时改写项目 JSON，SQLite 会在下次 Dev 或 Build 同步时更新。
+- SQLite 候选和项目列表工具只读。普通写入成功后解析目标应用 Vite 配置，同步已启用的缓存，
+  不启动 Dev、不提取、不请求 Provider。写入工具均接受可选绝对 app_directory；外置翻译目录需要提供，
+  默认从翻译目录向上定位 vite.config.*。找不到配置时由下次 Dev/Build 校准。
+  缓存同步失败输出 stderr warning，不回滚项目写入。人工覆盖同步只提供候选，不触发自动复用。
+- 缓存清理需要显式授权及预览 token；清理后下次同步可恢复当前项目贡献，不永久屏蔽来源。
 - MCP 不读取 Vite 的 `provider.cache`；Provider 是否刷新进程缓存，不改变 Agent 的列表、写入或清除行为。
 - MCP 不修改 `extracted/` 或 `locales/`。
 - 每批写入都取得跨进程锁，在锁内重读并校验最新文件，然后按字段原子更新。

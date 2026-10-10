@@ -1,6 +1,6 @@
 ---
 name: use-ai-i18n-mcp
-description: Scan a Vite app from its entries without a full Build, then use Skill-only helpers or the nine local ai-i18n MCP tools to inspect missing or orphaned translations, optionally suggest SQLite candidates, update project Translation Memory JSON shards, and manage reviewed override shards. Use when working with ai_i18n_list_translations, ai_i18n_list_cache_candidates, ai_i18n_set_translations, ai_i18n_clear_translations, ai_i18n_list_orphan_messages, ai_i18n_delete_orphan_messages, ai_i18n_list_overrides, ai_i18n_set_overrides, or ai_i18n_delete_overrides, especially when a monorepo requires resolving one Vite app's i18n directory first.
+description: Scan a Vite app from its entries without a full Build, then use Skill-only helpers or local ai-i18n MCP tools to inspect missing or orphaned translations, optionally suggest SQLite candidates, update project Translation Memory JSON shards, and manage reviewed override shards. Use when working with ai_i18n_list_translations, ai_i18n_list_cache_candidates, ai_i18n_list_cache_projects, ai_i18n_clean_cache, ai_i18n_set_translations, ai_i18n_clear_translations, ai_i18n_list_orphan_messages, ai_i18n_delete_orphan_messages, ai_i18n_list_overrides, ai_i18n_set_overrides, or ai_i18n_delete_overrides, especially when a monorepo requires resolving one Vite app's i18n directory first.
 ---
 
 # Use ai-i18n MCP

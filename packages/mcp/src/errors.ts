@@ -50,6 +50,14 @@ function nextAction(code: string): string {
 }
 
 const ERROR_NEXT_ACTIONS: Record<string, string> = {
+  SQLITE_PROJECT_REQUIRED:
+    'List cache projects and pass the exact absolute project_directory for project or orphan cleanup.',
+  SQLITE_INVALID_CLEANUP_SCOPE:
+    'Omit project_directory for all-cache cleanup; use project scope to clean only one project.',
+  SQLITE_CLEANUP_FAILED:
+    'Preview cleanup again without preview_token. Check cache availability and obtain authorization for the current preview before executing.',
+  SQLITE_DIRECTORY_NOT_ABSOLUTE:
+    'Pass absolute i18n_directory, app_directory and data_directory paths.',
   I18N_DIRECTORY_NOT_ABSOLUTE:
     'Resolve the target Vite root and aiI18n.directory, then retry with the resulting absolute i18n_directory.',
   I18N_DIRECTORY_NOT_FOUND:
@@ -105,8 +113,6 @@ const ERROR_NEXT_ACTIONS: Record<string, string> = {
     'Run one full Vite Build, call ai_i18n_list_orphan_messages again, and copy the returned orphan_id exactly.',
   SQLITE_ADAPTER_NOT_FOUND:
     'Install @ai-i18n/sqlite in the selected Vite app, or omit the optional cache candidate lookup. Ordinary MCP translation tools do not require SQLite.',
-  SQLITE_ADAPTER_OUTDATED:
-    'Update @ai-i18n/sqlite in the selected Vite app before using cache candidate suggestions.',
   SQLITE_DATA_DIRECTORY_NOT_ABSOLUTE:
     'Pass an absolute data_directory matching sqlite({ dataDirectory }), or omit it to use AI_I18N_DATA_DIR or the platform default.',
   SQLITE_APP_DIRECTORY_NOT_ABSOLUTE:

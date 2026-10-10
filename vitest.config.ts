@@ -1,6 +1,7 @@
 import { configDefaults, defineConfig } from 'vitest/config';
 
 const viteIntegrationTests = [
+  'packages/vite/test/cache-reuse.test.ts',
   'packages/vite/test/scan.test.ts',
   'packages/vite/test/scan-review.test.ts',
   'packages/vite/test/scan-compatibility.test.ts',

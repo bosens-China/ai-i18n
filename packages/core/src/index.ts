@@ -117,3 +117,8 @@ export type {
   TranslationResult,
   Translator,
 } from './provider.js';
+
+export type {
+  TranslationMemoryCandidatePage,
+  TranslationMemoryCandidateDetails,
+} from './translation-memory-store-types.js';

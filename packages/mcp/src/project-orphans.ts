@@ -1,3 +1,5 @@
+import path from 'node:path';
+import { syncProjectCacheAfterWrite } from './project-cache-sync.js';
 import { fail } from './errors.js';
 import { createOrphanId, validateOrphanId } from './orphan-id.js';
 import { paginate } from './pagination.js';
@@ -51,6 +53,8 @@ export async function listOrphanMessages(
 export async function deleteOrphanMessages(
   input: DeleteOrphanMessagesInput,
 ): Promise<DeleteResult> {
+  if (input.app_directory && !path.isAbsolute(input.app_directory))
+    fail('SQLITE_APP_DIRECTORY_NOT_ABSOLUTE');
   const project = await loadProject(input.i18n_directory);
   const orphanIds = input.orphan_ids.map(validateOrphanId);
   rejectDuplicateOrphanIds(orphanIds);
@@ -79,6 +83,7 @@ export async function deleteOrphanMessages(
       deletedCount += 1;
     }
   });
+  await syncProjectCacheAfterWrite(project.directory, input.app_directory);
   return {
     deleted_count: deletedCount,
     unchanged_count: unchangedCount,

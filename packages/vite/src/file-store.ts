@@ -68,6 +68,18 @@ export class FileStore {
     return this.memory.update();
   }
 
+  syncMemory(snapshot: ProjectSnapshot) {
+    return this.memory.update(snapshot);
+  }
+
+  get candidateCacheEnabled() {
+    return Boolean(this.options.translationMemory?.cache);
+  }
+
+  listCandidates(...args: Parameters<FileStoreMemory['listCandidates']>) {
+    return this.memory.listCandidates(...args);
+  }
+
   loadExtracted(): Promise<ExtractedFile[]> {
     return this.readExtractedFiles();
   }

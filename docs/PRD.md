@@ -90,7 +90,7 @@
 - Vue `withDefaults` 静态默认值的文案位置必须回到原始 SFC；编译器复制片段缺少映射时按属性名及原始表达式补齐，不能使用生成代码行号或按重复文案猜测位置。Build、Dev 与独立扫描遵守同一约定。
 - 最终译文优先级固定为：出现位置 + comment、出现位置默认、文件 + comment、文件默认、全局 +
   comment、全局默认、AI Translation Memory、source fallback；更精确范围始终覆盖较宽范围。
-- 人工校对必须写入 `overrides/`，不污染项目自动译文或个人候选缓存。空字符串是有效人工译文；
+- 人工校对必须写入 `overrides/`，不覆盖项目自动译文；人工译文进入个人缓存时只作为候选。空字符串是有效人工译文；
   comment 与文件范围彼此独立且可以组合。
 - Translation Memory 继续以 `source + comment` 跨文件复用；Runtime 与派生 locale 使用
   `source file + message ID + occurrence` 区分同一语义消息在不同文件、同一行不同列的最终人工值。该运行时身份不改变公开
@@ -115,18 +115,8 @@
 - 自动译文分桶固定以 `version`、`locale`、`entries` 写入顶层字段；条目固定以 `id`、`source`、
   `sourceLang`、可选 `comment`、`value` 写入，动态哈希键按固定码元排序。协议字段不使用字典序重排，
   避免一次 MCP、Provider 或 Vite 写入产生无关 Git diff。
-- `@ai-i18n/sqlite` 只提供可选个人 Translation Memory 候选缓存，通过
-  `translationMemory.cache: sqlite()` 启用。SQLite 和 `better-sqlite3` 不进入 Core 或默认项目路径；
-  MCP 仅在显式查询候选时动态加载当前应用安装的 SQLite 包；翻译目录位于应用外时由调用方提供应用目录。
-- 缓存按 sourceLang、targetLang、source 与 comment 查询。只有去重后恰好一个候选时才自动
-  复用；无候选或多候选保持缺失，交给 Provider 或人工处理，不按时间自动选优。
-- 缓存命中的值必须先写入项目 `translations/` 才能使用；Provider 结果也先提交项目 JSON，
-  再同步缓存。同项目改译或清空会使旧值退出候选，其他项目仍持有的值继续可用。孤儿历史默认保留，
-  `sqlite({ pruneOrphans: true })` 仅清理当前项目的孤儿记录。查询不验证来源项目仍存在。
-  缓存打开失败在下次同步重试；同一项目的 Vite JSON 与 SQLite 同步串行执行。缓存故障或删除只能
-  降低复用率，不能改变已提交的译文、构建产物或 Runtime 行为。
-- SQLite 使用平台用户数据目录中的单个数据库，允许 `AI_I18N_DATA_DIR` 覆盖。引擎使用
-  better-sqlite3，当前只需候选表、参数化固定查询、SQLite 事务、约束与索引，不引入 ORM。
+- 可选 SQLite 按项目保存自动译文与人工覆盖，供 Dev/Build 自动补缺、MCP 与审查工作台选择候选。
+  来源、冲突、同步及清理边界见 [SQLite 翻译记忆](./prd/sqlite.md)。
 
 ### 并发与兼容性
 
@@ -321,7 +311,7 @@
 
 ## MCP 与 Agent 协作
 
-- MCP 是本地 stdio 服务，不扫描 workspace、不执行 Vite 配置，也不在启动时接收项目路径。
+- MCP 是本地 stdio 服务，不扫描 workspace，不在启动时接收项目路径；启动与列表不执行 Vite 配置，写入后为同步缓存解析应用配置。
 - 面向应用开发者的接入文档覆盖 Codex、Cursor、Claude Code 和 Antigravity。仅对官方提供命令注册的
   客户端给出一键命令；未收录到客户端 MCP Store 的本地 stdio 服务继续使用该客户端的配置文件。
 - Agent 必须先确认目标 Vite 应用，再结合启动目录、Vite root 与 directory 计算最终绝对 i18n 目录。monorepo 中每个 Vite build 独立处理。
@@ -357,8 +347,8 @@
 - 列表默认请求 100 条并允许提高到 500 条；响应大小保护只能减少完整记录数量，不能截断单条
   或破坏游标推进。
 - MCP 只读取 `extracted/` 以校验消息归属；自动翻译工具只修改 `translations/`，人工工具
-  只修改 `overrides/`。可选候选工具显式只读 SQLite，至多返回十个有效建议，不自动选用或写入。
-  MCP 不修改 `extracted/` 或 `locales/`，也不执行 Vite 配置。
+  只修改 `overrides/`。候选工具只读分页查询 SQLite，不自动选用；独立项目写入后同步已启用缓存，管理工具提供清理预览。
+  MCP 不修改 `extracted/` 或 `locales/`；独立写入后的缓存同步仅解析目标应用配置，不启动 Dev 或 Provider。
 - MCP 不读取 `provider.cache`。Vite 的进程级 Provider 刷新不能过滤、阻止或覆盖在途 Agent 写入。
 - Provider 结果在项目锁内校验旧值，提交成功后消费对应写入意图；外部修改、清空或空字符串不能被旧内存快照恢复。
 - 工具名、字段和稳定错误码使用英文；Agent 按用户语言解释结果。每次调用只返回一份紧凑 JSON 文本。

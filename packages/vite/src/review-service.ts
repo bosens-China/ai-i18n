@@ -1,4 +1,5 @@
 import {
+  createMessageId,
   atomicOverrideKey,
   atomicOverrides,
   hasSameTemplateTokens,
@@ -15,6 +16,7 @@ import {
   type TranslationMemoryFile,
   type TranslationOverridesFile,
 } from '@ai-i18n/core';
+import type { TranslationMemoryCandidateQuery } from '@ai-i18n/core/translation-memory';
 import type { DevStateTaskRunner } from './dev-state-queue.js';
 import type { FileStore } from './file-store.js';
 import type { ProjectSnapshot, ProjectState } from './project-state.js';
@@ -59,6 +61,10 @@ interface ReviewServiceOptions {
 
 export interface ReviewService {
   snapshot(full?: boolean): Promise<ReviewSnapshot>;
+  candidates?(
+    target: ReviewOverrideTarget,
+    query?: TranslationMemoryCandidateQuery,
+  ): ReturnType<FileStore['listCandidates']>;
   setOverride(update: ReviewOverrideUpdate): Promise<ReviewMutationResult>;
   deleteOverride(target: ReviewOverrideTarget): Promise<ReviewMutationResult>;
 }
@@ -100,12 +106,16 @@ export function createReviewService(
       ...project.cache.messages,
       ...persisted.messages,
     };
-    return createReviewSnapshot(
+    const result = createReviewSnapshot(
       project,
       await options.store().loadOverrides(),
       options.sourceLang,
       options.locales,
     );
+    if (options.store().candidateCacheEnabled)
+      for (const message of result.messages)
+        message.cacheCandidatesEnabled = true;
+    return result;
   }
 
   async function mutate(
@@ -180,6 +190,30 @@ export function createReviewService(
 
   return {
     snapshot,
+    async candidates(target, query) {
+      await options.ready();
+      const project = await projectSnapshot();
+      validateReviewTarget(
+        project,
+        target,
+        options.sourceLang,
+        options.locales,
+      );
+      const message =
+        project.cache.messages[
+          createMessageId(target.message.source, {
+            comment: target.message.comment,
+          })
+        ];
+      return options.store().listCandidates(
+        {
+          sourceLang: message?.sourceLang ?? options.sourceLang,
+          targetLang: target.locale,
+          ...target.message,
+        },
+        query,
+      );
+    },
     setOverride: (update) => mutate(update, update.value),
     deleteOverride: (target) => mutate(target, undefined),
   };

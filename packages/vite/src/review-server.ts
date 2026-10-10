@@ -79,6 +79,52 @@ export async function configureReviewServer(
         );
         return;
       }
+      if (
+        request.method === 'GET' &&
+        pathname === '/__ai-i18n/api/candidates'
+      ) {
+        const search = new URL(request.url!, 'http://review.local')
+          .searchParams;
+        let message: unknown;
+        try {
+          message = JSON.parse(search.get('message') ?? 'null');
+        } catch {
+          throw invalidInput();
+        }
+        const target = parseOverrideTarget({
+          message,
+          locale: search.get('locale'),
+        });
+        const offset = Number(search.get('offset') ?? 0);
+        const sourceOffset = Number(search.get('source_offset') ?? 0);
+        if (
+          ![offset, sourceOffset].every(
+            (value) =>
+              Number.isSafeInteger(value) && value >= 0 && value <= 1_000_000,
+          )
+        )
+          throw invalidInput();
+        try {
+          sendJson(
+            response,
+            200,
+            (await service.candidates?.(target, {
+              offset,
+              sourceOffset,
+              ...(search.has('value') ? { value: search.get('value')! } : {}),
+            })) ?? { candidates: [], hasMore: false },
+          );
+        } catch (cause) {
+          if (cause instanceof ReviewProblem) throw cause;
+          throw problem(
+            'CACHE_UNAVAILABLE',
+            503,
+            '候选缓存暂时不可用，请重试；仍可正常保存人工译文。',
+            'Candidate cache is unavailable. Retry; reviewed translations can still be saved.',
+          );
+        }
+        return;
+      }
       if (request.method === 'GET' && pathname === REVIEW_EDITOR_PATH) {
         response.statusCode = 302;
         response.setHeader(

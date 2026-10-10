@@ -2,13 +2,12 @@ import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import Database from 'better-sqlite3';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 import { listSqliteCandidates, sqlite } from '../src/index';
 
 const tempDirectories: string[] = [];
 
 afterEach(async () => {
-  vi.restoreAllMocks();
   await Promise.all(
     tempDirectories
       .splice(0)
@@ -50,7 +49,7 @@ describe('@ai-i18n/sqlite', () => {
     await fs.rm(projectDirectory, { recursive: true, force: true });
     await expect(
       listSqliteCandidates(target(), { dataDirectory }),
-    ).resolves.toEqual(['Save']);
+    ).resolves.toMatchObject({ candidates: [{ value: 'Save' }] });
   });
 
   it('returns only a unique candidate and leaves ambiguity unresolved', async () => {
@@ -95,109 +94,6 @@ describe('@ai-i18n/sqlite', () => {
     await pruning.sync([]);
     await expect(pruning.findUnique([target()])).resolves.toEqual([undefined]);
     pruning.close();
-  });
-
-  it('keeps version-one rows but excludes untraceable legacy values', async () => {
-    const root = await temporaryDirectory();
-    const dataDirectory = path.join(root, 'global');
-    const databasePath = path.join(dataDirectory, 'translation-memory.sqlite');
-    await fs.mkdir(dataDirectory);
-    const oldDatabase = new Database(databasePath);
-    oldDatabase.exec(`
-      CREATE TABLE candidates (
-        source_lang TEXT NOT NULL,
-        target_lang TEXT NOT NULL,
-        source TEXT NOT NULL,
-        comment TEXT NOT NULL,
-        value TEXT NOT NULL,
-        UNIQUE(source_lang, target_lang, source, comment, value)
-      );
-      INSERT INTO candidates VALUES ('zh-CN', 'en-US', '保存', '', 'Old');
-      PRAGMA user_version = 1;
-    `);
-    oldDatabase.close();
-
-    const cache = await sqlite({ dataDirectory }).open(root);
-    await expect(cache.findUnique([target()])).resolves.toEqual([undefined]);
-    await cache.sync([{ ...target(), value: 'Save' }]);
-    await expect(cache.findUnique([target()])).resolves.toEqual(['Save']);
-    cache.close();
-
-    const migrated = new Database(databasePath, { readonly: true });
-    const legacy = migrated
-      .prepare(
-        "SELECT value, eligible FROM candidates WHERE project = '__legacy__'",
-      )
-      .get() as { value: string; eligible: number };
-    expect(legacy).toEqual({ value: 'Old', eligible: 0 });
-    migrated.close();
-  });
-
-  it('keeps candidates synced by another opener before acquiring the migration lock', async () => {
-    const root = await temporaryDirectory();
-    const databasePath = path.join(root, 'translation-memory.sqlite');
-    const other = new Database(databasePath);
-    other.exec(`
-      CREATE TABLE candidates (
-        source_lang TEXT, target_lang TEXT, source TEXT, comment TEXT, value TEXT
-      );
-      PRAGMA user_version = 1;
-    `);
-    const transaction = Database.prototype.transaction;
-    let upgraded = false;
-    vi.spyOn(Database.prototype, 'transaction').mockImplementationOnce(
-      function (this: Database.Database, fn) {
-        const pending = transaction.call(this, fn);
-        return new Proxy(Object.assign(pending.bind(undefined), pending), {
-          get(_target, key, receiver) {
-            if (key !== 'immediate') return Reflect.get(pending, key, receiver);
-            return () => {
-              // 模拟另一进程在当前连接等待写锁时完成升级并同步有效候选。
-              other.exec(`
-              DROP TABLE candidates;
-              CREATE TABLE candidates (
-                id INTEGER PRIMARY KEY,
-                project TEXT NOT NULL,
-                source_lang TEXT NOT NULL,
-                target_lang TEXT NOT NULL,
-                source TEXT NOT NULL,
-                comment TEXT NOT NULL,
-                value TEXT NOT NULL,
-                eligible INTEGER NOT NULL,
-                UNIQUE(project, source_lang, target_lang, source, comment, value)
-              );
-              CREATE TABLE project_sync (project TEXT PRIMARY KEY, digest TEXT NOT NULL);
-              INSERT INTO candidates VALUES (1, '/other-project', 'zh-CN', 'en-US', '保存', '', 'Save', 1);
-              INSERT INTO project_sync VALUES ('/other-project', 'synced');
-              PRAGMA user_version = 2;
-            `);
-              upgraded = true;
-              return pending.immediate();
-            };
-          },
-        });
-      },
-    );
-    try {
-      const cache = await sqlite({ dataDirectory: root }).open(root);
-      try {
-        expect(upgraded).toBe(true);
-        await expect(cache.findUnique([target()])).resolves.toEqual(['Save']);
-        expect(
-          other.prepare('SELECT project, eligible FROM candidates').get(),
-        ).toEqual({
-          project: '/other-project',
-          eligible: 1,
-        });
-        expect(other.prepare('SELECT digest FROM project_sync').get()).toEqual({
-          digest: 'synced',
-        });
-      } finally {
-        cache.close();
-      }
-    } finally {
-      other.close();
-    }
   });
 });
 

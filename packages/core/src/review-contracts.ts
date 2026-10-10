@@ -50,6 +50,7 @@ export interface ReviewOverride {
 }
 
 export interface ReviewMessage {
+  cacheCandidatesEnabled?: boolean;
   message: ReviewMessageReference;
   translations: Record<string, string | null>;
   overrides: ReviewOverride[];

@@ -8,10 +8,10 @@ import {
   type TranslationMemoryCandidateCache,
   type TranslationMemoryCandidateState,
   type TranslationMemoryCandidateTarget,
+  type TranslationMemoryCandidateQuery,
 } from '@ai-i18n/core/translation-memory';
-
-const SQLITE_SCHEMA_VERSION = 2;
-type Row = [string, string, string, string, string | null];
+import { initialize } from './sqlite-schema.js';
+import { candidatePage, uniqueCandidate } from './sqlite-query.js';
 
 export class SqliteTranslationMemoryCache implements TranslationMemoryCandidateCache {
   private constructor(
@@ -25,7 +25,7 @@ export class SqliteTranslationMemoryCache implements TranslationMemoryCandidateC
     databasePath: string,
     projectDirectory: string,
     pruneOrphans: boolean,
-  ): Promise<SqliteTranslationMemoryCache> {
+  ) {
     await fs.mkdir(path.dirname(databasePath), { recursive: true });
     const canonicalDatabasePath = path.join(
       await fs.realpath(path.dirname(databasePath)),
@@ -50,126 +50,93 @@ export class SqliteTranslationMemoryCache implements TranslationMemoryCandidateC
     }
   }
 
-  static async suggestions(
-    databasePath: string,
-    target: TranslationMemoryCandidateTarget,
-  ): Promise<string[]> {
-    try {
-      await fs.access(databasePath);
-    } catch (cause) {
-      if ((cause as NodeJS.ErrnoException).code !== 'ENOENT') throw cause;
-      return [];
-    }
-    const Database = await loadDatabase();
-    const database = new Database(databasePath, {
-      readonly: true,
-      fileMustExist: true,
-    });
-    try {
-      if (
-        (database.pragma('user_version', { simple: true }) as number) !==
-        SQLITE_SCHEMA_VERSION
-      )
-        return [];
-      return selectCandidates(database, target);
-    } finally {
-      database.close();
-    }
+  async findUnique(targets: readonly TranslationMemoryCandidateTarget[]) {
+    return this.database.transaction(() =>
+      targets.map((target) => uniqueCandidate(this.database, target)),
+    )();
   }
 
-  async findUnique(
-    targets: readonly TranslationMemoryCandidateTarget[],
-  ): Promise<Array<string | undefined>> {
-    return targets.map((target) => {
-      const values = selectCandidates(this.database, target, 2);
-      return values.length === 1 ? values[0] : undefined;
-    });
+  async list(
+    target: TranslationMemoryCandidateTarget,
+    query?: TranslationMemoryCandidateQuery,
+  ) {
+    return this.database.transaction(() =>
+      candidatePage(this.database, target, query),
+    )();
   }
 
   async sync(
     candidates: readonly TranslationMemoryCandidateState[],
   ): Promise<void> {
-    const rows = new Map<string, Row>();
+    const rows = new Map<string, TranslationMemoryCandidateState>();
     for (const candidate of candidates) {
-      const row: Row = [
+      const key = JSON.stringify([
         candidate.sourceLang,
         candidate.targetLang,
         candidate.source,
         candidate.comment ?? '',
-        candidate.value,
-      ];
-      rows.set(JSON.stringify(row.slice(0, 4)), row);
+        candidate.kind ?? 'automatic',
+        candidate.file ?? '',
+        candidate.location?.line ?? 0,
+        candidate.location?.column ?? 0,
+      ]);
+      rows.set(key, candidate);
     }
-    const sorted = [...rows].sort(([left], [right]) =>
-      left.localeCompare(right),
-    );
+    const sorted = [...rows].sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0));
     const digest = createHash('sha256')
       .update(JSON.stringify([this.pruneOrphans, sorted]))
       .digest('hex');
     await withFileLock(this.databasePath, async () => {
-      const previous = this.database
-        .prepare('SELECT digest FROM project_sync WHERE project = ?')
-        .get(this.projectDirectory) as { digest: string } | undefined;
-      if (previous?.digest === digest) return;
-      const disable = this.database.prepare(
-        `UPDATE candidates SET eligible = 0
-         WHERE project = ? AND source_lang = ? AND target_lang = ? AND source = ? AND comment = ?`,
-      );
-      const insert = this.database.prepare(
-        `INSERT INTO candidates(project, source_lang, target_lang, source, comment, value, eligible)
-         VALUES (?, ?, ?, ?, ?, ?, 1)
-         ON CONFLICT(project, source_lang, target_lang, source, comment, value)
-         DO UPDATE SET eligible = 1`,
-      );
       this.database
         .transaction(() => {
-          for (const [, row] of sorted) {
-            disable.run(this.projectDirectory, ...row.slice(0, 4));
-            if (row[4] !== null) insert.run(this.projectDirectory, ...row);
-          }
-          if (this.pruneOrphans) {
-            const current = new Set(rows.keys());
-            const stored = this.database
-              .prepare(
-                `SELECT DISTINCT source_lang, target_lang, source, comment
-             FROM candidates WHERE project = ?`,
-              )
-              .all(this.projectDirectory) as Array<{
-              source_lang: string;
-              target_lang: string;
-              source: string;
-              comment: string;
-            }>;
-            const remove = this.database.prepare(
-              `DELETE FROM candidates WHERE project = ?
-             AND source_lang = ? AND target_lang = ? AND source = ? AND comment = ?`,
-            );
-            for (const target of stored) {
-              if (
-                !current.has(
-                  JSON.stringify([
-                    target.source_lang,
-                    target.target_lang,
-                    target.source,
-                    target.comment,
-                  ]),
-                )
-              )
-                remove.run(
-                  this.projectDirectory,
-                  target.source_lang,
-                  target.target_lang,
-                  target.source,
-                  target.comment,
-                );
-            }
-          }
+          const previous = this.database
+            .prepare('SELECT digest FROM project_sync WHERE project = ?')
+            .get(this.projectDirectory) as { digest: string } | undefined;
+          if (previous?.digest === digest) return;
+          // 自动历史可保留；人工决定只能镜像当前 overrides，撤销后不能重新传播。
           this.database
             .prepare(
-              `INSERT INTO project_sync(project, digest) VALUES (?, ?)
-           ON CONFLICT(project) DO UPDATE SET digest = excluded.digest`,
+              "DELETE FROM candidates WHERE project = ? AND kind = 'reviewed'",
             )
-            .run(this.projectDirectory, digest);
+            .run(this.projectDirectory);
+          this.database
+            .prepare(
+              "UPDATE candidates SET orphan = 1 WHERE project = ? AND kind = 'automatic'",
+            )
+            .run(this.projectDirectory);
+          const remove = this.database
+            .prepare(`DELETE FROM candidates WHERE project = ? AND source_lang = ? AND target_lang = ?
+          AND source = ? AND comment = ? AND kind = ? AND file = ? AND line = ? AND column_number = ?`);
+          const insert = this.database
+            .prepare(`INSERT INTO candidates(project, source_lang, target_lang, source, comment, kind, file, line, column_number, value, orphan)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)`);
+          for (const [, row] of sorted) {
+            const identity = [
+              this.projectDirectory,
+              row.sourceLang,
+              row.targetLang,
+              row.source,
+              row.comment ?? '',
+              row.kind ?? 'automatic',
+              row.file ?? '',
+              row.location?.line ?? 0,
+              row.location?.column ?? 0,
+            ];
+            remove.run(...identity);
+            if (row.value !== null) insert.run(...identity, row.value);
+          }
+          if (this.pruneOrphans)
+            this.database
+              .prepare(
+                'DELETE FROM candidates WHERE project = ? AND orphan = 1',
+              )
+              .run(this.projectDirectory);
+          this.database
+            .prepare(
+              `INSERT INTO project_sync(project, digest, synced_at) VALUES (?, ?, ?)
+          ON CONFLICT(project) DO UPDATE SET digest = excluded.digest, synced_at = excluded.synced_at`,
+            )
+            .run(this.projectDirectory, digest, new Date().toISOString());
         })
         .immediate();
     });
@@ -180,89 +147,38 @@ export class SqliteTranslationMemoryCache implements TranslationMemoryCandidateC
   }
 }
 
-function selectCandidates(
-  database: BetterSqlite3.Database,
-  target: TranslationMemoryCandidateTarget,
-  limit = 11,
-): string[] {
-  const rows = database
-    .prepare(
-      `SELECT DISTINCT value FROM candidates
-     WHERE eligible = 1 AND source_lang = ? AND target_lang = ?
-       AND source = ? AND comment = ?
-     ORDER BY value LIMIT ?`,
-    )
-    .all(
-      target.sourceLang,
-      target.targetLang,
-      target.source,
-      target.comment ?? '',
-      limit,
-    ) as Array<{ value: string }>;
-  return rows.map((row) => row.value);
-}
-
-async function loadDatabase(): Promise<typeof BetterSqlite3> {
+export async function loadDatabase(): Promise<typeof BetterSqlite3> {
   try {
     return (await import('better-sqlite3')).default;
   } catch (cause) {
     throw new Error(
       diagnosticMessage(
-        '[ai-i18n] @ai-i18n/sqlite 无法加载 better-sqlite3，请检查安装结果与当前 Node.js 平台支持。',
-        '[ai-i18n] @ai-i18n/sqlite could not load better-sqlite3; check the installation and Node.js platform support.',
+        '[ai-i18n] 无法加载 better-sqlite3，请检查安装结果与当前 Node.js 平台支持。',
+        '[ai-i18n] Could not load better-sqlite3; check the installation and Node.js platform support.',
       ),
       { cause },
     );
   }
 }
 
-function initialize(database: BetterSqlite3.Database): void {
-  database
-    .transaction(() => {
-      // 获得写锁后再读版本，避免并发打开时重复迁移其他进程已升级的数据。
-      const version = database.pragma('user_version', {
-        simple: true,
-      }) as number;
-      if (version > SQLITE_SCHEMA_VERSION) {
-        throw new Error(
-          diagnosticMessage(
-            `[ai-i18n] SQLite Translation Memory 数据结构版本 ${version} 高于当前支持的版本 ${SQLITE_SCHEMA_VERSION}。`,
-            `[ai-i18n] SQLite Translation Memory schema version ${version} is newer than supported version ${SQLITE_SCHEMA_VERSION}.`,
-          ),
-        );
-      }
-      if (version === 1) {
-        // 旧缓存没有来源；保留记录，但项目 JSON 重新同步前不提供旧值。
-        database.exec('ALTER TABLE candidates RENAME TO legacy_candidates');
-      }
-      database.exec(`
-      CREATE TABLE IF NOT EXISTS candidates (
-        id INTEGER PRIMARY KEY,
-        project TEXT NOT NULL,
-        source_lang TEXT NOT NULL,
-        target_lang TEXT NOT NULL,
-        source TEXT NOT NULL,
-        comment TEXT NOT NULL DEFAULT '',
-        value TEXT NOT NULL,
-        eligible INTEGER NOT NULL DEFAULT 1,
-        UNIQUE (project, source_lang, target_lang, source, comment, value)
-      );
-      CREATE TABLE IF NOT EXISTS project_sync (
-        project TEXT PRIMARY KEY,
-        digest TEXT NOT NULL
-      );
-    `);
-      if (version === 1) {
-        database.exec(`
-        INSERT INTO candidates(project, source_lang, target_lang, source, comment, value, eligible)
-        SELECT '__legacy__', source_lang, target_lang, source, comment, value, 0
-        FROM legacy_candidates;
-        DROP TABLE legacy_candidates;
-      `);
-      }
-      database.exec(`CREATE INDEX IF NOT EXISTS candidate_lookup
-      ON candidates(source_lang, target_lang, source, comment, eligible)`);
-      database.pragma(`user_version = ${SQLITE_SCHEMA_VERSION}`);
-    })
-    .immediate();
+export async function readDatabase<T>(
+  databasePath: string,
+  read: (database: BetterSqlite3.Database) => T,
+): Promise<T | undefined> {
+  try {
+    await fs.access(databasePath);
+  } catch (cause) {
+    if ((cause as NodeJS.ErrnoException).code === 'ENOENT') return undefined;
+    throw cause;
+  }
+  const Database = await loadDatabase();
+  const database = new Database(databasePath, {
+    readonly: true,
+    fileMustExist: true,
+  });
+  try {
+    return database.transaction(() => read(database))();
+  } finally {
+    database.close();
+  }
 }

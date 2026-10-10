@@ -1,9 +1,11 @@
 import type {
   TranslationMemoryCandidateCacheAdapter,
   TranslationMemoryCandidateTarget,
+  TranslationMemoryCandidateQuery,
 } from '@ai-i18n/core/translation-memory';
 import { globalTranslationMemoryPath } from './sqlite-paths.js';
-import { SqliteTranslationMemoryCache } from './sqlite-store.js';
+import { readDatabase, SqliteTranslationMemoryCache } from './sqlite-store.js';
+import { candidatePage } from './sqlite-query.js';
 
 export interface SqliteTranslationMemoryOptions {
   /** SQLite 数据目录；省略时使用 AI_I18N_DATA_DIR 或系统应用数据目录。 */
@@ -18,6 +20,11 @@ export function sqlite(
 ): TranslationMemoryCandidateCacheAdapter {
   return {
     cache: 'sqlite',
+    list: (target, query) =>
+      listSqliteCandidates(target, {
+        ...query,
+        dataDirectory: options.dataDirectory,
+      }),
     open: (projectDirectory) =>
       SqliteTranslationMemoryCache.open(
         globalTranslationMemoryPath(options.dataDirectory),
@@ -27,13 +34,18 @@ export function sqlite(
   };
 }
 
-/** 只读查询 SQLite 中已知有效的不同候选，不读取或验证原项目。 */
-export function listSqliteCandidates(
+export { listSqliteProjects, cleanSqliteCache } from './sqlite-management.js';
+
+/** 只读查询不同译值及其来源，不读取或验证原项目。 */
+export async function listSqliteCandidates(
   target: TranslationMemoryCandidateTarget,
-  options: Pick<SqliteTranslationMemoryOptions, 'dataDirectory'> = {},
-): Promise<string[]> {
-  return SqliteTranslationMemoryCache.suggestions(
-    globalTranslationMemoryPath(options.dataDirectory),
-    target,
+  options: Pick<SqliteTranslationMemoryOptions, 'dataDirectory'> &
+    TranslationMemoryCandidateQuery = {},
+) {
+  return (
+    (await readDatabase(
+      globalTranslationMemoryPath(options.dataDirectory),
+      (database) => candidatePage(database, target, options),
+    )) ?? { candidates: [], hasMore: false }
   );
 }

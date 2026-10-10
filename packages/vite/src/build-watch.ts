@@ -7,7 +7,9 @@ interface BuildWatchDependencies {
   ready: () => Promise<void>;
   state: () => ProjectState;
   store: () => FileStore;
-  requestMissingTranslations: (moduleIds: readonly string[]) => void;
+  requestMissingTranslations: (
+    moduleIds: readonly string[],
+  ) => void | Promise<void>;
 }
 
 export function createBuildWatchState(dependencies: BuildWatchDependencies) {
@@ -65,7 +67,7 @@ export function createBuildWatchState(dependencies: BuildWatchDependencies) {
       const cache = await store.sync(project.snapshot(), loadOptions);
       affected.push(...project.hydrateCache(cache));
       affected.push(...project.hydrateOverrides(await store.loadOverrides()));
-      dependencies.requestMissingTranslations(affected);
+      await dependencies.requestMissingTranslations(affected);
     },
 
     async reconcile(

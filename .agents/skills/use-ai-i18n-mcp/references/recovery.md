@@ -30,7 +30,7 @@ server does not return that field.
 | `TRANSLATION_CONFLICT` | Re-list current values. Set `overwrite_existing: true` only with explicit user approval. |
 | `TEMPLATE_TOKEN_MISMATCH` | Compare `expected_tokens` and `received_tokens`; add every entry from `missing_tokens`, remove every entry from `unexpected_tokens`, then retry. Repeated tokens are significant. |
 | `UNKNOWN_LOCALE` | Use locale values from `aiI18n({ locales })`, not display labels. |
-| `SQLITE_ADAPTER_NOT_FOUND` or `SQLITE_ADAPTER_OUTDATED` | Install or update `@ai-i18n/sqlite` in the target app only if optional SQLite suggestions are requested; ordinary translation tools do not need it. |
+| `SQLITE_ADAPTER_NOT_FOUND` | Install `@ai-i18n/sqlite` in the target app only if optional SQLite suggestions are requested; ordinary translation tools do not need it. |
 | `SQLITE_DATA_DIRECTORY_NOT_ABSOLUTE` | Pass the absolute SQLite data directory, or omit the field to use the default location. |
 | `SQLITE_APP_DIRECTORY_NOT_ABSOLUTE` | Pass the absolute selected Vite app directory as `app_directory`, or omit it when `i18n_directory` is inside the app. |
 | `INVALID_CURSOR` | Restart the corresponding list without the cursor. |
@@ -76,3 +76,6 @@ For ordinary list/set translation, use the Skill-only helper described in the sc
 linked by `SKILL.md`. Review, clear, and orphan operations still require Host MCP. If the installed
 package lacks the internal helper, report the version mismatch and update within the task scope;
 do not replace the workflow with source-tree editing or direct protocol-file writes.
+
+Cache cleanup failure: preview again without preview_token and verify the current scope before an
+explicitly authorized execution. Never repair this by deleting the database or project JSON.

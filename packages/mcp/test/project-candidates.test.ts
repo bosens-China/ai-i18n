@@ -64,9 +64,53 @@ test('offers optional SQLite values without changing project translations', asyn
     expect(JSON.parse(toolText(result.content))).toEqual({
       message: { source: '保存' },
       locale: 'en-US',
-      current_value: null,
-      candidates: ['Save'],
+      current_automatic_value: null,
+      candidates: [
+        {
+          value: 'Save',
+          sources: [
+            { project: await fs.realpath(directory), kind: 'automatic' },
+          ],
+          sources_has_more: false,
+        },
+      ],
+      next_offset: null,
+      automatic_value: 'Save',
       has_more: false,
+    });
+    const managementArguments = {
+      i18n_directory: directory,
+      data_directory: dataDirectory,
+    };
+    const projects = await client.callTool({
+      name: 'ai_i18n_list_cache_projects',
+      arguments: managementArguments,
+    });
+    expect(JSON.parse(toolText(projects.content)).projects[0].project).toBe(
+      await fs.realpath(directory),
+    );
+    const preview = await client.callTool({
+      name: 'ai_i18n_clean_cache',
+      arguments: {
+        ...managementArguments,
+        scope: 'project',
+        project_directory: await fs.realpath(directory),
+      },
+    });
+    const cleanup = JSON.parse(toolText(preview.content));
+    expect(cleanup).toMatchObject({ records: 1, executed: false });
+    const executed = await client.callTool({
+      name: 'ai_i18n_clean_cache',
+      arguments: {
+        ...managementArguments,
+        scope: 'project',
+        project_directory: await fs.realpath(directory),
+        preview_token: cleanup.token,
+      },
+    });
+    expect(JSON.parse(toolText(executed.content))).toMatchObject({
+      records: 1,
+      executed: true,
     });
     const listed = await client.callTool({
       name: 'ai_i18n_list_translations',
@@ -122,7 +166,11 @@ test('resolves SQLite from the app when i18n_directory is outside it', async () 
       },
     });
     expect(result.isError).not.toBe(true);
-    expect(JSON.parse(toolText(result.content)).candidates).toEqual(['Save']);
+    expect(
+      JSON.parse(toolText(result.content)).candidates.map(
+        (item: { value: string }) => item.value,
+      ),
+    ).toEqual(['Save']);
   } finally {
     await clientTransport.close();
     await server.close();

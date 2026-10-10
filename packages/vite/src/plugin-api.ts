@@ -10,6 +10,11 @@ export const AI_I18N_PLUGIN_API = Symbol.for('ai-i18n.vite.plugin-api');
 export interface AiI18nPluginApi {
   /** Skill 扫描在配置解析前启用；不属于应用配置。 */
   scanMode: boolean;
+  cacheMode?: boolean;
+  cacheOptions: {
+    adapter?: import('@ai-i18n/core/translation-memory').TranslationMemoryCandidateCacheAdapter;
+    directory?: string;
+  };
   scanning?: boolean;
   scanned?: boolean;
   scanPending?: Promise<ScanResult> | undefined;
