@@ -316,14 +316,14 @@ Translation Memory 快照计算，与 JSON 分片或 SQLite 物理布局无关�
 
 现有 extracted 或 ProjectState 引用的 message 始终受保护。若活动数据自身超限，插件保留
 数据并输出 warning。省略 `translationMemory.capacity` 时不执行容量淘汰；
-`cleanup.orphanMessages: true` 仍会优先删除全部非活跃消息。
+完整 Build 默认先删除全部非活跃消息。审查历史译文前可设置 `cleanup.orphanMessages: false`。
 
 普通 `vite build` 每次使用新的分析状态，并在完整模块图可用后统一写协议文件；
 `vite build --watch` 会跨重建复用 ProjectState，
 只重新 parse 变化 source，并刷新必要的 reverse dependents。Translation Memory 或
 `overrides/` 分片变化会更新翻译和注册内容，不重新 parse source；extracted 与 locale 始终
 由插件重建。删除、重命名或移除 import 后，插件会校准
-当前入口可达模块，同时继续保留可复用的 Translation Memory。Vite 配置、插件、extractor
+当前入口可达模块，并默认清理未引用的 Translation Memory。Vite 配置、插件、extractor
 或 schema 变化后需要重启 Watch 进程。
 
 仅支持 Vite ≥ 8 和浏览器 Runtime，不支持 SSR。完整配置与文件协议见

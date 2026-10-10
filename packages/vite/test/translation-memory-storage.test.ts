@@ -79,6 +79,23 @@ describe('Translation Memory Vite storage', () => {
     ).toBe('New');
   });
 
+  it('prunes orphan translations on every Build unless cleanup is disabled', async () => {
+    const root = await fixture('build-orphans');
+    await buildProject(root, translator('Save'));
+    await fs.writeFile(path.join(root, 'src/main.ts'), "import './other';");
+    await fs.writeFile(path.join(root, 'src/other.ts'), 'export {};');
+
+    await buildProject(root, undefined, { cleanupOrphans: false });
+    expect(
+      (await readTestTranslationMemory(path.join(root, 'i18n'))).messages,
+    ).toHaveProperty('保存');
+
+    await buildProject(root);
+    expect(
+      (await readTestTranslationMemory(path.join(root, 'i18n'))).messages,
+    ).not.toHaveProperty('保存');
+  });
+
   it('stores SQLite globally and reuses a unique candidate across projects', async () => {
     const workspace = await fixture('sqlite-workspace', false);
     const dataDirectory = path.join(workspace, 'user-data');
@@ -138,7 +155,7 @@ describe('Translation Memory Vite storage', () => {
 
     await fs.writeFile(path.join(root, 'src/main.ts'), "import './other';");
     await fs.writeFile(path.join(root, 'src/other.ts'), 'export {};');
-    await buildProject(root, undefined, { cache, cleanupOrphans: true });
+    await buildProject(root, undefined, { cache });
     await expect(
       listSqliteCandidates(target, { dataDirectory }),
     ).resolves.toEqual(['New']);

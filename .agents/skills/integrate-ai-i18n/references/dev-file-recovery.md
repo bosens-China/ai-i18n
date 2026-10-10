@@ -38,7 +38,7 @@ recovery procedure for an approved minimal repair, then retry the affected opera
 - Treat Dev missing counts as the discovered module set, deduplicated by message and target locale.
   Review may additionally show a persisted scan or Build extraction. For a complete translation
   audit, use the selected app's entry scan through `use-ai-i18n-mcp`; retain a full Build for
-  production validation or orphan cleanup. Do not enable a Provider just to populate the UI.
+  production validation or orphan cleanup. For a pre-deletion orphan audit, disable `cleanup.orphanMessages` before Build. Do not enable a Provider just to populate the UI.
 - Do not infer final missing translations from an automatic `null` or Review's confirmation badge.
   Check effective overrides for the actual file and occurrence; one confirmed scope does not prove
   every occurrence is translated. Follow the public translation-review page for user-facing states.

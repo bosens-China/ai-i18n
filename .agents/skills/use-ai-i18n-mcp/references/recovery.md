@@ -35,8 +35,8 @@ server does not return that field.
 | `SQLITE_APP_DIRECTORY_NOT_ABSOLUTE` | Pass the absolute selected Vite app directory as `app_directory`, or omit it when `i18n_directory` is inside the app. |
 | `INVALID_CURSOR` | Restart the corresponding list without the cursor. |
 | `INVALID_OVERRIDE_ID` | List overrides again and copy the returned ID exactly. |
-| `INVALID_ORPHAN_ID` | Run a full Build, list orphan messages again, and copy the returned ID exactly. |
-| `ORPHAN_MESSAGE_REACTIVATED` | Do not retry deletion from the stale list. Run a full Build, re-list, show the changed result, and request approval again. |
+| `INVALID_ORPHAN_ID` | Run a full Build with `cleanup.orphanMessages: false`, list orphan messages again, and copy the returned ID exactly. |
+| `ORPHAN_MESSAGE_REACTIVATED` | Do not retry deletion from the stale list. Run a full Build with cleanup disabled, re-list, show the changed result, and request approval again. |
 | `ORPHAN_ID_CONFLICT` | Stop cleanup and report the returned error details; do not retry deletion. |
 | `DUPLICATE_TARGET` | Remove repeated targets and retry. |
 

@@ -163,9 +163,7 @@ console.log(t(LABEL));`;
         path.join(root, 'i18n/locales/en-US.json'),
       );
       expect(cache).not.toHaveProperty('files');
-      expect(cache.messages['可移动文案']?.translations['en-US']).toBe(
-        'Moved text',
-      );
+      expect(cache.messages).not.toHaveProperty('可移动文案');
       expect(locale.messages).not.toHaveProperty('可移动文案');
     } finally {
       await watcher.close();

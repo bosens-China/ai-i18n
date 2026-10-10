@@ -60,7 +60,7 @@ When that app's Vite Dev Server is running, successful MCP Translation Memory or
 observed and applied to its in-memory Runtime through HMR, including occurrence-scoped override edits
 and deletions. This convenience does not make the Dev
 catalog a complete source set: ordinary full translation needs the entry scan above; destructive
-orphan decisions still require a full Build. Do not restart Dev or edit generated locale files merely to expose an MCP write.
+orphan decisions still require a full Build with `cleanup.orphanMessages: false` so that Build does not delete them before review. Do not restart Dev or edit generated locale files merely to expose an MCP write.
 
 When the target explicitly registers `aiI18nReview()`, its Vite Dev console is the preferred interface
 for a person interactively choosing a small number of review values. Use the in-page launcher when page
@@ -93,9 +93,9 @@ When invoked by a plugin end check, follow [Plugin end checks](references/plugin
 5. Repeat the matching list operation to verify the result.
 
 Do not list or delete orphan messages during ordinary translation, review, or verification work. Enter
-the orphan workflow only when the user explicitly requests an orphan audit or cleanup. Run one full
-Build first, list every requested orphan, report the retained translations, and obtain explicit user
-approval before deleting the listed IDs. Do not treat an earlier general cleanup request as approval
+the orphan workflow only when the user explicitly requests an orphan audit or selective cleanup. Run one full
+Build with `cleanup.orphanMessages: false`, list every requested orphan, report the retained translations, and obtain explicit user
+approval before deleting the listed IDs. Restore the app's prior cleanup setting after the audit. Do not treat an earlier general cleanup request as approval
 after the list changes or a selected message becomes active again.
 
 Preserve product names, intentional whitespace, and every template token. Do not guess between

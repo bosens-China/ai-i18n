@@ -145,6 +145,7 @@
   旧 SQLite 缓存升级时保留无来源记录，但在项目重新同步前不提供为候选。
 - sourceLang 变更时，当前实现会在 comment 一致且历史候选唯一时尽力复用历史翻译；候选不唯一时保持缺失，不猜测。这是保守兼容行为，不构成公开的稳定迁移承诺。
 - Translation Memory 的容量限制与 orphan 清理只淘汰非活动历史消息，不能为满足上限而破坏当前源码仍引用的译文。
+- 完整 Build 与 Build Watch 重建默认按当前入口图清理孤儿自动译文；显式 `cleanup.orphanMessages: false` 保留历史供审查。Dev 与入口扫描默认不清理，扫描始终保留历史；人工覆盖不随自动译文删除。
 - 容量限制属于 translationMemory.capacity，按当前项目的逻辑 Translation Memory 快照计算；provider.cache 只控制当前 Vite 进程的自动译文刷新，两者不能混用。
 
 ### Vite 生命周期与 Provider
@@ -351,7 +352,7 @@
   和有限编辑距离；候选不能自动授权或替代写入目标。重复 extracted source 错误返回全部冲突物理
   文件供诊断，实际迁移由入口扫描或完整 Build 完成，MCP 仍不修改 extracted。
 - 孤立 Translation Memory 使用独立的只读列表与破坏性删除工具。普通补译、校对和验证不得自动
-  进入该流程；用户明确要求后，Agent 先完成完整 Build 和全量审查，再取得删除授权。删除只接受
+  进入该流程；用户明确要求先审查或选择性清理时，Agent 临时关闭 Build 默认孤儿清理，完成完整 Build 和全量审查，再取得删除授权。删除只接受
   列表返回的 opaque ID，在写入前整批复验消息仍未被源码引用，并且不联动删除人工 overrides。
 - 列表默认请求 100 条并允许提高到 500 条；响应大小保护只能减少完整记录数量，不能截断单条
   或破坏游标推进。

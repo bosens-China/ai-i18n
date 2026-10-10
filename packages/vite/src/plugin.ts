@@ -313,7 +313,8 @@ export function aiI18n(options: AiI18nOptions): Plugin {
             cleanupMissingSourceFiles:
               options.cleanup?.missingSourceFiles ?? true,
             cleanupOrphanMessages:
-              !api.scanMode && (options.cleanup?.orphanMessages ?? false),
+              !api.scanMode &&
+              (options.cleanup?.orphanMessages ?? resolved.command === 'build'),
             translationMemory: api.scanMode ? {} : translationMemory,
             timing: devTiming,
             ...(!api.scanMode && translationMemory.capacity

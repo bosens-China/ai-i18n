@@ -104,7 +104,7 @@ npx skills add bosens-China/ai-i18n --skill use-ai-i18n-mcp integrate-ai-i18n -y
 普通补译只需要 Skill。请使用项目现有的包管理器，将 `@ai-i18n/mcp@alpha`
 安装为目标 Vite 应用的开发依赖。Agent 会在进程内复用 MCP 的读写能力，无需在编码工具中注册服务器。
 
-如果需要人工覆盖、清空译文或清理孤立译文，再按下文注册 MCP 服务器。
+如果需要人工覆盖、清空译文，或在构建前审查并选择性清理孤立译文，再按下文注册 MCP 服务器。普通 Build 默认清理孤立自动译文；先审查时请设置 `cleanup.orphanMessages: false`。
 
 ### 注册 MCP 服务器
 

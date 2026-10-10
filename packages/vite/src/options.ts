@@ -40,6 +40,7 @@ export interface AiI18nPersistOptions {
 
 export interface AiI18nCleanupOptions {
   missingSourceFiles?: boolean;
+  /** 完整 Build 默认清理孤儿译文；设为 false 可保留历史译文供人工审查。 */
   orphanMessages?: boolean;
 }
 

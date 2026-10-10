@@ -74,7 +74,7 @@ Build synchronization; do not present an older suggestion as current project tru
 Use orphan tools only when the user explicitly requests an orphan audit or cleanup. They are not part
 of ordinary translation, human review, or completion verification.
 
-1. Run one full Vite Build for the selected app. Browser-driven Dev extraction is incomplete, and
+1. Set `cleanup.orphanMessages: false` for the audit and run one full Vite Build for the selected app. The default Build deletes orphans before MCP can list them. Browser-driven Dev extraction is incomplete, and
    the Skill scan uses the Dev graph rather than Build-only conditions; neither replaces this
    production graph check before deletion.
 2. Call `ai_i18n_list_orphan_messages`, follow every page in the requested scope, and show the user the
@@ -82,6 +82,7 @@ of ordinary translation, human review, or completion verification.
 3. After the user explicitly approves deletion, copy the returned opaque `orphan_id` values into
    `ai_i18n_delete_orphan_messages`. Never construct an orphan ID.
 4. Repeat the list to verify the remaining orphan set.
+5. Restore the original cleanup setting after the audit.
 
 The delete tool removes complete messages from the configured Translation Memory, not individual locale values. It
 revalidates the whole batch against the current extracted set before writing; if any target is active,
