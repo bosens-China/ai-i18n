@@ -1,5 +1,14 @@
 # @ai-i18n/core
 
+## [1.0.0](https://github.com/bosens-China/ai-i18n/compare/core-v1.0.0-alpha.20...core-v1.0.0) (2026-10-10)
+
+
+### Features
+
+* **sqlite:** 保留翻译缓存并提供 MCP 项目候选 ([70d0d0b](https://github.com/bosens-China/ai-i18n/commit/70d0d0b0b8180d4bb264e5b278eb40497679e0a7))
+* **sqlite:** 支持项目候选同步、自动复用与审查选择 ([38818e3](https://github.com/bosens-China/ai-i18n/commit/38818e32fc83d7d92d3746d26f03b0e45b7d7e68))
+* 发布首个正式版本 ([d03393c](https://github.com/bosens-China/ai-i18n/commit/d03393c23d860343df8bc1f7587a6cbad2810e2d))
+
 ## [1.0.0-alpha.20](https://github.com/bosens-China/ai-i18n/compare/core-v1.0.0-alpha.19...core-v1.0.0-alpha.20) (2026-09-17)
 
 
