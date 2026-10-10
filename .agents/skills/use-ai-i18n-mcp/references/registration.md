@@ -11,6 +11,19 @@
 使用 Codex 时，可以选择[安装 Agent 插件](#通过-agent-插件使用)，一次加载 Skill、MCP 和任务结束检查；
 也可以按下文单独安装 Skill，再按需注册 MCP。插件已携带这两份 Skill，无需重复安装。
 
+## 安装与升级时选择版本
+
+- 先读取目标应用的直接依赖和锁文件，保留已有版本与发布通道。安装或升级只能在用户已授权的
+  接入范围内进行；翻译任务、插件更新均不自动授权应用依赖升级。
+- 新正式版接入使用已上架的 1.x 稳定包，本文用 `@^1.0.0`。先查询所需包在 npm 的发布状态；
+  仓库配置、文档和 GitHub tag 均不能证明 npm 已上传。没有正式版时报告状态，只有用户选择
+  提前试用或此前已授权预发布，才改用 `@alpha`；不得删掉版本选择器后装入旧 `latest`。
+- 七包首次正式版目标均为 1.0.0，后续独立升版。MCP、Vite、SQLite 版本不同不等于不兼容；
+  检查实际扫描与工具能力、peer 要求及发布说明，不强制对齐版本，不覆盖包的内部精确依赖。
+- 使用目标项目现有包管理器，升级后更新锁文件并复查入口扫描和 list 调用；涉及应用接入变化时
+  交给 `integrate-ai-i18n` 完整验证。不得修改 node_modules 或静默升级来掩盖能力缺失。
+- 插件捆绑 MCP 的精确版本由发布产物管理，应用依赖单独管理；不手工改插件生成物来追齐应用版本。
+
 ## 安装 Skill
 
 推荐在项目根目录安装 ai-i18n 提供的 Skill：
@@ -28,7 +41,7 @@ Skill 会引导 Agent 选择正确的 Vite 应用，并区分自动译文与人�
 
 ## 只使用 Skill
 
-普通补译可以只安装 Skill，并在目标应用安装 `@ai-i18n/mcp@alpha` 作为开发依赖。
+普通补译可以只安装 Skill，并在目标应用安装 `@ai-i18n/mcp@^1.0.0` 作为开发依赖。
 Agent 会使用 Skill 自带的脚本扫描、读取缺译、保存译文并复查，无需在编码工具中注册 MCP，
 也无需配置 OpenAI Provider。使用项目已有包管理器安装依赖即可。
 
@@ -46,14 +59,14 @@ Agent 会报告问题，不会把部分扫描结果当成完整清单。HTML 内
 ## 注册 MCP 服务器
 
 ai-i18n 支持 Codex、Cursor、Claude Code 和 Antigravity。请在所使用的 AI 编码工具中注册
-`@ai-i18n/mcp`。以下命令和配置以当前 alpha 版本为例。
+`@ai-i18n/mcp`。以下命令和配置选择 1.x 正式版，先按上面的版本规则确认已经上架。
 
 ### Codex
 
 在本机终端运行以下命令即可注册：
 
 ```sh
-codex mcp add ai-i18n -- npx -y @ai-i18n/mcp@alpha
+codex mcp add ai-i18n -- npx -y @ai-i18n/mcp@^1.0.0
 ```
 
 也可以在 `~/.codex/config.toml` 或项目的 `.codex/config.toml` 中加入：
@@ -61,7 +74,7 @@ codex mcp add ai-i18n -- npx -y @ai-i18n/mcp@alpha
 ```toml
 [mcp_servers.ai_i18n]
 command = "npx"
-args = ["-y", "@ai-i18n/mcp@alpha"]
+args = ["-y", "@ai-i18n/mcp@^1.0.0"]
 ```
 
 也可以在 Codex 桌面端依次打开 **Settings → MCP servers → Add server → STDIO**，填写相同的
@@ -76,7 +89,7 @@ args = ["-y", "@ai-i18n/mcp@alpha"]
   "mcpServers": {
     "ai-i18n": {
       "command": "npx",
-      "args": ["-y", "@ai-i18n/mcp@alpha"]
+      "args": ["-y", "@ai-i18n/mcp@^1.0.0"]
     }
   }
 }
@@ -85,7 +98,7 @@ args = ["-y", "@ai-i18n/mcp@alpha"]
 ### Claude Code
 
 ```sh
-claude mcp add --transport stdio --scope local ai-i18n -- npx -y @ai-i18n/mcp@alpha
+claude mcp add --transport stdio --scope local ai-i18n -- npx -y @ai-i18n/mcp@^1.0.0
 ```
 
 ### Antigravity
@@ -98,7 +111,7 @@ claude mcp add --transport stdio --scope local ai-i18n -- npx -y @ai-i18n/mcp@al
   "mcpServers": {
     "ai-i18n": {
       "command": "npx",
-      "args": ["-y", "@ai-i18n/mcp@alpha"]
+      "args": ["-y", "@ai-i18n/mcp@^1.0.0"]
     }
   }
 }
@@ -161,6 +174,6 @@ codex plugin add ai-i18n@ai-i18n
 ```
 
 刷新市场后更新安装副本，必要时重新信任 Hook，并开始新任务验证。
-Skill 与脚本随插件更新；应用 npm 依赖独立管理，不随着插件静默升级。
+Skill 与脚本随插件更新；应用依赖处理遵循本参考的版本选择规则。
 
 官方格式与安装边界见 [Codex 插件文档](https://developers.openai.com/plugins/build/plugins)。

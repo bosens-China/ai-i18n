@@ -3,7 +3,8 @@
 基于 LangChain `ChatOpenAI` 的 OpenAI-compatible ai-i18n Provider。供应商、地址和模型必须
 显式配置；API key 可省略以连接本地服务。
 
-alpha 阶段请安装 `@ai-i18n/openai@alpha`。
+正式版选择 `@ai-i18n/openai@^1.0.0`。
+安装前请查看[版本选择与升级](https://bosens-china.github.io/ai-i18n/guide/getting-started/versions)，确认 npm 已上架；尚无正式版时显式选择 `@alpha`。
 
 ```ts
 import { openAI } from '@ai-i18n/openai';

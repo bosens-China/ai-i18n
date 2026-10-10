@@ -28,11 +28,14 @@ Agent 协助翻译和人工校对。
 
 ## 快速开始
 
-ai-i18n 目前处于 alpha 阶段，请使用 alpha 标签安装 Vite 插件：
+首个正式版正在准备中。安装前请查看[版本选择与升级](https://bosens-china.github.io/ai-i18n/guide/getting-started/versions)；
+若 npm 尚无 1.0.0，提前试用需显式选择 `@alpha`。正式版安装命令如下：
 
 ```bash
-pnpm add @ai-i18n/vite@alpha
+pnpm add @ai-i18n/vite@^1.0.0
 ```
+
+首次正式版后各包独立升版。只更新需要的直接依赖，不强制所有包使用相同版本号。
 
 在 Vite 中配置插件：
 

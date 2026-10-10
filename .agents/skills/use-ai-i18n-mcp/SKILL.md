@@ -16,6 +16,8 @@ For product behavior, generated-file guidance, or integration troubleshooting, r
 
 For Agent registration, MCP setup, Codex-only plugin installation, and prompt templates, read
 [registration](references/registration.md).
+Read its version-selection rules before installing or changing an MCP package or startup command;
+an application and its MCP server do not need identical version numbers.
 
 For MCP calls, read [Tool contracts](references/tool-contracts.md) before the first call. It is the
 Agent-only authority for message identity, inputs, pagination, batch behavior, write boundaries, and

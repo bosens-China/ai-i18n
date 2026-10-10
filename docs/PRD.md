@@ -20,12 +20,14 @@
 
 ### 平台与包边界
 
-- ai-i18n 面向 Vite 8 项目，采用 pnpm monorepo 发布 Core、Analyzer、Vite、ESLint、OpenAI 和 MCP 包。
+- ai-i18n 面向 Vite 8 项目，采用 pnpm monorepo 发布 Core、Analyzer、Vite、ESLint、OpenAI、MCP 和 SQLite 包。
 - 所有发布包的 Node.js 最低兼容基线不得低于当前 Vite 8 支持范围。每个包再将该基线与
   自身代码、运行时依赖及原生模块的 Node.js 要求取交集；MCP SDK、better-sqlite3 等依赖
   可以提高具体包的最低版本或限制主版本范围，不能将兼容基线降到 Vite 8 以下。
   CI 与 tsdown 等构建工具的 Node.js 要求独立管理，不代表发布产物的消费者最低版本。
-- Alpha 阶段的内部发布依赖使用 `workspace:*` 并打包为精确版本，避免旧消费包自动漂移到
+- 七包首次正式版以 `1.0.0` 为目标，之后独立按 SemVer 升版；单个 Release PR 汇总受影响的包，
+  不要求整套版本号一致。执行流程与首次升版入口见[发布与 CI](./release.md)。
+- 内部发布依赖使用 `workspace:*` 并打包为精确版本，避免旧消费包自动漂移到
   新内部包。底层包变化通过 Release Please 生成配套消费包版本；正式稳定版只有在建立
   SemVer 向后兼容和最低依赖版本验证后才能恢复浮动范围。
 - 基础 Vite 包保持框架中立。Vue 与 React 适配器按最终框架模式按需启用，不把框架运行时带入 Vanilla 项目。
@@ -131,7 +133,7 @@
   locale 消息并保留未访问模块；依赖全量活动集合的 orphan/capacity 清理由完整同步校准。外部协议
   文件变更、Provider 结果、人工校对和关闭生命周期先 flush 待写快照；浏览器模块注册直接读取已排序的
   ProjectState，避免旧异步结果覆盖或为普通后台写入重复扫描目录。
-- 产品尚未发布正式版，不保留旧单文件、旧 manifest、存储标记或旧 MCP 工具参数的读取和迁移兼容。
+- 正式版前淘汰的旧单文件、旧 manifest、存储标记或旧 MCP 工具参数不保留读取和迁移兼容。
   旧 SQLite 缓存升级时保留无来源记录，但在项目重新同步前不提供为候选。
 - sourceLang 变更时，当前实现会在 comment 一致且历史候选唯一时尽力复用历史翻译；候选不唯一时保持缺失，不猜测。这是保守兼容行为，不构成公开的稳定迁移承诺。
 - Translation Memory 的容量限制与 orphan 清理只淘汰非活动历史消息，不能为满足上限而破坏当前源码仍引用的译文。

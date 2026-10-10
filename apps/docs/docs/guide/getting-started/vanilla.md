@@ -16,12 +16,12 @@ ai-i18n 要求 Vite 8 或更高版本，并且当前只支持浏览器端应用�
 pnpm create vite ai-i18n-vanilla --template vanilla-ts
 cd ai-i18n-vanilla
 pnpm install
-pnpm add @ai-i18n/vite@alpha
+pnpm add @ai-i18n/vite@^1.0.0
 ```
 
-项目尚未发布正式版。正式版发布前请保留 `@alpha`，避免安装到较旧的 `latest`。
+安装前请按[版本选择与升级](/guide/getting-started/versions)确认 npm 发布状态；尚无正式版时显式选择 `@alpha`。
 
-已有 Vite 项目可以跳过创建步骤，直接安装 `@ai-i18n/vite@alpha`。
+已有 Vite 项目可以跳过创建步骤，直接安装 `@ai-i18n/vite@^1.0.0`。
 
 ## 配置 Vite
 

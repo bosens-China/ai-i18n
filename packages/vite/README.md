@@ -4,7 +4,8 @@ Vite 的 ai-i18n 主插件。它在 Dev/Build 中提取显式 `t()`，默认维�
 `translations/`、`overrides/` 与 `src/ai-i18n.d.ts`，并生成可通过
 Build 重建的 `extracted/*.json`、`locales/**`，同时提供浏览器虚拟 Runtime。
 
-alpha 阶段请安装 `@ai-i18n/vite@alpha`，避免无标签安装命中较旧的 `latest`。
+正式版选择 `@ai-i18n/vite@^1.0.0`。
+安装前请查看[版本选择与升级](https://bosens-china.github.io/ai-i18n/guide/getting-started/versions)，确认 npm 已上架；尚无正式版时显式选择 `@alpha`。
 Vue 模式要求 Vue ≥ 3.2.25。
 
 每个 Vite build 只使用一个 Vanilla、Vue 或 React 模式。ai-i18n 根据最终 Vite 插件列表

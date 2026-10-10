@@ -18,7 +18,7 @@
 
 ## 其他文档
 
-- [发布与 CI](./release.md)
+- [发布与 CI：独立版本、首次正式版与补发](./release.md)
 - [Agent 插件与清单新鲜度](./prd/agent-plugin.md)
 
 ## 进行中的需求

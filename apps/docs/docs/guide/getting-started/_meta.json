@@ -13,5 +13,10 @@
     "type": "file",
     "name": "react",
     "label": "React"
+  },
+  {
+    "type": "file",
+    "name": "versions",
+    "label": "版本选择与升级"
   }
 ]

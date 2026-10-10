@@ -1,5 +1,7 @@
 # @ai-i18n/mcp
 
+安装前请按[版本选择与升级](https://bosens-china.github.io/ai-i18n/guide/getting-started/versions)确认 npm 发布状态；示例选择 1.x 正式版，尚未上架时显式使用 `@alpha`。
+
 本地 stdio MCP server，为 Agent 提供 ai-i18n 翻译与人工校对的查询、设置和删除能力。
 
 MCP 不扫描 workspace；启动与列表查询不执行 Vite 配置。写入后的可选缓存同步会解析应用配置。
@@ -31,7 +33,7 @@ MCP 宿主可以直接执行 npm 包：
 ```json
 {
   "command": "npx",
-  "args": ["-y", "@ai-i18n/mcp@alpha"]
+  "args": ["-y", "@ai-i18n/mcp@^1.0.0"]
 }
 ```
 

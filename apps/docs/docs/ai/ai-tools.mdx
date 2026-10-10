@@ -102,7 +102,9 @@ Codex 用户如果不需要任务结束检查，也可以采用相同方式，�
 npx skills add bosens-China/ai-i18n --skill use-ai-i18n-mcp integrate-ai-i18n -y
 ```
 
-普通补译只需要 Skill。请使用项目现有的包管理器，将 `@ai-i18n/mcp@alpha`
+安装前请按[版本选择与升级](/guide/getting-started/versions)确认服务包发布状态。
+
+普通补译只需要 Skill。请使用项目现有的包管理器，将 `@ai-i18n/mcp@^1.0.0`
 安装为目标 Vite 应用的开发依赖。Agent 会在进程内复用 MCP 的读写能力，无需在编码工具中注册服务器。
 
 如果需要人工覆盖、清空译文，或在构建前审查并选择性清理孤立译文，再按下文注册 MCP 服务器。普通 Build 默认清理孤立自动译文；先审查时请设置 `cleanup.orphanMessages: false`。
@@ -112,7 +114,7 @@ npx skills add bosens-China/ai-i18n --skill use-ai-i18n-mcp integrate-ai-i18n -y
 MCP 使用本地 STDIO 连接。不同 Agent 使用相同的启动命令：
 
 ```sh
-npx -y @ai-i18n/mcp@alpha
+npx -y @ai-i18n/mcp@^1.0.0
 ```
 
 请按所用 Agent 选择一种配置方式。已有同名服务器时保留一份有效配置，避免重复启动。
@@ -120,7 +122,7 @@ npx -y @ai-i18n/mcp@alpha
 #### Codex
 
 ```sh
-codex mcp add ai-i18n -- npx -y @ai-i18n/mcp@alpha
+codex mcp add ai-i18n -- npx -y @ai-i18n/mcp@^1.0.0
 ```
 
 也可以在 `~/.codex/config.toml` 或项目的 `.codex/config.toml` 中加入：
@@ -128,7 +130,7 @@ codex mcp add ai-i18n -- npx -y @ai-i18n/mcp@alpha
 ```toml
 [mcp_servers.ai_i18n]
 command = "npx"
-args = ["-y", "@ai-i18n/mcp@alpha"]
+args = ["-y", "@ai-i18n/mcp@^1.0.0"]
 ```
 
 #### Cursor
@@ -140,7 +142,7 @@ args = ["-y", "@ai-i18n/mcp@alpha"]
   "mcpServers": {
     "ai-i18n": {
       "command": "npx",
-      "args": ["-y", "@ai-i18n/mcp@alpha"]
+      "args": ["-y", "@ai-i18n/mcp@^1.0.0"]
     }
   }
 }
@@ -149,7 +151,7 @@ args = ["-y", "@ai-i18n/mcp@alpha"]
 #### Claude Code
 
 ```sh
-claude mcp add --transport stdio --scope local ai-i18n -- npx -y @ai-i18n/mcp@alpha
+claude mcp add --transport stdio --scope local ai-i18n -- npx -y @ai-i18n/mcp@^1.0.0
 ```
 
 #### Antigravity
@@ -162,7 +164,7 @@ claude mcp add --transport stdio --scope local ai-i18n -- npx -y @ai-i18n/mcp@al
   "mcpServers": {
     "ai-i18n": {
       "command": "npx",
-      "args": ["-y", "@ai-i18n/mcp@alpha"]
+      "args": ["-y", "@ai-i18n/mcp@^1.0.0"]
     }
   }
 }

@@ -29,11 +29,15 @@ translation and human review.
 
 ## Quick start
 
-ai-i18n is currently in alpha. Install the Vite plugin with the alpha tag:
+The first stable release is being prepared. Check [version selection](https://bosens-china.github.io/ai-i18n/guide/getting-started/versions) before installing;
+if 1.0.0 is not on npm yet, explicitly choose `@alpha` for prerelease use. The stable install is:
 
 ```bash
-pnpm add @ai-i18n/vite@alpha
+pnpm add @ai-i18n/vite@^1.0.0
 ```
+
+Packages version independently after the initial 1.0.0 release. Update the direct packages you need;
+do not force all package versions to match.
 
 Configure the plugin:
 

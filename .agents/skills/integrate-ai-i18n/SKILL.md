@@ -93,8 +93,8 @@ a full Build merely to register copy. Keep a real Build when validating producti
 
 ## Apply the smallest complete setup
 
-1. Install the version required by the target repository; during the current prerelease, use the
-   public documentation's alpha install command.
+1. Select and verify package versions using [Package selection and upgrades](references/package-versions.md)
+   before installation; preserve existing versions and release channels unless an upgrade is authorized.
 2. Register the plugin in the existing Vite config without disturbing other plugins.
 3. Prefer framework detection and explicit Runtime imports. Override either only when the target
    setup or user request requires it.
@@ -130,6 +130,6 @@ Report the selected app, changes made, commands run, remaining unsupported scope
 that still need user input.
 
 When distributing this integration through the Codex-only Agent plugin, use its bundled Skills in place; do not
-copy them into the app or silently upgrade npm dependencies with the plugin. End-check handling and
+copy them into the app. Package upgrades follow the package-selection reference above. End-check handling and
 target selection are owned by use-ai-i18n-mcp. Check installed internal scan/helper capabilities;
 report a version mismatch rather than patching node_modules.

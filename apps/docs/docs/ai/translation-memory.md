@@ -35,10 +35,11 @@ translationMemory: {
 
 ## 可选：个人 SQLite 候选缓存
 
-希望同一台电脑上的多个项目复用历史译文时，可以增加 SQLite 候选缓存：
+希望同一台电脑上的多个项目复用历史译文时，可以增加 SQLite 候选缓存。安装前请确认
+[版本选择与升级](/guide/getting-started/versions)中的发布状态：
 
 ```bash
-pnpm add -D @ai-i18n/sqlite@alpha
+pnpm add -D @ai-i18n/sqlite@^1.0.0
 ```
 
 ```ts

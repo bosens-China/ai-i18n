@@ -90,7 +90,7 @@ Destructive orphan deletion retains the separate full Build and approval workflo
 
 Ordinary translation can use the same tools in-process with the installed `@ai-i18n/mcp` package.
 If absent, install it as a dev dependency of the selected app using its package manager and the
-version matching the project (currently alpha), within the user's translation setup scope.
+version selected under the registration reference's version rules, within the user's translation setup scope.
 No server registration or Provider credentials are needed.
 
 Write the request as JSON in a temporary file, then run:

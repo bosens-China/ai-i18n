@@ -10,17 +10,17 @@ import { PackageManagerTabs } from '@rspress/core/theme';
 
 ## 安装
 
-<PackageManagerTabs command="install -D eslint @ai-i18n/eslint-plugin@alpha" />
+<PackageManagerTabs command="install -D eslint @ai-i18n/eslint-plugin@^1.0.0" />
 
-:::warning Alpha 阶段
-预发布期间请显式安装 `@alpha`。插件支持 ESLint 9 和 10。
+:::tip 版本选择
+插件支持 ESLint 9 和 10。安装前请按[版本选择与升级](/guide/getting-started/versions)确认发布状态。
 :::
 
 pnpm monorepo 应将插件安装在实际加载 `eslint.config.*` 的 workspace 中。例如从仓库根目录加载
 配置时，运行：
 
 ```sh
-pnpm add -Dw @ai-i18n/eslint-plugin@alpha
+pnpm add -Dw @ai-i18n/eslint-plugin@^1.0.0
 ```
 
 Vue 项目还需要保留现有的 `eslint-plugin-vue`、`vue-eslint-parser` 和 `@vue/compiler-sfc`。

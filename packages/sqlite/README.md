@@ -1,10 +1,12 @@
 # @ai-i18n/sqlite
 
+安装前请按[版本选择与升级](https://bosens-china.github.io/ai-i18n/guide/getting-started/versions)确认 npm 发布状态；示例选择 1.x 正式版，尚未上架时显式使用 `@alpha`。
+
 ai-i18n 的可选个人 Translation Memory 候选缓存。项目自动译文始终写入可提交的
 `i18n/translations/` 分桶 JSON；本包不替代项目存储。
 
 ```bash
-pnpm add -D @ai-i18n/sqlite@alpha
+pnpm add -D @ai-i18n/sqlite@^1.0.0
 ```
 
 ```ts

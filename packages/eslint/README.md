@@ -4,7 +4,8 @@
 切换刷新的 Runtime 用法。规则检查解析到 `virtual:ai-i18n` 的翻译与状态 API，以及 Vue/React 模式下
 `useI18n()` 返回的订阅状态。其他库或局部同名函数不受影响。
 
-alpha 阶段请安装 `@ai-i18n/eslint-plugin@alpha`；peer 支持 ESLint 9 和 10。
+正式版选择 `@ai-i18n/eslint-plugin@^1.0.0`。peer 支持 ESLint 9 和 10。
+安装前请查看[版本选择与升级](https://bosens-china.github.io/ai-i18n/guide/getting-started/versions)，确认 npm 已上架；尚无正式版时显式选择 `@alpha`。
 
 官方 preset 与 Vite 源码范围一致，覆盖 `.js`、`.mjs`、`.ts`、`.mts` 以及当前框架支持的
 `.jsx`、`.tsx`、`.vue`。它们会排除 `.cjs` 与 `.cts`，也不会为这些文件声明自动导入全局。
