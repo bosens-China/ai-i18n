@@ -8,12 +8,13 @@
 | ------------------------ | ----------------------------------------------- | --------------------------------------------------------------------------------------- |
 | `ci.yml`                 | PR、普通 `main` push                            | 日常质量门禁，以及 npm 尚未发布版本的候选 tarball 外部安装验证                          |
 | `release.yml`            | `packages/**` 等路径的 `main` push；可手动      | macOS 原生文件锁门禁、Release Please 版本 / GitHub Release，以及 npm Trusted Publishing |
-| `pages.yml`              | 文档与示例相关路径的 `main` push；可手动        | 构建并部署 GitHub Pages                                                                 |
+| `pages.yml`              | Release 创建新 Release 且 npm 发布成功后调用    | 构建并部署同一提交的 GitHub Pages                                                       |
 | `plugin-marketplace.yml` | 插件与两份 Skill 相关路径的 `main` push；可手动 | 发布仅供 Codex 安装的市场分支                                                           |
 
 日常验证只需 `ci.yml`。Release Please 生成的 `chore: release main` 合并提交由
 `release.yml` 对同一 SHA 执行完整门禁，因此跳过重复的日常 CI。其他 `main` push 仍执行 CI。
-发版与站点部署有独立权限与副作用，必须单独保留。
+发版与站点部署保留各自的权限与工作流文件；站点部署由 Release 通过
+[复用工作流](https://docs.github.com/en/actions/how-tos/reuse-automations/reuse-workflows)统一调度。
 
 ## 版本策略
 
@@ -76,7 +77,10 @@
    Release Please 返回的 `paths_released` 选择包。它不重新构建或打包，不 checkout 仓库、
    不安装项目依赖，也不使用 `NODE_AUTH_TOKEN`，只由 npm CLI 按依赖拓扑通过 OIDC Trusted
    Publishing 上传。
-6. 合并 Release PR 会改 `packages/**`，因此也可能触发 Pages；这是路径过滤的预期副作用。
+6. 只有 Release Please 在本次运行中创建了新 Release，且对应 npm 发布 job 成功后，才调用
+   `pages.yml` 构建和部署同一提交的站点。Pages 只接受复用调用，不再响应独立的 push 或
+   手动部署。普通 push、仅创建或更新 Release PR、npm 发布失败或跳过，都不会部署 Pages。
+   纯文档与示例改动随下一次发版上线，不单独触发 npm 或 Pages 发布。
 
 ## Codex 插件市场
 
@@ -127,6 +131,9 @@ PAT 或 GitHub App，也不向版本提交添加 `[skip ci]`；若将来需要�
 会跳过 Release Please，在验证通过后按当前 `package.json` 版本直接 publish。工作流会拒绝
 非 `main` 分支、空数组、重复路径以及未在 `release-please-config.json` 中登记的包路径；
 不需要新增 Secret 或 GitHub Environment。
+
+手动 npm 补发不会触发 Pages。若站点部署失败，在创建 Release 的那次运行中选择
+**Re-run failed jobs**，只重跑失败的站点任务，保留已经成功的 npm 发布结果。
 
 ## 约定
 

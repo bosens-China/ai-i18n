@@ -374,6 +374,8 @@
 
 ## 发布可靠性
 
+- Pages 仅随 Release PR 合并后的成功 npm 发布部署，纯文档变更随下一次发版上线。
+  普通 push、未合并的 Release PR 和手动 npm 补发不触发站点部署。
 - Turbo 只负责 workspace 构建、检查与测试的依赖顺序和缓存；Release Please 继续负责版本、
   变更日志与 GitHub Release，npm Trusted Publishing 继续负责最终上传。
 - Release workflow 的 macOS 原生文件锁门禁与 Linux 发布候选验证并行，Release Please 只在
