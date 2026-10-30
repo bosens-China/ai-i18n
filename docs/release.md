@@ -6,14 +6,14 @@
 
 | 工作流                   | 触发                                            | 职责                                                                                    |
 | ------------------------ | ----------------------------------------------- | --------------------------------------------------------------------------------------- |
-| `ci.yml`                 | PR、普通 `main` push                            | 日常质量门禁，以及 npm 尚未发布版本的候选 tarball 外部安装验证                          |
+| `ci.yml`                 | PR、普通 `main` push                            | 日常质量门禁、候选 tarball 验证，以及独立站点改动的部署调度                             |
 | `release.yml`            | `packages/**` 等路径的 `main` push；可手动      | macOS 原生文件锁门禁、Release Please 版本 / GitHub Release，以及 npm Trusted Publishing |
-| `pages.yml`              | Release 创建新 Release 且 npm 发布成功后调用    | 构建并部署同一提交的 GitHub Pages                                                       |
+| `pages.yml`              | CI 确认独立站点改动，或 Release 成功发布 npm 后 | 构建并部署调用方同一提交的 GitHub Pages                                                 |
 | `plugin-marketplace.yml` | 插件与两份 Skill 相关路径的 `main` push；可手动 | 发布仅供 Codex 安装的市场分支                                                           |
 
 日常验证只需 `ci.yml`。Release Please 生成的 `chore: release main` 合并提交由
 `release.yml` 对同一 SHA 执行完整门禁，因此跳过重复的日常 CI。其他 `main` push 仍执行 CI。
-发版与站点部署保留各自的权限与工作流文件；站点部署由 Release 通过
+发版与站点部署保留各自的权限与工作流文件；CI 与 Release 通过
 [复用工作流](https://docs.github.com/en/actions/how-tos/reuse-automations/reuse-workflows)统一调度。
 
 ## 版本策略
@@ -77,10 +77,31 @@
    Release Please 返回的 `paths_released` 选择包。它不重新构建或打包，不 checkout 仓库、
    不安装项目依赖，也不使用 `NODE_AUTH_TOKEN`，只由 npm CLI 按依赖拓扑通过 OIDC Trusted
    Publishing 上传。
-6. 只有 Release Please 在本次运行中创建了新 Release，且对应 npm 发布 job 成功后，才调用
-   `pages.yml` 构建和部署同一提交的站点。Pages 只接受复用调用，不再响应独立的 push 或
-   手动部署。普通 push、仅创建或更新 Release PR、npm 发布失败或跳过，都不会部署 Pages。
-   纯文档与示例改动随下一次发版上线，不单独触发 npm 或 Pages 发布。
+6. 发版通道只有在 Release Please 创建了新 Release，且对应 npm 发布 job 成功后，才调用
+   `pages.yml` 部署同一提交的站点。该通道在仅创建或更新 Release PR、npm 失败或跳过时不部署；
+   不涉及可发布包改动的站点更新走下面的独立通道。
+
+## 独立站点部署
+
+npm 是否发版继续由 Release Please 根据组件范围与 Conventional Commits 判断。Pages 根据实际
+文件改动判断，不用 `docs` / `chore` 等前缀猜测是否需要更新站点。
+
+| 本次 push 的改动                                    | npm            | Pages                             |
+| --------------------------------------------------- | -------------- | --------------------------------- |
+| 公开文档、静态示例或站点资源                        | 不强制发版     | main 的 CI 通过后部署             |
+| 上述站点改动，同时修改包 README 或测试              | 不强制发版     | main 的 CI 通过后部署             |
+| 包实现或配置，可同时包含站点改动                    | 按正常发版流程 | 等 Release PR 合并且 npm 成功发布 |
+| 仅内部文档、根 README、测试、Skill 或本地 Hono 示例 | 不强制发版     | 不部署                            |
+| PR 分支、CI 失败或无法取得比较基线                  | 按既有门禁判断 | 不独立部署                        |
+
+- 独立通道包括 `apps/docs/docs/`、`apps/docs/components/`、文档站配置和依赖清单、
+  `examples/react/`、`examples/vue/`、`examples/vanilla/`、`examples/shared/` 的站点输入，
+  以及 Pages 构建工作流。示例的 README 和测试不作为站点内容。
+- 比较 `github.event.before` 到当前 SHA 的整次 push 差异；不用最后一条提交消息或固定的
+  `HEAD~1`。删除也算改动；重命名按旧路径删除和新路径新增判断，避免漏掉包代码变化。
+- `packages/` 中除 Markdown 与 `test/` 目录外的改动阻止独立部署。包行为发生变化时仍需
+  使用 `fix` / `feat` 等正确发版前缀，不能靠 `docs` 前缀绕过既有版本约定。
+- Pages 仍只接受复用调用；CI 和 Release 分别负责各自的条件与权限，不恢复无门禁的独立部署。
 
 ## Codex 插件市场
 
@@ -132,7 +153,7 @@ PAT 或 GitHub App，也不向版本提交添加 `[skip ci]`；若将来需要�
 非 `main` 分支、空数组、重复路径以及未在 `release-please-config.json` 中登记的包路径；
 不需要新增 Secret 或 GitHub Environment。
 
-手动 npm 补发不会触发 Pages。若站点部署失败，在创建 Release 的那次运行中选择
+手动 npm 补发不会触发 Pages。若站点部署失败，在对应的 CI 或 Release 运行中选择
 **Re-run failed jobs**，只重跑失败的站点任务，保留已经成功的 npm 发布结果。
 
 ## 约定

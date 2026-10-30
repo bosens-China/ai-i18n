@@ -1,7 +1,7 @@
 name: Deploy docs and examples to GitHub Pages
 
 on:
-  # 仅由 Release workflow 在创建新 Release 且 npm 发布成功后调用。
+  # CI 通过后的独立站点改动，或 Release 成功发布 npm 后，复用同一部署流程。
   workflow_call:
 
 permissions:

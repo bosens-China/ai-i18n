@@ -22,8 +22,12 @@ jobs:
       !startsWith(github.event.head_commit.message, 'chore: release main')
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    outputs:
+      pages_only: ${{ steps.pages_changes.outputs.pages_only }}
     steps:
       - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
       - uses: pnpm/action-setup@v6
       - uses: actions/setup-node@v7
         with:
@@ -34,3 +38,22 @@ jobs:
       - run: pnpm test
       # Release Please PR 中会出现 npm 尚未发布的新版本；仅验证这些候选 tarball。
       - run: pnpm release:verify
+      - name: Detect standalone Pages changes
+        id: pages_changes
+        if: github.event_name == 'push'
+        env:
+          BEFORE_SHA: ${{ github.event.before }}
+        run: pnpm exec tsx scripts/pages-deploy-policy.ts "$BEFORE_SHA" "$GITHUB_SHA" >> "$GITHUB_OUTPUT"
+
+  pages:
+    needs: check
+    if: >-
+      github.event_name == 'push' &&
+      github.ref == 'refs/heads/main' &&
+      needs.check.result == 'success' &&
+      needs.check.outputs.pages_only == 'true'
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    uses: ./.github/workflows/pages.yml
