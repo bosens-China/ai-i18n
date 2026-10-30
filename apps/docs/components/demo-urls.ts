@@ -3,6 +3,7 @@ export const DEMO_PORTS = {
   vanilla: 51881,
   vue: 51882,
   react: 51883,
+  remote: 51884,
 } as const;
 
 export type DemoFramework = keyof typeof DEMO_PORTS;

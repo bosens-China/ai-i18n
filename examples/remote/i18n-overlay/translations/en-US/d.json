@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "locale": "en-US",
+  "entries": {
+    "daf4f03511b8e3313923a811136d0a5f780fcac2f56f6b86feaf37590c2039ed": {
+      "id": "读取服务端状态",
+      "source": "读取服务端状态",
+      "sourceLang": "zh-CN",
+      "value": "Read server status"
+    }
+  }
+}

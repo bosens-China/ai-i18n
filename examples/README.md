@@ -1,4 +1,28 @@
-# Review 开关示例
+# ai-i18n 演示
+
+## Hono 远程译文
+
+`examples/remote` 使用真实 Hono HTTP 服务演示 key 转换、全局 en.json、公开版本 meta、
+comment 语义区分、懒加载与缺译门禁。固定译文模拟服务端成果，不使用外部模型凭据。
+
+```sh
+pnpm build
+pnpm --filter @ai-i18n/example-remote dev
+```
+
+页面：<http://127.0.0.1:51884>；Hono：`http://127.0.0.1:51885`。Dev 中可以发布版本、
+模拟缺译或无效结果，再重启 Vite 获取新快照；Hono 内存状态保留。停止整个进程则重置。
+
+`pnpm --filter @ai-i18n/example-remote build` 自动使用临时 Hono 端口，结束后关闭后端；
+`preview` 只服务静态 dist，不需要 Hono。默认根目录 `examples:dev`、`examples:build`
+和文档构建也包含该演示。缺译/无效快照的预期失败命令见
+[Hono 演示说明](../apps/docs/docs/demo/remote.mdx)。
+
+`pnpm --filter @ai-i18n/example-remote dev:overlay` 使用独立的 `i18n-overlay/` 本地数据，
+服务器只覆盖“保存成功”，其余继续使用本地英文；撤销远程覆盖并重启 Dev 后恢复
+`Reviewed local save`。`build:overlay` 可构建同样的混合快照。
+
+## Review 开关示例
 
 三个示例均开启 `failOnMissingTranslations: true`；运行 `pnpm examples:build` 时，任一目标语言
 仍有缺译就会使对应示例构建失败。

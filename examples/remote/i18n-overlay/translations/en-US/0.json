@@ -1,0 +1,30 @@
+{
+  "version": 1,
+  "locale": "en-US",
+  "entries": {
+    "07087e7fb4148f061bcb9166280e2c7880659d26dd3195b3c51315d3d7c7fa4a": {
+      "id": "模拟缺译",
+      "source": "模拟缺译",
+      "sourceLang": "zh-CN",
+      "value": "Simulate missing translation"
+    },
+    "0d4c7431108b9c8d13b49321966bdd134ab9fcda10d299f4941b43ce0c76e372": {
+      "id": "操作完成",
+      "source": "操作完成",
+      "sourceLang": "zh-CN",
+      "value": "Operation completed"
+    },
+    "0d7dac5782bbd7d6c837c6e418aca3b4521a3c4fb48048c298987f600352cddc": {
+      "id": "同一句原文，不同语境",
+      "source": "同一句原文，不同语境",
+      "sourceLang": "zh-CN",
+      "value": "Same source, different contexts"
+    },
+    "0ed4e09213b8e2c4d82b2ce4f35134407f8c4320a112194776e2c62417365d88": {
+      "id": "此处可以查看服务器实际收到的 key。",
+      "source": "此处可以查看服务器实际收到的 key。",
+      "sourceLang": "zh-CN",
+      "value": "These are the keys received by the server."
+    }
+  }
+}

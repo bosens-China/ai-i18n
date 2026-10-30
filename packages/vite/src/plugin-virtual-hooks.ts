@@ -19,6 +19,8 @@ import {
   scopedRuntimeCode,
 } from './virtual-modules.js';
 import { AI_I18N_VIRTUAL_MODULE_ID } from './yuku-analyzer.js';
+import type { RemoteBuildValues } from './remote-build.js';
+import type { TranslationMeta } from './runtime.js';
 
 const RESOLVED_RUNTIME_ID = `\0${AI_I18N_VIRTUAL_MODULE_ID}`;
 const RESOLVED_SCOPED_RUNTIME_PREFIX = `${RESOLVED_RUNTIME_ID}?module=`;
@@ -31,6 +33,8 @@ const RESOLVED_VIRTUAL_RE =
   /^\0virtual:ai-i18n(?:\?module=.+|\/register\?module=.+|\/locale\/[^?]+)?$/;
 
 interface CreateVirtualModuleHooksOptions {
+  remoteBuild?: RemoteBuildValues;
+  translationMeta?(): TranslationMeta | undefined;
   normalized: NormalizedAiI18nOptions;
   config(): ResolvedConfig | undefined;
   framework(): AiI18nFramework;
@@ -96,6 +100,7 @@ export function createVirtualModuleHooks(
             : 'export {};';
         }
         if (id === RESOLVED_RUNTIME_ID) {
+          const meta = JSON.stringify(options.translationMeta?.());
           return runtimeCode(
             options.normalized,
             options.translationUpdateEvent,
@@ -103,6 +108,12 @@ export function createVirtualModuleHooks(
             framework,
             config?.command === 'build',
             config?.base,
+            config?.command === 'build' && options.remoteBuild
+              ? options.remoteBuild.meta
+              : meta === undefined
+                ? 'undefined'
+                : `JSON.parse(${JSON.stringify(meta)})`,
+            Boolean(options.remoteBuild),
           );
         }
         if (id.startsWith(RESOLVED_SCOPED_RUNTIME_PREFIX)) {
@@ -126,6 +137,16 @@ export function createVirtualModuleHooks(
           id.slice(RESOLVED_REGISTER_PREFIX.length),
         );
         return loadRegistration(this, {
+          ...(config?.command === 'build' && options.remoteBuild
+            ? {
+                deferredRegistration: options.remoteBuild.registration(
+                  moduleId,
+                  options.normalized.loading
+                    ? options.normalized.sourceLang
+                    : undefined,
+                ),
+              }
+            : {}),
           moduleId,
           build: config?.command === 'build',
           project: options.state(),

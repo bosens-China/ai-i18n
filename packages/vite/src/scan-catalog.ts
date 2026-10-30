@@ -96,6 +96,8 @@ async function scanCatalog(
       );
       api.state().hydrateCache(await store.load());
       api.state().hydrateOverrides(await store.loadOverrides());
+      const overlay = previous.snapshot().remoteOverlay;
+      if (overlay) api.state().hydrateRemoteOverlay(overlay);
       server.environments.client!.moduleGraph.invalidateAll();
       const consumed = new Map<string, string | undefined>();
       const trackFile = async (file: string) => {
@@ -193,9 +195,12 @@ async function scanCatalog(
     );
   state.hydrateCache(await store.load());
   state.hydrateOverrides(await store.loadOverrides());
+  const overlay = api.state().snapshot().remoteOverlay;
+  if (overlay) state.hydrateRemoteOverlay(overlay);
   return {
     root: server.config.root,
     i18n_directory: store.directory,
+    translation_source: api.translationSource ?? 'local',
     mode: server.config.mode,
     entries: entryFiles.map((file) =>
       path.relative(server.config.root, file).replaceAll('\\', '/'),

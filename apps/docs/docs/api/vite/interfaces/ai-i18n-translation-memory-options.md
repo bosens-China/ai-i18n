@@ -36,7 +36,7 @@ translationMemory: {
 ```
 
 没有安装并注入该包时，核心依赖不会包含 `better-sqlite3`。SQLite 数据库不在项目目录内，也不应
-提交 Git。缓存候选命中后会补写项目 `translations/`；`overrides/` 仍保留在项目内并拥有最高优先级。
+提交 Git。缓存候选命中后会补写项目 `translations/`；`overrides/` 仍保留在项目内，并在本地层优先于自动译文；远程 overlay 的有效值会覆盖本地层。
 
 Provider 的进程级刷新通过 `provider.cache` 配置，不属于存储选项，也不影响 MCP。完整行为和选型建议见
 [Translation Memory](/ai/translation-memory)。

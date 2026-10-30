@@ -19,6 +19,7 @@ interface RegistrationLoadOptions {
   runStateTask?: DevStateTaskRunner;
   locale?: string;
   watchFileExists?: (file: string) => Promise<boolean>;
+  deferredRegistration?: string;
 }
 
 export async function loadRegistration(
@@ -70,5 +71,7 @@ export async function loadRegistration(
   const messages = await runStateTask(() =>
     project.registration(moduleId, options.locale),
   );
-  return messages ? registerCode(moduleId, messages) : 'export {}';
+  return messages
+    ? registerCode(moduleId, options.deferredRegistration ?? messages)
+    : 'export {}';
 }

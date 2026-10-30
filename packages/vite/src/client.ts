@@ -7,4 +7,6 @@ declare module 'virtual:ai-i18n' {
   export const getLangs: I18nRuntime['getLangs'];
   export const getLangLoadState: I18nRuntime['getLangLoadState'];
   export const subscribe: I18nRuntime['subscribe'];
+  export function getTranslationMeta():
+    import('@ai-i18n/vite/runtime').TranslationMeta | undefined;
 }

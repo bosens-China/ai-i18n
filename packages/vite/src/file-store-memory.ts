@@ -28,6 +28,11 @@ import type { ProjectSnapshot } from './project-snapshot.js';
 import type { ProviderResult } from './provider-coordinator.js';
 
 export class FileStoreMemory {
+  private remoteCache: TranslationMemoryFile = {
+    version: 1,
+    revision: 0,
+    messages: {},
+  };
   private readonly providerFields = new Map<
     string,
     PendingProviderTranslation
@@ -66,6 +71,10 @@ export class FileStoreMemory {
     snapshot?: ProjectSnapshot,
     activeMessageIds?: readonly string[],
   ): Promise<TranslationMemoryFile> {
+    if (this.options.remote) {
+      if (snapshot) this.remoteCache = structuredClone(snapshot.cache);
+      return structuredClone(this.remoteCache);
+    }
     const store = await this.getStore();
     const cache = await this.getCandidateCache();
     if (!this.options.translationMemory?.cache)
@@ -141,6 +150,7 @@ export class FileStoreMemory {
     target: TranslationMemoryCandidateTarget,
     query?: TranslationMemoryCandidateQuery,
   ) {
+    if (this.options.remote) return { candidates: [], hasMore: false };
     return (
       this.options.translationMemory?.cache?.list(target, query) ?? {
         candidates: [],

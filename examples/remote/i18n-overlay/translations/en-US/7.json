@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "locale": "en-US",
+  "entries": {
+    "7b361dd56435c13ca41dc1a341a77a7dbf9fff1869a1e051f4d43d9a7ddde162": {
+      "id": "提交#表单按钮",
+      "source": "提交",
+      "sourceLang": "zh-CN",
+      "comment": "表单按钮",
+      "value": "Submit"
+    },
+    "7f02b84040832ffd14f5ff25e2fa7484032404d43d721367142599eac960afda": {
+      "id": "当前页面快照",
+      "source": "当前页面快照",
+      "sourceLang": "zh-CN",
+      "value": "Applied snapshot"
+    }
+  }
+}

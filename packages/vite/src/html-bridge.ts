@@ -9,7 +9,7 @@ import { AI_I18N_VIRTUAL_MODULE_ID } from './yuku-analyzer.js';
 
 export function htmlBridgeCode(
   moduleId: string,
-  messages: ModuleMessages,
+  messages: ModuleMessages | string,
   bindings: readonly HtmlBinding[],
 ): string {
   const sources = Object.fromEntries(

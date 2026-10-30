@@ -49,7 +49,7 @@ jobs:
         run: |
           mkdir -p site
           cp -R apps/docs/dist/. site/
-          for example in vanilla vue react; do
+          for example in vanilla vue react remote; do
             mkdir -p "site/examples/$example"
             cp -R "examples/$example/dist/." "site/examples/$example/"
           done

@@ -3,7 +3,11 @@ title: 翻译记忆
 description: 项目 JSON 保存译文，SQLite 缓存跨项目复用候选
 ---
 
-翻译记忆保存 Provider 或 Agent 产生的自动译文。项目自动译文始终写入
+以下介绍本地翻译模式。启用 [`remote.load`](/guide/advanced/remote-translations) 后，
+默认 replace 模式中，远程快照替代自动译文来源，不使用本地 Translation Memory 或 SQLite；人工 overrides 仍优先。
+overlay 模式保留本地 Translation Memory 和 SQLite，以远程有效译文覆盖本地人工及自动结果；远程值不写入本地存储。
+
+翻译记忆保存 Provider 或 Agent 产生的自动译文。本地模式的项目自动译文始终写入
 `i18n/translations/`，人工确认的最终措辞写入 `i18n/overrides/`，并优先于自动译文。
 
 ## 项目 JSON 是唯一事实来源

@@ -34,7 +34,7 @@ outside the local entry graph. Build-only route generators and command-specific 
 may produce a different graph; `--mode production` still uses `command: serve`. When that distinction
 matters, report it and use a real Build for production validation instead of claiming equivalence.
 
-A standalone scan disables ai-i18n Provider calls, personal translation cache reuse, history/capacity
+A standalone scan disables ai-i18n remote publish/load callbacks, Provider calls, personal translation cache reuse, history/capacity
 cleanup, declaration generation, Review, listening, watching, warmup and dependency optimization.
 An active Dev keeps its existing services; scanning does not enqueue new Provider requests and does
 not run history cleanup. Already pending Provider work is allowed to finish before scanning. Other application config and Dev plugin hooks still execute; this is
@@ -45,13 +45,13 @@ the helper delegates to its authenticated loopback scan endpoint instead of publ
 catalog. A different mode or explicit entry override is rejected while that Dev is active. Stop Dev
 before that explicitly requested custom scan. Wait for unrelated Build or destructive translation
 operations; do not point multiple app instances at one i18n directory.
-A successful scan replaces `extracted/`, refreshes derived `locales/`, and registers missing source
+A successful local-mode scan replaces `extracted/`, refreshes derived `locales/`, and registers missing source
 messages as null translation slots while retaining existing translations and human overrides.
 It does not create production bundles. Failed traversal or extraction diagnostics stop before
 publishing a partial catalog. Storage errors during final persistence must still be reported and
 recovered through the existing store; never claim that every filesystem write is globally atomic.
 
-On success, read the final JSON line: `root`, `i18n_directory`, `mode`, `entries`, `file_count`,
+On success, read the final JSON line: `root`, `i18n_directory`, `translation_source` (local, remote or overlay), `mode`, `entries`, `file_count`,
 `message_count`, `reused`, and per-locale `translated` / `missing`. Use its absolute `i18n_directory` for tools.
 The standalone helper waits for the scan API to settle and flushes stdout/stderr before exiting
 with status 0 on success or nonzero on failure, even if application plugins leave listeners alive.

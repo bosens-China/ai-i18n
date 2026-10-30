@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "locale": "en-US",
+  "entries": {
+    "40d781351a15269e15e272a9d4977149679b642852ab8c555cdc0add5282f202": {
+      "id": "撤销后恢复本地人工译文。",
+      "source": "撤销后恢复本地人工译文。",
+      "sourceLang": "zh-CN",
+      "value": "Withdrawal restores the reviewed local translation."
+    },
+    "4c62df3a5e007b702c61c6a31555dbb1162782c0920c19c023439f7b47cb3e3b": {
+      "id": "服务端更新不会自动替换当前快照。",
+      "source": "服务端更新不会自动替换当前快照。",
+      "sourceLang": "zh-CN",
+      "value": "A server release does not replace the applied snapshot automatically."
+    }
+  }
+}

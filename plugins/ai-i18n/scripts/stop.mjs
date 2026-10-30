@@ -43,6 +43,7 @@ export async function check(input) {
     });
     const result = JSON.parse(stdout.trim().split('\n').at(-1));
     if (!Array.isArray(result.locales)) throw new Error('Invalid scan result');
+    if (['remote', 'overlay'].includes(result.translation_source)) return {};
     const missing = result.locales.filter((locale) => locale.missing > 0);
     if (!missing.length) return {};
     reason = `ai-i18n: ${JSON.stringify(result.i18n_directory)} 缺少译文 / has missing translations: ${missing.map((locale) => `${locale.locale}=${locale.missing}`).join(', ')}. `;

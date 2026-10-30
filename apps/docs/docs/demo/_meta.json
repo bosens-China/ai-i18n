@@ -1,4 +1,5 @@
 [
+  { "type": "file", "name": "remote", "label": "Hono 远程译文示例" },
   {
     "type": "file",
     "name": "vue",

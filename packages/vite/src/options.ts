@@ -4,6 +4,7 @@ import type { AiI18nFramework } from './framework.js';
 import type { HtmlExtractorOptions } from './html.js';
 import type { ProviderCoordinatorOptions } from './provider-coordinator.js';
 import type { AiI18nPerformanceDiagnosticsOptions } from './performance-types.js';
+import type { RemoteAdapter } from './remote.js';
 export type { AiI18nPerformanceDiagnosticsOptions } from './performance-types.js';
 
 export type AiI18nProviderOptions = Pick<
@@ -75,6 +76,8 @@ export interface AiI18nOptions {
   loading?: boolean | AiI18nLocaleLoadingOptions;
   translationMemory?: AiI18nTranslationMemoryOptions;
   provider?: AiI18nProviderOptions;
+  /** 可选提交与获取适配器；load 与 provider 互斥。 */
+  remote?: RemoteAdapter;
   /** Build 中存在目标语言缺译时失败；默认关闭。 */
   failOnMissingTranslations?: boolean;
   directory?: string;

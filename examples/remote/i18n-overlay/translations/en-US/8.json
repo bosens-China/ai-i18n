@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "locale": "en-US",
+  "entries": {
+    "83c635c84bb82298333140b264df052d707bcaec758c6a1feebe92d91d16e29e": {
+      "id": "测试场景",
+      "source": "测试场景",
+      "sourceLang": "zh-CN",
+      "value": "Test scenario"
+    },
+    "8d13cd5dbc169676f179da19d6320d895cb93711fe1ae05e33b5a29ca98fda42": {
+      "id": "提交次数",
+      "source": "提交次数",
+      "sourceLang": "zh-CN",
+      "value": "Publish requests"
+    }
+  }
+}

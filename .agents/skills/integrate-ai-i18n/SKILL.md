@@ -1,6 +1,6 @@
 ---
 name: integrate-ai-i18n
-description: Integrate ai-i18n into Vite browser projects that use Vue 3, React 18+, or vanilla JavaScript and TypeScript. Use when installing or configuring @ai-i18n/vite, adding translation calls or virtual:ai-i18n imports, selecting framework mode, enabling auto imports or ESLint, configuring optional locale loading, LLM audit logs, Dev timing diagnostics, or performance comparisons, reviewing Provider logs, or diagnosing an incomplete integration.
+description: Integrate ai-i18n into Vite browser projects that use Vue 3, React 18+, or vanilla JavaScript and TypeScript. Use when installing or configuring @ai-i18n/vite, adding translation calls or virtual:ai-i18n imports, selecting framework mode, enabling auto imports or ESLint, configuring remote translation adapters or typed public metadata, optional locale loading, LLM audit logs, Dev timing diagnostics, or performance comparisons, reviewing Provider logs, or diagnosing an incomplete integration.
 ---
 
 # Integrate ai-i18n
@@ -42,6 +42,10 @@ automatic imports, language persistence, locale loading, cache cleanup, Dev timi
 diagnostics, ESLint, and test integration unless the user requests them. Do not remove an optional feature that is already
 configured. When an optional feature is requested, read [Agent defaults for optional features](references/optional-features.md)
 and the matching public documentation page.
+
+For remote submission/acquisition or public translation metadata, follow
+[Remote translation integration](references/remote.md). Preserve either inline Vite configuration or
+an explicitly imported adapter file; both are supported.
 
 The Vite Dev review console is an optional, separately registered plugin. Do not add it unless the user
 requests interactive review or the target already registers it. When requested, import `aiI18nReview`

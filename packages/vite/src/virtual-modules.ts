@@ -3,6 +3,7 @@ import type { AiI18nFramework } from './framework.js';
 import { localeLoadersCode } from './locale-loading.js';
 import type { NormalizedAiI18nOptions } from './project-state.js';
 import { AI_I18N_VIRTUAL_MODULE_ID } from './yuku-analyzer.js';
+import { REMOTE_UPDATE_EVENT, REMOTE_READY_EVENT } from './remote-updates.js';
 
 export function runtimeCode(
   options: NormalizedAiI18nOptions,
@@ -11,6 +12,8 @@ export function runtimeCode(
   framework: AiI18nFramework,
   build = false,
   base = '/',
+  translationMeta = 'undefined',
+  remote = false,
 ): string {
   const adapter =
     framework === 'vanilla'
@@ -38,13 +41,16 @@ export function runtimeCode(
   });`
     : '';
   return `
-import { createI18nRuntime, createScopedTranslate, formatTemplateMessage, runtimeMessageId } from '@ai-i18n/vite/runtime';
+import { createI18nRuntime, createScopedTranslate, formatTemplateMessage, runtimeMessageId, createTranslationMetaState } from '@ai-i18n/vite/runtime';
 ${adapter}
+const translationMeta = createTranslationMetaState(${translationMeta});
+export const getTranslationMeta = translationMeta.get;
 const runtime = createI18nRuntime({
   ...${JSON.stringify(options)},
   localeLoaders: ${localeLoadersCode(options, build, base)},
 });
 const activeModules = new Set();
+const remoteModules = new Map();
 const scopedApis = new Map();
 ${runtimeT}
 export const setLang = runtime.setLang;
@@ -64,18 +70,29 @@ export const __scope = (moduleId) => {
 };
 export const __registerModule = (moduleId, messages) => {
   activeModules.add(moduleId);
-  runtime.registerModule(moduleId, messages);
+  runtime.registerModule(moduleId, remoteModules.get(moduleId) ?? messages);
 };
 export const __unregisterModule = (moduleId) => {
   activeModules.delete(moduleId);
+  remoteModules.delete(moduleId);
   runtime.unregisterModule(moduleId);
 };
 ${hook}
 if (import.meta.hot) {
+  import.meta.hot.on(${JSON.stringify(REMOTE_UPDATE_EVENT)}, ({ modules, locales, publicMeta }) => {
+    translationMeta.replace(publicMeta);
+    for (const [moduleId, messages] of Object.entries(modules)) {
+      if (messages) remoteModules.set(moduleId, messages);
+      if (messages && activeModules.has(moduleId)) runtime.replaceModule(moduleId, messages);
+    }
+    for (const [locale, messages] of Object.entries(locales)) runtime.replaceLocale(locale, messages);
+  });
   import.meta.hot.on(${JSON.stringify(translationUpdateEvent)}, ({ moduleId, messages }) => {
+    if (remoteModules.has(moduleId)) remoteModules.set(moduleId, messages);
     if (activeModules.has(moduleId)) runtime.replaceModule(moduleId, messages);
   });
 ${localeHotUpdate}
+${remote ? `  import.meta.hot.send(${JSON.stringify(REMOTE_READY_EVENT)}, {});` : ''}
 }
 `;
 }
@@ -99,13 +116,14 @@ import {
   getLang,
   getLangLoadState,
   getLangs,
+  getTranslationMeta,
   setLang,
   subscribe,
 } from ${JSON.stringify(AI_I18N_VIRTUAL_MODULE_ID)};
 const moduleId = ${JSON.stringify(moduleId)};
 const scoped = __scope(moduleId);
 export const t = scoped.t;
-export { __registerModule, __unregisterModule, getLang, getLangLoadState, getLangs, setLang, subscribe };
+export { __registerModule, __unregisterModule, getLang, getLangLoadState, getLangs, getTranslationMeta, setLang, subscribe };
 export const __translate = (messageId, source, occurrence) => translate(moduleId, messageId, source, occurrence);${frameworkExports}
 `;
 }
@@ -138,6 +156,7 @@ ${exportedT}
 export const setLang = async () => {};
 export const getLang = () => '';
 export const getLangs = () => [];
+export const getTranslationMeta = () => undefined;
 const idleLangLoadState = Object.freeze({ status: 'idle', targetLang: null, error: null });
 export const getLangLoadState = () => idleLangLoadState;
 export const subscribe = () => () => {};
@@ -152,7 +171,7 @@ ${hook}
 
 export function registerCode(
   moduleId: string,
-  messages: ModuleMessages,
+  messages: ModuleMessages | string,
 ): string {
   return `
 import { __registerModule, __unregisterModule } from ${JSON.stringify(AI_I18N_VIRTUAL_MODULE_ID)};

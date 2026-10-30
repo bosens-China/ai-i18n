@@ -1,0 +1,30 @@
+{
+  "version": 1,
+  "locale": "en-US",
+  "entries": {
+    "e6cb0a133d9e5973ea87b7338cf6cd3b01f0959ce0221c21fb2a8f48d1e2d6cb": {
+      "id": "请求失败，请查看终端。",
+      "source": "请求失败，请查看终端。",
+      "sourceLang": "zh-CN",
+      "value": "Request failed. Check the terminal."
+    },
+    "e86a61c10eedb813058850662c9a7bf097ff4e032bb63c95b6fcd017a1e51442": {
+      "id": "撤销全部远程覆盖",
+      "source": "撤销全部远程覆盖",
+      "sourceLang": "zh-CN",
+      "value": "Withdraw all remote overrides"
+    },
+    "ed7de10e1e7ecb0a1ebbab016a5f2331cd474b4aeb3b6cd6265f606372063190": {
+      "id": "这是懒加载页面的文案。",
+      "source": "这是懒加载页面的文案。",
+      "sourceLang": "zh-CN",
+      "value": "This copy comes from a lazy module."
+    },
+    "eed6861d0f1573bc8b2949df8d319af18983a142e0e1bc7136ecfd914d93efc7": {
+      "id": "重启 Dev 并获取",
+      "source": "重启 Dev 并获取",
+      "sourceLang": "zh-CN",
+      "value": "Restart Dev and fetch"
+    }
+  }
+}

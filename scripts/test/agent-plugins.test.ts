@@ -159,6 +159,15 @@ it('packages the Codex marketplace and permits only one continuation', async () 
       decision: 'block',
       reason: expect.stringContaining('could not verify'),
     });
+    for (const source of ['remote', 'overlay']) {
+      await fs.writeFile(
+        path.join(pkg, 'scan.mjs'),
+        `export async function scanProject() { return { translation_source: '${source}', locales: [{locale:'en-US', missing:99}] }; }`,
+      );
+      expect(
+        await bundled.check({ cwd: root, stop_hook_active: false }),
+      ).toEqual({});
+    }
   } finally {
     vi.unstubAllEnvs();
     await fs.rm(root, { recursive: true, force: true });

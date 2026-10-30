@@ -13,7 +13,12 @@
       "outputs": ["dist/**"],
       "inputs": [
         "src/**",
+        "server/**",
+        "scripts/**",
+        "remote.ts",
+        "style.css",
         "i18n/**",
+        "i18n-overlay/**",
         "index.html",
         "vite.config.ts",
         "tsconfig*.json",

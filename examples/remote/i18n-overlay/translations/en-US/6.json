@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "locale": "en-US",
+  "entries": {
+    "6e206bba98056f20b89a8787bb44e99e96dc57026bd8a7d83f3b45ce72862b20": {
+      "id": "获取次数",
+      "source": "获取次数",
+      "sourceLang": "zh-CN",
+      "value": "Snapshot requests"
+    }
+  }
+}

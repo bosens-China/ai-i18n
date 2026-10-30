@@ -13,12 +13,15 @@ API 参考按导入入口组织。选择入口后，再按函数、接口、类�
 | ---------------------- | ------------------------------------------------- |
 | `@ai-i18n/vite`        | 注册 Vite 插件，配置提取、翻译和自定义 Provider。 |
 | `@ai-i18n/vite/vitest` | 在 Vitest 中提供内存 Runtime 与编译宏转换。       |
+| `@ai-i18n/vite/remote` | 定义自有接口的文案提交与译文获取适配器。          |
 | `virtual:ai-i18n`      | 在浏览器业务代码中翻译文案和切换语言。            |
 | `@ai-i18n/openai`      | 创建 OpenAI-compatible Translator。               |
 
 ## 查找入口
 
 - 配置插件：[`aiI18n()`](/api/vite/functions/ai-i18n)
+- 接入远程接口：[`RemoteAdapter`](/api/vite/interfaces/remote-adapter)
+- 读取公开译文元数据：[`getTranslationMeta()`](/api/runtime/functions/get-translation-meta)
 - 查询全部插件选项：[`AiI18nOptions`](/api/vite/interfaces/ai-i18n-options)
 - 翻译文案：[`t()`](/api/runtime/functions/t)
 - 在 Vue setup 中创建响应式翻译值：[`tRef()`](/api/runtime/vue/t-ref)

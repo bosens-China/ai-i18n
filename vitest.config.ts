@@ -33,6 +33,7 @@ export default defineConfig({
           include: [
             'packages/**/test/**/*.test.ts',
             'scripts/test/**/*.test.ts',
+            'examples/remote/test/**/*.test.ts',
           ],
           // 保留 node_modules 等默认排除项，避免 pnpm workspace 软链接重复收集测试。
           exclude: [...configDefaults.exclude, ...viteIntegrationTests],

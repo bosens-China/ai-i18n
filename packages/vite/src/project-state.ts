@@ -3,7 +3,6 @@ import {
   type TranslationMemoryFile,
   type TranslationOverridesFile,
   type TranslationValue,
-  resolveTranslationOverride,
 } from '@ai-i18n/core';
 import type { TranslationAutoImports } from '@ai-i18n/analyzer';
 import { Analyzer, analyzeModule, extractMessages } from './yuku-analyzer.js';
@@ -21,7 +20,12 @@ import type {
   ProjectUpdate,
   ProjectStateUpdateOptions,
 } from './project-state-types.js';
-import { changedEffectiveModules } from './translation-overrides.js';
+import {
+  changedEffectiveModules,
+  resolveEffectiveTranslation,
+  effectiveModuleSignatures,
+  remoteTranslationValue,
+} from './translation-overrides.js';
 import type { ProviderResult } from './provider-coordinator.js';
 import type { ProviderRequest } from './provider-coordinator.js';
 import {
@@ -57,6 +61,7 @@ export class ProjectState {
     version: 2,
     rules: [],
   };
+  private remoteOverlay?: TranslationMemoryFile;
   private readonly fingerprints = new Map<string, string>();
   private readonly locationMappers = new Map<
     string,
@@ -222,6 +227,7 @@ export class ProjectState {
     this.seen.clear();
     this.resolutions.clear();
     this.translations.clear();
+    this.remoteOverlay = undefined;
     this.overrides = { version: 2, rules: [] };
     this.fingerprints.clear();
     this.locationMappers.clear();
@@ -231,15 +237,21 @@ export class ProjectState {
   }
 
   hydrateCache(cache: TranslationMemoryFile): string[] {
-    const previous = this.effectiveModules();
+    const previous = effectiveModuleSignatures(this);
     hydrateTranslationCache(this.translations, cache);
-    return changedEffectiveModules(previous, this.effectiveModules());
+    return changedEffectiveModules(previous, effectiveModuleSignatures(this));
   }
 
   hydrateOverrides(overrides: TranslationOverridesFile): string[] {
-    const previous = this.effectiveModules();
+    const previous = effectiveModuleSignatures(this);
     this.overrides = structuredClone(overrides);
-    return changedEffectiveModules(previous, this.effectiveModules());
+    return changedEffectiveModules(previous, effectiveModuleSignatures(this));
+  }
+
+  hydrateRemoteOverlay(cache: TranslationMemoryFile): string[] {
+    const previous = effectiveModuleSignatures(this);
+    this.remoteOverlay = structuredClone(cache);
+    return changedEffectiveModules(previous, effectiveModuleSignatures(this));
   }
 
   missingTranslations(
@@ -256,6 +268,7 @@ export class ProjectState {
       overrides: this.overrides,
       refreshCached: options.refreshCached ?? false,
       cachedTranslation: (messageId, locale) =>
+        remoteTranslationValue(this.remoteOverlay, messageId, locale) ??
         this.cachedTranslation(messageId, locale),
     });
   }
@@ -274,7 +287,7 @@ export class ProjectState {
     results: readonly ProviderResult[],
     options: { replaceCached?: boolean } = {},
   ): string[] {
-    const previous = this.effectiveModules();
+    const previous = effectiveModuleSignatures(this);
     for (const result of results) {
       const translations = this.translations.get(result.locale) ?? new Map();
       const current = translations.get(result.messageId) ?? null;
@@ -290,16 +303,19 @@ export class ProjectState {
       translations.set(result.messageId, result.value);
       this.translations.set(result.locale, translations);
     }
-    return changedEffectiveModules(previous, this.effectiveModules());
+    return changedEffectiveModules(previous, effectiveModuleSignatures(this));
   }
 
   snapshot(): ProjectSnapshot {
-    return createProjectSnapshot(
-      this.modules,
-      this.translations,
-      this.seen,
-      this.options,
-    );
+    return {
+      ...createProjectSnapshot(
+        this.modules,
+        this.translations,
+        this.seen,
+        this.options,
+      ),
+      ...(this.remoteOverlay ? { remoteOverlay: this.remoteOverlay } : {}),
+    };
   }
 
   registration(moduleId: string, localeValue?: string): ModuleMessages | null {
@@ -331,29 +347,19 @@ export class ProjectState {
     sourceFile: string,
     occurrence?: SourceLocation,
   ): TranslationValue {
-    return (
-      resolveTranslationOverride(
-        this.overrides,
-        message,
-        locale,
-        sourceFile,
-        occurrence,
-      ) ?? this.cachedTranslation(message.id, locale)
+    return resolveEffectiveTranslation(
+      message,
+      locale,
+      this.overrides,
+      this.cachedTranslation(message.id, locale),
+      sourceFile,
+      occurrence,
+      this.remoteOverlay,
     );
   }
 
   private cachedTranslation(messageId: string, locale: string) {
     return this.translations.get(locale)?.get(messageId) ?? null;
-  }
-
-  private effectiveModules(): Map<string, string> {
-    // 与浏览器实际注册数据共用出现位置解析，避免位置校对变化漏发 HMR。
-    return new Map(
-      [...this.modules.keys()].map((moduleId) => [
-        moduleId,
-        JSON.stringify(this.registration(moduleId)),
-      ]),
-    );
   }
 
   /** 扫描收齐入口依赖后一次关联、提取；完成后恢复 Dev 的即时更新。 */

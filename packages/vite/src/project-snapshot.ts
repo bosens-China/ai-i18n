@@ -12,6 +12,8 @@ import type { NormalizedAiI18nOptions } from './project-state.js';
 
 export interface ProjectSnapshot {
   cache: TranslationMemoryFile;
+  /** 仅用于计算派生译文，不能合并到本地 Translation Memory。 */
+  remoteOverlay?: TranslationMemoryFile;
   extracted: Record<string, ExtractedFile>;
   seen: string[];
 }

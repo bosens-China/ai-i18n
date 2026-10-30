@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "locale": "en-US",
+  "entries": {
+    "c1d6838c09f6c07a40591feedb6d0d39fd137cfdb47b4f5897d3d6e0de540b22": {
+      "id": "提交#Git 操作",
+      "source": "提交",
+      "sourceLang": "zh-CN",
+      "comment": "Git 操作",
+      "value": "Commit"
+    },
+    "ca02f8c5f843415ce67abded6aa0916fcd7eb96c90024d71abde3bee9435aa45": {
+      "id": "服务端最新版本",
+      "source": "服务端最新版本",
+      "sourceLang": "zh-CN",
+      "value": "Server release"
+    }
+  }
+}

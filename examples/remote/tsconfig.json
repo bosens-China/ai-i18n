@@ -1,0 +1,9 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "noEmit": true,
+    "types": ["vite/client", "node", "@ai-i18n/vite/client"]
+  },
+  "include": ["src", "server", "scripts", "test", "remote.ts", "vite.config.ts"]
+}

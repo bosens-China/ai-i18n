@@ -38,6 +38,7 @@ interface AiI18nOptions {
   loading?: boolean | AiI18nLocaleLoadingOptions;
   translationMemory?: AiI18nTranslationMemoryOptions;
   provider?: AiI18nProviderOptions;
+  remote?: RemoteAdapter;
   failOnMissingTranslations?: boolean;
   directory?: string;
   cleanup?: AiI18nCleanupOptions;
@@ -59,6 +60,11 @@ interface AiI18nOptions {
 | `provider`    | [`AiI18nProviderOptions`](/api/vite/type-aliases/ai-i18n-provider-options)                     | 否   | 不调用模型          | 配置自动翻译函数、缓存与调度策略。   |
 
 ## 高级配置
+
+可选 `remote` 接受 [`RemoteAdapter`](/api/vite/interfaces/remote-adapter)。只提供 `publish` 时增强
+现有流程；提供 `load` 时使用远程译文并与 Provider 互斥。其 `mode` 默认为 replace，
+显式选择 overlay 可将服务器的部分译文以最高优先级叠加到本地结果。示例见
+[远程文案与译文](/guide/advanced/remote-translations)。
 
 以下选项通常无需修改；仅在文件布局、发布检查、历史清理或排障时调整。
 

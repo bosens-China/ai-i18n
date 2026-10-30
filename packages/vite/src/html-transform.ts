@@ -18,8 +18,10 @@ import {
 } from './html.js';
 import { localeHintTags } from './locale-loading.js';
 import type { NormalizedAiI18nOptions, ProjectState } from './project-state.js';
+import type { RemoteBuildValues } from './remote-build.js';
 
 interface HtmlTransformDependencies {
+  remoteBuild?: RemoteBuildValues;
   extractor?: HtmlExtractor;
   options: NormalizedAiI18nOptions;
   config(): ResolvedConfig | undefined;
@@ -99,19 +101,21 @@ export function createHtmlTransformHandler(
       const initialLocale = dependencies.options.loading
         ? dependencies.options.sourceLang
         : dependencies.options.defaultLang;
-      const initialMessages = Object.fromEntries(
-        result.messages.flatMap((message) =>
-          message.locations.map((location) => {
-            const occurrence = `${location.line}:${location.column}`;
-            return [
-              htmlBindingKey(message.id, occurrence),
-              messages[initialLocale]?.[
-                runtimeMessageId(moduleId, message.id, occurrence)
-              ] ?? null,
-            ];
-          }),
-        ),
-      );
+      const initialMessages =
+        dependencies.remoteBuild?.htmlValues(moduleId, result.messages) ??
+        Object.fromEntries(
+          result.messages.flatMap((message) =>
+            message.locations.map((location) => {
+              const occurrence = `${location.line}:${location.column}`;
+              return [
+                htmlBindingKey(message.id, occurrence),
+                messages[initialLocale]?.[
+                  runtimeMessageId(moduleId, message.id, occurrence)
+                ] ?? null,
+              ];
+            }),
+          ),
+        );
       result = transformHtml(
         source,
         context.filename,
@@ -127,7 +131,18 @@ export function createHtmlTransformHandler(
         {
           tag: 'script',
           attrs: { type: 'module' },
-          children: htmlBridgeCode(moduleId, messages, result.bindings),
+          children: htmlBridgeCode(
+            moduleId,
+            config?.command === 'build' && dependencies.remoteBuild
+              ? dependencies.remoteBuild.registration(
+                  moduleId,
+                  dependencies.options.loading
+                    ? dependencies.options.sourceLang
+                    : undefined,
+                )
+              : messages,
+            result.bindings,
+          ),
           injectTo: 'body',
         },
       ],

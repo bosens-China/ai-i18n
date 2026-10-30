@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "locale": "en-US",
+  "entries": {
+    "f3ec2f3f1a2b00ee9b17b8d33b963040418c0fba3e552657da40f48d937fa8b7": {
+      "id": "尚未获取",
+      "source": "尚未获取",
+      "sourceLang": "zh-CN",
+      "value": "Not loaded yet"
+    }
+  }
+}

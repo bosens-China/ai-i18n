@@ -1,0 +1,30 @@
+{
+  "version": 1,
+  "locale": "en-US",
+  "entries": {
+    "2162c9d6bbca54a3f9d3bd7dd20150d78163682e782d185002bd9520484bd22d": {
+      "id": "已接收文案",
+      "source": "已接收文案",
+      "sourceLang": "zh-CN",
+      "value": "Received messages"
+    },
+    "22b637138cb63aa8ff7ecf9f597b1231ff40c696cddf788bdce3d0238ce8b711": {
+      "id": "远程叠加：服务器优先，其余使用本地译文。",
+      "source": "远程叠加：服务器优先，其余使用本地译文。",
+      "sourceLang": "zh-CN",
+      "value": "Overlay: server copy wins; other copy stays local."
+    },
+    "28d62989d739bc10bfd46b39be1813d901cc33673a3e6f2f9b210dda8c2774f3": {
+      "id": "远程译文演示",
+      "source": "远程译文演示",
+      "sourceLang": "zh-CN",
+      "value": "Remote translations"
+    },
+    "29b9f9ad707540eac8a62b11b4ce74abc47f43f8d7e331886d35a2d078ff0ebd": {
+      "id": "打开懒加载示例",
+      "source": "打开懒加载示例",
+      "sourceLang": "zh-CN",
+      "value": "Open lazy example"
+    }
+  }
+}

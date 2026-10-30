@@ -1,0 +1,24 @@
+{
+  "version": 1,
+  "locale": "en-US",
+  "entries": {
+    "326c1de4ca599d0993e58b0d528130da3af3bae53ec7add54d6933ae96b6ca39": {
+      "id": "模拟无效译文",
+      "source": "模拟无效译文",
+      "sourceLang": "zh-CN",
+      "value": "Simulate invalid translation"
+    },
+    "39e61782cba9950fcc706e302d20810997688e95e255430a6ed57e1e5111dee1": {
+      "id": "开发服务重启后会重新提交和获取；静态页面需要重新构建。",
+      "source": "开发服务重启后会重新提交和获取；静态页面需要重新构建。",
+      "sourceLang": "zh-CN",
+      "value": "Restart Dev to submit and fetch again; rebuild a static page to update it."
+    },
+    "3f0a0de93c6a50ac208bb14cf6ba505a0b442b12430298e85217d883c253e7d1": {
+      "id": "保存成功",
+      "source": "保存成功",
+      "sourceLang": "zh-CN",
+      "value": "Local saved successfully"
+    }
+  }
+}

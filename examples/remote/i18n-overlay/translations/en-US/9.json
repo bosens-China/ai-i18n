@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "locale": "en-US",
+  "entries": {
+    "90bcb48d9988cdf776857138ad556104794a8f0e6c050441bf25fa5c0c6e6748": {
+      "id": "启用部分远程覆盖",
+      "source": "启用部分远程覆盖",
+      "sourceLang": "zh-CN",
+      "value": "Apply partial remote overrides"
+    },
+    "94f156e6fba0b9395d0772bd17a0733f2101c2bdb73c17452ea69e96e2c71f13": {
+      "id": "恢复完整译文",
+      "source": "恢复完整译文",
+      "sourceLang": "zh-CN",
+      "value": "Restore complete translations"
+    }
+  }
+}

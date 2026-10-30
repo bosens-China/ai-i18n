@@ -6,7 +6,6 @@ import {
   type TranslationMemoryFile,
   type TranslationOverridesFile,
 } from '@ai-i18n/core';
-import { diagnosticMessage } from '@ai-i18n/analyzer';
 import {
   readTranslationOverrides,
   translationOverrideFiles,
@@ -24,6 +23,7 @@ import {
   type GeneratedJsonFile,
   warnExtractedMismatches,
   writeProtocolJson,
+  warnPersistenceTraceFailure,
 } from './file-store-io.js';
 import { hydrateExtracted } from './file-store-merge.js';
 import {
@@ -73,7 +73,9 @@ export class FileStore {
   }
 
   get candidateCacheEnabled() {
-    return Boolean(this.options.translationMemory?.cache);
+    return (
+      !this.options.remote && Boolean(this.options.translationMemory?.cache)
+    );
   }
 
   listCandidates(...args: Parameters<FileStoreMemory['listCandidates']>) {
@@ -115,11 +117,11 @@ export class FileStore {
           const pending = this.options.onSynced?.(batchIds);
           if (pending) {
             void Promise.resolve(pending).catch((cause) => {
-              this.warnPersistenceTraceFailure(cause);
+              warnPersistenceTraceFailure(cause, this.options.onWarning);
             });
           }
         } catch (cause) {
-          this.warnPersistenceTraceFailure(cause);
+          warnPersistenceTraceFailure(cause, this.options.onWarning);
         }
         return cache;
       })
@@ -214,16 +216,6 @@ export class FileStore {
     this.pendingProviderBatches.add(batchId);
   }
 
-  private warnPersistenceTraceFailure(cause: unknown): void {
-    const reason = cause instanceof Error ? cause.message : String(cause);
-    this.options.onWarning?.(
-      diagnosticMessage(
-        `翻译批次持久化追踪失败，文件已成功写入。原因：${reason}`,
-        `Translation batch persistence tracing failed after files were written. Cause: ${reason}`,
-      ),
-    );
-  }
-
   private updateOverrideManagedFiles(files: readonly string[]): void {
     this.overrideManagedFiles.clear();
     for (const file of files) this.overrideManagedFiles.add(path.resolve(file));
@@ -237,14 +229,16 @@ export class FileStore {
     snapshot: ProjectSnapshot,
     options: FileStoreLoadOptions,
   ): Promise<TranslationMemoryFile> {
+    const fileOptions = {
+      directory: this.directory,
+      sourceLang: this.options.sourceLang,
+      locales: this.options.locales,
+      remoteOverlay: snapshot.remoteOverlay,
+    };
     if (options.changedSources?.length) {
       const incremental = await this.measure('extracted-scan', options, () =>
         loadIncrementalSyncState(
-          {
-            directory: this.directory,
-            sourceLang: this.options.sourceLang,
-            locales: this.options.locales,
-          },
+          fileOptions,
           snapshot,
           options.changedSources!,
         ),
@@ -256,23 +250,13 @@ export class FileStore {
           () => this.memory.update(snapshot),
         );
         await this.measure('extracted-write', options, () =>
-          writeIncrementalExtracted(
-            {
-              directory: this.directory,
-              sourceLang: this.options.sourceLang,
-              locales: this.options.locales,
-            },
-            incremental,
-            (file, value) => this.writeJson(file, value),
+          writeIncrementalExtracted(fileOptions, incremental, (file, value) =>
+            this.writeJson(file, value),
           ),
         );
         await this.measure('locale-write', options, async () =>
           writeIncrementalLocales(
-            {
-              directory: this.directory,
-              sourceLang: this.options.sourceLang,
-              locales: this.options.locales,
-            },
+            fileOptions,
             incremental,
             cache.messages,
             await transactTranslationOverrides(
@@ -352,11 +336,7 @@ export class FileStore {
     });
     await this.measure('locale-write', options, async () =>
       writeFullLocales(
-        {
-          directory: this.directory,
-          sourceLang: this.options.sourceLang,
-          locales: this.options.locales,
-        },
+        fileOptions,
         activeFiles,
         cache.messages,
         await transactTranslationOverrides(

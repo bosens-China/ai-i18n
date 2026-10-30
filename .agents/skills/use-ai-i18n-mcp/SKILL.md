@@ -7,6 +7,7 @@ description: Scan a Vite app from its entries without a full Build, then use Ski
 
 Use the locate → scan when needed → list → update → verify workflow. Do not scan for i18n directories or edit generated
 files manually while the MCP tools are available.
+Confirm whether the selected app consumes local or remote automatic translations before choosing a write workflow.
 
 ## Read the right source
 
@@ -42,6 +43,10 @@ Dev may inline ordinary static named Runtime imports, while Build keeps its stat
 neither behavior makes browser-driven Dev extraction cover unvisited pages.
 When package installation, Vite configuration, or Runtime source integration is incomplete or
 requested, use the `integrate-ai-i18n` Skill before starting this translation workflow.
+
+If the target configures remote submission or acquisition, first follow
+[Remote-source write boundaries](references/remote.md). Remote acquisition changes which automatic
+source the app uses; MCP's local automatic lists are not remote coverage or a server write interface.
 
 The selected app's extracted set includes every reachable local workspace source processed by that
 Vite build. Treat source-only packages as `source_files` within the consuming app, not as separate MCP

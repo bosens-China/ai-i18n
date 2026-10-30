@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "locale": "en-US",
+  "entries": {
+    "a6f51878a068c38f576bde4dd518b062064ad0baa04c5057015c3a5c679821cb": {
+      "id": "发布下一版译文",
+      "source": "发布下一版译文",
+      "sourceLang": "zh-CN",
+      "value": "Publish next translation release"
+    }
+  }
+}

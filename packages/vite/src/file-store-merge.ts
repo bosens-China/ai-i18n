@@ -4,6 +4,7 @@ import {
   type LocaleFileV1,
   type TranslationOverridesFile,
   type TranslationValue,
+  type TranslationMemoryFile,
   runtimeMessageId,
 } from '@ai-i18n/core';
 import { effectiveTranslation } from './translation-overrides.js';
@@ -34,6 +35,7 @@ export function hydrateLocale(
   files: readonly ExtractedFile[],
   cacheMessages: Record<string, CacheMessage>,
   overrides: TranslationOverridesFile,
+  remoteOverlay?: TranslationMemoryFile,
 ): LocaleFileV1 {
   return {
     ...locale,
@@ -47,6 +49,7 @@ export function hydrateLocale(
             cacheMessages,
             overrides,
             file.source,
+            remoteOverlay,
           ),
         ]),
       ),

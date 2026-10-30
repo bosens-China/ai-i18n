@@ -5,6 +5,10 @@ description: 了解 ai-i18n 生成的文件、提交规则，以及何时运行�
 
 ai-i18n 默认在 Vite root 下创建 `i18n/` 目录，用来保存译文和本地构建产物：
 
+以下自动译文规则描述本地模式。启用 `remote.load` 的 replace 模式时，自动译文来自远程快照，
+不读取、修改或清理 `translations/`；`overrides/` 继续生效，`extracted/` 与 `locales/`
+仍是派生产物。overlay 模式保留本地流程，以远程有效译文作为最高优先级覆盖。详见[远程文案与译文](/guide/advanced/remote-translations)。
+
 ```text
 i18n/
 ├── translations/          # 项目自动译文分桶
@@ -18,7 +22,7 @@ i18n/
 你通常只需要关注两类文件：
 
 - `translations/`：保存 Provider、Agent 或个人缓存补齐的项目自动译文。
-- `overrides/`：保存人工确认的最终译文。它优先于自动翻译结果。
+- `overrides/`：保存人工确认的最终译文。它在本地层优先于自动翻译结果。
 
 `extracted/` 和 `locales/` 都是构建产物。插件会根据源码和上述译文重新生成它们，不要直接编辑。
 

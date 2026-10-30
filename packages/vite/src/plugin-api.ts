@@ -4,10 +4,12 @@ import type { ScanResult } from './scan-catalog.js';
 import type { DevStateTaskRunner } from './dev-state-queue.js';
 import type { FileStore } from './file-store.js';
 import type { NormalizedAiI18nOptions, ProjectState } from './project-state.js';
+import type { AiI18nOptions } from './options.js';
 
 export const AI_I18N_PLUGIN_API = Symbol.for('ai-i18n.vite.plugin-api');
 
 export interface AiI18nPluginApi {
+  translationSource?: 'remote' | 'overlay';
   /** Skill 扫描在配置解析前启用；不属于应用配置。 */
   scanMode: boolean;
   cacheMode?: boolean;
@@ -37,6 +39,41 @@ export interface AiI18nPluginApi {
 export type AiI18nPlugin = Plugin & {
   [AI_I18N_PLUGIN_API]: AiI18nPluginApi;
 };
+
+export function createPluginApi(
+  options: AiI18nOptions,
+  normalized: NormalizedAiI18nOptions,
+  lifecycle: Omit<
+    AiI18nPluginApi,
+    'scanMode' | 'cacheOptions' | 'scanOptions' | 'scanIgnored' | 'options'
+  >,
+): AiI18nPluginApi {
+  return {
+    scanMode: false,
+    translationSource: options.remote?.load
+      ? options.remote.mode === 'overlay'
+        ? 'overlay'
+        : 'remote'
+      : undefined,
+    cacheOptions: {
+      adapter:
+        options.remote?.load && options.remote.mode !== 'overlay'
+          ? undefined
+          : options.translationMemory?.cache,
+      directory: options.directory,
+    },
+    scanOptions: {
+      ...normalized,
+      framework: options.framework,
+      autoImport: options.autoImport ?? false,
+      html: options.html,
+      directory: options.directory,
+    },
+    scanIgnored: [],
+    options: normalized,
+    ...lifecycle,
+  };
+}
 
 export function aiI18nPluginApi(plugin: Plugin): AiI18nPluginApi | undefined {
   return (plugin as Partial<AiI18nPlugin>)[AI_I18N_PLUGIN_API];

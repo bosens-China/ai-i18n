@@ -13,6 +13,19 @@ export interface GeneratedJsonFile<T> {
   value: T;
 }
 
+export function warnPersistenceTraceFailure(
+  cause: unknown,
+  onWarning?: (message: string) => void,
+): void {
+  const reason = cause instanceof Error ? cause.message : String(cause);
+  onWarning?.(
+    diagnosticMessage(
+      `翻译批次持久化追踪失败，文件已成功写入。原因：${reason}`,
+      `Translation batch persistence tracing failed after files were written. Cause: ${reason}`,
+    ),
+  );
+}
+
 export async function readGeneratedJsonFiles<T>(
   directory: string,
   kind: string,

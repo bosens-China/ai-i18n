@@ -44,6 +44,22 @@ aiI18n({
 自动导入、持久化、分包和 Provider 按需配置。HTML 可用 `html: false` 关闭或通过对象定制属性。
 常用与高级选项见[配置参考](https://bosens-china.github.io/ai-i18n/api/vite/interfaces/ai-i18n-options)。
 
+## 远程文案与译文
+
+可选 `remote` 允许自定义 `publish` 和 `load`，可内联写在 Vite 配置中，或通过
+`@ai-i18n/vite/remote` 的 `defineRemote()` 导出独立适配器，无需安装新包。
+只提交可增强本地 Provider 流程；远程获取与 Provider 互斥。默认 replace 模式不读取或改写本地自动译文及 SQLite，
+人工 overrides 继续优先。Build 获取一次完整快照后生成产物，Dev 在文案变化后后台更新。
+提交不等待翻译完成；缺译继续由 `failOnMissingTranslations` 控制，获取失败则使 Build 失败。
+每个回调分别有 30 秒超时，并提供可传给 fetch 的 `signal`。
+
+适配器可返回公开 JSON 元数据；业务通过 `virtual:ai-i18n` 的 `getTranslationMeta()` 读取。
+类型注册使用 `@ai-i18n/vite/runtime` 的 `Register.translationMeta`，共享给返回端与读取端。
+显式配置 `mode: 'overlay'` 可仅从服务器获取高优先级部分：远程有效值优先于本地人工与自动译文，
+其余使用本地数据，远程值不写入本地 Translation Memory。
+
+详见[远程文案与译文](../../apps/docs/docs/guide/advanced/remote-translations.md)。
+
 ## 翻译校对
 
 翻译校对通过独立 Vite 插件显式启用：

@@ -1,0 +1,24 @@
+{
+  "name": "@ai-i18n/example-remote",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx scripts/run.ts dev",
+    "dev:overlay": "tsx scripts/run.ts dev overlay",
+    "build": "tsx scripts/run.ts build",
+    "build:overlay": "tsx scripts/run.ts build overlay",
+    "preview": "vite preview --host 127.0.0.1 --port 51884 --strictPort",
+    "check": "tsc --noEmit && eslint .",
+    "test": "pnpm --dir ../.. exec vitest run examples/remote/test --config vitest.config.ts"
+  },
+  "devDependencies": {
+    "@ai-i18n/vite": "workspace:*",
+    "@hono/node-server": "^2.1.5",
+    "hono": "^4.13.14",
+    "tsx": "^4.23.13",
+    "typescript": "~5.9.3",
+    "vite": "^8.2.1",
+    "vitest": "^4.0.18"
+  }
+}

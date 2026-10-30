@@ -10,8 +10,12 @@ import { renderLocaleChunk } from './locale-module-loader.js';
 import type { createPerformanceDiagnostics } from './performance-diagnostics.js';
 import type { NormalizedAiI18nOptions, ProjectState } from './project-state.js';
 import { formatTerminalDiagnostic } from './terminal-format.js';
+import type { createPluginRemote } from './plugin-remote.js';
+import type { RemoteBuildValues } from './remote-build.js';
 
 interface BuildDependencies {
+  remote?: ReturnType<typeof createPluginRemote>;
+  remoteBuild?: RemoteBuildValues;
   config(): ResolvedConfig | undefined;
   ready(): Promise<void>;
   state(): ProjectState;
@@ -77,21 +81,38 @@ export function createPluginBuildHooks(options: BuildDependencies) {
         buildWatch.buildStart(this.meta.watchMode),
       );
     },
-    buildEnd(error) {
+    async buildEnd(error) {
       if (error) generated = false;
+      if (
+        !error &&
+        options.config()?.command === 'build' &&
+        this.environment.name === 'client' &&
+        options.remote
+      ) {
+        await options.ready();
+        options.state().retain(this.getModuleIds());
+        await options.remote.build();
+      }
     },
     async watchChange(id, change) {
       if (options.config()?.command === 'build' && this.meta.watchMode)
         await buildWatch.watchChange(id, change.event);
     },
     async renderChunk(code, chunk) {
-      return options.timing.measure('locale-render', '<project>', () =>
-        renderLocaleChunk(this, code, chunk.facadeModuleId, {
-          project: options.state(),
-          store: options.store(),
-          flush: options.flushProvider,
-          reconcile,
-        }),
+      const rendered = await options.timing.measure(
+        'locale-render',
+        '<project>',
+        () =>
+          renderLocaleChunk(this, code, chunk.facadeModuleId, {
+            project: options.state(),
+            store: options.store(),
+            flush: options.flushProvider,
+            reconcile,
+          }),
+      );
+      return (
+        options.remoteBuild?.render(rendered ?? code, chunk.fileName) ??
+        rendered
       );
     },
     generateBundle: {
@@ -121,6 +142,17 @@ export function createPluginBuildHooks(options: BuildDependencies) {
           }
         }
         injectBuiltLocaleHints(bundle, config, options.normalized);
+        if (options.remoteBuild) {
+          for (const item of Object.values(bundle)) {
+            if (
+              item.type === 'asset' &&
+              item.fileName.endsWith('.html') &&
+              typeof item.source === 'string'
+            ) {
+              item.source = options.remoteBuild.renderHtml(item.source);
+            }
+          }
+        }
         generated = this.environment.name === 'client';
       },
     },

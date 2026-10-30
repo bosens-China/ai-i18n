@@ -1,6 +1,11 @@
 [
   {
     "type": "file",
+    "name": "get-translation-meta",
+    "label": "getTranslationMeta()"
+  },
+  {
+    "type": "file",
     "name": "t",
     "label": "t()"
   },

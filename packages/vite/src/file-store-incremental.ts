@@ -9,6 +9,7 @@ import {
   type LangOption,
   type LocaleFileV1,
   type TranslationOverridesFile,
+  type TranslationMemoryFile,
 } from '@ai-i18n/core';
 import { extractedPath, localePath } from './file-store-paths.js';
 import { hydrateExtracted, hydrateLocale } from './file-store-merge.js';
@@ -30,6 +31,7 @@ interface IncrementalFileOptions {
   directory: string;
   sourceLang: string;
   locales: readonly LangOption[];
+  remoteOverlay?: TranslationMemoryFile;
 }
 
 export async function loadIncrementalSyncState(
@@ -99,6 +101,7 @@ export async function writeIncrementalLocales(
       nextFiles,
       cacheMessages,
       overrides,
+      options.remoteOverlay,
     );
     Object.assign(current.messages, updated.messages);
     await writeJson(localePath(options.directory, locale.value), current);
@@ -124,6 +127,7 @@ export async function writeFullLocales(
         files,
         cacheMessages,
         overrides,
+        options.remoteOverlay,
       ),
     );
   }

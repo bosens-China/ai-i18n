@@ -9,6 +9,7 @@
 
 declare module 'virtual:ai-i18n' {
   import type { I18nRuntime } from '@ai-i18n/vite';
+  export function getTranslationMeta(): import('@ai-i18n/vite/runtime').TranslationMeta | undefined;
 
   /**
    * 翻译可静态提取的文案；目标译文缺失时回退到源文案。
