@@ -147,7 +147,8 @@ describe('review server', { timeout: 10_000 }, () => {
     expect(pageIcon.status, pageIconSvg).toBe(200);
     expect(pageIcon.headers.get('content-type')).toContain('image/svg+xml');
     expect(pageIconSvg).toContain('<svg');
-    expect(pageIconSvg).toContain('review-icon-ink');
+    expect(pageIconSvg).toContain('fill-rule="evenodd"');
+    expect(pageIconSvg).not.toContain('<text');
 
     const pageModule = await fetch(new URL(REVIEW_PAGE_MODULE_PATH, origin));
     const pageModuleCode = await pageModule.text();

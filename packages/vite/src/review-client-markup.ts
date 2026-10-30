@@ -1,4 +1,5 @@
 import type { ReviewOverlayCopy } from './review-client-copy.js';
+import { REVIEW_BRAND_SVG } from './review-brand.js';
 
 export const REVIEW_CLIENT_FONT_STACK =
   'system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei UI","Microsoft YaHei","Noto Sans CJK SC","Source Han Sans SC",sans-serif';
@@ -38,6 +39,8 @@ export function overlayMarkup(copy: ReviewOverlayCopy): string {
 }
 
 function brandIconMarkup(id: string): string {
-  // 图标只使用路径，避免操作系统字体差异破坏小尺寸下的清晰度。
-  return `<svg id="${id}" class="brand-icon" viewBox="0 0 40 40" role="presentation" aria-hidden="true"><defs><linearGradient id="${id}-ink" x1="8" y1="8" x2="32" y2="31" gradientUnits="userSpaceOnUse"><stop stop-color="#38bdf8"/><stop offset="1" stop-color="#6366f1"/></linearGradient></defs><path d="M8.5 7.5h19a5.5 5.5 0 0 1 5.5 5.5v9.5a5.5 5.5 0 0 1-5.5 5.5H18l-7 5v-5H8.5A4.5 4.5 0 0 1 4 23.5V12a4.5 4.5 0 0 1 4.5-4.5Z" fill="url(#${id}-ink)"/><path d="M11.5 14.5h13M11.5 19h8" fill="none" stroke="#fff" stroke-width="2.25" stroke-linecap="round" opacity=".92"/><circle cx="29" cy="27.5" r="6.25" fill="#0f172a" stroke="#fff" stroke-width="1.5"/><path d="m26.2 27.5 1.8 1.8 3.8-4.2" fill="none" stroke="#5eead4" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+  return REVIEW_BRAND_SVG.replace(
+    '<svg ',
+    `<svg id="${id}" class="brand-icon" role="presentation" aria-hidden="true" `,
+  );
 }

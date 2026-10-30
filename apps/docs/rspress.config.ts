@@ -11,10 +11,10 @@ export default defineConfig({
   root: path.join(rootDir, 'docs'),
   title: 'ai-i18n',
   description: 'Vite AI 国际化插件',
-  icon: '/favicon.png',
+  icon: '/favicon.svg',
   logo: {
-    light: '/favicon.png',
-    dark: '/favicon.png',
+    light: '/logo.svg',
+    dark: '/logo.svg',
   },
   logoText: 'ai-i18n',
   // Rspress 2 内置 zh UI 文案；自定义文案请用 i18nSource，勿再写 outlineTitle 等已移除字段

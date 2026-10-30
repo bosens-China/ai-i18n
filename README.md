@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="./apps/docs/docs/public/logo.png" alt="ai-i18n logo" height="160" />
+  <img src="./apps/docs/docs/public/logo.svg" alt="ai-i18n logo" height="160" />
 </p>
 
 <h1 align="center">ai-i18n</h1>

@@ -8,7 +8,7 @@ hero:
   text: Vite AI 国际化
   tagline: 直接编写源文案，自动提取、翻译并生成语言包。
   image:
-    src: /logo.png
+    src: /logo.svg
     alt: ai-i18n logo
   actions:
     - theme: brand
