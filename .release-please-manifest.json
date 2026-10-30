@@ -5,5 +5,5 @@
   "packages/mcp": "1.0.0",
   "packages/openai": "1.0.0",
   "packages/sqlite": "1.0.0",
-  "packages/vite": "1.1.0"
+  "packages/vite": "1.1.1"
 }

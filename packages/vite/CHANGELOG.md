@@ -1,5 +1,12 @@
 # @ai-i18n/vite
 
+## [1.1.1](https://github.com/bosens-China/ai-i18n/compare/vite-v1.1.0...vite-v1.1.1) (2026-10-30)
+
+
+### Bug Fixes
+
+* **vite:** 统一项目与翻译校对图标 ([b96eaa4](https://github.com/bosens-China/ai-i18n/commit/b96eaa4fe43231baed94a848c5f9f1edfeac8769))
+
 ## [1.1.0](https://github.com/bosens-China/ai-i18n/compare/vite-v1.0.0...vite-v1.1.0) (2026-10-30)
 
 
