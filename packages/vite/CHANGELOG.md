@@ -1,5 +1,12 @@
 # @ai-i18n/vite
 
+## [1.1.0](https://github.com/bosens-China/ai-i18n/compare/vite-v1.0.0...vite-v1.1.0) (2026-10-30)
+
+
+### Features
+
+* **vite:** 支持远程译文快照与叠加模式 ([313f9f6](https://github.com/bosens-China/ai-i18n/commit/313f9f6e7a0a285490a3798ecf9fe4fcd2cc06d9))
+
 ## [1.0.0](https://github.com/bosens-China/ai-i18n/compare/vite-v1.0.0-alpha.39...vite-v1.0.0) (2026-10-10)
 
 
