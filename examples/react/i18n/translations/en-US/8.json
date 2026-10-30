@@ -1,18 +1,18 @@
 {
-  "entries": {
-    "8d2cc842284d8477ed68ac378de56882b3e36aee465bd6064f96705b3259607e": {
-      "id": "ai-i18n React 示例",
-      "source": "ai-i18n React 示例",
-      "sourceLang": "zh-CN",
-      "value": "ai-i18n React demo"
-    },
-    "8e960a34659c8ac118dbdecc42896ca3ba4fdb100510a1933c32b5e8e93145eb": {
-      "id": "React 示例",
-      "source": "React 示例",
-      "sourceLang": "zh-CN",
-      "value": "React demo"
-    }
-  },
+  "version": 1,
   "locale": "en-US",
-  "version": 1
+  "entries": {
+    "89e5fa9a7bf6a84dd8f446e44938f2cd3c80540c572f616902b7b57cdd9aa9f7": {
+      "id": "从一个小念头开始",
+      "source": "从一个小念头开始",
+      "sourceLang": "zh-CN",
+      "value": "Start with a small idea"
+    },
+    "8d17b7c6f45df35faee87a368688d67cfc7a7b66228d926f5f08f339a3759ca4": {
+      "id": "开始阅读",
+      "source": "开始阅读",
+      "sourceLang": "zh-CN",
+      "value": "Start reading"
+    }
+  }
 }

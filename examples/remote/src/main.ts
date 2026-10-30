@@ -6,6 +6,8 @@ import {
   subscribe,
   t,
 } from 'virtual:ai-i18n';
+import 'virtual:uno.css';
+import '../../shared/base.css';
 import '../style.css';
 
 interface ServerStatus {
@@ -84,11 +86,11 @@ async function action(path: string, body: object) {
 function render() {
   const meta = getTranslationMeta();
   app.innerHTML = `
-    <main class="demo-app remote-app">
+    <main class="demo-shell remote-app">
       <header class="demo-header">
-        <div class="header-titles"><p class="demo-eyebrow">Hono → ai-i18n → dist</p><h1>${escape(t('远程译文演示'))}</h1></div>
+        <a class="demo-brand" href="#top"><span class="demo-brand-mark">F</span><strong>Fieldnotes</strong></a>
         <label class="language-control">${escape(t('语言'))}
-          <select id="language">${getLangs()
+          <select id="language" class="demo-select">${getLangs()
             .map(
               ({ value, label }) =>
                 `<option value="${escape(value)}">${escape(label)}</option>`,
@@ -96,6 +98,7 @@ function render() {
             .join('')}</select>
         </label>
       </header>
+      <section id="top" class="py-12 sm:py-16"><p class="demo-kicker">Hono · Remote translations</p><h1 class="demo-heading">${escape(t('远程译文演示'))}</h1><p class="demo-intro">${escape(t('服务端更新不会自动替换当前快照。'))}</p></section>
       <section class="demo-panel" aria-label="${escape(t('当前页面快照'))}">
         <article class="demo-card snapshot-card">
           <span class="demo-label">${escape(t('当前页面快照'))}</span>
@@ -104,7 +107,7 @@ function render() {
           <p id="translated-copy" class="main-copy">${escape(t('保存成功'))}</p>
           <span class="demo-label">${escape(t('同一句原文，不同语境'))}</span>
           <div class="context-pair"><span>${escape(t('提交', { comment: '表单按钮' }))}</span><span>${escape(t('提交', { comment: 'Git 操作' }))}</span></div>
-          <button id="lazy" ${busy ? 'disabled' : ''}>${escape(t('打开懒加载示例'))}</button>
+          <button class="demo-button" id="lazy" ${busy ? 'disabled' : ''}>${escape(t('打开懒加载示例'))}</button>
           <p id="lazy-output" aria-live="polite">${lazyText ? escape(lazyText()) : ''}</p>
         </article>
         <article class="demo-card server-card">
@@ -117,7 +120,7 @@ function render() {
               <div><dt>${escape(t('提交次数'))}</dt><dd>${status?.publishes ?? 0}</dd></div>
               <div><dt>${escape(t('获取次数'))}</dt><dd>${status?.loads ?? 0}</dd></div></dl>
             <p>${escape(t('测试场景'))}: <code id="scenario">${escape(status?.scenario ?? '—')}</code></p>
-            <button id="status">${escape(t('读取服务端状态'))}</button>
+            <button class="demo-button" id="status">${escape(t('读取服务端状态'))}</button>
           `
               : `<p>${escape(t('静态构建快照，不连接后端。'))}</p>`
           }
@@ -130,12 +133,12 @@ function render() {
         ${
           import.meta.env.DEV
             ? `<div class="actions">
-          ${meta?.mode === 'overlay' ? `<button data-scenario="partial">${escape(t('启用部分远程覆盖'))}</button><button data-scenario="withdrawn">${escape(t('撤销全部远程覆盖'))}</button>` : ''}
-          <button data-scenario="ready">${escape(t('发布下一版译文'))}</button>
-          <button data-scenario="pending">${escape(t('模拟缺译'))}</button>
-          <button data-scenario="invalid">${escape(t('模拟无效译文'))}</button>
-          <button data-scenario="ready">${escape(t('恢复完整译文'))}</button>
-          <button id="restart" class="primary">${escape(t('重启 Dev 并获取'))}</button>
+          ${meta?.mode === 'overlay' ? `<button class="demo-button" data-scenario="partial">${escape(t('启用部分远程覆盖'))}</button><button class="demo-button" data-scenario="withdrawn">${escape(t('撤销全部远程覆盖'))}</button>` : ''}
+          <button class="demo-button" data-scenario="ready">${escape(t('发布下一版译文'))}</button>
+          <button class="demo-button" data-scenario="pending">${escape(t('模拟缺译'))}</button>
+          <button class="demo-button" data-scenario="invalid">${escape(t('模拟无效译文'))}</button>
+          <button class="demo-button" data-scenario="ready">${escape(t('恢复完整译文'))}</button>
+          <button class="demo-button" id="restart">${escape(t('重启 Dev 并获取'))}</button>
         </div>`
             : ''
         }

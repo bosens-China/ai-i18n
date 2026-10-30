@@ -5,8 +5,6 @@ description: 自定义文案提交、全局语言包转换和浏览器译文元�
 
 `remote` 是可选能力，直接使用现有 `@ai-i18n/vite` 包。省略它时，本地翻译流程不变。
 
-可运行的后端、类型注册与静态快照验证见 [Hono 远程译文示例](/demo/remote)。
-
 | 配置                     | 文案提交        | 自动译文来源                 |
 | ------------------------ | --------------- | ---------------------------- |
 | 不配置 remote            | 原流程          | 本地 translations / Provider |
@@ -50,9 +48,6 @@ const remote = defineRemote({
 - 获取失败或无效快照仍使 Build 失败；Dev 保留此前成功应用的远程层。本地数据不会将失败
   请求伪装成成功的空快照。
 - `publicMeta` 标识实际应用的远程层版本，不表示所有本地译文也属于该版本。
-
-可运行 `pnpm --filter @ai-i18n/example-remote dev:overlay` 体验
-[Hono 部分覆盖与撤销示例](/demo/remote)。
 
 ## 将接口接入插件
 

@@ -4,6 +4,7 @@ import path from 'node:path';
 import { once } from 'node:events';
 import { serve } from '@hono/node-server';
 import { build } from 'vite';
+import UnoCSS from 'unocss/vite';
 import { expect, it } from 'vitest';
 import { aiI18n } from '@ai-i18n/vite';
 import { createDemoServer, type Scenario } from '../server/app.js';
@@ -47,6 +48,7 @@ it.each([
         // Vitest 的 NODE_ENV=test 不等同于普通 Vite 生产进程。
         define: { 'import.meta.env.DEV': false },
         plugins: [
+          UnoCSS({ configFile: path.join(root, 'uno.config.ts') }),
           aiI18n({
             sourceLang: 'zh-CN',
             defaultLang: 'en-US',
@@ -71,6 +73,14 @@ it.each([
       const output = await result;
       if (Array.isArray(output) || !('output' in output))
         throw new Error('Expected one build output');
+      expect(
+        output.output.some(
+          (item) =>
+            item.type === 'asset' &&
+            item.fileName.endsWith('.css') &&
+            String(item.source).includes('.demo-shell'),
+        ),
+      ).toBe(true);
       const code = output.output
         .filter((item) => item.type === 'chunk')
         .map((item) => item.code)

@@ -1,19 +1,6 @@
----
-title: Hono 远程译文示例
-description: 体验 key 转换、全局语言 JSON、类型安全 meta 与构建快照
----
+# Hono 远程译文示例
 
-import DemoFrame from '../../components/DemoFrame';
-
-Hono 接收去重的 key 列表，并提供一个全局 `en.json`。适配器把业务格式转换成插件快照，
-页面通过 `getTranslationMeta()` 显示当前实际使用的版本。同一句“提交”通过 comment
-分别显示 Submit 和 Commit；懒加载模块也使用同一条翻译链路。
-
-<DemoFrame
-  framework="remote"
-  title="Hono 远程译文示例"
-  description="本地 Dev 可操作 Hono；线上页面展示无需后端的静态快照。"
-/>
+使用本地 Hono 服务演示 key 提交、全局语言 JSON、公开版本 meta、缺译门禁与懒加载。固定译文模拟服务端成果，无需外部模型凭据。
 
 ## 本地运行
 
@@ -42,8 +29,7 @@ pnpm --filter @ai-i18n/example-remote build
 pnpm --filter @ai-i18n/example-remote preview
 ```
 
-构建脚本临时启动 Hono、提交文案并获取快照，然后关闭后端。dist 可独立部署，线上示例
-不提供后端写接口；语言切换和懒加载仍可使用。
+构建脚本临时启动 Hono、提交文案并获取快照，然后关闭后端。preview 只服务静态 dist，语言切换和懒加载仍可使用。
 
 在 macOS/Linux 中可额外验证缺译和无效结果会阻止出包：
 
@@ -52,8 +38,7 @@ AI_I18N_DEMO_SCENARIO=pending pnpm --filter @ai-i18n/example-remote build
 AI_I18N_DEMO_SCENARIO=invalid pnpm --filter @ai-i18n/example-remote build
 ```
 
-完整接入说明见[远程文案与译文](/guide/advanced/remote-translations)，源码位于
-[examples/remote](https://github.com/bosens-China/ai-i18n/tree/main/examples/remote)。
+完整接入说明见[远程文案与译文](../../apps/docs/docs/guide/advanced/remote-translations.md)。
 
 ## 部分远程覆盖与本地补齐
 

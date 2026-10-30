@@ -1,12 +1,18 @@
 {
+  "version": 1,
+  "locale": "ja-JP",
   "entries": {
     "839f99cc621b3a7bcc55dd9d7eab97c7a1ce8f06610c2062bd691ef25c4890f8": {
       "id": "递归解析项目引用",
       "source": "递归解析项目引用",
       "sourceLang": "zh-CN",
       "value": "プロジェクト参照を再帰的に解決"
+    },
+    "87ea14c27547b546f308a18b8069578e06564d662489e35d7e0e1f4ab31e752f": {
+      "id": "行间",
+      "source": "行间",
+      "sourceLang": "zh-CN",
+      "value": "行間"
     }
-  },
-  "locale": "ja-JP",
-  "version": 1
+  }
 }

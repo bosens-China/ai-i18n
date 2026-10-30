@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "locale": "en-US",
+  "entries": {
+    "5b8aeb044869d0d3ac0e45c7f8019b6ce04ba933c863260026439e5dd828dae0": {
+      "id": "主导航",
+      "source": "主导航",
+      "sourceLang": "zh-CN",
+      "value": "Main navigation"
+    }
+  }
+}

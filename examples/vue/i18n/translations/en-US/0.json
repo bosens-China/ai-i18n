@@ -1,12 +1,18 @@
 {
-  "entries": {
-    "0e2de0f201d7a4a4b512a82ca89e3d2cb8b9a975a8346f2db90a2e5f6963c91d": {
-      "id": "切换语言",
-      "source": "切换语言",
-      "sourceLang": "zh-CN",
-      "value": "Switch language"
-    }
-  },
+  "version": 1,
   "locale": "en-US",
-  "version": 1
+  "entries": {
+    "022cb229b855f6bb1f28e6290f5605cc536dbfad265d194e6e0c9d208206fa1c": {
+      "id": "一本关于生活的笔记",
+      "source": "一本关于生活的笔记",
+      "sourceLang": "zh-CN",
+      "value": "Notes on everyday life"
+    },
+    "06c26f7dce206298ba6f4dfd88474ca0595a8ce8e258c9af7b0fadaa05f0007d": {
+      "id": "把想法，写成日常。",
+      "source": "把想法，写成日常。",
+      "sourceLang": "zh-CN",
+      "value": "Make room for your thoughts."
+    }
+  }
 }

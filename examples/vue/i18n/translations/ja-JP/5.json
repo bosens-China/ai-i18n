@@ -1,5 +1,13 @@
 {
+  "version": 1,
+  "locale": "ja-JP",
   "entries": {
+    "5b61d262c251940f15e31a36c2eb3e749c8c56ab525357c86bb75abd0ba19bff": {
+      "id": "写给每一个寻常日子",
+      "source": "写给每一个寻常日子",
+      "sourceLang": "zh-CN",
+      "value": "何気ない毎日のために"
+    },
     "5bdec29c2490a03a2ad7eb1c9938fd49e4fd7d8004cf26b5a76254072adf0b85": {
       "id": "在 Composition API 中切换语言",
       "source": "在 Composition API 中切换语言",
@@ -12,7 +20,5 @@
       "sourceLang": "zh-CN",
       "value": "Options 標準の監視"
     }
-  },
-  "locale": "ja-JP",
-  "version": 1
+  }
 }

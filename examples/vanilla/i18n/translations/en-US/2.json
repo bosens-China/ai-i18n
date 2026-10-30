@@ -1,12 +1,18 @@
 {
-  "entries": {
-    "2ce1503f0cc6052a6ae212c2d552467d4adf547786f1537de9d6ebcdc8d4142e": {
-      "id": "ai-i18n Vanilla 示例",
-      "source": "ai-i18n Vanilla 示例",
-      "sourceLang": "zh-CN",
-      "value": "ai-i18n Vanilla demo"
-    }
-  },
+  "version": 1,
   "locale": "en-US",
-  "version": 1
+  "entries": {
+    "2338d0e111f03eacec32c814da643648ea988d9a7b5ab2bedd925212f4530907": {
+      "id": "观察",
+      "source": "观察",
+      "sourceLang": "zh-CN",
+      "value": "Observation"
+    },
+    "2e5a78e8b92159a6253f397547712240d894967924d3c68f1a7e8bbfcdcae983": {
+      "id": "换一条路回家，也许会发现被忽略的美好。",
+      "source": "换一条路回家，也许会发现被忽略的美好。",
+      "sourceLang": "zh-CN",
+      "value": "Take a different way home and notice what you might have missed."
+    }
+  }
 }

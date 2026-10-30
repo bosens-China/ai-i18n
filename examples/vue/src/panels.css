@@ -1,14 +1,16 @@
 .api-workbench {
-  border: 1px solid var(--ink);
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 1rem;
   background: var(--paper);
-  box-shadow: 12px 12px 0 rgba(23, 32, 51, 0.12);
 }
 
 .demo-tabs {
   display: flex;
   gap: 0.5rem;
   padding: 0.6rem;
-  border-bottom: 1px solid var(--ink);
+  border-bottom: 1px solid var(--line);
   background: #f3f5f9;
   overflow-x: auto;
 }
@@ -125,7 +127,7 @@
   font-weight: 700;
 }
 
-select {
+.api-panel select {
   width: 100%;
   appearance: none;
   border: 1px solid var(--line);
@@ -144,7 +146,7 @@ select {
     box-shadow 140ms ease;
 }
 
-select:hover:not(:disabled) {
+.api-panel select:hover:not(:disabled) {
   border-color: var(--composition);
 }
 
@@ -152,7 +154,7 @@ select:hover:not(:disabled) {
   border-color: var(--options);
 }
 
-select:focus-visible {
+.api-panel select:focus-visible {
   outline: 3px solid rgba(70, 103, 219, 0.2);
   border-color: var(--composition);
 }
@@ -162,7 +164,7 @@ select:focus-visible {
   border-color: var(--options);
 }
 
-select:disabled {
+.api-panel select:disabled {
   cursor: wait;
   opacity: 0.65;
 }
@@ -354,7 +356,7 @@ select:disabled {
 
 @media (prefers-reduced-motion: reduce) {
   .demo-tab,
-  select {
+  .api-panel select {
     transition: none;
   }
 }

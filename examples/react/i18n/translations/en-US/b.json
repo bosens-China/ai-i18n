@@ -1,12 +1,24 @@
 {
-  "entries": {
-    "b010d75cf66c8bb1710749f939aed62a77db477bd92cfb1b66de0d9b8d3b7557": {
-      "id": "交互式语言切换演示",
-      "source": "交互式语言切换演示",
-      "sourceLang": "zh-CN",
-      "value": "Interactive language switching demo"
-    }
-  },
+  "version": 1,
   "locale": "en-US",
-  "version": 1
+  "entries": {
+    "b048ba18bb45d3c1ff90125a47b42609be9a43613c7ba2325efec3021282be78": {
+      "id": "生活随笔",
+      "source": "生活随笔",
+      "sourceLang": "zh-CN",
+      "value": "Life notes"
+    },
+    "bb994dab7a2489368f07acb9f6c9c513e169331af1c2ed31ea29273197226c59": {
+      "id": "关于生活、观察与创作",
+      "source": "关于生活、观察与创作",
+      "sourceLang": "zh-CN",
+      "value": "On life, observation and making"
+    },
+    "bde875bff2ef648d7c311cb8a354151164b004f640d590327430dec903d8d171": {
+      "id": "精选文章",
+      "source": "精选文章",
+      "sourceLang": "zh-CN",
+      "value": "Featured stories"
+    }
+  }
 }

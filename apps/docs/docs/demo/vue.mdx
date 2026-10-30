@@ -7,7 +7,7 @@ import DemoFrame from '../../components/DemoFrame';
 
 ## Vue 3 集成演示
 
-示例提供两个 Tab：
+Fieldnotes 轻量博客附带两个 API 演示面板：
 
 - **Setup + `lang="ts"`**：新组件的推荐写法。从 `virtual:ai-i18n` 显式导入的 `t()`
   同时用于 script 与 template，`useI18n()` 只读取 `currentLang`、加载状态与切换 action；
@@ -18,6 +18,10 @@ import DemoFrame from '../../components/DemoFrame';
 两个 Tab 共用同一个 Runtime。任一 Tab 切换语言后，另一个 Tab 的文案、当前语言与加载状态
 会同步更新；加载失败也会保留当前语言并展示共享错误状态。
 
-<DemoFrame framework="vue" title="Vue 3 集成演示" />
+<DemoFrame
+  framework="vue"
+  title="Vue 3 集成演示"
+  description="切换中英日语言，展开页面底部对照两种 Vue API。"
+/>
 
 配置步骤和组件库 locale 同步见 [Vue 快速上手](/guide/getting-started/vue)。

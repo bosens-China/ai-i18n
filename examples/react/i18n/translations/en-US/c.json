@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "locale": "en-US",
+  "entries": {
+    "c3acb7fb72ae3292eb9bbfbc203da469c573baa20ede026dc4f0b5cc58f0dad8": {
+      "id": "试着在一天里留下一段不被安排的时间。散步、发呆，或者只是看一会儿窗外，灵感常常就在这些空隙里出现。",
+      "source": "试着在一天里留下一段不被安排的时间。散步、发呆，或者只是看一会儿窗外，灵感常常就在这些空隙里出现。",
+      "sourceLang": "zh-CN",
+      "value": "Leave some time in your day unplanned. Take a walk, let your mind wander, or look out the window. Inspiration often arrives in those gaps."
+    },
+    "cc80364b095799a073e14b863c4760f225f0f645ea66e21e71052022416c6b53": {
+      "id": "让片刻的停顿，成为一天温柔的注脚。",
+      "source": "让片刻的停顿，成为一天温柔的注脚。",
+      "sourceLang": "zh-CN",
+      "value": "Let a quiet pause be a gentle footnote to your day."
+    }
+  }
+}

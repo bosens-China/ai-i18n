@@ -24,6 +24,7 @@ export default function DemoFrame({
           alignItems: 'flex-start',
           justifyContent: 'space-between',
           gap: '1rem',
+          flexWrap: 'wrap',
           marginBottom: '0.75rem',
         }}
       >
@@ -44,7 +45,8 @@ export default function DemoFrame({
         style={{
           display: 'block',
           width: '100%',
-          height: '22rem',
+          height: 'min(48rem, 80vh)',
+          minHeight: '32rem',
           border: '1px solid var(--rp-c-divider)',
           borderRadius: '0.5rem',
         }}

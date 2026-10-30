@@ -22,7 +22,9 @@
         "index.html",
         "vite.config.ts",
         "tsconfig*.json",
-        "package.json"
+        "package.json",
+        "uno.config.ts",
+        "../shared/**"
       ]
     },
     "dev": {

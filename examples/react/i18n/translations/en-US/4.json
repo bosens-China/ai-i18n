@@ -1,0 +1,24 @@
+{
+  "version": 1,
+  "locale": "en-US",
+  "entries": {
+    "405732b0c4991d111ec105fefae71dee7ca4bf7345e107cacd70f7a27da094fe": {
+      "id": "慢慢读",
+      "source": "慢慢读",
+      "sourceLang": "zh-CN",
+      "value": "Take your time"
+    },
+    "4a9eb3910ca48302a96ed3f6fd938796acd046dc3b44367724f96654757507d8": {
+      "id": "文章",
+      "source": "文章",
+      "sourceLang": "zh-CN",
+      "value": "Stories"
+    },
+    "4abc900123ee79e4fb8fb384a0da5aefbd75d0c33911ac6430dcc94c0ae40465": {
+      "id": "给自己一杯茶的时间",
+      "source": "给自己一杯茶的时间",
+      "sourceLang": "zh-CN",
+      "value": "Take time for a cup of tea"
+    }
+  }
+}

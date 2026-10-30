@@ -1,4 +1,4 @@
 export const DEMO_MESSAGES = defineI18nMessages({
-  aliasStatus: '跨文件路径别名已通过静态分析',
-  steps: ['自动发现 tsconfig', '递归解析项目引用'],
+  featured: '给生活留一点空白',
+  excerpt: '不必把每一刻都填满。留白让我们重新听见自己的想法。',
 });

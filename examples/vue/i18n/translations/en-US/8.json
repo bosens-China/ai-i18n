@@ -1,12 +1,36 @@
 {
+  "version": 1,
+  "locale": "en-US",
   "entries": {
     "824c22a7fc30b9718849593f86f2a5ff8e515bb3656419e1d720c6f5e10f8383": {
       "id": "在 Composition API 中切换语言",
       "source": "在 Composition API 中切换语言",
       "sourceLang": "zh-CN",
       "value": "Switch language in Composition API"
+    },
+    "857a33591fbb08804e8d7fd659e42346ffefc4078a3ddca6c38df7c9ab67bb37": {
+      "id": "把问题写在纸上，画一条线，记下第一个念头。许多好的作品，都始于这样简单的一步。",
+      "source": "把问题写在纸上，画一条线，记下第一个念头。许多好的作品，都始于这样简单的一步。",
+      "sourceLang": "zh-CN",
+      "value": "Write a question on paper, draw a line, and note your first thought. Many good things begin with a simple step."
+    },
+    "85bff342b2f2a733d90de415dba225e689e5bad2f1f93ca66d4c649a8a3be1d9": {
+      "id": "不必填满每一分钟，留一点时间给偶然的发现。",
+      "source": "不必填满每一分钟，留一点时间给偶然的发现。",
+      "sourceLang": "zh-CN",
+      "value": "You don't have to fill every minute. Leave time for unexpected discoveries."
+    },
+    "89c9ccf7e8923b5ea528bbe75f870d5cc995b167f76172c35b339e8aa70d2687": {
+      "id": "灵感不必完美，先把它写下来，再慢慢靠近答案。",
+      "source": "灵感不必完美，先把它写下来，再慢慢靠近答案。",
+      "sourceLang": "zh-CN",
+      "value": "An idea doesn't have to be perfect. Write it down and find your way toward an answer."
+    },
+    "8e0242202c5534ae2eca7bcab9672d2d5d7b74b8adc32c441553971dfe835336": {
+      "id": "放下手边的清单，走一段熟悉的路。光影和风会提醒我们，日常也有值得珍藏的时刻。",
+      "source": "放下手边的清单，走一段熟悉的路。光影和风会提醒我们，日常也有值得珍藏的时刻。",
+      "sourceLang": "zh-CN",
+      "value": "Set your list aside and walk a familiar route. Light and wind remind us that everyday life holds moments worth keeping."
     }
-  },
-  "locale": "en-US",
-  "version": 1
+  }
 }

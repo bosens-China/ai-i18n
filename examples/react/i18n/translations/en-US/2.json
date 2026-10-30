@@ -1,18 +1,18 @@
 {
-  "entries": {
-    "2c2594ac45d711c158b474b3aafc5adf617d833697b2f39f5f8454feb652ec3a": {
-      "id": "由 useI18n 实时订阅 Runtime",
-      "source": "由 useI18n 实时订阅 Runtime",
-      "sourceLang": "zh-CN",
-      "value": "useI18n subscribes to Runtime updates in real time"
-    },
-    "2ff60f1209ebc79eac8742873443094edc9fba1b137675eae86477812f9ea97a": {
-      "id": "这个示例把当前语言、切换动作和文案变化放在同一个视图里。",
-      "source": "这个示例把当前语言、切换动作和文案变化放在同一个视图里。",
-      "sourceLang": "zh-CN",
-      "value": "This demo puts the current language, switch controls, and live copy in one view."
-    }
-  },
+  "version": 1,
   "locale": "en-US",
-  "version": 1
+  "entries": {
+    "2338d0e111f03eacec32c814da643648ea988d9a7b5ab2bedd925212f4530907": {
+      "id": "观察",
+      "source": "观察",
+      "sourceLang": "zh-CN",
+      "value": "Observation"
+    },
+    "2e5a78e8b92159a6253f397547712240d894967924d3c68f1a7e8bbfcdcae983": {
+      "id": "换一条路回家，也许会发现被忽略的美好。",
+      "source": "换一条路回家，也许会发现被忽略的美好。",
+      "sourceLang": "zh-CN",
+      "value": "Take a different way home and notice what you might have missed."
+    }
+  }
 }

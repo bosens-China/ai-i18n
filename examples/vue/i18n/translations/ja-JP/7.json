@@ -1,5 +1,31 @@
 {
+  "version": 1,
+  "locale": "ja-JP",
   "entries": {
+    "77a606dab8d74d6e850281889b97e704c7c6b67ecdec2a3bf31cff71624d9f2e": {
+      "id": "创造",
+      "source": "创造",
+      "sourceLang": "zh-CN",
+      "value": "創作"
+    },
+    "788231cebd2b91c8dd27da7c6b29c20567b8cda47f6cfad1c0d347941ca4b2fd": {
+      "id": "生活",
+      "source": "生活",
+      "sourceLang": "zh-CN",
+      "value": "暮らし"
+    },
+    "7ad89afb4bfd9547a82a7a9dc5de30cd8f17de321f2ac132a05eab2c64e78c29": {
+      "id": "慢慢读",
+      "source": "慢慢读",
+      "sourceLang": "zh-CN",
+      "value": "ゆっくり読む"
+    },
+    "7b4d899c3ef50ab3d3df34889e540df617f2ba04cbfac8fcbec15ee37b2f2fb1": {
+      "id": "换一个角度，熟悉的街道也会有新的故事。",
+      "source": "换一个角度，熟悉的街道也会有新的故事。",
+      "sourceLang": "zh-CN",
+      "value": "視点を変えれば、見慣れた街にも新しい物語が見えてくる。"
+    },
     "7faa86d25d953d1fd22d92e2300dd26f9e2a91098101c746c1d964eceffe890c": {
       "id": "无需 setup，也无需 .value。",
       "source": "无需 setup，也无需 .value。",
@@ -12,7 +38,5 @@
       "sourceLang": "zh-CN",
       "value": "現在の言語"
     }
-  },
-  "locale": "ja-JP",
-  "version": 1
+  }
 }

@@ -1,4 +1,6 @@
+import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'vite';
+import UnoCSS from 'unocss/vite';
 import { aiI18n } from '@ai-i18n/vite';
 import { aiI18nReview } from '@ai-i18n/vite/review';
 import react from '@vitejs/plugin-react';
@@ -26,5 +28,8 @@ export default defineConfig({
     !mode.startsWith('benchmark-') &&
       aiI18nReview({ launcher: false, printUrl: false }),
     react(),
+    UnoCSS({
+      configFile: fileURLToPath(new URL('./uno.config.ts', import.meta.url)),
+    }),
   ],
 });

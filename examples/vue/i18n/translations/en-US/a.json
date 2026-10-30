@@ -1,12 +1,24 @@
 {
+  "version": 1,
+  "locale": "en-US",
   "entries": {
+    "a5d333384b9d971be1602b45b20698fe5e8bc8e3226fa3d538b9f132ece49ffc": {
+      "id": "从一个小想法开始",
+      "source": "从一个小想法开始",
+      "sourceLang": "zh-CN",
+      "value": "Start with a small idea"
+    },
+    "ad6512fe8dd8cc26ca0cf35b68111c068654e5c70f4ce69f2978c33157c2a35d": {
+      "id": "给平凡的一天留点空白",
+      "source": "给平凡的一天留点空白",
+      "sourceLang": "zh-CN",
+      "value": "Leave room in an ordinary day"
+    },
     "af529ee044091e13fdd7e6b5a4cde768d2fc09db525a0ff5cf9dc3b474620d6e": {
       "id": "当前语言",
       "source": "当前语言",
       "sourceLang": "zh-CN",
       "value": "Current language"
     }
-  },
-  "locale": "en-US",
-  "version": 1
+  }
 }

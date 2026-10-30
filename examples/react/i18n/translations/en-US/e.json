@@ -1,12 +1,18 @@
 {
-  "entries": {
-    "ecb3e2dc9311eecb5976a2417b265f41898c95424861669f8d1711324a15dd20": {
-      "id": "让产品自然地说每一种语言",
-      "source": "让产品自然地说每一种语言",
-      "sourceLang": "zh-CN",
-      "value": "Help your product speak every language naturally"
-    }
-  },
+  "version": 1,
   "locale": "en-US",
-  "version": 1
+  "entries": {
+    "eae575c0395e2c6d359d9cf988054b8ba8928dac4cd8877e3b0bb2349f57c743": {
+      "id": "阅读全文",
+      "source": "阅读全文",
+      "sourceLang": "zh-CN",
+      "value": "Read the story"
+    },
+    "eefef314463e1ff469f07ca2d7b65ae3211517ab001a763ea3d906ae65945225": {
+      "id": "不必把每一刻都填满。留白让我们重新听见自己的想法。",
+      "source": "不必把每一刻都填满。留白让我们重新听见自己的想法。",
+      "sourceLang": "zh-CN",
+      "value": "You don't have to fill every moment. A little space lets you hear your own thoughts again."
+    }
+  }
 }

@@ -1,0 +1,24 @@
+{
+  "version": 1,
+  "locale": "en-US",
+  "entries": {
+    "405732b0c4991d111ec105fefae71dee7ca4bf7345e107cacd70f7a27da094fe": {
+      "id": "慢慢读",
+      "source": "慢慢读",
+      "sourceLang": "zh-CN",
+      "value": "Take your time"
+    },
+    "4a9eb3910ca48302a96ed3f6fd938796acd046dc3b44367724f96654757507d8": {
+      "id": "文章",
+      "source": "文章",
+      "sourceLang": "zh-CN",
+      "value": "Stories"
+    },
+    "4edcc4ce81b59702687cb8845dc5da6c5ea95010914f281681ca6227639d346f": {
+      "id": "页面导航",
+      "source": "页面导航",
+      "sourceLang": "zh-CN",
+      "value": "Page navigation"
+    }
+  }
+}

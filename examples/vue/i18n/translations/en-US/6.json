@@ -1,12 +1,24 @@
 {
+  "version": 1,
+  "locale": "en-US",
   "entries": {
+    "6200d744bcfc9d880b3eeba5c73548a54d000cc3cf0d77f665c57e215b6abcd5": {
+      "id": "为生活留下一点记录",
+      "source": "为生活留下一点记录",
+      "sourceLang": "zh-CN",
+      "value": "A little record of life"
+    },
+    "638c5995d768e56e2653ea01ac63a2bbcda3539d9c2aec46ec1861f124d5a211": {
+      "id": "探索 Vue 国际化示例",
+      "source": "探索 Vue 国际化示例",
+      "sourceLang": "zh-CN",
+      "value": "Explore the Vue internationalization demo"
+    },
     "6871863ce2aaf9a2e8fad37d97174dae1aca655b05e4c5bb1494b2e53c084296": {
       "id": "响应式文案会随语言立即更新",
       "source": "响应式文案会随语言立即更新",
       "sourceLang": "zh-CN",
       "value": "Reactive copy updates immediately with the language"
     }
-  },
-  "locale": "en-US",
-  "version": 1
+  }
 }

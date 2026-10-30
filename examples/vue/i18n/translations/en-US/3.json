@@ -1,12 +1,18 @@
 {
-  "entries": {
-    "394c0371e1c48015eb9d3eb31ddfc79ea80d2f0be718f9215c9b5183c281480d": {
-      "id": "跨文件路径别名已通过静态分析",
-      "source": "跨文件路径别名已通过静态分析",
-      "sourceLang": "zh-CN",
-      "value": "Cross-file path aliases passed static analysis"
-    }
-  },
+  "version": 1,
   "locale": "en-US",
-  "version": 1
+  "entries": {
+    "36fddacd028a93b8813b3611bd8e1dba2bf59d787f640b0307ead5cbde895ecc": {
+      "id": "留意窗边的植物、街角的声音，还有人与人之间短暂的问候。细节让世界变得生动。",
+      "source": "留意窗边的植物、街角的声音，还有人与人之间短暂的问候。细节让世界变得生动。",
+      "sourceLang": "zh-CN",
+      "value": "Notice the plant by the window, the sounds on the corner, and brief greetings between people. Details bring the world to life."
+    },
+    "37e1d59476ecefed309aa2c211456d46b33b197186265372a15ed6ed11fbf795": {
+      "id": "阅读文章",
+      "source": "阅读文章",
+      "sourceLang": "zh-CN",
+      "value": "Read story"
+    }
+  }
 }

@@ -1,0 +1,55 @@
+.hero-art {
+  min-height: 300px;
+  display: grid;
+  place-items: center;
+  border-radius: 2rem;
+  background: #e9f1f7;
+  overflow: hidden;
+}
+.hero-art-page {
+  position: relative;
+  width: 210px;
+  height: 250px;
+  padding: 30px;
+  background: #fff;
+  box-shadow: 14px 14px 0 #c7dbe6;
+  transform: rotate(-5deg);
+  color: #245d73;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+}
+.hero-art-page i {
+  display: block;
+  height: 1px;
+  margin-top: 20px;
+  background: #dce4ed;
+}
+.hero-art-page b {
+  position: absolute;
+  right: 25px;
+  bottom: 20px;
+  font-size: 48px;
+  font-weight: 400;
+}
+.featured {
+  display: grid;
+  gap: 2rem;
+  grid-template-columns: 1fr 220px;
+}
+.featured-art {
+  min-height: 180px;
+  display: grid;
+  place-items: center;
+  border-radius: 1rem;
+  background: #e9f1f7;
+  color: #245d73;
+  font-size: 90px;
+}
+@media (max-width: 640px) {
+  .featured {
+    grid-template-columns: 1fr;
+  }
+  .featured-art {
+    min-height: 120px;
+  }
+}

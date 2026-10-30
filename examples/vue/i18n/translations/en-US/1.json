@@ -1,16 +1,12 @@
 {
+  "version": 1,
+  "locale": "en-US",
   "entries": {
     "10c3fc9171511a203e0098910503aa23ab5f629dc20cf84da99085706ec7b0b3": {
       "id": "在 Options API 中切换语言",
       "source": "在 Options API 中切换语言",
       "sourceLang": "zh-CN",
       "value": "Switch language in Options API"
-    },
-    "15f01f6fd5041903f1110a2537dd8737963d5264ef6c1a6424e4ea4d4da7fceb": {
-      "id": "语言",
-      "source": "语言",
-      "sourceLang": "zh-CN",
-      "value": "Language"
     },
     "1c6a8d58a30112eb472c1e16eb4c0869ef5bda02b0e0d7cce566d4cb85b4cb08": {
       "id": "tComputed 响应式文案",
@@ -23,8 +19,12 @@
       "source": "无需 setup，也无需 .value。",
       "sourceLang": "zh-CN",
       "value": "No setup or .value required."
+    },
+    "1f7f5ff33909a64e105ac0840725078eea2c74a79d410620b4f2846eeff0fcf6": {
+      "id": "关于观察、创造与生活",
+      "source": "关于观察、创造与生活",
+      "sourceLang": "zh-CN",
+      "value": "On noticing, creating and living"
     }
-  },
-  "locale": "en-US",
-  "version": 1
+  }
 }

@@ -1,4 +1,6 @@
 {
+  "version": 1,
+  "locale": "en-US",
   "entries": {
     "d0bf662b45865a614d1aecfa1eb3efb79f95fdfe386e1dc6e678f87d9507a1d2": {
       "id": "递归解析项目引用",
@@ -6,11 +8,11 @@
       "sourceLang": "zh-CN",
       "value": "Resolve project references recursively"
     },
-    "daa334f6e995f420b98f26e99defce75514142838c2e84e6f5c31abffbf606b0": {
-      "id": "文案变化",
-      "source": "文案变化",
+    "dc498a1bdd682fb4bfe698a7f1db1e2a79a1c76dfff03875bee93dc743480118": {
+      "id": "这里收集日常中的观察与思考，愿每一次阅读都带来一点新的视角。",
+      "source": "这里收集日常中的观察与思考，愿每一次阅读都带来一点新的视角。",
       "sourceLang": "zh-CN",
-      "value": "Copy changes"
+      "value": "A collection of everyday observations and thoughts, for a fresh perspective with each visit."
     },
     "dc7b62b67bb32b8af6a2b3d1f68fe1fd737c9698fa80b35aade6b52a18eb51ef": {
       "id": "Options 原生监听",
@@ -24,7 +26,5 @@
       "sourceLang": "zh-CN",
       "value": "Captured"
     }
-  },
-  "locale": "en-US",
-  "version": 1
+  }
 }

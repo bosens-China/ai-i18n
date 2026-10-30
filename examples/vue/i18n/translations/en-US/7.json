@@ -1,5 +1,13 @@
 {
+  "version": 1,
+  "locale": "en-US",
   "entries": {
+    "758640546d6b0bf5b10f60e3ef28d50389883f2db39e7aab4061d8f1047d3692": {
+      "id": "学会看见身边的风景",
+      "source": "学会看见身边的风景",
+      "sourceLang": "zh-CN",
+      "value": "See the world around you"
+    },
     "76b7036b527e846b1a14f1550e280750b34a44ee7ee5cba2f5573fdf83240ffc": {
       "id": "自动发现 tsconfig",
       "source": "自动发现 tsconfig",
@@ -18,7 +26,5 @@
       "sourceLang": "zh-CN",
       "value": "The language pack failed to load. The current language was kept."
     }
-  },
-  "locale": "en-US",
-  "version": 1
+  }
 }

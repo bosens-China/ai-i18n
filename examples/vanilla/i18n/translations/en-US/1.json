@@ -1,12 +1,18 @@
 {
+  "version": 1,
+  "locale": "en-US",
   "entries": {
+    "1462af542cc2fc7d0c2d4b0c4ae3f5b95e160abd3aa7da8b34fd4b383e3d3126": {
+      "id": "给生活留一点空白",
+      "source": "给生活留一点空白",
+      "sourceLang": "zh-CN",
+      "value": "Leave a little room in your day"
+    },
     "15f01f6fd5041903f1110a2537dd8737963d5264ef6c1a6424e4ea4d4da7fceb": {
       "id": "语言",
       "source": "语言",
       "sourceLang": "zh-CN",
       "value": "Language"
     }
-  },
-  "locale": "en-US",
-  "version": 1
+  }
 }

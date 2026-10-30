@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "locale": "ja-JP",
+  "entries": {
+    "25ca37bee4609edac40f0d5931217da0269b6eab86aa11af0aedc709b0ae6ef7": {
+      "id": "灵感不必完美，先把它写下来，再慢慢靠近答案。",
+      "source": "灵感不必完美，先把它写下来，再慢慢靠近答案。",
+      "sourceLang": "zh-CN",
+      "value": "ひらめきは完璧でなくていい。まず書き留め、少しずつ答えに近づこう。"
+    },
+    "28cd8b51a7c792a07ffd0a4c8b41fe37c58f3c3e9fa713d3c37334f653c38588": {
+      "id": "为生活留下一点记录",
+      "source": "为生活留下一点记录",
+      "sourceLang": "zh-CN",
+      "value": "暮らしの記録を少しずつ"
+    }
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "locale": "en-US",
+  "entries": {
+    "fe1b91222f285e4edcc971fbaef9add43e21cda2a33c149b7ed1c8d7fea354a8": {
+      "id": "行间",
+      "source": "行间",
+      "sourceLang": "zh-CN",
+      "value": "Between the lines"
+    },
+    "ffb77fd08c8b895e73acabc8827a964bf12d72f7a4d507655b329470af67311e": {
+      "id": "熟悉街道的新风景",
+      "source": "熟悉街道的新风景",
+      "sourceLang": "zh-CN",
+      "value": "A new view of a familiar street"
+    }
+  }
+}

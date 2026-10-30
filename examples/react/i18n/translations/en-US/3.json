@@ -1,12 +1,12 @@
 {
-  "entries": {
-    "394c0371e1c48015eb9d3eb31ddfc79ea80d2f0be718f9215c9b5183c281480d": {
-      "id": "跨文件路径别名已通过静态分析",
-      "source": "跨文件路径别名已通过静态分析",
-      "sourceLang": "zh-CN",
-      "value": "Cross-file path aliases passed static analysis"
-    }
-  },
+  "version": 1,
   "locale": "en-US",
-  "version": 1
+  "entries": {
+    "32956767b3db0d5825a41ae2e4aa722a9e003e753c7b42b5b0cbba8403845cb3": {
+      "id": "不用等到准备完美，先把第一句话写下来。",
+      "source": "不用等到准备完美，先把第一句话写下来。",
+      "sourceLang": "zh-CN",
+      "value": "Don't wait until you're ready. Write the first sentence."
+    }
+  }
 }

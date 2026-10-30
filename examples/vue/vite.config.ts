@@ -1,3 +1,4 @@
+import { fileURLToPath } from 'node:url';
 import { aiI18n } from '@ai-i18n/vite';
 import { aiI18nReview } from '@ai-i18n/vite/review';
 import { defineConfig } from 'vite';
@@ -27,6 +28,8 @@ export default defineConfig({
     !mode.startsWith('benchmark-') &&
       aiI18nReview({ launcher: true, printUrl: false }),
     vue(),
-    UnoCSS({ inspector: true }),
+    UnoCSS({
+      configFile: fileURLToPath(new URL('./uno.config.ts', import.meta.url)),
+    }),
   ],
 });

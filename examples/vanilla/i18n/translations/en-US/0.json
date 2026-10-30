@@ -1,12 +1,24 @@
 {
-  "entries": {
-    "0e2de0f201d7a4a4b512a82ca89e3d2cb8b9a975a8346f2db90a2e5f6963c91d": {
-      "id": "切换语言",
-      "source": "切换语言",
-      "sourceLang": "zh-CN",
-      "value": "Switch language"
-    }
-  },
+  "version": 1,
   "locale": "en-US",
-  "version": 1
+  "entries": {
+    "03559e8bf767323431869f8d84e72e3f6f0cc4db1ce6b57f446faae546c377a4": {
+      "id": "一份关于日常的记录",
+      "source": "一份关于日常的记录",
+      "sourceLang": "zh-CN",
+      "value": "Notes on everyday life"
+    },
+    "04858c811306d8f6a066e0e487f0c4ab2c8a6535c7a8f0a6835b1ec883c18cde": {
+      "id": "在忙碌与安静之间，记录那些值得慢下来想一想的事。",
+      "source": "在忙碌与安静之间，记录那些值得慢下来想一想的事。",
+      "sourceLang": "zh-CN",
+      "value": "Between busy days and quiet moments, make a note of what deserves a little more thought."
+    },
+    "06c26f7dce206298ba6f4dfd88474ca0595a8ce8e258c9af7b0fadaa05f0007d": {
+      "id": "把想法，写成日常。",
+      "source": "把想法，写成日常。",
+      "sourceLang": "zh-CN",
+      "value": "Make room for your thoughts."
+    }
+  }
 }

@@ -68,7 +68,7 @@
 
 ## 权威入口
 
-- [Hono 远程译文示例](../../apps/docs/docs/demo/remote.mdx)
+- [Hono 远程译文示例](../../examples/remote/README.md)
 - [远程文案与译文](../../apps/docs/docs/guide/advanced/remote-translations.md)
 - [RemoteAdapter](../../apps/docs/docs/api/vite/interfaces/remote-adapter.md)
 - [getTranslationMeta()](../../apps/docs/docs/api/runtime/functions/get-translation-meta.md)

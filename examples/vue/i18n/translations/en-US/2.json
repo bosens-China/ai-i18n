@@ -1,10 +1,24 @@
 {
+  "version": 1,
+  "locale": "en-US",
   "entries": {
-    "2ede97d33c611b3280321e7710e1858282bbe17262c11d3a8c6529bf34bc815a": {
-      "id": "ai-i18n Vue 示例",
-      "source": "ai-i18n Vue 示例",
+    "2338d0e111f03eacec32c814da643648ea988d9a7b5ab2bedd925212f4530907": {
+      "id": "观察",
+      "source": "观察",
       "sourceLang": "zh-CN",
-      "value": "ai-i18n Vue demo"
+      "value": "Notice"
+    },
+    "23d93a5b826e0e50070de5aefb796f277603cfdab346bd439384f950700a905c": {
+      "id": "关于行间",
+      "source": "关于行间",
+      "sourceLang": "zh-CN",
+      "value": "About Fieldnotes"
+    },
+    "2e1ace8ace7ed3d3b92f72ce1a356260a51063061d635c53c5cebe1071e76f73": {
+      "id": "换一个角度，熟悉的街道也会有新的故事。",
+      "source": "换一个角度，熟悉的街道也会有新的故事。",
+      "sourceLang": "zh-CN",
+      "value": "A change of perspective can reveal new stories on a familiar street."
     },
     "2f1b41a0091676c2abf640ee61696fa4d62d6635dc48cd2575f925c11366fd21": {
       "id": "尚未发生语言变化",
@@ -12,7 +26,5 @@
       "sourceLang": "zh-CN",
       "value": "No language change yet"
     }
-  },
-  "locale": "en-US",
-  "version": 1
+  }
 }

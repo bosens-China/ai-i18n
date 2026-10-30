@@ -1,12 +1,30 @@
 {
-  "entries": {
-    "ab7eb4680665995dbea61ce67d7b397134c226cf95af275dc10641ba3af48dcd": {
-      "id": "Vue 示例",
-      "source": "Vue 示例",
-      "sourceLang": "zh-CN",
-      "value": "Vue デモ"
-    }
-  },
+  "version": 1,
   "locale": "ja-JP",
-  "version": 1
+  "entries": {
+    "a00a97c0cd41581806a0e5542e0732e5909db9f4c0df95c850c385c10438ed95": {
+      "id": "把想法，写成日常。",
+      "source": "把想法，写成日常。",
+      "sourceLang": "zh-CN",
+      "value": "思いを、日々のことばに。"
+    },
+    "ab55f0cede82185cbd369d67ba7163fe290505dce2fac1ddf0bab67805ccee7f": {
+      "id": "这里收集日常中的观察与思考，愿每一次阅读都带来一点新的视角。",
+      "source": "这里收集日常中的观察与思考，愿每一次阅读都带来一点新的视角。",
+      "sourceLang": "zh-CN",
+      "value": "日々の気づきや考えを集めています。読むたびに新しい視点が見つかりますように。"
+    },
+    "ad3f2c4537ed3addf56626ea87b75a1f4345ce3d21828c17d1f546f79696b299": {
+      "id": "阅读文章",
+      "source": "阅读文章",
+      "sourceLang": "zh-CN",
+      "value": "記事を読む"
+    },
+    "aef796216a3f636bc04fa2ef54406a484926ebe16e3498002f7baf57d44495e8": {
+      "id": "选择语言",
+      "source": "选择语言",
+      "sourceLang": "zh-CN",
+      "value": "言語を選択"
+    }
+  }
 }

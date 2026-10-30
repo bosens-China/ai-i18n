@@ -1,10 +1,24 @@
 {
+  "version": 1,
+  "locale": "en-US",
   "entries": {
+    "e3194b752a1d1f2e426310fe2a47088adef53dda7f5a80cfd5dd0433f6032c8b": {
+      "id": "记录那些值得停下来感受的小事，让灵感在日常里慢慢生长。",
+      "source": "记录那些值得停下来感受的小事，让灵感在日常里慢慢生长。",
+      "sourceLang": "zh-CN",
+      "value": "A place for the little things worth pausing for, and ideas that grow with everyday life."
+    },
     "e4a7ed9095e293a1bf9b3059c2a59c1ac1691ec8c086c9f3d232b48d21752cf9": {
       "id": "完整兼容",
       "source": "完整兼容",
       "sourceLang": "zh-CN",
       "value": "Full support"
+    },
+    "e53cb6cdf93909f1c3c581e0d92c29094df70c4b816bdb02ac4afd7b471c8b55": {
+      "id": "生活",
+      "source": "生活",
+      "sourceLang": "zh-CN",
+      "value": "Life"
     },
     "e936fbc4741fc9774cc6fb456039f1d1fbdd3570109d715d39e7127c05ed196b": {
       "id": "共享 Runtime",
@@ -12,13 +26,17 @@
       "sourceLang": "zh-CN",
       "value": "Shared Runtime"
     },
+    "e93ae3d0caf668902070649c8816abe62d08398429a5edb44bad746d0f87f3e5": {
+      "id": "创造",
+      "source": "创造",
+      "sourceLang": "zh-CN",
+      "value": "Create"
+    },
     "efa3726d005443bf47ac649cdcc919ffb13f59dbec8305b241e3b2796c4300b6": {
       "id": "模板中的 t 会同步更新。",
       "source": "模板中的 t 会同步更新。",
       "sourceLang": "zh-CN",
       "value": "Template t updates in sync."
     }
-  },
-  "locale": "en-US",
-  "version": 1
+  }
 }

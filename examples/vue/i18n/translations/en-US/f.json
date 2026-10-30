@@ -1,12 +1,18 @@
 {
+  "version": 1,
+  "locale": "en-US",
   "entries": {
     "f0ba41ec8d6c89d53fdcf33594b31ca9a11cfa2d26566d15241da1566aa744d8": {
       "id": "切换任一面板，另一侧同步更新。",
       "source": "切换任一面板，另一侧同步更新。",
       "sourceLang": "zh-CN",
       "value": "Switch in either panel and the other updates in sync."
+    },
+    "fe1b91222f285e4edcc971fbaef9add43e21cda2a33c149b7ed1c8d7fea354a8": {
+      "id": "行间",
+      "source": "行间",
+      "sourceLang": "zh-CN",
+      "value": "Between the lines"
     }
-  },
-  "locale": "en-US",
-  "version": 1
+  }
 }

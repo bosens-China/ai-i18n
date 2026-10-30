@@ -1,10 +1,24 @@
 {
+  "version": 1,
+  "locale": "ja-JP",
   "entries": {
+    "9716efae44af8f30294302878be74dd097b8d3454ce06889b747baf4eeaeccd5": {
+      "id": "关于",
+      "source": "关于",
+      "sourceLang": "zh-CN",
+      "value": "このサイトについて"
+    },
     "985d682da79048eafc955b59e191988b56e552ef5d6d563c2a40e72ddd40bbc9": {
       "id": "模板会自动响应 Runtime 状态。",
       "source": "模板会自动响应 Runtime 状态。",
       "sourceLang": "zh-CN",
       "value": "テンプレートは Runtime の状態に自動的に反応します。"
+    },
+    "98e5f739cafc18be325cec3d39431123a00f2daf2eedcfbe2b95ede4f87bd3b8": {
+      "id": "观察",
+      "source": "观察",
+      "sourceLang": "zh-CN",
+      "value": "観察"
     },
     "997e8929077e23c18b2c2e30e982c6d397cfba78d1c4630302e1c8b5d9c12b8c": {
       "id": "语言包加载失败，当前语言保持不变。",
@@ -12,13 +26,23 @@
       "sourceLang": "zh-CN",
       "value": "言語パックの読み込みに失敗しました。現在の言語を維持します。"
     },
+    "9b98032acd747650a64bcc5364c706e249b9851dbd3e1cec5eb84b59b4b82128": {
+      "id": "给平凡的一天留点空白",
+      "source": "给平凡的一天留点空白",
+      "sourceLang": "zh-CN",
+      "value": "いつもの一日に余白を"
+    },
     "9f2b5e4532f2315dc5e9de6e0433a6d4cb16490bcdb03e8662706b1cfd2c9766": {
       "id": "共享 Runtime",
       "source": "共享 Runtime",
       "sourceLang": "zh-CN",
       "value": "共有 Runtime"
+    },
+    "9f868431b65e65d83f9d05dc28cad9e1bde85ad1aa565555f305b74fdf8803e0": {
+      "id": "从一个小想法开始",
+      "source": "从一个小想法开始",
+      "sourceLang": "zh-CN",
+      "value": "小さなアイデアから始めよう"
     }
-  },
-  "locale": "ja-JP",
-  "version": 1
+  }
 }

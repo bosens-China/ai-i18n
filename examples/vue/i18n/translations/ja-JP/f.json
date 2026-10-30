@@ -1,10 +1,24 @@
 {
+  "version": 1,
+  "locale": "ja-JP",
   "entries": {
-    "f3290685abfada66963405be4aaeb9cd1d458b5db6ee506cb56ae8a1318563e6": {
-      "id": "Composition API 与 Vite extractor 共享 Runtime",
-      "source": "Composition API 与 Vite extractor 共享 Runtime",
+    "f3a6def4fddeeeb64383e5a4eda4dba667ee552c404dfacfc7973eda4223492f": {
+      "id": "关于观察、创造与生活",
+      "source": "关于观察、创造与生活",
       "sourceLang": "zh-CN",
-      "value": null
+      "value": "観察、創作、暮らしについて"
+    },
+    "f6683559b756e1441cf50997f8b44a4fb9a3f0b868f6960b83fbf3d4ff35a1fb": {
+      "id": "关于行间",
+      "source": "关于行间",
+      "sourceLang": "zh-CN",
+      "value": "行間について"
+    },
+    "f9ce635aabf9c090c2f2277d574662f5bb2a1a55139e946d28ee1f74cb394416": {
+      "id": "页面导航",
+      "source": "页面导航",
+      "sourceLang": "zh-CN",
+      "value": "ページナビゲーション"
     },
     "fcbdf37b14cf0f92b9fd496dc216e79829409fc90286bef52258a4f15f4c0ad6": {
       "id": "尚未发生语言变化",
@@ -17,8 +31,12 @@
       "source": "自动发现 tsconfig",
       "sourceLang": "zh-CN",
       "value": "tsconfig を自動検出"
+    },
+    "fff79833459d112596cd8aa752d7274cc2e5a6356f7356e7f2401e821d73b754": {
+      "id": "不必填满每一分钟，留一点时间给偶然的发现。",
+      "source": "不必填满每一分钟，留一点时间给偶然的发现。",
+      "sourceLang": "zh-CN",
+      "value": "一分一秒を埋めなくてもいい。思いがけない発見のために時間を残そう。"
     }
-  },
-  "locale": "ja-JP",
-  "version": 1
+  }
 }

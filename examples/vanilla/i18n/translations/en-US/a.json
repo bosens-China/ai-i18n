@@ -1,12 +1,12 @@
 {
-  "entries": {
-    "af529ee044091e13fdd7e6b5a4cde768d2fc09db525a0ff5cf9dc3b474620d6e": {
-      "id": "当前语言",
-      "source": "当前语言",
-      "sourceLang": "zh-CN",
-      "value": "Current language"
-    }
-  },
+  "version": 1,
   "locale": "en-US",
-  "version": 1
+  "entries": {
+    "abb190d22cc3051a36106eaa7fd421cfe9211fe5fb5f1c6e5ffb3e09b8b62022": {
+      "id": "写下所见，留住所感。",
+      "source": "写下所见，留住所感。",
+      "sourceLang": "zh-CN",
+      "value": "Write what you see. Keep what you feel."
+    }
+  }
 }
