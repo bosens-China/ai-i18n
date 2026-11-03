@@ -2,7 +2,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import type { ViteDevServer } from 'vite';
 import { diagnosticMessage } from '@ai-i18n/analyzer';
-import { withFileLock } from '@ai-i18n/core/translation-memory';
+import { withFileQueue } from '@ai-i18n/core/translation-memory';
 import { ProjectState } from './project-state.js';
 import type { AiI18nPluginApi } from './plugin-api.js';
 import { scanEntries, walkScanGraph } from './scan-graph.js';
@@ -24,7 +24,7 @@ export function ensureScan(
   entries?: readonly string[],
 ): Promise<ScanResult> {
   if (api.scanPending) return api.scanPending;
-  const pending = withFileLock(
+  const pending = withFileQueue(
     path.join(api.store().directory, '.scan'),
     async () => {
       try {
@@ -146,7 +146,6 @@ async function scanCatalog(
         api.state().hydrateCache(
           await store.sync(api.state().snapshot(), {
             complete: true,
-            preserveHistory: true,
           }),
         );
       });

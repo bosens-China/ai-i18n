@@ -69,14 +69,20 @@ export const aiI18nOptions = {
 } as const;
 ```
 
+```ts title="ai-i18n.config.ts"
+import { defineConfig } from '@ai-i18n/vite/config';
+import { aiI18nOptions } from './ai-i18n.options';
+
+export default defineConfig(aiI18nOptions);
+```
+
 ```ts
 // vite.config.ts
 import { aiI18n } from '@ai-i18n/vite';
-import { aiI18nOptions } from './ai-i18n.options';
 
 export default defineConfig({
   plugins: [
-    aiI18n(aiI18nOptions),
+    aiI18n(),
     react(), // 保留宿主 React 转换
   ],
 });

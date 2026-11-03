@@ -13,17 +13,7 @@ export default defineConfig({
     tsconfigPaths: true,
   },
   plugins: [
-    mode !== 'benchmark-off' &&
-      aiI18n({
-        diagnostics: { performance: mode !== 'benchmark-on' },
-        sourceLang: 'zh-CN',
-        failOnMissingTranslations: true,
-        locales: [
-          { value: 'zh-CN', label: '中文' },
-          { value: 'en-US', label: 'English' },
-        ],
-        autoImport: true,
-      }),
+    mode !== 'benchmark-off' && aiI18n(),
     // 两种入口提示都关闭；独立 Review 页面仍可通过固定 URL 访问。
     !mode.startsWith('benchmark-') &&
       aiI18nReview({ launcher: false, printUrl: false }),

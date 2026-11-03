@@ -77,7 +77,7 @@ it('packages the Codex marketplace and permits only one continuation', async () 
     );
     await fs.writeFile(
       path.join(pkg, 'scan.mjs'),
-      `export async function scanProject(config, entries) { console.log('config diagnostic'); return { config, entries, i18n_directory: '/app/i18n', locales: [{locale:'en-US', missing:config.configLoader === 'runner' ? 2 : 1}] }; }`,
+      `export async function scanConfiguredProject(i18nConfig, config, entries) { console.log('config diagnostic'); return { i18nConfig, config, entries, i18n_directory: '/app/i18n', locales: [{locale:'en-US', missing:config.configLoader === 'runner' ? 2 : 1}] }; }`,
     );
     for (const loader of [undefined, 'bundle', 'runner', 'native']) {
       const { stdout } = await exec(process.execPath, [
@@ -100,6 +100,7 @@ it('packages the Codex marketplace and permits only one continuation', async () 
         ...(loader ? { configLoader: loader } : {}),
       });
       expect(result.entries).toEqual(['main.ts']);
+      expect(result.i18nConfig).toBe(path.join(root, 'ai-i18n.config.ts'));
     }
     expect(
       await bundled.check({ cwd: root, stop_hook_active: false }),
@@ -144,14 +145,14 @@ it('packages the Codex marketplace and permits only one continuation', async () 
     );
     await fs.writeFile(
       path.join(pkg, 'scan.mjs'),
-      `export async function scanProject() { return { locales: [{locale:'en-US', missing:0}] }; }`,
+      `export async function scanConfiguredProject() { return { locales: [{locale:'en-US', missing:0}] }; }`,
     );
     expect(await bundled.check({ cwd: root, stop_hook_active: false })).toEqual(
       {},
     );
     await fs.writeFile(
       path.join(pkg, 'scan.mjs'),
-      `export async function scanProject() { throw new Error('broken config'); }`,
+      `export async function scanConfiguredProject() { throw new Error('broken config'); }`,
     );
     expect(
       await bundled.check({ cwd: root, stop_hook_active: false }),
@@ -162,7 +163,7 @@ it('packages the Codex marketplace and permits only one continuation', async () 
     for (const source of ['remote', 'overlay']) {
       await fs.writeFile(
         path.join(pkg, 'scan.mjs'),
-        `export async function scanProject() { return { translation_source: '${source}', locales: [{locale:'en-US', missing:99}] }; }`,
+        `export async function scanConfiguredProject() { return { translation_source: '${source}', locales: [{locale:'en-US', missing:99}] }; }`,
       );
       expect(
         await bundled.check({ cwd: root, stop_hook_active: false }),

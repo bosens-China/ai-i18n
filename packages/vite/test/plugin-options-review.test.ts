@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
-import { aiI18n, type AiI18nOptions, type Translator } from '../src/index';
+import { aiI18n } from '../src/plugin';
+import { type AiI18nOptions, type Translator } from '../src';
 import { aiI18nReview } from '../src/review';
 import { REVIEW_CLIENT_MODULE_PATH } from '../src/review-page';
 import { callHook, options, setupPlugin } from './plugin-test-utils';

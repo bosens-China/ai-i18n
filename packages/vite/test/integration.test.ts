@@ -3,7 +3,8 @@ import os from 'node:os';
 import path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import { build, createLogger, createServer } from 'vite';
-import { aiI18n } from '../src/index';
+import { aiI18n } from '../src/plugin';
+
 import { ProjectState } from '../src/project-state';
 import { extractedTestPath } from './extracted-test-path';
 import { removeTempDir } from './temp-dir';

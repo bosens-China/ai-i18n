@@ -10,8 +10,10 @@ OpenAI Provider 可把每个翻译批次的模型输入、模型输出、校验�
 
 日志默认关闭。需要排障或审查时，只需配置 `provider.logging`：
 
-```ts
-aiI18n({
+```ts title="ai-i18n.config.ts"
+import { defineConfig } from '@ai-i18n/vite/config';
+
+export default defineConfig({
   sourceLang: 'zh-CN',
   locales,
   provider: {
@@ -33,7 +35,7 @@ aiI18n({
 ```ts
 provider: {
   translator,
-  logging: 'diagnostics/llm', // 相对 Vite root
+  logging: 'diagnostics/llm', // 相对独立配置文件所在目录
 }
 ```
 

@@ -4,6 +4,7 @@ import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 import { z } from 'zod';
 import { errorPayload } from './errors.js';
 import { registerCacheTools } from './cache-tools.js';
+import { registerDiscoveryTools } from './discovery-tools.js';
 import { deleteOrphanMessages, listOrphanMessages } from './project-orphans.js';
 import { listOverrides, listTranslations } from './project-read.js';
 import {
@@ -22,7 +23,7 @@ const DirectorySchema = z
   .min(1)
   .max(1_024)
   .describe(
-    'Absolute final ai-i18n directory resolved from the target Vite root and aiI18n.directory.',
+    'Absolute final ai-i18n directory returned by resolving the selected ai-i18n config.',
   );
 const SourceFileSchema = z.string().min(1).max(4_096);
 const LocaleSchema = z.string().min(1).max(128);
@@ -105,6 +106,7 @@ export function createAiI18nMcpServer(): McpServer {
     name: 'ai-i18n-mcp-server',
     version,
   });
+  registerDiscoveryTools(server, callTool);
   server.registerTool(
     'ai_i18n_list_translations',
     {
@@ -159,6 +161,9 @@ export function createAiI18nMcpServer(): McpServer {
         .object({
           i18n_directory: DirectorySchema,
           app_directory: DirectorySchema.optional(),
+          config_file: z.string().min(1).max(4096).optional(),
+          config_mode: z.string().min(1).max(128).optional(),
+          config_command: z.enum(['serve', 'build']).optional(),
           default_locale: LocaleSchema.describe(
             'Optional locale applied to every update. When provided, omit locale from every updates item.',
           ).optional(),
@@ -181,6 +186,9 @@ export function createAiI18nMcpServer(): McpServer {
         .object({
           i18n_directory: DirectorySchema,
           app_directory: DirectorySchema.optional(),
+          config_file: z.string().min(1).max(4096).optional(),
+          config_mode: z.string().min(1).max(128).optional(),
+          config_command: z.enum(['serve', 'build']).optional(),
           default_locale: LocaleSchema.describe(
             'Optional locale applied to every target. When provided, omit locale from every targets item.',
           ).optional(),
@@ -221,6 +229,9 @@ export function createAiI18nMcpServer(): McpServer {
         .object({
           i18n_directory: DirectorySchema,
           app_directory: DirectorySchema.optional(),
+          config_file: z.string().min(1).max(4096).optional(),
+          config_mode: z.string().min(1).max(128).optional(),
+          config_command: z.enum(['serve', 'build']).optional(),
           orphan_ids: OrphanIdsSchema,
         })
         .strict(),
@@ -260,6 +271,9 @@ export function createAiI18nMcpServer(): McpServer {
         .object({
           i18n_directory: DirectorySchema,
           app_directory: DirectorySchema.optional(),
+          config_file: z.string().min(1).max(4096).optional(),
+          config_mode: z.string().min(1).max(128).optional(),
+          config_command: z.enum(['serve', 'build']).optional(),
           default_locale: LocaleSchema.describe(
             'Optional locale applied to every update. When provided, omit locale from every updates item.',
           ).optional(),
@@ -281,6 +295,9 @@ export function createAiI18nMcpServer(): McpServer {
         .object({
           i18n_directory: DirectorySchema,
           app_directory: DirectorySchema.optional(),
+          config_file: z.string().min(1).max(4096).optional(),
+          config_mode: z.string().min(1).max(128).optional(),
+          config_command: z.enum(['serve', 'build']).optional(),
           override_ids: z.array(z.string().min(1).max(16_384)).min(1).max(500),
         })
         .strict(),

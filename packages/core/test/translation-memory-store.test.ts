@@ -30,7 +30,7 @@ describe('project Translation Memory store', () => {
 
     const files = await jsonFiles(path.join(directory, 'translations'));
     expect(files).toHaveLength(2);
-    expect(files.every((file) => /en-US\/[0-9a-f]\.json$/.test(file))).toBe(
+    expect(files.every((file) => /en-US[\\/][0-9a-f]\.json$/.test(file))).toBe(
       true,
     );
     const sharedBucket = JSON.parse(
@@ -93,7 +93,7 @@ describe('project Translation Memory store', () => {
     store.close();
   });
 
-  it('recovers a complete transaction journal after an interrupted commit', async () => {
+  it('recovers a legacy transaction journal after an interrupted commit', async () => {
     const directory = path.join(await temporaryDirectory(), 'i18n');
     const store = await openTranslationMemoryStore(directory);
     await store.transact((memory) => {

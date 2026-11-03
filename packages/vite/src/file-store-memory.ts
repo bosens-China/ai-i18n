@@ -13,7 +13,7 @@ import {
   type TranslationMemoryCandidateTarget,
   openTranslationMemoryStore,
   type TranslationMemoryStore,
-  withFileLock,
+  withFileQueue,
 } from '@ai-i18n/core/translation-memory';
 import { diagnosticMessage } from '@ai-i18n/analyzer';
 import { enforceCacheCapacity } from './cache-capacity.js';
@@ -79,9 +79,9 @@ export class FileStoreMemory {
     const cache = await this.getCandidateCache();
     if (!this.options.translationMemory?.cache)
       return this.updateCurrent(store, undefined, snapshot, activeMessageIds);
-    // 同项目的 Vite 进程必须按同一顺序完成 JSON 和 SQLite 同步。
+    // 同进程的项目任务按顺序完成 JSON 和 SQLite 同步。
     const directory = await fs.realpath(this.directory);
-    return withFileLock(path.join(directory, '.cache-sync'), () =>
+    return withFileQueue(path.join(directory, '.cache-sync'), () =>
       this.updateCurrent(store, cache, snapshot, activeMessageIds),
     );
   }

@@ -29,6 +29,8 @@ export async function check(input) {
     '--root',
     root,
   ];
+  if (process.env.AI_I18N_CONFIG_FILE)
+    args.push('--i18n-config', process.env.AI_I18N_CONFIG_FILE);
   if (process.env.AI_I18N_CONFIG)
     args.push('--config', process.env.AI_I18N_CONFIG);
   if (process.env.AI_I18N_MODE) args.push('--mode', process.env.AI_I18N_MODE);

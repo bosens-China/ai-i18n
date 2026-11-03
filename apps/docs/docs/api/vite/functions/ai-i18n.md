@@ -12,10 +12,10 @@ import { aiI18n } from '@ai-i18n/vite';
 ## 签名
 
 ```ts
-function aiI18n(options: AiI18nOptions): Plugin;
+function aiI18n(options?: { configFile?: string }): Plugin;
 ```
 
-`aiI18n()` 返回一个 Vite 插件。每个 Vite build 只应注册一次。
+业务配置放在独立的 `ai-i18n.config.ts`，见[独立配置与多应用](/guide/basic/configuration)。`aiI18n()` 返回一个 Vite 插件。每个 Vite build 只应注册一次。
 
 ## 示例
 
@@ -24,14 +24,18 @@ import { aiI18n } from '@ai-i18n/vite';
 import { defineConfig } from 'vite';
 
 export default defineConfig({
-  plugins: [
-    aiI18n({
-      sourceLang: 'zh-CN',
-      locales: [
-        { value: 'zh-CN', label: '中文' },
-        { value: 'en-US', label: 'English' },
-      ],
-    }),
+  plugins: [aiI18n()],
+});
+```
+
+```ts title="ai-i18n.config.ts"
+import { defineConfig } from '@ai-i18n/vite/config';
+
+export default defineConfig({
+  sourceLang: 'zh-CN',
+  locales: [
+    { value: 'zh-CN', label: '中文' },
+    { value: 'en-US', label: 'English' },
   ],
 });
 ```
@@ -44,9 +48,9 @@ import { setLang, t } from 'virtual:ai-i18n';
 
 ## 参数
 
-| 参数      | 类型                                                    | 说明                |
-| --------- | ------------------------------------------------------- | ------------------- |
-| `options` | [`AiI18nOptions`](/api/vite/interfaces/ai-i18n-options) | Vite 插件完整配置。 |
+| 参数                 | 类型     | 说明                                 |
+| -------------------- | -------- | ------------------------------------ |
+| `options.configFile` | `string` | 可选配置文件路径，相对于 Vite root。 |
 
 ## 返回值
 

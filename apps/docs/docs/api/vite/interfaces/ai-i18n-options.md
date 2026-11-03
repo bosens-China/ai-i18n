@@ -14,8 +14,10 @@ import type { AiI18nOptions } from '@ai-i18n/vite';
 通常只需提供源语言与语言列表。框架自动检测，类型声明和 HTML 显式翻译表达式提取默认开启，
 成功 Build 会输出覆盖率；自动导入、持久化、语言分包和 Provider 调用均需按需启用。
 
-```ts
-aiI18n({
+```ts title="ai-i18n.config.ts"
+import { defineConfig } from '@ai-i18n/vite/config';
+
+export default defineConfig({
   sourceLang: 'zh-CN',
   locales: [
     { value: 'zh-CN', label: '中文' },
@@ -23,6 +25,8 @@ aiI18n({
   ],
 });
 ```
+
+这些业务字段用于 `ai-i18n.config.ts`，不再作为 `aiI18n()` 的内联参数。`AiI18nConfig` 在这些字段之上增加可选的 `root`，见[独立配置与多应用](/guide/basic/configuration)。
 
 ## 定义
 
@@ -88,7 +92,7 @@ interface AiI18nOptions {
 目标语言文件。
 
 开启 `failOnMissingTranslations` 后，Build 会等待本轮自动翻译并检查入口可达文案。任一目标语言
-仍缺译时，构建报错并显示各语言的缺译数量；不配置 Provider 也可使用。Dev 不受影响，
+仍缺译时，构建报错并显示各语言缺译数量、全部缺失文案及源码位置、消息 ID、提取 JSON 和本地翻译 JSON 的绝对路径（远程模式说明来源）；不配置 Provider 也可使用。Dev 不受影响，
 `diagnostics.buildSummary: false` 也不会关闭检查。空字符串和有效人工覆盖均视为已翻译。
 
 初始语言按以下顺序选择：

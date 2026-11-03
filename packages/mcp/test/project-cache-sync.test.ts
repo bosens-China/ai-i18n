@@ -25,18 +25,17 @@ test('independent MCP writes sync configured automatic and reviewed values witho
     await fs.symlink(
       path.resolve('packages', name),
       path.join(modules, name),
-      'dir',
+      process.platform === 'win32' ? 'junction' : 'dir',
     );
   await fs.writeFile(
-    path.join(app, 'vite.config.mjs'),
+    path.join(app, 'ai-i18n.config.ts'),
     `
-    import {aiI18n} from '@ai-i18n/vite';
     import {sqlite} from '@ai-i18n/sqlite';
-    export default {plugins: [aiI18n({sourceLang: 'zh-CN', dts: false,
+    export default {sourceLang: 'zh-CN', dts: false,
       locales: [{value: 'zh-CN', label: '中文'}, {value: 'en-US', label: 'English'}],
       translationMemory: {cache: sqlite({dataDirectory: ${JSON.stringify(dataDirectory)}})},
       provider: {translator: () => {throw new Error('Provider must not run');}}
-    })]};
+    };
   `,
   );
   const stderr = vi.spyOn(process.stderr, 'write').mockReturnValue(true);
@@ -76,7 +75,7 @@ test('cache config failures preserve committed project writes and report a warni
   const root = await fixture();
   const app = path.join(root, 'apps/web');
   await fs.writeFile(
-    path.join(app, 'vite.config.mjs'),
+    path.join(app, 'ai-i18n.config.ts'),
     "throw new Error('broken config');",
   );
   const stderr = vi.spyOn(process.stderr, 'write').mockReturnValue(true);

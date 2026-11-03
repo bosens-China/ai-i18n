@@ -16,7 +16,7 @@ afterEach(async () => {
   );
 });
 
-it('shares registered metadata between inline options, adapters and generated browser declarations', async () => {
+it('shares registered metadata between independent config, adapters and generated browser declarations', async () => {
   const root = await fs.mkdtemp(
     path.join(os.tmpdir(), 'ai-i18n-remote-types-'),
   );
@@ -33,15 +33,15 @@ declare module '@ai-i18n/vite/runtime' {
   await fs.writeFile(
     path.join(root, 'src/app.ts'),
     `
-import { aiI18n } from '@ai-i18n/vite';
+import { defineConfig } from '@ai-i18n/vite';
 import { defineRemote, type RemoteSnapshot } from '@ai-i18n/vite/remote';
 import { getTranslationMeta } from 'virtual:ai-i18n';
 const remote = defineRemote({ async load(context) {
   const source: string = context.messages[0]!.source;
   return { translations: [], publicMeta: { version: source, environment: 'production' } };
 } });
-aiI18n({ sourceLang: 'en', locales: [{ value: 'en', label: 'English' }], remote });
-aiI18n({ sourceLang: 'en', locales: [{ value: 'en', label: 'English' }], remote: {
+defineConfig({ sourceLang: 'en', locales: [{ value: 'en', label: 'English' }], remote });
+defineConfig({ sourceLang: 'en', locales: [{ value: 'en', label: 'English' }], remote: {
   async load(context) { return { translations: [], publicMeta: { version: context.sourceLang, environment: 'preview' } }; }
 } });
 const meta = getTranslationMeta();

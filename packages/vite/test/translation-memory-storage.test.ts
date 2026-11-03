@@ -6,7 +6,8 @@ import type { TranslationMemoryCandidateCacheAdapter } from '@ai-i18n/core/trans
 import { listSqliteCandidates, sqlite } from '@ai-i18n/sqlite';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { build } from 'vite';
-import { aiI18n } from '../src';
+import { aiI18n } from '../src/plugin';
+
 import { removeTempDir } from './temp-dir';
 import {
   readTestTranslationMemory,

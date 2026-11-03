@@ -10,6 +10,7 @@ export function createPerformanceDiagnostics(
   config: () => ResolvedConfig | undefined,
   framework: () => string,
   protocolDirectory: string | undefined,
+  configDirectory?: string,
 ) {
   if (option === undefined || option === false) return undefined;
   const validObject =
@@ -57,7 +58,7 @@ export function createPerformanceDiagnostics(
 
   function validateDirectory(): string {
     const resolved = config()!;
-    const output = path.resolve(resolved.root, directory);
+    const output = path.resolve(configDirectory ?? resolved.root, directory);
     const protocol = path.resolve(resolved.root, protocolDirectory ?? 'i18n');
     const relative = path.relative(protocol, output);
     if (

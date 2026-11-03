@@ -29,7 +29,7 @@ test('offers optional SQLite values without changing project translations', asyn
   await fs.symlink(
     path.resolve('packages/sqlite'),
     path.join(packageDirectory, 'sqlite'),
-    'dir',
+    process.platform === 'win32' ? 'junction' : 'dir',
   );
   const cache = await sqlite({ dataDirectory }).open(directory);
   await cache.sync([
@@ -138,7 +138,7 @@ test('resolves SQLite from the app when i18n_directory is outside it', async () 
   await fs.symlink(
     path.resolve('packages/sqlite'),
     path.join(packageDirectory, 'sqlite'),
-    'dir',
+    process.platform === 'win32' ? 'junction' : 'dir',
   );
   const cache = await sqlite({ dataDirectory }).open(directory);
   await cache.sync([

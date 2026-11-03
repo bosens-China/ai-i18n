@@ -3,7 +3,8 @@ import os from 'node:os';
 import path from 'node:path';
 import { afterEach, expect, it, vi } from 'vitest';
 import { build, createServer, type ViteDevServer } from 'vite';
-import { aiI18n } from '../src/index';
+import { aiI18n } from '../src/plugin';
+
 import { ProjectState } from '../src/project-state';
 import { FileStore } from '../src/file-store';
 import { validateRemoteSnapshot } from '../src/remote-validation';

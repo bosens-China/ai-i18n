@@ -4,7 +4,8 @@ import path from 'node:path';
 import { runtimeMessageId, type Translator } from '@ai-i18n/core';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { build, type Plugin } from 'vite';
-import { aiI18n, Analyzer } from '../src';
+import { aiI18n } from '../src/plugin';
+import { Analyzer } from '../src';
 import { extractedTestPath } from './extracted-test-path';
 import {
   readProtocolJson as readJson,

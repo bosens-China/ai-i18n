@@ -19,17 +19,21 @@ import { aiI18n } from '@ai-i18n/vite';
 import { defineConfig } from 'vite';
 
 export default defineConfig({
-  plugins: [
-    aiI18n({
-      sourceLang: 'zh-CN', // 源码文案使用的语言
-      locales: [
-        // value 是语言标识，label 是界面中的展示名称。
-        { value: 'zh-CN', label: '中文' },
-        { value: 'en-US', label: 'English' },
-      ],
-      autoImport: true, // 按框架模式注入未绑定的 Runtime API
-    }),
+  plugins: [aiI18n()],
+});
+```
+
+```ts title="ai-i18n.config.ts"
+import { defineConfig } from '@ai-i18n/vite/config';
+
+export default defineConfig({
+  sourceLang: 'zh-CN', // 源码文案使用的语言
+  locales: [
+    // value 是语言标识，label 是界面中的展示名称。
+    { value: 'zh-CN', label: '中文' },
+    { value: 'en-US', label: 'English' },
   ],
+  autoImport: true, // 按框架模式注入未绑定的 Runtime API
 });
 ```
 

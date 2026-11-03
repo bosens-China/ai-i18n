@@ -11,22 +11,13 @@ Vue 模板、响应式更新和 `tRef()` 问题见 [Vue 常见问题](/guide/faq
 不能。ai-i18n 当前要求 Vite ≥ 8。使用更低版本时，请先升级 Vite，并确认当前 Node.js
 版本满足 Vite 8 的运行要求。
 
-## 为什么会安装 fs-native-extensions？
+## 能否同时运行多个写入同一翻译目录的进程？
 
-`@ai-i18n/vite` 通过 `@ai-i18n/core` 依赖 `fs-native-extensions`。Vite 与
-`@ai-i18n/mcp` 可能同时修改 `translations/` 或 `overrides/` 分桶文件。因此需要跨进程文件锁，
-把“读取 → 修改 → 原子写入”整体串行化。否则，两个进程同时读写时，后完成的进程可能覆盖
-另一个进程的修改。
+不支持。项目文件保留原子替换和进程内排队，但不再使用跨进程文件锁，也不会阻止第二个 Dev 启动。两个进程同时写入时，后一次保存可能覆盖前一次修改。
 
-原子写入只能避免文件写到一半时损坏。它无法避免并发读改写造成的数据丢失。Node.js 的
-`node:fs` 目前也没有跨平台的 `flock` 等价 API，因此 ai-i18n 使用
-`fs-native-extensions` 提供操作系统级文件锁。该依赖只在 Vite 和 MCP 的 Node.js 进程中
-运行，不会进入浏览器产物。
+多个实例请分别配置独立的 `cacheDir` 和 ai-i18n `directory`。使用 MCP 补译时，应避免同时运行构建或触发 Dev 提取、Provider 翻译；需要稳定批量更新时先停止 Dev，完成后再启动。
 
-当前发布包没有提供 Linux musl 预编译产物。使用 `node:24-alpine` 等 Alpine 构建镜像时，
-可能出现包含 `ADDON_NOT_FOUND` 或 `linux-x64-musl` 的错误。请把 Node.js 构建阶段改为
-glibc 镜像，例如 `node:24-bookworm-slim`。最终用于托管静态文件的 Nginx 阶段仍可继续
-使用 Alpine。
+ai-i18n 已移除 `fs-native-extensions` 依赖；旧版本仍可能安装它，升级后需重新安装依赖并重启 Dev。
 
 ## 是否支持 SSR？
 
@@ -42,14 +33,14 @@ glibc 镜像，例如 `node:24-bookworm-slim`。最终用于托管静态文件�
 如果项目因为其他 API 使用了 `unplugin-auto-import`，两者可以同时存在。但不要重复配置
 ai-i18n Runtime API。
 
-需要省略显式 import 时，请设置 `aiI18n({ autoImport: true })`。完整边界见
+需要省略显式 import 时，请设置 `defineConfig({ autoImport: true, ... })`。完整边界见
 [自动导入](/guide/basic/auto-import)。
 
 ## 为什么自动导入没有生效？
 
 按顺序检查：
 
-1. 确认 `aiI18n({ autoImport: true })` 已显式开启。
+1. 确认 `defineConfig({ autoImport: true, ... })` 已显式开启。
 2. 确认使用了当前模式支持的 API：三种模式都提供 `t`、语言 API 和 `subscribe`；Vue
    额外提供 `useI18n`、`tRef`、`i18nComputed` 与 `tComputed`，React 额外提供
    `useI18n`。
@@ -101,8 +92,10 @@ definePagePermissions({
 浏览器显示 `304 Not Modified` 只表示缓存校验成功。它不能单独说明耗时来自网络或 ai-i18n。需要
 定位时，临时开启开发服务器阶段耗时诊断：
 
-```ts
-aiI18n({
+```ts title="ai-i18n.config.ts"
+import { defineConfig } from '@ai-i18n/vite/config';
+
+export default defineConfig({
   sourceLang: 'zh-CN',
   locales,
   diagnostics: {

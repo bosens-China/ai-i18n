@@ -43,8 +43,10 @@ interface AiI18nLocaleLoadingOptions {
 
 ## 示例
 
-```ts
-aiI18n({
+```ts title="ai-i18n.config.ts"
+import { defineConfig } from '@ai-i18n/vite/config';
+
+export default defineConfig({
   sourceLang: 'zh-CN',
   defaultLang: 'en-US',
   locales,

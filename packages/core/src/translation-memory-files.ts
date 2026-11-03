@@ -1,44 +1,25 @@
-import { createHash } from 'node:crypto';
 import fs from 'node:fs/promises';
-import { createRequire } from 'node:module';
-import os from 'node:os';
 import path from 'node:path';
 import { writeFile } from 'atomically';
 import { parseProtocolJson } from './protocol-json.js';
 
 const JOURNAL = '.transaction.json';
-const { waitForLock, unlock } = createRequire(import.meta.url)(
-  'fs-native-extensions',
-) as {
-  waitForLock(fd: number): Promise<void>;
-  unlock(fd: number): void;
-};
+const queues = new Map<string, Promise<unknown>>();
 
-export async function withFileLock<T>(
+/** 同进程按目录排序；不提供跨进程互斥。 */
+export async function withFileQueue<T>(
   file: string,
   task: () => Promise<T>,
 ): Promise<T> {
-  const lockDirectory = path.join(os.tmpdir(), 'ai-i18n-locks');
-  await fs.mkdir(lockDirectory, { recursive: true });
-  const key =
-    process.platform === 'win32' ? file.toLocaleLowerCase('en-US') : file;
-  const lockFile = path.join(
-    lockDirectory,
-    `${createHash('sha256').update(key).digest('hex')}.lock`,
-  );
-  const handle = await fs.open(lockFile, 'a+');
-  let locked = false;
+  const resolved = path.resolve(file);
+  const key = process.platform === 'win32' ? resolved.toLowerCase() : resolved;
+  const previous = queues.get(key) ?? Promise.resolve();
+  const pending = previous.then(task, task);
+  queues.set(key, pending);
   try {
-    // 锁稳定的旁路文件；原子替换协议文件时锁身份不会变化。
-    await waitForLock(handle.fd);
-    locked = true;
-    return await task();
+    return await pending;
   } finally {
-    try {
-      if (locked) unlock(handle.fd);
-    } finally {
-      await handle.close();
-    }
+    if (queues.get(key) === pending) queues.delete(key);
   }
 }
 

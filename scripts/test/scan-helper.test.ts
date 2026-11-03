@@ -26,7 +26,7 @@ it.each([false, true])(
       await fs.writeFile(
         path.join(pkg, 'scan.mjs'),
         `
-      export async function scanProject() {
+      export async function scanConfiguredProject() {
         setInterval(() => {}, 1000);
         await new Promise(resolve => setTimeout(resolve, 20));
         ${failure ? `throw new Error(${JSON.stringify(output)});` : `return { output: ${JSON.stringify(output)} };`}

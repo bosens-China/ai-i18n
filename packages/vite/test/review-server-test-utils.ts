@@ -4,7 +4,8 @@ import os from 'node:os';
 import path from 'node:path';
 import { afterAll, afterEach, beforeAll, vi } from 'vitest';
 import { build, createServer, type ViteDevServer } from 'vite';
-import { aiI18n, type AiI18nOptions } from '../src/index';
+import { aiI18n } from '../src/plugin';
+import { type AiI18nOptions } from '../src';
 import { aiI18nReview, type AiI18nReviewOptions } from '../src/review';
 import { removeTempDir } from './temp-dir';
 

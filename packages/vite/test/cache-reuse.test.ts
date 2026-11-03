@@ -5,7 +5,8 @@ import { afterEach, expect, test, vi } from 'vitest';
 import { build, createServer } from 'vite';
 import { sqlite } from '@ai-i18n/sqlite';
 import { openTranslationMemoryStore } from '@ai-i18n/core/translation-memory';
-import { aiI18n } from '../src/index';
+import { aiI18n } from '../src/plugin';
+
 import { aiI18nPluginApi } from '../src/plugin-api';
 import { FileStore } from '../src/file-store';
 import { ProjectState } from '../src/project-state';

@@ -4,7 +4,8 @@ import os from 'node:os';
 import path from 'node:path';
 import { afterEach, vi } from 'vitest';
 import type { Plugin, ResolvedConfig } from 'vite';
-import { aiI18n, type AiI18nOptions } from '../src/index';
+import { aiI18n } from '../src/plugin';
+import { type AiI18nOptions } from '../src';
 
 const tempDirs: string[] = [];
 const pluginClosers = new Set<() => Promise<void>>();

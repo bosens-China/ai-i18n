@@ -6,7 +6,8 @@ import react from '@vitejs/plugin-react';
 import vue from '@vitejs/plugin-vue';
 import { afterEach, describe, expect, it } from 'vitest';
 import { build, type Plugin } from 'vite';
-import { aiI18n } from '../src/index';
+import { aiI18n } from '../src/plugin';
+
 import { removeTempDir } from './temp-dir';
 
 const tempDirs: string[] = [];
@@ -101,9 +102,11 @@ describe('Build chunk boundaries', () => {
       expect(chunksWithScopedRuntime).toHaveLength(2);
       for (const chunk of chunksWithScopedRuntime) {
         const moduleIds = Object.keys(chunk.modules);
-        expect(moduleIds.some((id) => id.startsWith(`${root}/src/`))).toBe(
-          true,
-        );
+        expect(
+          moduleIds.some((id) =>
+            id.startsWith(`${root.replaceAll('\\', '/')}/src/`),
+          ),
+        ).toBe(true);
       }
     },
   );

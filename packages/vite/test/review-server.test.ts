@@ -1,7 +1,8 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
-import { aiI18n, type AiI18nOptions } from '../src/index';
+import { aiI18n } from '../src/plugin';
+import { type AiI18nOptions } from '../src';
 import { sqlite } from '@ai-i18n/sqlite';
 import { readTranslationOverrides } from '@ai-i18n/core/translation-memory';
 import { aiI18nReview } from '../src/review';

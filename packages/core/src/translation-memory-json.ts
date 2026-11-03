@@ -1,7 +1,6 @@
 import { createHash } from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { writeFile } from 'atomically';
 import { diagnosticMessage } from './diagnostics.js';
 import {
   parseTranslationMemoryFile,
@@ -16,7 +15,7 @@ import {
   readJson,
   stableJson,
   syncAtomicJsonFiles,
-  withFileLock,
+  withFileQueue,
 } from './translation-memory-files.js';
 
 interface TranslationBucketEntry {
@@ -37,7 +36,7 @@ export class JsonTranslationMemoryStore {
   constructor(private readonly translationsDirectory: string) {}
 
   async load(): Promise<TranslationMemoryFile> {
-    return withFileLock(this.translationsDirectory, async () => {
+    return withFileQueue(this.translationsDirectory, async () => {
       await this.recover();
       return this.readCurrent();
     });
@@ -47,7 +46,7 @@ export class JsonTranslationMemoryStore {
     update: (memory: TranslationMemoryFile) => void | Promise<void>,
   ): Promise<TranslationMemoryFile> {
     await fs.mkdir(this.translationsDirectory, { recursive: true });
-    return withFileLock(this.translationsDirectory, async () => {
+    return withFileQueue(this.translationsDirectory, async () => {
       await this.recover();
       let duplicates = false;
       const current = await this.readCurrent(() => {
@@ -65,11 +64,6 @@ export class JsonTranslationMemoryStore {
         return draft;
       }
       draft.revision = revisionFor(draft.messages);
-      await writeFile(this.journalPath(), stableJson(draft), {
-        encoding: 'utf8',
-        chown: false,
-        mode: false,
-      });
       await this.commit(draft);
       return draft;
     });
@@ -176,7 +170,10 @@ export class JsonTranslationMemoryStore {
           value,
         };
         const hash = translationTargetHash({ ...entry, locale });
-        const file = this.bucketPath(locale, hash.slice(0, 1));
+        const file = translationMemoryEntryPath(this.translationsDirectory, {
+          ...entry,
+          locale,
+        });
         const bucket = desired.get(file) ?? {
           version: 1,
           locale,
@@ -231,6 +228,17 @@ function serializeTranslationBucket(bucket: TranslationBucketFile): string {
 
 function compareText(left: string, right: string): number {
   return left < right ? -1 : left > right ? 1 : 0;
+}
+
+export function translationMemoryEntryPath(
+  translationsDirectory: string,
+  entry: Parameters<typeof translationTargetHash>[0],
+): string {
+  return path.resolve(
+    translationsDirectory,
+    encodeURIComponent(entry.locale),
+    `${translationTargetHash(entry).slice(0, 1)}.json`,
+  );
 }
 
 function translationTargetHash(

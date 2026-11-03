@@ -26,7 +26,7 @@ React Vite 插件，无需安装额外的 ai-i18n React 适配包。
 
 ## 配置 Vite
 
-在 `vite.config.ts` 中注册 `aiI18n()`：
+创建 `ai-i18n.config.ts` 保存业务配置，并在 `vite.config.ts` 中注册 `aiI18n()`。路径规则与迁移见[独立配置与多应用](/guide/basic/configuration)：
 
 ```ts
 import { aiI18n } from '@ai-i18n/vite';
@@ -34,15 +34,18 @@ import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vite';
 
 export default defineConfig({
-  plugins: [
-    aiI18n({
-      sourceLang: 'zh-CN',
-      locales: [
-        { value: 'zh-CN', label: '中文' },
-        { value: 'en-US', label: 'English' },
-      ],
-    }),
-    react(),
+  plugins: [aiI18n(), react()],
+});
+```
+
+```ts title="ai-i18n.config.ts"
+import { defineConfig } from '@ai-i18n/vite/config';
+
+export default defineConfig({
+  sourceLang: 'zh-CN',
+  locales: [
+    { value: 'zh-CN', label: '中文' },
+    { value: 'en-US', label: 'English' },
   ],
 });
 ```

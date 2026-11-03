@@ -5,7 +5,7 @@ description: Scan a Vite app from its entries without a full Build, then use Ski
 
 # Use ai-i18n MCP
 
-Use the locate → scan when needed → list → update → verify workflow. Do not scan for i18n directories or edit generated
+Use the locate → scan when needed → list → update → verify workflow. Discover configuration files, not i18n directories; do not scan for i18n directories or edit generated
 files manually while the MCP tools are available.
 Confirm whether the selected app consumes local or remote automatic translations before choosing a write workflow.
 
@@ -28,13 +28,10 @@ an approved protocol-file repair.
 
 ## Locate the target app
 
-1. Identify the Vite app the user wants to change. In a monorepo, do not treat the repository root
-   or a similarly named `i18n/` directory as the target.
-2. Read the app's `package.json`, package scripts, and `vite.config.*` as text. Do not execute the
-   Vite config merely to locate the app; the explicit scan step below loads it.
-3. Resolve Vite `root` from the command's working directory. Resolve a relative `aiI18n({ directory })`
-   against that root; use an absolute `directory` unchanged. The default directory is `i18n`.
-4. Pass the resulting absolute path as `i18n_directory`.
+1. Discover ai-i18n.config.ts candidates using ai_i18n_discover_projects with the explicit absolute workspace_directory. Discovery does not execute configuration. If the user already selected an exact config, skip discovery.
+2. Select the intended app; never merge multiple candidates or infer a target from an i18n directory name. See [Configuration discovery](references/configuration.md).
+3. Call ai_i18n_resolve_project for the selected absolute config_file and intended command/mode. Only this step executes the selected config and imports.
+4. Use its absolute i18n_directory for project tools, app_directory for dependency lookup, and vite_root for source paths. Preserve config_file, command and mode when handing off to scanning or cache synchronization.
 
 If more than one Vite app is plausible, ask the user which app to use before calling MCP.
 The app's framework mode and `autoImport` setting affect source integration but do not change the MCP

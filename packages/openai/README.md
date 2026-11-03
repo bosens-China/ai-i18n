@@ -6,9 +6,11 @@
 正式版选择 `@ai-i18n/openai@^1.0.0`。
 安装前请查看[版本选择与升级](https://bosens-china.github.io/ai-i18n/guide/getting-started/versions)，确认 npm 已上架；尚无正式版时显式选择 `@alpha`。
 
+以下配置放在 `ai-i18n.config.ts`；Vite 中使用 `aiI18n()` 注册。
+
 ```ts
 import { openAI } from '@ai-i18n/openai';
-import { aiI18n } from '@ai-i18n/vite';
+import { defineConfig } from '@ai-i18n/vite/config';
 
 const locales = [
   { value: 'zh-CN', label: '中文' },
@@ -33,7 +35,7 @@ const translator = openAI({
     : undefined,
 });
 
-aiI18n({
+export default defineConfig({
   sourceLang: 'zh-CN',
   locales,
   provider: {
@@ -53,7 +55,7 @@ structured output 并校验实际响应，顶层字段、输入下标、目标�
 `temperature` 会原样传给兼容服务，是否实际生效由服务、模型及其运行模式决定。
 
 LLM 调试日志默认关闭，并且只通过 Vite 的 `provider.logging` 配置。设置为 `true` 时写入 Vite
-root 下的 `logs/`；设置为字符串时选择目录，相对路径基于 Vite root，绝对路径保持不变。每次创建
+root 下的 `logs/`；设置为字符串时选择目录，相对路径基于 独立配置文件所在目录，绝对路径保持不变。每次创建
 `openAI()` translator 时会在首次写入时分配一个新的
 `日期-时间-pPID-序号.log` 文件；同一实例在 Dev/HMR 或 Build Watch 中重复调用时持续追加到
 该文件。日志把 OpenAI SDK debug 事件整理为便于人工审查的多行文本：完整记录最终发送的

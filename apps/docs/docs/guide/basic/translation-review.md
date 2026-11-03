@@ -13,8 +13,14 @@ import { aiI18n } from '@ai-i18n/vite';
 import { aiI18nReview } from '@ai-i18n/vite/review';
 
 export default defineConfig({
-  plugins: [aiI18n({ sourceLang: 'zh-CN', locales }), aiI18nReview()],
+  plugins: [aiI18n(), aiI18nReview()],
 });
+```
+
+```ts title="ai-i18n.config.ts"
+import { defineConfig } from '@ai-i18n/vite/config';
+
+export default defineConfig({ sourceLang: 'zh-CN', locales });
 ```
 
 `aiI18n()` 本身不会开启 Review。`aiI18nReview()` 必须与一个 `aiI18n()` 注册在同一份 Vite 配置中，

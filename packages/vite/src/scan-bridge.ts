@@ -7,11 +7,10 @@ import { digest } from './scan-cache.js';
 import { createServer } from 'node:http';
 import type { ViteDevServer } from 'vite';
 import { diagnosticMessage } from '@ai-i18n/analyzer';
-import { withFileLock } from '@ai-i18n/core/translation-memory';
+import { withFileQueue } from '@ai-i18n/core/translation-memory';
 import type { AiI18nPluginApi } from './plugin-api.js';
 import { ensureScan, type ScanResult } from './scan-catalog.js';
 
-const activeServers = new Map<string, ViteDevServer>();
 const rootPath = (server: ViteDevServer) => realpathSync(server.config.root);
 const configPath = (server: ViteDevServer) =>
   server.config.configFile && realpathSync(server.config.configFile);
@@ -27,28 +26,9 @@ export async function startScanBridge(
   server: ViteDevServer,
   api: AiI18nPluginApi,
 ) {
-  return withFileLock(descriptor(server), async () => {
+  return withFileQueue(descriptor(server), async () => {
     const token = randomBytes(32).toString('hex');
     const filename = descriptor(server);
-    const previous = await readDescriptor(filename);
-    // Vite 先创建新 Server 再关闭旧 Server；仅允许正在重启的旧实例交接。
-    const restarting = Boolean(
-      (
-        activeServers.get(filename) as
-          (ViteDevServer & { _restartPromise?: Promise<void> }) | undefined
-      )?._restartPromise,
-    );
-    if (
-      previous &&
-      alive(previous.pid) &&
-      !(previous.pid === process.pid && restarting)
-    )
-      throw new Error(
-        diagnosticMessage(
-          '[ai-i18n] 此应用已有活动 Dev，请复用该进程或为另一个实例配置独立 cacheDir 和 i18n 目录。',
-          '[ai-i18n] This app already has an active Dev server. Reuse it or give the other instance separate cacheDir and i18n directories.',
-        ),
-      );
     const bridge = createServer(async (request, response) => {
       response.setHeader('Content-Type', 'application/json');
       if (
@@ -92,14 +72,13 @@ export async function startScanBridge(
       }),
       { mode: 0o600 },
     );
-    activeServers.set(filename, server);
     return async () => {
       bridge.closeAllConnections();
       await new Promise<void>((resolve) => bridge.close(() => resolve()));
-      if (activeServers.get(filename) === server)
-        activeServers.delete(filename);
-      if ((await readDescriptor(filename))?.token === token)
-        await fs.rm(filename, { force: true });
+      await withFileQueue(filename, async () => {
+        if ((await readDescriptor(filename))?.token === token)
+          await fs.rm(filename, { force: true });
+      });
     };
   });
 }

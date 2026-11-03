@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto';
 import fs from 'node:fs/promises';
 import type BetterSqlite3 from 'better-sqlite3';
 import { diagnosticMessage } from '@ai-i18n/core/diagnostics';
-import { withFileLock } from '@ai-i18n/core/translation-memory';
+import { withFileQueue } from '@ai-i18n/core/translation-memory';
 import { globalTranslationMemoryPath } from './sqlite-paths.js';
 import { loadDatabase, readDatabase } from './sqlite-store.js';
 
@@ -69,7 +69,7 @@ export async function cleanSqliteCache(input: CacheCleanupInput) {
       };
     return { ...result, executed: false, available: true };
   }
-  return withFileLock(databasePath, async () => {
+  return withFileQueue(databasePath, async () => {
     await fs.access(databasePath);
     const Database = await loadDatabase();
     const database = new Database(databasePath, { fileMustExist: true });

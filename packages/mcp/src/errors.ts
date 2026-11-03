@@ -50,6 +50,18 @@ function nextAction(code: string): string {
 }
 
 const ERROR_NEXT_ACTIONS: Record<string, string> = {
+  WORKSPACE_NOT_FOUND:
+    'Check the selected workspace exists and is readable, then discover again.',
+  CONFIG_NOT_FOUND:
+    'Discover projects again or provide an existing absolute config_file.',
+  CONFIG_LOADER_UNAVAILABLE:
+    'Install a compatible @ai-i18n/vite version in the selected app with the /config export. Do not patch node_modules or resolve a different app.',
+  CONFIG_INVALID:
+    'Inspect the selected config and its imports, or run its Vite command for detailed diagnostics. Fix it before retrying; do not switch to another app.',
+  WORKSPACE_DIRECTORY_NOT_ABSOLUTE:
+    'Pass the absolute workspace directory to discover projects.',
+  CONFIG_FILE_NOT_ABSOLUTE:
+    'Pass the absolute config_file returned by project discovery.',
   SQLITE_PROJECT_REQUIRED:
     'List cache projects and pass the exact absolute project_directory for project or orphan cleanup.',
   SQLITE_INVALID_CLEANUP_SCOPE:

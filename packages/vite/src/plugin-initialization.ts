@@ -49,13 +49,16 @@ export function initializeProject(
       cleanupMissingSourceFiles: options.cleanup?.missingSourceFiles ?? true,
       cleanupOrphanMessages:
         !api.scanMode &&
-        (options.cleanup?.orphanMessages ?? config.command === 'build'),
+        config.command === 'build' &&
+        (options.cleanup?.orphanMessages ?? true),
       translationMemory: api.scanMode ? {} : translationMemory,
       remote: Boolean(
         options.remote?.load && options.remote.mode !== 'overlay',
       ),
       timing,
-      ...(!api.scanMode && translationMemory.capacity
+      ...(!api.scanMode &&
+      config.command === 'build' &&
+      translationMemory.capacity
         ? { capacity: translationMemory.capacity }
         : {}),
     },

@@ -4,11 +4,7 @@
 
 本地 stdio MCP server，为 Agent 提供 ai-i18n 翻译与人工校对的查询、设置和删除能力。
 
-MCP 不扫描 workspace；启动与列表查询不执行 Vite 配置。写入后的可选缓存同步会解析应用配置。
-Agent 必须先确认目标 Vite 应用，读取它的
-`vite.config.*` 和启动脚本，再将 Vite `root` 与 `aiI18n({ directory })`（默认 `i18n`）
-解析为最终绝对 `i18n_directory`。在 monorepo 中，每个 Vite build 分开处理，不能把仓库
-根目录或第一个同名目录当成协议目录。
+MCP 启动不绑定项目。先显式发现工作区中的配置文件，再选择一份独立配置解析应用与翻译目录；发现阶段不执行配置。多个 Vite build 分开处理，不能将第一个候选或同名目录自动当作目标。
 
 目标应用完整 Build 时，其可达的本地 workspace 源码也会进入该应用的 `extracted/`。
 因此 `packages/ui` 等纯源码包不是另一个 MCP 目标；它的消息通过消费应用的
@@ -71,7 +67,7 @@ server 使用 stdio 通信，标准输出专用于 MCP 协议。
 - `ai_i18n_list_orphan_messages`：只在用户明确要求审查或清理时调用。完整 Build 后，列出
   Translation Memory 中已不再被 `extracted/` 引用的消息，并返回删除所需的 opaque
   `orphan_id`。
-- `ai_i18n_delete_orphan_messages`：用户审查列表并明确批准后，按 `orphan_id` 原子删除孤立
+- `ai_i18n_delete_orphan_messages`：用户审查列表并明确批准后，按 `orphan_id` 删除孤立
   Translation Memory。删除前会整批复验；任一消息重新被源码引用时，整批失败且不修改文件。
 - `ai_i18n_list_overrides`：逐 locale 列出 `overrides/` 中的人工值，包括 orphan，并
   返回删除所需的 opaque `override_id`。文件级和位置级规则分别返回作为规则身份的 `files` 与
@@ -120,14 +116,14 @@ server 使用 stdio 通信，标准输出专用于 MCP 协议。
 ## 写入边界
 
 - 翻译工具只修改项目 `translations/` 分桶；人工校对工具只修改项目 `overrides/` 分桶。
-- SQLite 候选和项目列表工具只读。普通写入成功后解析目标应用 Vite 配置，同步已启用的缓存，
-  不启动 Dev、不提取、不请求 Provider。写入工具均接受可选绝对 app_directory；外置翻译目录需要提供，
-  默认从翻译目录向上定位 vite.config.*。找不到配置时由下次 Dev/Build 校准。
+- SQLite 候选和项目列表工具只读。普通写入成功后解析目标独立配置，同步已启用的缓存，
+  不启动 Dev、不提取、不请求 Provider。写入工具均接受可选绝对 app_directory；也可传入显式 config_file 与配置环境，
+  默认从翻译目录向上定位 ai-i18n.config.ts。找不到配置时由下次 Dev/Build 校准。
   缓存同步失败输出 stderr warning，不回滚项目写入。人工覆盖同步只提供候选，不触发自动复用。
 - 缓存清理需要显式授权及预览 token；清理后下次同步可恢复当前项目贡献，不永久屏蔽来源。
 - MCP 不读取 Vite 的 `provider.cache`；Provider 是否刷新进程缓存，不改变 Agent 的列表、写入或清除行为。
 - MCP 不修改 `extracted/` 或 `locales/`。
-- 每批写入都取得跨进程锁，在锁内重读并校验最新文件，然后按字段原子更新。
+- 同进程写入按目录排队，重读并校验最新文件；每个分片原子替换，不保证跨进程并发安全或跨分片整批提交。中断后可重新查询并补齐；新事务不再生成 journal，旧版遗留 journal 仍先恢复。
 - 每批最多 500 个输入。相同目标与相同值重复出现时只写一次并返回
   `deduplicated_count`；同一目标出现不同值时整批以 `DUPLICATE_TARGET_CONFLICT` 失败。
 - `affected_file_count` 统计目标消息在应用中实际出现的源文件数量。写入一次即可影响
@@ -154,7 +150,7 @@ server 使用 stdio 通信，标准输出专用于 MCP 协议。
 才执行以下流程：
 
 1. 临时设置 `cleanup.orphanMessages: false`，再运行目标应用的一次完整 Vite Build。普通 Build
-   默认清理孤儿；Dev 只处理已访问模块，不能作为安全清理依据。
+   成功写出后默认清理孤儿；失败构建不清理。Dev 只处理已访问模块，不能作为安全清理依据。
 2. 完整翻页读取 `ai_i18n_list_orphan_messages`，向用户展示数量、消息和仍保存的译文。
 3. 用户明确批准具体清理范围后，原样复制 `orphan_id` 到
    `ai_i18n_delete_orphan_messages`；不得自行构造 ID。
@@ -164,3 +160,9 @@ server 使用 stdio 通信，标准输出专用于 MCP 协议。
 孤立消息工具只读写当前 Translation Memory。`overrides/` 中的孤立人工值继续通过 override
 列表与删除工具独立审查，不能随 Translation Memory 联动删除。运行清理期间不要并行执行 Build
 或手工修改协议文件。
+
+## 独立配置与应用发现
+
+`ai_i18n_discover_projects` 接收绝对 `workspace_directory`，只列出配置路径，不执行配置；多结果需要选定应用，truncated 时缩小目录重试。`ai_i18n_resolve_project` 接收选定的绝对 `config_file` 和可选 `command` / `mode`，只加载该配置，返回 `app_directory`（配置目录）、`vite_root`、`i18n_directory`、语言列表和译文来源，不返回 Provider 或密钥。不会加载 vite.config 或调用翻译器，但配置及其导入代码会执行。
+
+读写工具继续使用最终绝对 `i18n_directory`。写入工具可携带 `config_file`、`config_command`、`config_mode`，让写后缓存同步使用同一配置环境；省略时从 app_directory 或翻译目录祖先寻找 ai-i18n.config.ts，默认 serve/development。源码扫描仍需要选定应用的 Vite 环境。

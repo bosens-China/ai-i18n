@@ -135,6 +135,7 @@ export function getCompilerCalls() {
       fixturePlugin,
       reactPlugin(),
       babel({
+        cwd: path.resolve('packages/vite'),
         presets: [
           reactCompilerPreset({
             compilationMode: 'annotation',

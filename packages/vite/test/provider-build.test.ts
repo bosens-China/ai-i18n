@@ -4,7 +4,8 @@ import path from 'node:path';
 import { runtimeMessageId, type Translator } from '@ai-i18n/core';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { build } from 'vite';
-import { aiI18n } from '../src';
+import { aiI18n } from '../src/plugin';
+
 import { FileStore } from '../src/file-store';
 import { buildOutputItems } from './build-output';
 import { readTestTranslationMemory } from './translation-memory-test-utils';

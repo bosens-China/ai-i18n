@@ -5,6 +5,7 @@ import { diagnosticMessage } from '@ai-i18n/analyzer';
 import { aiI18nPluginApi } from './plugin-api.js';
 import { ensureScan } from './scan-catalog.js';
 import { scanWithDev } from './scan-bridge.js';
+import { loadAiI18nConfig } from './config.js';
 import {
   analyzeModule,
   findRuntimeImportDeclarations,
@@ -15,6 +16,7 @@ import {
 export async function scanProject(
   config: InlineConfig = {},
   entries?: readonly string[],
+  selectedConfigFile?: string,
 ) {
   const server = await createServer({
     ...config,
@@ -23,28 +25,44 @@ export async function scanProject(
       {
         name: 'ai-i18n:scan',
         enforce: 'pre',
-        async config(config) {
-          // config hooks 先于全部 configResolved；必须在初始化 Provider/存储前切换。
-          const plugins = await flattenPlugins(config.plugins ?? []);
-          for (const plugin of plugins) {
-            const api = aiI18nPluginApi(plugin);
-            if (api) api.scanMode = true;
-          }
-          // 合并配置中的数组会追加，必须先清空已有的预热/预打包入口。
-          if (config.optimizeDeps) config.optimizeDeps.include = [];
-          if (config.server) config.server.warmup = {};
-          return {
-            root: await fs.realpath(path.resolve(config.root ?? process.cwd())),
-            server: {
-              middlewareMode: true,
-              watch: null,
-              hmr: false,
-              ws: false,
-              preTransformRequests: false,
-              warmup: { clientFiles: [], ssrFiles: [] },
-            },
-            optimizeDeps: { noDiscovery: true, include: [] },
-          };
+        config: {
+          order: 'post',
+          async handler(config) {
+            // config hooks 先于全部 configResolved；必须在初始化 Provider/存储前切换。
+            const plugins = await flattenPlugins(config.plugins ?? []);
+            for (const plugin of plugins) {
+              const api = aiI18nPluginApi(plugin);
+              if (
+                api &&
+                selectedConfigFile &&
+                api.configFile !== selectedConfigFile
+              )
+                throw new Error(
+                  diagnosticMessage(
+                    '[ai-i18n] Vite 注册的配置与选定配置不一致。',
+                    '[ai-i18n] Vite registered a different ai-i18n config than the selected file.',
+                  ),
+                );
+              if (api) api.scanMode = true;
+            }
+            // 合并配置中的数组会追加，必须先清空已有的预热/预打包入口。
+            if (config.optimizeDeps) config.optimizeDeps.include = [];
+            if (config.server) config.server.warmup = {};
+            return {
+              root: await fs.realpath(
+                path.resolve(config.root ?? process.cwd()),
+              ),
+              server: {
+                middlewareMode: true,
+                watch: null,
+                hmr: false,
+                ws: false,
+                preTransformRequests: false,
+                warmup: { clientFiles: [], ssrFiles: [] },
+              },
+              optimizeDeps: { noDiscovery: true, include: [] },
+            };
+          },
         },
         transform: {
           filter: { id: /[?&]html-proxy(?:&|$)/ },
@@ -119,3 +137,37 @@ async function flattenPlugins(
 }
 
 export { syncProjectCache } from './cache-sync.js';
+
+export async function scanConfiguredProject(
+  configFile: string,
+  config: InlineConfig = {},
+  entries?: readonly string[],
+) {
+  const loaded = await loadAiI18nConfig(configFile, {
+    command: 'serve',
+    mode: config.mode ?? 'development',
+  });
+  let viteConfig = config.configFile;
+  if (viteConfig === undefined) {
+    for (const extension of ['js', 'mjs', 'ts', 'cjs', 'mts', 'cts']) {
+      const candidate = path.join(
+        path.dirname(loaded.configFile),
+        `vite.config.${extension}`,
+      );
+      if (
+        await fs.stat(candidate).then(
+          (stat) => stat.isFile(),
+          () => false,
+        )
+      ) {
+        viteConfig = candidate;
+        break;
+      }
+    }
+  }
+  return scanProject(
+    { ...config, configFile: viteConfig, root: loaded.root },
+    entries,
+    loaded.configFile,
+  );
+}

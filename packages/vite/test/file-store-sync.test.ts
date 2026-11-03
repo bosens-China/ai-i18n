@@ -149,7 +149,8 @@ describe('FileStore sync', () => {
       locales: options.locales,
       cleanupOrphanMessages: true,
     });
-    const pruned = await pruningStore.sync(state.snapshot());
+    await pruningStore.sync(state.snapshot());
+    const pruned = await pruningStore.cleanupHistory(state.snapshot());
     expect(pruned.messages).not.toHaveProperty('保存');
 
     state.hydrateCache(pruned);

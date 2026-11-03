@@ -9,7 +9,7 @@ Do not add a public CLI, package script, or copied scanner to the user's app.
 node <skill-directory>/scripts/scan.mjs --root <absolute-app-command-directory>
 ```
 
-`--root` is the working directory of the app's Vite command, not an override of `vite.config.root`.
+`--root` is the selected config directory used to resolve installed packages. `--i18n-config` selects the independent config (default ai-i18n.config.ts); its resolved root determines the scan root.
 The script loads that app's installed `@ai-i18n/vite` and Vite config. Preserve an existing command's
 `--config`, `--mode`, and `--configLoader` by passing them to the script. The default mode is
 `development`; omit `--configLoader` to keep Vite's default. Supported loaders are `bundle`,
@@ -108,9 +108,15 @@ For example, the first request is:
 }
 ```
 
-The helper accepts only `ai_i18n_list_translations` and `ai_i18n_set_translations`. Read the tool
+The helper accepts `ai_i18n_discover_projects`, `ai_i18n_resolve_project`, `ai_i18n_list_translations`, and `ai_i18n_set_translations`. Read the tool
 contracts linked by `SKILL.md` for inputs, pagination, token preservation, overwrite authorization,
 and verification. The envelope is the standard tool result; parse the JSON in `content[0].text`.
 An `isError` result exits nonzero; follow its error and `next_action` before retrying. Use JSON files
 or stdin, never interpolate copy or translations into shell command text. Remove temporary requests
 after use. Review, clearing, and orphan deletion remain Host MCP operations.
+
+## Write and restart boundaries
+
+Dev remains incremental and never prunes historical translations. A complete scan refreshes the catalog without history deletion. Build checks missing translations before rendering, persists its full catalog before reporting missing values, and only prunes history after successful output. A zero missing count on a partial Dev catalog is not whole-app completion.
+
+Project writes no longer use cross-process locks; serialize Agent actions and do not start competing writers. Core retains atomic shard replacement and per-process queues. New batches do not generate journals and can be partially saved on interruption; re-list before retrying. Legacy journal recovery remains. Dev registration no longer rejects another instance, but multiple Devs sharing one directory are unsupported; stop extras and restart the intended Dev if the bridge is stale.

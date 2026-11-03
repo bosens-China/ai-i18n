@@ -69,8 +69,10 @@ binding，以及本地同名值的遮挡规则统一见[自动导入](/guide/bas
 只有默认的 `src/ai-i18n.d.ts` 不适合项目目录结构时，才需要设置 `dts`。相对路径基于当前
 Vite root；也可以使用绝对路径：
 
-```ts title="vite.config.ts"
-aiI18n({
+```ts title="ai-i18n.config.ts"
+import { defineConfig } from '@ai-i18n/vite/config';
+
+export default defineConfig({
   autoImport: true,
   dts: 'types/web-ai-i18n.d.ts',
 });

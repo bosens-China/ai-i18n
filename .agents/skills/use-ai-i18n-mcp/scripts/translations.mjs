@@ -4,7 +4,7 @@ import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { parseArgs } from 'node:util';
 
-// 无 Host MCP 连接时仍走同一套 schema、消息身份、锁和写入校验。
+// 无 Host MCP 连接时仍走同一套 schema、消息身份、队列和写入校验。
 const { values } = parseArgs({
   options: {
     root: { type: 'string', default: process.cwd() },

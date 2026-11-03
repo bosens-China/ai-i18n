@@ -68,6 +68,10 @@ export class FileStore {
     return this.memory.update();
   }
 
+  cleanupHistory(snapshot: ProjectSnapshot) {
+    return this.memory.update(undefined, Object.keys(snapshot.cache.messages));
+  }
+
   syncMemory(snapshot: ProjectSnapshot) {
     return this.memory.update(snapshot);
   }
@@ -298,14 +302,8 @@ export class FileStore {
           ),
           ...Object.values(snapshot.extracted),
         ];
-    const activeMessageIds = activeFiles.flatMap((file) =>
-      file.messages.map((message) => message.id),
-    );
     const cache = await this.measure('translation-memory-sync', options, () =>
-      this.memory.update(
-        snapshot,
-        options.preserveHistory ? undefined : activeMessageIds,
-      ),
+      this.memory.update(snapshot),
     );
     const activeExtracted = new Set(Object.keys(snapshot.extracted));
     const staleSources = options.complete

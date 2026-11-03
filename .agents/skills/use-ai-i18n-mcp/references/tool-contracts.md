@@ -87,7 +87,7 @@ can contribute current values again. Never clean the cache during ordinary trans
 Use orphan tools only when the user explicitly requests an orphan audit or cleanup. They are not part
 of ordinary translation, human review, or completion verification.
 
-1. Set `cleanup.orphanMessages: false` for the audit and run one full Vite Build for the selected app. The default Build deletes orphans before MCP can list them. Browser-driven Dev extraction is incomplete, and
+1. Set `cleanup.orphanMessages: false` for the audit and run one full Vite Build for the selected app. A successful default Build deletes orphans after writing outputs, before MCP can list them. Browser-driven Dev extraction is incomplete, and
    the Skill scan uses the Dev graph rather than Build-only conditions; neither replaces this
    production graph check before deletion.
 2. Call `ai_i18n_list_orphan_messages`, follow every page in the requested scope, and show the user the
@@ -145,7 +145,7 @@ To remove a human value, list it first and pass the returned opaque `override_id
 - Translation tools always modify committed project `translations/` buckets through the project
   store. Never calculate bucket keys or edit bucket JSON directly. Writes then parse the selected app
   config and synchronize its enabled personal cache without Dev, extraction or Provider calls.
-  Pass absolute app_directory for external i18n directories; otherwise the server locates vite.config.*
+  Pass config_file and the selected environment for external/custom configs; otherwise the server locates ai-i18n.config.ts
   in parent directories. No config means the next Dev/Build sync handles it. Cache failure is a stderr
   warning after committed project writes. Never create a storage marker.
 - Project-store writes keep Translation Memory protocol fields in their fixed schema order and sort
@@ -169,3 +169,9 @@ To remove a human value, list it first and pass the returned opaque `override_id
 - After automatic translation changes, repeat `ai_i18n_list_translations` with the same scope.
 - After orphan deletion, repeat `ai_i18n_list_orphan_messages` after the same complete Build.
 - After human review changes, repeat `ai_i18n_list_overrides` with the same scope.
+
+## Independent configuration selection
+
+Use ai_i18n_discover_projects(workspace_directory) to list config paths without executing them. Select one and use ai_i18n_resolve_project(config_file, command?, mode?) to resolve its directories. Detailed target selection is in configuration.md, linked directly by SKILL.md.
+
+Project write tools also accept config_file, config_command, and config_mode for post-write cache synchronization. Pass the same values used to resolve the project, especially for custom filenames, external translation directories, or mode-dependent configuration. These fields do not change i18n_directory or authorize overwriting existing translations. app_directory means the configuration directory used for package lookup.

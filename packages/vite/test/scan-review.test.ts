@@ -190,7 +190,7 @@ it('rejects a scan changed in flight and a moved occurrence before watcher deliv
   expect(changed).toBe(false);
   // 强制覆盖已收到 HMR 的情况：Vite 会给 HTML 入口附加 ?t= 时间戳。
   vite.environments.client!.moduleGraph.getModuleById(
-    path.join(root, 'main.ts'),
+    path.join(root, 'main.ts').replaceAll('\\', '/'),
   )!.lastHMRTimestamp = Date.now();
   await expect(ensureScan(vite, api)).rejects.toThrow(
     'Source changed during scanning',

@@ -115,7 +115,7 @@
 - Core 通过受控目录扫描将自动译文和人工覆盖聚合为规范化内存对象；UI、MCP 和其他
   消费方按需把它序列化为整理好的 JSON，但不把聚合结果持久化为第二份项目事实。
 - 分片身份和路径由内容确定，内存 revision 也由当前内容稳定派生，不依赖集中计数器。
-  单次事务先写完整 journal，再原子提交变化分片；进程中断后由 journal 恢复。
+  每个分片原子替换，新写入不生成 journal；中断可部分完成并重新补齐，旧版遗留 journal 仍恢复。
 - 协议 JSON 读取检查同一对象内的重复键，含嵌套与转义等价键。相同值允许读取，由下次正常
   写入清理，存储事务即使无业务变化也不能跳过去重；查询不为去重写盘，原有 journal 恢复不变。
   值冲突时保留文件并拒绝当前操作，报告路径、JSON Pointer 与两处行列，不自动选择值。
@@ -129,22 +129,22 @@
 
 ### 并发与兼容性
 
-- 本地模式的 Vite、MCP 与 Review 通过同一项目存储抽象读写。自动译文和人工覆盖各自使用跨进程锁、
-  锁内重读和可恢复原子提交。内存 ProjectState 只用于加速和 Runtime 更新，项目分片才是写入真相。
+- 本地模式的 Vite、MCP 与 Review 通过同一项目存储抽象读写。自动译文和人工覆盖按目录使用进程内队列、
+  写前重读和分片原子替换，不承诺多进程共享目录并发安全。内存 ProjectState 只用于加速和 Runtime 更新，项目分片才是写入真相。
 - 不同哈希桶使用不同路径；同一桶内的不同目标使用完整哈希键，Git 冲突时按键保留双方独立修改；
   同一键同时修改时暴露真实语义冲突并由人选择。不按用户名拆权威文件，不用客户端时间或文件修改
   时间自动决定赢家。
 - 同一 Vite Dev 插件实例内，ProjectState 更新、重新 hydrate 与 HMR 通知继续由状态事务排序；普通
   source transform 只登记变化源码，协议写入由单实例调度器用短 debounce 与 max-wait 串行执行，
   在真正写入前生成一次最新快照，不阻塞转换响应。普通 Dev 批次只更新变化源码对应的 extracted 与
-  locale 消息并保留未访问模块；依赖全量活动集合的 orphan/capacity 清理由完整同步校准。外部协议
+  locale 消息并保留未访问模块；Dev 不执行 orphan/capacity 清理，包括完整同步回退。外部协议
   文件变更、Provider 结果、人工校对和关闭生命周期先 flush 待写快照；浏览器模块注册直接读取已排序的
   ProjectState，避免旧异步结果覆盖或为普通后台写入重复扫描目录。
 - 正式版前淘汰的旧单文件、旧 manifest、存储标记或旧 MCP 工具参数不保留读取和迁移兼容。
   旧 SQLite 缓存升级时保留无来源记录，但在项目重新同步前不提供为候选。
 - sourceLang 变更时，当前实现会在 comment 一致且历史候选唯一时尽力复用历史翻译；候选不唯一时保持缺失，不猜测。这是保守兼容行为，不构成公开的稳定迁移承诺。
 - Translation Memory 的容量限制与 orphan 清理只淘汰非活动历史消息，不能为满足上限而破坏当前源码仍引用的译文。
-- 完整 Build 与 Build Watch 重建默认按当前入口图清理孤儿自动译文；显式 `cleanup.orphanMessages: false` 保留历史供审查。Dev 与入口扫描默认不清理，扫描始终保留历史；人工覆盖不随自动译文删除。
+- 完整 Build 与 Build Watch 每轮成功写出全部产物后才清理孤儿与执行容量淘汰；`cleanup.orphanMessages: false` 保留孤儿。Dev、扫描、失败构建与 write:false 不清理；人工覆盖独立。
 - 容量限制属于 translationMemory.capacity，按当前项目的逻辑 Translation Memory 快照计算；provider.cache 只控制当前 Vite 进程的自动译文刷新，两者不能混用。
 
 ### Vite 生命周期与 Provider
@@ -164,7 +164,7 @@
 - 未配置 Provider 的 Dev 缺失统计只读当前已发现模块，按消息与目标语言去重；任一已发现出现位置
   没有有效人工覆盖且自动译文缺失时计入。统计不消费 Provider 请求去重状态，也不代表完整源码集。
 - Dev 与 Build Watch 忽略当前 i18n 目录内 translations/overrides 根事务日志及协议目录中的原子 JSON
-  临时文件事件；Dev 在进入状态队列和 flush 前过滤。过滤不改变全局 watcher、跨进程锁、原子提交或
+  临时文件事件；Dev 在进入状态队列和 flush 前过滤。过滤不改变全局 watcher、进程内队列、原子替换或
   恢复机制，journal 仍由正常存储读取或事务入口恢复。真实分片的新增、修改、删除继续同步。
 - Dev 管理文件的 create/update 事件允许读取内容并识别插件自身写入；delete 事件不得读取已经消失的
   文件。create/update 排队后读取遇到 ENOENT 时仍按最新磁盘状态同步，不能因分片已经消失
@@ -185,7 +185,7 @@
   可用 `diagnostics.buildSummary: false` 关闭。有效覆盖包含人工覆盖，同一消息全部出现位置
   均有有效译文才算已译；源语言不计入目标统计。汇总本身不触发翻译。
 - 顶层 `failOnMissingTranslations` 默认关闭。开启时，Build 在 Provider 工作完成且本轮活动模块
-  校准后检查全部目标语言；任一语言仍缺译，就在应用产物写出前抛错并列出各语言缺译数量。
+  校准并持久化完整清单后检查全部目标语言；缺译在渲染、压缩前抛错，列出全部缺译的语言、源文案、源码位置、消息 ID 与提取 JSON；本地模式另列各语言翻译 JSON 的绝对路径，远程模式说明数据来源。
   无 Provider 时同样生效，空字符串与有效人工覆盖算已译；与 `provider.strict` 和构建汇总开关独立。
   Build Watch 每轮重新检查，Dev、入口扫描与 Runtime 源文案回退不受影响。
 - Build 文案汇总与显式启用的性能摘要合并输出；Watch 每轮刷新覆盖率，性能统计累计当前会话。
@@ -290,7 +290,7 @@
   项目 JSON、个人候选缓存或 MCP 的读写边界。
 - Provider、模型、`baseURL`、温度和提示词不自动参与缓存指纹。任意 Translator 无法被可靠、安全地序列化；需要重跑时由用户显式设置 `provider.cache: 'fresh'`，人工 overrides 始终保留。
 - 同一消息与 locale 在一个进程中只发起一次普通翻译尝试；并发请求由 Provider Coordinator 合并，失败或空结果不会因普通 HMR 无限重试，源码身份变化或重启进程后可重新尝试。
-- LLM 审查日志默认关闭并只由 Vite 的 `provider.logging` 配置。`true` 使用 Vite root 下的 `logs/`；字符串表示相对 Vite root 或绝对日志目录，空字符串无效。Vite 把解析后的关闭状态或绝对目录传给 Translator 和生命周期事件；一个 OpenAI Translator 实例在每个目录对应一个文件，Dev/HMR 与 Build Watch 持续追加，独立 Build 创建新文件。
+- LLM 审查日志默认关闭并由独立配置的 `provider.logging` 控制。`true` 使用配置目录下的 `logs/`；字符串表示相对配置目录或绝对日志目录，空字符串无效。Vite 把解析后的关闭状态或绝对目录传给 Translator 和生命周期事件；一个 OpenAI Translator 实例在每个目录对应一个文件，Dev/HMR 与 Build Watch 持续追加，独立 Build 创建新文件。
 - 实现 reportBatchEvent 的 Translator 始终接收 scheduled、state-applied、persisted、failed 事件；事件按 stage 使用判别联合类型并始终携带规范化 logging。关闭日志只禁止写入日志文件，不禁止事件派发。
 - OpenAI 审查日志完整保留实际 messages、每个 choice 的 assistant message、思考、回复、usage、重试、错误和校验结果，过滤未设置参数、SDK runtime 字段与常规传输 Header；未知 message 扩展字段不能因格式化丢失。
 - OpenAI Provider 直接使用 Zod 4 统一解析配置、批次输入和安全错误状态；按目标 locale 与批次长度生成的动态 Zod Schema 同时交给 LangChain structured output 并校验响应，不能再并行维护手写 JSON Schema 与对象结构判断。占位符一致性等跨 source/translation 的业务不变量保留专用校验；SDK 日志格式化为兼容未知扩展字段保持宽松读取。
@@ -320,14 +320,14 @@
 
 ## MCP 与 Agent 协作
 
-- MCP 是本地 stdio 服务，不扫描 workspace，不在启动时接收项目路径；启动与列表不执行 Vite 配置，写入后为同步缓存解析应用配置。
+- MCP 启动不绑定项目；显式工作区发现只列独立配置路径，选定后才加载。Vite、扫描和写后缓存同步遵循同一配置契约，见[独立配置与应用发现](./prd/configuration.md)。
 - 面向应用开发者的接入文档覆盖 Codex、Cursor、Claude Code 和 Antigravity。仅对官方提供命令注册的
   客户端给出一键命令；未收录到客户端 MCP Store 的本地 stdio 服务继续使用该客户端的配置文件。
-- Agent 必须先确认目标 Vite 应用，再结合启动目录、Vite root 与 directory 计算最终绝对 i18n 目录。monorepo 中每个 Vite build 独立处理。
+- Agent 先选择独立配置，再解析绝对应用与 i18n 目录；monorepo 的多个候选分别处理，不能自动合并或默认批量写入。
 - MCP 读取目标 build 的完整 extracted 集合，因此同一目录同时包含应用源码和它实际消费的本地 workspace 源码；纯源码子包不是独立 MCP 目标。
 - 普通补译优先由 Skill 附带脚本从所选应用入口扫描，覆盖静态导入、静态懒加载、可展开 glob
   和可达本地 workspace 源码；不增加公开 CLI。使用 Vite Dev 转换而不打包、运行页面或调用 Provider，
-  独立扫描跳过个人缓存、历史清理、声明生成及 Review；有活动 Dev 时统一交给该进程，配置与 Dev 插件仍会执行。
+  独立扫描跳过个人缓存、历史清理、声明生成及 Review；有活动 Dev 时转交该进程。Dev 不再独占拦截，但不支持多实例共享目录；旧实例退出不得删除新登记，失联时停止多余实例并重启目标 Dev。
 - 扫描全部成功后才重建活动清单并登记缺译槽位，保留既有译文和人工覆盖；解析失败、提取诊断、
   不确定动态导入或未支持的内联脚本翻译会阻止提交部分清单。Build 专用模块图仍需完整 Build 验证，
   扫描不能替代孤立清理前的生产图审查。具体边界见 [Agent 补译](../apps/docs/docs/ai/ai-tools.mdx)。
@@ -357,9 +357,9 @@
   或破坏游标推进。
 - MCP 只读取 `extracted/` 以校验消息归属；自动翻译工具只修改 `translations/`，人工工具
   只修改 `overrides/`。候选工具只读分页查询 SQLite，不自动选用；独立项目写入后同步已启用缓存，管理工具提供清理预览。
-  MCP 不修改 `extracted/` 或 `locales/`；独立写入后的缓存同步仅解析目标应用配置，不启动 Dev 或 Provider。
-- MCP 不读取 `provider.cache`。Vite 的进程级 Provider 刷新不能过滤、阻止或覆盖在途 Agent 写入。
-- Provider 结果在项目锁内校验旧值，提交成功后消费对应写入意图；外部修改、清空或空字符串不能被旧内存快照恢复。
+  MCP 不修改 `extracted/` 或 `locales/`；写后缓存同步只加载选定独立配置，不加载 vite.config、不启动 Dev 或调用翻译器。
+- MCP 不读取 `provider.cache`。Provider 刷新不应过滤 Agent 写入；不同进程的写入需由调用方避免重叠。
+- Provider 结果在项目进程内队列中校验旧值，提交成功后消费对应写入意图；写前已观察到的外部修改、清空或空字符串不能被旧内存快照恢复。
 - 工具名、字段和稳定错误码使用英文；Agent 按用户语言解释结果。每次调用只返回一份紧凑 JSON 文本。
 - Agent 的安全操作流程以 use-ai-i18n-mcp Skill 为准；Vite 接入流程以 integrate-ai-i18n Skill 为准。
 
@@ -378,8 +378,8 @@
   npm 继续遵循 Release Please 策略；内部文档不触发 Pages，边界见[发布与 CI](./release.md)。
 - Turbo 只负责 workspace 构建、检查与测试的依赖顺序和缓存；Release Please 继续负责版本、
   变更日志与 GitHub Release，npm Trusted Publishing 继续负责最终上传。
-- Release workflow 的 macOS 原生文件锁门禁与 Linux 发布候选验证并行，Release Please 只在
-  两者都成功后运行。Release Please 生成的发布合并提交由该 workflow 验证同一 SHA，不再重复
+- Release workflow 保留 Linux 发布候选验证，移除不再适用的 macOS 原生文件锁门禁；Release Please 在
+  发布候选验证成功后运行。Release Please 生成的发布合并提交由该 workflow 验证同一 SHA，不再重复
   启动日常 CI；普通 PR 与 `main` push 的日常门禁保持不变。
 - 发布候选验证只处理 npm 上尚不存在的当前包版本，在空 workspace 中安装同批 tarball，
   其余内部依赖从真实 registry 解析，并实际导入公开入口。这样本地 workspace 不能掩盖已发布
@@ -395,5 +395,5 @@
 
 - 内置远程翻译服务、Redis、多租户或常驻服务。
 - 让插件自动判断两个不同非空译文哪个更好。
-- 通过全仓库扫描推断 Agent 的目标应用。
+- 根据工作区搜索结果擅自决定 Agent 的目标应用。
 - 为历史未发布协议提供迁移或兼容分支。

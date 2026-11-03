@@ -58,7 +58,10 @@ import { sendRemoteUpdate } from './remote-updates.js';
 const TRANSLATION_UPDATE_EVENT = 'ai-i18n:update';
 const LOCALE_UPDATE_EVENT = 'ai-i18n:locale-update';
 
-export function aiI18n(options: AiI18nOptions): Plugin {
+export function aiI18n(
+  options: AiI18nOptions,
+  configDirectory?: string,
+): Plugin {
   rejectRemovedOptions(options);
   validateRemote(options.remote, options.provider);
   const normalized = normalizeOptions(options);
@@ -101,6 +104,7 @@ export function aiI18n(options: AiI18nOptions): Plugin {
     () => (api.scanMode ? undefined : config),
     () => framework,
     options.directory,
+    configDirectory,
   );
   const measureSetup = <T>(stage: string, task: () => T): T =>
     performanceDiagnostics
@@ -363,11 +367,8 @@ export function aiI18n(options: AiI18nOptions): Plugin {
       );
       if (close) closeScanBridges.set(server.config, close);
     },
-
     ...buildHooks,
-
     ...virtualModuleHooks,
-
     transform: {
       filter: { id: SOURCE_RE },
       handler(...args) {
@@ -393,7 +394,6 @@ export function aiI18n(options: AiI18nOptions): Plugin {
       root: () => config?.root,
       timing: devTiming,
     }),
-
     [AI_I18N_PLUGIN_API]: api,
   };
   return plugin;

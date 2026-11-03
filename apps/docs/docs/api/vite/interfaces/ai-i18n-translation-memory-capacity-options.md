@@ -30,12 +30,14 @@ Translation Memory 元数据与消息，不包含 `overrides`、`extracted`、`l
 候选缓存。
 
 插件只淘汰当前源码不再引用的消息。活动消息始终保留；活动消息自身超限时，插件输出 warning，因此
-这两个字段是保护数据安全的软上限。完整 Build 默认先删除全部非活跃消息；若显式关闭孤儿清理，再按容量上限淘汰非活跃消息。
+这两个字段是保护数据安全的软上限。仅在完整 Build 成功写出后的收尾阶段执行；Dev、入口扫描和失败构建不淘汰历史。Build 默认先删除全部非活跃消息；若显式关闭孤儿清理，再按容量上限淘汰非活跃消息。
 
 ## 用法
 
-```ts
-aiI18n({
+```ts title="ai-i18n.config.ts"
+import { defineConfig } from '@ai-i18n/vite/config';
+
+export default defineConfig({
   sourceLang: 'zh-CN',
   locales,
   translationMemory: {

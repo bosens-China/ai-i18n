@@ -64,7 +64,7 @@ const remote = defineRemote({
 `{ key, source }`。插件不限制接口地址、鉴权方式或请求结构。
 
 ```ts
-// i18n/remote.ts：只由 Vite 配置导入
+// i18n/remote.ts：只由 ai-i18n.config.ts 导入
 import { createHash } from 'node:crypto';
 import { defineRemote, type RemoteMessage } from '@ai-i18n/vite/remote';
 
@@ -122,11 +122,11 @@ export const remote = defineRemote({
 
 在现有配置中注册：
 
-```ts
-import { aiI18n } from '@ai-i18n/vite';
+```ts title="ai-i18n.config.ts"
+import { defineConfig } from '@ai-i18n/vite/config';
 import { remote } from './i18n/remote';
 
-aiI18n({
+export default defineConfig({
   sourceLang: 'zh-CN',
   locales: [
     { value: 'zh-CN', label: '中文' },
@@ -137,7 +137,7 @@ aiI18n({
 });
 ```
 
-也可以直接把同一个对象写在 `vite.config.ts` 的 `remote` 中；`defineRemote()` 只提供类型提示，
+也可以直接把同一个对象写在 `ai-i18n.config.ts` 的 `remote` 中；`defineRemote()` 只提供类型提示，
 不要求独立文件。较复杂的请求、鉴权和映射适合放进独立模块，再由配置传入参数。
 创建适配器时不要立即发送请求，请在回调中执行。
 

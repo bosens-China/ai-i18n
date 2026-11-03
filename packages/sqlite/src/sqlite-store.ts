@@ -4,7 +4,7 @@ import path from 'node:path';
 import type BetterSqlite3 from 'better-sqlite3';
 import { diagnosticMessage } from '@ai-i18n/core/diagnostics';
 import {
-  withFileLock,
+  withFileQueue,
   type TranslationMemoryCandidateCache,
   type TranslationMemoryCandidateState,
   type TranslationMemoryCandidateTarget,
@@ -86,7 +86,7 @@ export class SqliteTranslationMemoryCache implements TranslationMemoryCandidateC
     const digest = createHash('sha256')
       .update(JSON.stringify([this.pruneOrphans, sorted]))
       .digest('hex');
-    await withFileLock(this.databasePath, async () => {
+    await withFileQueue(this.databasePath, async () => {
       this.database
         .transaction(() => {
           const previous = this.database

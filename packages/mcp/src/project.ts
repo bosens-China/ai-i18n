@@ -121,6 +121,9 @@ export interface TranslationTarget {
 
 export interface SetTranslationsInput {
   app_directory?: string;
+  config_file?: string;
+  config_mode?: string;
+  config_command?: 'serve' | 'build';
   i18n_directory: string;
   default_locale?: string;
   overwrite_existing?: boolean;
@@ -129,6 +132,9 @@ export interface SetTranslationsInput {
 
 export interface ClearTranslationsInput {
   app_directory?: string;
+  config_file?: string;
+  config_mode?: string;
+  config_command?: 'serve' | 'build';
   i18n_directory: string;
   default_locale?: string;
   targets: readonly TranslationTarget[];
@@ -136,6 +142,9 @@ export interface ClearTranslationsInput {
 
 export interface SetOverridesInput {
   app_directory?: string;
+  config_file?: string;
+  config_mode?: string;
+  config_command?: 'serve' | 'build';
   i18n_directory: string;
   default_locale?: string;
   updates: readonly OverrideUpdate[];
@@ -143,12 +152,18 @@ export interface SetOverridesInput {
 
 export interface DeleteOverridesInput {
   app_directory?: string;
+  config_file?: string;
+  config_mode?: string;
+  config_command?: 'serve' | 'build';
   i18n_directory: string;
   override_ids: readonly string[];
 }
 
 export interface DeleteOrphanMessagesInput {
   app_directory?: string;
+  config_file?: string;
+  config_mode?: string;
+  config_command?: 'serve' | 'build';
   i18n_directory: string;
   orphan_ids: readonly string[];
 }

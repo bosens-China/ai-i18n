@@ -1,5 +1,10 @@
 [
   {
+    "type": "file",
+    "name": "configuration",
+    "label": "独立配置与多应用"
+  },
+  {
     "type": "dir",
     "name": "static-analysis",
     "label": "可翻译文案"

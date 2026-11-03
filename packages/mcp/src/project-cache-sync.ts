@@ -7,13 +7,20 @@ import { diagnosticMessage } from '@ai-i18n/core/diagnostics';
 export async function syncProjectCacheAfterWrite(
   i18nDirectory: string,
   appDirectory?: string,
+  selection: {
+    config_file?: string;
+    config_mode?: string;
+    config_command?: 'serve' | 'build';
+  } = {},
 ): Promise<void> {
   try {
-    let directory = appDirectory ?? i18nDirectory;
-    if (!appDirectory) {
+    let directory = selection.config_file
+      ? path.dirname(selection.config_file)
+      : (appDirectory ?? i18nDirectory);
+    if (!appDirectory && !selection.config_file) {
       while (
-        !(await fs.readdir(directory)).some((name) =>
-          /^vite\.config\.[cm]?[jt]s$/.test(name),
+        !(await fs.readdir(directory)).some(
+          (name) => name === 'ai-i18n.config.ts',
         )
       ) {
         const parent = path.dirname(directory);
@@ -27,9 +34,17 @@ export async function syncProjectCacheAfterWrite(
     const adapter = (await import(
       pathToFileURL(resolver.resolve('@ai-i18n/vite/internal/scan')).href
     )) as {
-      syncProjectCache: (app: string, i18n: string) => Promise<void>;
+      syncProjectCache: (
+        app: string,
+        i18n: string,
+        options: {
+          config_file?: string;
+          config_mode?: string;
+          config_command?: 'serve' | 'build';
+        },
+      ) => Promise<void>;
     };
-    await adapter.syncProjectCache(directory, i18nDirectory);
+    await adapter.syncProjectCache(directory, i18nDirectory, selection);
   } catch (cause) {
     const reason = cause instanceof Error ? cause.message : String(cause);
     process.stderr.write(

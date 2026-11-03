@@ -14,7 +14,7 @@ export type AiI18nProviderOptions = Pick<
   translator: Translator;
   /** 是否在当前 Vite 进程中刷新一次 Provider 自动翻译；默认 reuse。 */
   cache?: 'reuse' | 'fresh';
-  /** false/省略关闭，true 使用 root/logs，字符串表示相对 root 或绝对日志目录。 */
+  /** false/省略关闭，true 使用配置目录下的 logs，字符串表示相对配置目录或绝对日志目录。 */
   logging?: boolean | string;
 };
 
@@ -41,7 +41,7 @@ export interface AiI18nPersistOptions {
 
 export interface AiI18nCleanupOptions {
   missingSourceFiles?: boolean;
-  /** 完整 Build 默认清理孤儿译文；设为 false 可保留历史译文供人工审查。 */
+  /** 完整 Build 成功写出后默认清理；Dev 不清理，设为 false 可保留历史供审查。 */
   orphanMessages?: boolean;
 }
 

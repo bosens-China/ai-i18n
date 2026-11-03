@@ -29,7 +29,7 @@ server does not return that field.
 | `DUPLICATE_TARGET_CONFLICT` | Choose one value for the repeated message and locale, then retry the batch. |
 | `TRANSLATION_CONFLICT` | Re-list current values. Set `overwrite_existing: true` only with explicit user approval. |
 | `TEMPLATE_TOKEN_MISMATCH` | Compare `expected_tokens` and `received_tokens`; add every entry from `missing_tokens`, remove every entry from `unexpected_tokens`, then retry. Repeated tokens are significant. |
-| `UNKNOWN_LOCALE` | Use locale values from `aiI18n({ locales })`, not display labels. |
+| `UNKNOWN_LOCALE` | Use locale values from the selected `ai-i18n.config.ts` locales, not display labels. |
 | `SQLITE_ADAPTER_NOT_FOUND` | Install `@ai-i18n/sqlite` in the target app only if optional SQLite suggestions are requested; ordinary translation tools do not need it. |
 | `SQLITE_DATA_DIRECTORY_NOT_ABSOLUTE` | Pass the absolute SQLite data directory, or omit the field to use the default location. |
 | `SQLITE_APP_DIRECTORY_NOT_ABSOLUTE` | Pass the absolute selected Vite app directory as `app_directory`, or omit it when `i18n_directory` is inside the app. |
@@ -79,3 +79,7 @@ do not replace the workflow with source-tree editing or direct protocol-file wri
 
 Cache cleanup failure: preview again without preview_token and verify the current scope before an
 explicitly authorized execution. Never repair this by deleting the database or project JSON.
+
+## Build reports missing translations
+
+Use the diagnostic source file, message ID, and absolute translations/extracted JSON paths to verify the selected app and i18n_directory before querying. The build lists all missing messages; do not treat a zero result from another directory or partial Dev catalog as authoritative. For remote diagnostics, inspect the remote source or reviewed overrides instead of creating local translation shards. Use the normal MCP write workflow rather than editing diagnostic paths directly.

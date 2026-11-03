@@ -28,10 +28,10 @@ ai-i18n 根据 import binding 自动识别翻译调用，不要求 JSX 文件使
 每个 Vite build 必须使用独立的 `directory`。多个应用不能通过共用 i18n 目录来共享译文，
 因为完整 Build 会按当前模块图重建 `extracted/` 与 `locales/`。
 
-```ts
-import { aiI18n } from '@ai-i18n/vite';
+```ts title="ai-i18n.config.ts"
+import { defineConfig } from '@ai-i18n/vite/config';
 
-aiI18n({
+export default defineConfig({
   sourceLang: 'zh-CN',
   locales: [
     { value: 'zh-CN', label: '中文' },
@@ -44,9 +44,11 @@ aiI18n({
 自动导入、持久化、分包和 Provider 按需配置。HTML 可用 `html: false` 关闭或通过对象定制属性。
 常用与高级选项见[配置参考](https://bosens-china.github.io/ai-i18n/api/vite/interfaces/ai-i18n-options)。
 
+配置来源与路径规则见[独立配置与多应用](../../apps/docs/docs/guide/basic/configuration.md)。Vite 中使用 `aiI18n()` 注册，不再接受内联业务配置。
+
 ## 远程文案与译文
 
-可选 `remote` 允许自定义 `publish` 和 `load`，可内联写在 Vite 配置中，或通过
+可选 `remote` 允许自定义 `publish` 和 `load`，可内联写在 ai-i18n.config.ts 中，或通过
 `@ai-i18n/vite/remote` 的 `defineRemote()` 导出独立适配器，无需安装新包。
 只提交可增强本地 Provider 流程；远程获取与 Provider 互斥。默认 replace 模式不读取或改写本地自动译文及 SQLite，
 人工 overrides 继续优先。Build 获取一次完整快照后生成产物，Dev 在文案变化后后台更新。
@@ -69,8 +71,14 @@ import { aiI18n } from '@ai-i18n/vite';
 import { aiI18nReview } from '@ai-i18n/vite/review';
 
 export default defineConfig({
-  plugins: [aiI18n({ sourceLang: 'zh-CN', locales }), aiI18nReview()],
+  plugins: [aiI18n(), aiI18nReview()],
 });
+```
+
+```ts title="ai-i18n.config.ts"
+import { defineConfig } from '@ai-i18n/vite/config';
+
+export default defineConfig({ sourceLang: 'zh-CN', locales });
 ```
 
 注册后，Vite Dev 在业务页面底部注入翻译校对图标。点击后会在当前页面内打开类似 DevTools 的校对工作台，
@@ -124,8 +132,10 @@ Build 会等待 Provider 并按当前入口可达文案检查全部目标语言�
 
 性能诊断默认关闭。首次打开页面或懒路由明显变慢时，可临时开启阶段耗时日志：
 
-```ts
-aiI18n({
+```ts title="ai-i18n.config.ts"
+import { defineConfig } from '@ai-i18n/vite/config';
+
+export default defineConfig({
   sourceLang: 'zh-CN',
   locales,
   diagnostics: {
@@ -171,10 +181,12 @@ Vite 的 `optimizeDeps.exclude`，并保留项目原有配置。这样可以避�
 
 需要在同一台电脑的项目间复用候选时，可增加个人 SQLite 缓存：
 
-```ts
+```ts title="ai-i18n.config.ts"
+import { defineConfig } from '@ai-i18n/vite/config';
+
 import { sqlite } from '@ai-i18n/sqlite';
 
-aiI18n({
+export default defineConfig({
   sourceLang: 'zh-CN',
   locales,
   translationMemory: { cache: sqlite() },
@@ -290,8 +302,10 @@ Vitest 使用 `@ai-i18n/vite/vitest` 的 `aiI18nVitest()`，无需手写 alias�
 
 ## Locale Lazy
 
-```ts
-aiI18n({
+```ts title="ai-i18n.config.ts"
+import { defineConfig } from '@ai-i18n/vite/config';
+
+export default defineConfig({
   sourceLang: 'zh-CN',
   locales: [
     { value: 'zh-CN', label: '中文' },
@@ -320,8 +334,10 @@ Vue / React 的 `useI18n()` 额外返回 `langLoadState`、`isLangLoading` 与
 
 ## Translation Memory 容量
 
-```ts
-aiI18n({
+```ts title="ai-i18n.config.ts"
+import { defineConfig } from '@ai-i18n/vite/config';
+
+export default defineConfig({
   sourceLang: 'zh-CN',
   locales,
   translationMemory: {
@@ -339,7 +355,7 @@ Translation Memory 快照计算，与 JSON 分片或 SQLite 物理布局无关�
 
 现有 extracted 或 ProjectState 引用的 message 始终受保护。若活动数据自身超限，插件保留
 数据并输出 warning。省略 `translationMemory.capacity` 时不执行容量淘汰；
-完整 Build 默认先删除全部非活跃消息。审查历史译文前可设置 `cleanup.orphanMessages: false`。
+完整 Build 成功写出后默认删除全部非活跃消息；Dev、入口扫描、失败构建与 `write: false` 不清理或容量淘汰。审查历史译文前可设置 `cleanup.orphanMessages: false`。
 
 普通 `vite build` 每次使用新的分析状态，并在完整模块图可用后统一写协议文件；
 `vite build --watch` 会跨重建复用 ProjectState，
@@ -379,3 +395,6 @@ Translation Memory 快照计算，与 JSON 分片或 SQLite 物理布局无关�
 源码改动会自动刷新列表和位置；解析失败显示过期状态，恢复后重试。扫描缓存位于 `cacheDir`，
 只复用提取结果，译文/人工覆盖每次重读。自定义转换插件等无法证明输入稳定时保守重扫。
 Agent 插件打包与安装边界见 [plugins/ai-i18n](../../plugins/ai-i18n/README.md)。
+
+缺译阻断在完整模块提取及翻译完成后、产物渲染前执行，报告源文案与位置；失败后可通过 MCP 查询完整清单。
+项目分片采用原子替换和进程内队列，不提供跨进程写入互斥。新写入不生成事务日志，跨分片中断可能部分完成，可重新补译；旧版本遗留日志仍会恢复。不要同时启动多个写入同一 i18n 目录的进程。

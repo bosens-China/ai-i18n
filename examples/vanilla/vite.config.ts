@@ -11,16 +11,7 @@ export default defineConfig({
     UnoCSS({
       configFile: fileURLToPath(new URL('./uno.config.ts', import.meta.url)),
     }),
-    mode !== 'benchmark-off' &&
-      aiI18n({
-        diagnostics: { performance: mode !== 'benchmark-on' },
-        sourceLang: 'zh-CN',
-        failOnMissingTranslations: true,
-        locales: [
-          { value: 'zh-CN', label: '中文' },
-          { value: 'en-US', label: 'English' },
-        ],
-      }),
+    mode !== 'benchmark-off' && aiI18n(),
     // 保留终端中的 Review 地址，但不向业务页面注入右下角入口。
     !mode.startsWith('benchmark-') &&
       aiI18nReview({ launcher: false, printUrl: true }),

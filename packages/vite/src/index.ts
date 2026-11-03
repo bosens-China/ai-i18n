@@ -9,7 +9,12 @@ export type {
   ExtractWarning,
   ExtractedMessage,
 } from './yuku-analyzer.js';
-export { aiI18n } from './plugin.js';
+export { aiI18n, type AiI18nPluginOptions } from './config-plugin.js';
+export {
+  defineConfig,
+  type AiI18nConfig,
+  type AiI18nConfigExport,
+} from './config.js';
 export type {
   AiI18nCleanupOptions,
   AiI18nDiagnosticsOptions,

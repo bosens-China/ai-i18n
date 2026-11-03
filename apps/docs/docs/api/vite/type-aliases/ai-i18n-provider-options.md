@@ -58,8 +58,10 @@ root，绝对路径保持不变。空字符串无效。开启后，Vite 会把�
 
 ## 示例
 
-```ts
-aiI18n({
+```ts title="ai-i18n.config.ts"
+import { defineConfig } from '@ai-i18n/vite/config';
+
+export default defineConfig({
   sourceLang: 'zh-CN',
   locales,
   provider: {

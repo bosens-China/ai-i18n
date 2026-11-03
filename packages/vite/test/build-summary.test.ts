@@ -141,9 +141,30 @@ it('keeps missing translations non-fatal by default and blocks output when enabl
     failOnMissingTranslations: true,
   });
   vi.stubEnv('AI_I18N_DIAGNOSTIC_LOCALE', 'zh-CN');
-  await expect(
-    build({ ...gated.input, build: { ...gated.input.build, write: true } }),
-  ).rejects.toThrow('构建失败：存在未翻译文案（en-US: 1, ja-JP: 1）');
+  const error = await build({
+    ...gated.input,
+    build: { ...gated.input.build, write: true },
+  }).catch((error: Error) => error);
+  expect(error).toBeInstanceOf(Error);
+  const message = (error as Error).message;
+  expect(message).toContain('构建失败：存在未翻译文案（en-US: 1, ja-JP: 1）');
+  expect(message).toContain(`${path.join(gated.input.root, 'main.ts')}:1:`);
+  expect(message).toContain('"你好"');
+  // 直接核对真实落盘文件，避免路径计算与存储协议一起算错。
+  for (const locale of ['en-US', 'ja-JP']) {
+    const directory = path.join(gated.input.root, 'i18n/translations', locale);
+    const [file] = await fs.readdir(directory);
+    expect(message).toContain(`${locale} JSON: ${path.join(directory, file!)}`);
+    const bucket = JSON.parse(
+      await fs.readFile(path.join(directory, file!), 'utf8'),
+    );
+    expect(Object.values(bucket.entries)).toContainEqual(
+      expect.objectContaining({ source: '你好', value: null }),
+    );
+  }
+  const extractedDirectory = path.join(gated.input.root, 'i18n/extracted');
+  const [extracted] = await fs.readdir(extractedDirectory);
+  expect(message).toContain(path.join(extractedDirectory, extracted!));
   expect(
     await fs.readdir(path.join(gated.input.root, 'dist')).catch(() => []),
   ).toEqual([]);

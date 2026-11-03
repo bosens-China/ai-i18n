@@ -7,6 +7,7 @@ const { values } = parseArgs({
   options: {
     root: { type: 'string', default: process.cwd() },
     config: { type: 'string' },
+    'i18n-config': { type: 'string' },
     mode: { type: 'string' },
     configLoader: { type: 'string' },
     entry: { type: 'string', multiple: true },
@@ -16,10 +17,11 @@ const root = path.resolve(values.root);
 const require = createRequire(path.join(root, 'package.json'));
 try {
   process.chdir(root);
-  const { scanProject } = await import(
+  const { scanConfiguredProject } = await import(
     pathToFileURL(require.resolve('@ai-i18n/vite/internal/scan')).href
   );
-  const result = await scanProject(
+  const result = await scanConfiguredProject(
+    path.resolve(root, values['i18n-config'] ?? 'ai-i18n.config.ts'),
     {
       logLevel: 'warn',
       ...(values.config

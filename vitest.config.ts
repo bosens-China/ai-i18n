@@ -1,6 +1,8 @@
 import { configDefaults, defineConfig } from 'vitest/config';
 
 const viteIntegrationTests = [
+  'packages/vite/test/config-file.test.ts',
+  'packages/vite/test/persistence-lifecycle.test.ts',
   'packages/vite/test/cache-reuse.test.ts',
   'packages/vite/test/scan.test.ts',
   'packages/vite/test/scan-review.test.ts',
@@ -14,6 +16,8 @@ const viteIntegrationTests = [
   'packages/vite/test/provider-build.test.ts',
   'packages/vite/test/react-compiler.test.ts',
   'packages/vite/test/react-integration.test.ts',
+  'packages/vite/test/remote-integration.test.ts',
+  'packages/vite/test/remote-types.test.ts',
   'packages/vite/test/review-server.test.ts',
   'packages/vite/test/vue-integration.test.ts',
 ];

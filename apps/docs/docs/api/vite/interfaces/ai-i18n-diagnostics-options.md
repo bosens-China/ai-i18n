@@ -48,8 +48,10 @@ interface AiI18nDiagnosticsOptions {
 译文与全局、文件、位置级人工覆盖，空字符串也算译文。统计范围是本轮构建收集的模块，
 不代表仓库内所有文件；失败构建不输出成功覆盖率。
 
-```ts
-aiI18n({
+```ts title="ai-i18n.config.ts"
+import { defineConfig } from '@ai-i18n/vite/config';
+
+export default defineConfig({
   sourceLang: 'zh-CN',
   locales,
   diagnostics: { buildSummary: false },

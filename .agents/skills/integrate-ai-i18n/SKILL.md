@@ -20,7 +20,7 @@ or executable behavior, follow the target project and report the discrepancy.
 
 ## Inspect the target build
 
-Read the target app's `package.json`, `vite.config.*`, TypeScript config, entry files, and framework
+Read the target app's `package.json`, `ai-i18n.config.ts`, `vite.config.*`, TypeScript config, entry files, and framework
 plugin setup. Confirm that the app matches the current public support requirements before editing it.
 Preserve an explicit Vite configuration loader when handing off to Agent scanning; follow the
 `use-ai-i18n-mcp` scanning reference for helper arguments and failure recovery. Do not change the
@@ -31,6 +31,7 @@ or when a new setup has no source and target language decision that can be infer
 configuration. Preserve configured values.
 
 Use one `@ai-i18n/vite` registration, one framework mode, and one i18n directory per Vite build.
+Follow [Independent configuration](references/configuration.md) for creation, migration, paths, and reload verification.
 Treat reachable local workspace source as part of the consuming build. Do not create a separate
 integration for a source-only package or rewrite CommonJS as an incidental migration.
 If existing `overrides/` shards contain file- or occurrence-scoped rules, preserve their exact
@@ -44,8 +45,7 @@ configured. When an optional feature is requested, read [Agent defaults for opti
 and the matching public documentation page.
 
 For remote submission/acquisition or public translation metadata, follow
-[Remote translation integration](references/remote.md). Preserve either inline Vite configuration or
-an explicitly imported adapter file; both are supported.
+[Remote translation integration](references/remote.md). Place the adapter in ai-i18n.config.ts or import an adapter file from it.
 
 The Vite Dev review console is an optional, separately registered plugin. Do not add it unless the user
 requests interactive review or the target already registers it. When requested, import `aiI18nReview`

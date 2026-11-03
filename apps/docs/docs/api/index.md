@@ -17,6 +17,8 @@ API 参考按导入入口组织。选择入口后，再按函数、接口、类�
 | `virtual:ai-i18n`      | 在浏览器业务代码中翻译文案和切换语言。            |
 | `@ai-i18n/openai`      | 创建 OpenAI-compatible Translator。               |
 
+`@ai-i18n/vite/config` 提供 `defineConfig` 和 `AiI18nConfig`，用于[独立配置与多应用](/guide/basic/configuration)。
+
 ## 查找入口
 
 - 配置插件：[`aiI18n()`](/api/vite/functions/ai-i18n)

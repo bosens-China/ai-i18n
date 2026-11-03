@@ -4,12 +4,12 @@
 
 各工作流独立维护，职责如下：
 
-| 工作流                   | 触发                                            | 职责                                                                                    |
-| ------------------------ | ----------------------------------------------- | --------------------------------------------------------------------------------------- |
-| `ci.yml`                 | PR、普通 `main` push                            | 日常质量门禁、候选 tarball 验证，以及独立站点改动的部署调度                             |
-| `release.yml`            | `packages/**` 等路径的 `main` push；可手动      | macOS 原生文件锁门禁、Release Please 版本 / GitHub Release，以及 npm Trusted Publishing |
-| `pages.yml`              | CI 确认独立站点改动，或 Release 成功发布 npm 后 | 构建并部署调用方同一提交的 GitHub Pages                                                 |
-| `plugin-marketplace.yml` | 插件与两份 Skill 相关路径的 `main` push；可手动 | 发布仅供 Codex 安装的市场分支                                                           |
+| 工作流                   | 触发                                            | 职责                                                                            |
+| ------------------------ | ----------------------------------------------- | ------------------------------------------------------------------------------- |
+| `ci.yml`                 | PR、普通 `main` push                            | 日常质量门禁、候选 tarball 验证，以及独立站点改动的部署调度                     |
+| `release.yml`            | `packages/**` 等路径的 `main` push；可手动      | 发布候选验证、Release Please 版本 / GitHub Release，以及 npm Trusted Publishing |
+| `pages.yml`              | CI 确认独立站点改动，或 Release 成功发布 npm 后 | 构建并部署调用方同一提交的 GitHub Pages                                         |
+| `plugin-marketplace.yml` | 插件与两份 Skill 相关路径的 `main` push；可手动 | 发布仅供 Codex 安装的市场分支                                                   |
 
 日常验证只需 `ci.yml`。Release Please 生成的 `chore: release main` 合并提交由
 `release.yml` 对同一 SHA 执行完整门禁，因此跳过重复的日常 CI。其他 `main` push 仍执行 CI。
@@ -24,12 +24,15 @@
 
 - 自身修复或功能按 `fix` / `feat` 生成版本；不兼容变更必须使用 `!` 或 `BREAKING CHANGE`
   明确表达，并说明迁移影响。
+- 本次去锁移除了 Core 的公开 `withFileLock` 导出，替换为仅进程内排序的 `withFileQueue`；发布提交必须标记不兼容变更，调用方不能再依赖跨进程互斥。
 - `node-workspace` 维护内部依赖联动；底层版本变化时，为受影响消费包生成依赖更新与版本。
   消费包的公开 API 若也不兼容，必须单独标记 breaking change，不能用自动依赖更新的 patch
   代替其 major 升版。独立发布的包可能版本不同，不能以版本号相同代替兼容性验证。
 - 保留 `workspace:*`，打包后为精确内部依赖；用户只管理直接依赖，不手工对齐整套版本。
 - 稳定版发布到 `latest`，显式预发布才使用 `alpha` 等标签。旧 alpha 记录保留，首次正式版
   发布后由新稳定版本更新 `latest`。
+
+本次 Vite 接入也属于不兼容变更：业务配置移入 `ai-i18n.config.ts`，`aiI18n()` 仅接受 `configFile`；相对目录基准改为独立配置所在目录。发布时明确要求迁移并保留原翻译路径，不能仅以 patch 发布。
 
 ## 首次 1.0.0 准备
 
@@ -64,14 +67,13 @@
    Agent Skill 和示例站点提交本身不会触发该 workflow。后续相关路径 push 触发工作流时，
    Release Please 只处理组件范围内符合发布规则的提交；不要假设先前的纯文档提交会自动进入
    某个包的 Release PR。
-2. 两个只读门禁并行运行：macOS runner 执行 Core Translation Memory 的原生文件锁并发测试；
-   Linux runner 执行 `pnpm check` / `pnpm test`。Turbo 依据 workspace 依赖图安排发布包构建与
+2. Linux runner 执行 `pnpm check` / `pnpm test`。Turbo 依据 workspace 依赖图安排发布包构建与
    检查；它不负责版本号和发布决策。
 3. Linux 门禁随后只选择 npm 上尚不存在的当前版本：普通功能提交尚未经过 Release Please
    版本提升时不会误报；Release PR 与其合并提交则会打包全部候选版本，在空 pnpm workspace
    中用本批 tarball 覆盖候选依赖，其余内部依赖从真实 npm registry 解析，并实际导入公开入口。
    验证后的 tarball、包路径和依赖优先顺序上传为保留一天的 workflow artifact。
-4. Release Please 同时等待两个门禁；全部通过后才创建或更新 Release PR、tag 和 GitHub
+4. Release Please 等待发布候选门禁；通过后才创建或更新 Release PR、tag 和 GitHub
    Release，禁止先打 tag 再测。没有待发布版本时 Linux 门禁不上传空 artifact。
 5. 仅当本次确实创建 Release（或手动补发）时，最终发布 job 才下载已验证 artifact，并按
    Release Please 返回的 `paths_released` 选择包。它不重新构建或打包，不 checkout 仓库、

@@ -22,7 +22,7 @@ export default [
 ];
 ```
 
-启用 `aiI18n({ autoImport: true })` 时，改用与 Vite 框架模式一致的自动导入 preset：
+在 `ai-i18n.config.ts` 启用 `autoImport: true` 时，改用与 Vite 框架模式一致的自动导入 preset：
 
 ```js
 export default [

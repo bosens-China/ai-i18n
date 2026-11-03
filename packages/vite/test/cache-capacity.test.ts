@@ -4,7 +4,8 @@ import os from 'node:os';
 import path from 'node:path';
 import type { TranslationMemoryFile } from '@ai-i18n/core';
 import { afterEach, describe, expect, it } from 'vitest';
-import { aiI18n } from '../src';
+import { aiI18n } from '../src/plugin';
+
 import { FileStore } from '../src/file-store';
 import { stableJson } from '../src/json-files';
 import {
@@ -75,13 +76,13 @@ describe('Cache capacity', () => {
       ['active'],
     );
     const store = capacityStore(root, { maxMessages: 3 });
-    const result = await store.sync(state.snapshot());
+    const result = await store.cleanupHistory(state.snapshot());
     const content = stableJson(
       await readTestTranslationMemory(path.join(root, 'i18n')),
     );
 
     expect(messageIds(result)).toEqual(['active', '请输入', '首页']);
-    await store.sync(state.snapshot());
+    await store.cleanupHistory(state.snapshot());
     expect(
       stableJson(await readTestTranslationMemory(path.join(root, 'i18n'))),
     ).toBe(content);
@@ -96,7 +97,7 @@ describe('Cache capacity', () => {
     delete expected.messages['history-a'];
     const maxBytes = byteLength(expected);
 
-    const result = await capacityStore(root, { maxBytes }).sync(
+    const result = await capacityStore(root, { maxBytes }).cleanupHistory(
       state.snapshot(),
     );
 
@@ -117,7 +118,7 @@ describe('Cache capacity', () => {
     const result = await capacityStore(root, {
       maxMessages: 2,
       maxBytes,
-    }).sync(state.snapshot());
+    }).cleanupHistory(state.snapshot());
 
     expect(messageIds(result)).toEqual(['active', 'history-c']);
     expect(Object.keys(result.messages)).toHaveLength(2);
@@ -135,7 +136,7 @@ describe('Cache capacity', () => {
       root,
       { maxMessages: 1, maxBytes: 1 },
       warnings,
-    ).sync(state.snapshot());
+    ).cleanupHistory(state.snapshot());
 
     expect(messageIds(result)).toEqual(['active-a', 'active-b']);
     expect(warnings).toEqual([
@@ -153,12 +154,12 @@ describe('Cache capacity', () => {
       { maxMessages: 100 },
       [],
       true,
-    ).sync(state.snapshot());
+    ).cleanupHistory(state.snapshot());
 
     expect(messageIds(result)).toEqual(['active']);
   });
 
-  it('keeps missing source records protected when cleanup is disabled', async () => {
+  it('uses the completed snapshot for capacity cleanup even when missing-source cleanup is disabled', async () => {
     const { root, state } = await prepareCache(
       ['active', 'history-a'],
       ['active'],
@@ -171,10 +172,10 @@ describe('Cache capacity', () => {
       warnings,
       false,
       false,
-    ).sync(state.snapshot());
+    ).cleanupHistory(state.snapshot());
 
-    expect(messageIds(result)).toEqual(['active', 'history-a']);
-    expect(warnings).toHaveLength(1);
+    expect(messageIds(result)).toEqual(['active']);
+    expect(warnings).toHaveLength(0);
   });
 
   it('preserves external field edits before pruning inactive history', async () => {
@@ -189,7 +190,7 @@ describe('Cache capacity', () => {
       memory.messages = structuredClone(cache.messages);
     });
 
-    const result = await capacityStore(root, { maxMessages: 2 }).sync(
+    const result = await capacityStore(root, { maxMessages: 2 }).cleanupHistory(
       state.snapshot(),
     );
 

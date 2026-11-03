@@ -17,7 +17,7 @@ afterEach(async () => {
   );
 });
 
-test('serializes concurrent translation override updates with the shared lock', async () => {
+test('serializes concurrent translation override updates with the in-process queue', async () => {
   const directory = await temporaryDirectory();
   const file = path.join(directory, 'overrides');
 
@@ -37,6 +37,19 @@ test('serializes concurrent translation override updates with the shared lock', 
   expect(
     overrides.rules.find((rule) => rule.source === '消息-0'),
   ).toMatchObject({ translations: { 'en-US': '' } });
+});
+
+test('allows the next queued update after a failed update', async () => {
+  const directory = await temporaryDirectory();
+  const failed = transactTranslationOverrides(directory, () => {
+    throw new Error('invalid update');
+  });
+  const next = transactTranslationOverrides(directory, (overrides) => {
+    overrides.rules.push({ source: '保存', translations: { en: 'Save' } });
+  });
+  await expect(failed).rejects.toThrow('invalid update');
+  await next;
+  expect((await readTranslationOverrides(directory)).rules).toHaveLength(1);
 });
 
 async function temporaryDirectory(): Promise<string> {

@@ -56,7 +56,6 @@
     "access": "public"
   },
   "dependencies": {
-    "atomically": "2.1.1",
-    "fs-native-extensions": "1.5.0"
+    "atomically": "2.1.1"
   }
 }

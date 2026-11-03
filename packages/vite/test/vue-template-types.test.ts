@@ -1,6 +1,5 @@
 import { execFile } from 'node:child_process';
 import fs from 'node:fs/promises';
-import os from 'node:os';
 import path from 'node:path';
 import { promisify } from 'node:util';
 import { afterEach, expect, it } from 'vitest';
@@ -20,7 +19,7 @@ afterEach(async () => {
 
 it('lets vue-tsc resolve bare t in script setup, Options, and template-only SFCs', async () => {
   const root = await fs.mkdtemp(
-    path.join(os.tmpdir(), 'ai-i18n-vue-template-types-'),
+    path.join(packageRoot, 'node_modules/.ai-i18n-vue-template-types-'),
   );
   tempDirs.push(root);
   await fs.mkdir(path.join(root, 'src'), { recursive: true });
@@ -100,7 +99,9 @@ export default defineComponent({
       path.join(root, 'tsconfig.json'),
     ],
     { cwd: packageRoot },
-  );
+  ).catch((error) => {
+    throw new Error(`${error.stdout}\n${error.stderr}`, { cause: error });
+  });
 
   expect(result.stderr).toBe('');
 }, 20_000);

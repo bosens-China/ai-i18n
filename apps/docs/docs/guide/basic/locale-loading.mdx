@@ -8,11 +8,11 @@ locale 会生成独立的 Vite chunk；未提前加载的语言会在首次 `set
 
 ## 配置分包策略
 
-```ts
+```ts title="ai-i18n.config.ts"
 // vite.config.ts
-import { aiI18n } from '@ai-i18n/vite';
+import { defineConfig } from '@ai-i18n/vite/config';
 
-aiI18n({
+export default defineConfig({
   sourceLang: 'zh-CN', // source locale 同步可用，不生成独立语言 chunk
   // value 是语言标识，label 是界面中的展示名称。
   locales: [
@@ -40,8 +40,10 @@ aiI18n({
 
 如果 `defaultLang` 保持 source，并希望所有目标语言都在切换时再加载，只需设为 `true`：
 
-```ts
-aiI18n({
+```ts title="ai-i18n.config.ts"
+import { defineConfig } from '@ai-i18n/vite/config';
+
+export default defineConfig({
   sourceLang: 'zh-CN', // 默认语言保持 source
   locales, // 复用上方完整语言列表
   loading: true, // 启用分包，其他目标语言首次 setLang() 时再加载

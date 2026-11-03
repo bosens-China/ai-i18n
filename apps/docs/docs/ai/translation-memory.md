@@ -46,10 +46,12 @@ translationMemory: {
 pnpm add -D @ai-i18n/sqlite@^1.0.0
 ```
 
-```ts
+```ts title="ai-i18n.config.ts"
+import { defineConfig } from '@ai-i18n/vite/config';
+
 import { sqlite } from '@ai-i18n/sqlite';
 
-aiI18n({
+export default defineConfig({
   sourceLang: 'zh-CN',
   locales,
   translationMemory: {
@@ -125,8 +127,10 @@ MCP 独立修改译文后，会解析目标应用配置并同步已启用的缓�
 ai-i18n 不会根据 `model`、`baseURL`、温度或提示词自动失效已有项目译文。需要用新配置重跑时，将
 Provider 缓存策略临时设为 `fresh`：
 
-```ts
-aiI18n({
+```ts title="ai-i18n.config.ts"
+import { defineConfig } from '@ai-i18n/vite/config';
+
+export default defineConfig({
   sourceLang: 'zh-CN',
   locales,
   provider: {
@@ -146,3 +150,9 @@ aiI18n({
 `provider.cache` 与 `translationMemory.cache` 含义不同。前者控制当前进程是否刷新 Provider，后者
 提供跨项目的候选查询。两者都不会覆盖人工 `overrides/`。若只想重置少量自动译文，使用 MCP 清除
 工具更合适。
+
+## 保存与清理边界
+
+Dev 只收集已访问模块，始终保留历史译文；完整 Build 成功写出后才执行配置的孤儿清理和容量淘汰。扫描、失败构建和 `build.write: false` 不删除历史译文。
+
+项目 JSON 每个分片采用原子替换，同一进程内排队保存；不支持多个进程同时写同一目录。批量修改中断后可能只有部分分片保存成功，可重新查询并补齐。新写入不生成事务日志，旧版遗留日志会先恢复。SQLite 自身数据库事务保持不变。

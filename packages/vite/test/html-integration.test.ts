@@ -4,7 +4,8 @@ import path from 'node:path';
 import { runtimeMessageId, type Translator } from '@ai-i18n/core';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { build, createServer } from 'vite';
-import { aiI18n } from '../src';
+import { aiI18n } from '../src/plugin';
+
 import { buildOutputItems } from './build-output';
 import { extractedTestPath } from './extracted-test-path';
 

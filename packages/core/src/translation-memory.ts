@@ -1,7 +1,7 @@
 export {
   readJson,
   stableJson,
-  withFileLock,
+  withFileQueue,
 } from './translation-memory-files.js';
 export {
   readAtomicTranslationOverrides as readTranslationOverrides,
@@ -10,6 +10,7 @@ export {
 } from './translation-overrides-json.js';
 
 export { openTranslationMemoryStore } from './translation-memory-store.js';
+export { translationMemoryEntryPath } from './translation-memory-json.js';
 export type { JsonTranslationMemoryStore as TranslationMemoryStore } from './translation-memory-json.js';
 export type {
   TranslationMemoryCandidate,

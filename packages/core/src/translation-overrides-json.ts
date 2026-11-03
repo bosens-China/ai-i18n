@@ -1,7 +1,6 @@
 import { createHash } from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { writeFile } from 'atomically';
 import { diagnosticMessage } from './diagnostics.js';
 import {
   atomicOverrideKey,
@@ -20,7 +19,7 @@ import {
   readJson,
   stableJson,
   syncAtomicJsonFiles,
-  withFileLock,
+  withFileQueue,
 } from './translation-memory-files.js';
 
 type OverrideBucketEntry = Omit<AtomicOverride, 'locale'>;
@@ -34,7 +33,7 @@ interface OverrideBucketFile {
 export async function readAtomicTranslationOverrides(
   directory: string,
 ): Promise<TranslationOverridesFile> {
-  return withFileLock(directory, async () => {
+  return withFileQueue(directory, async () => {
     await recover(directory);
     return readCurrent(directory);
   });
@@ -45,7 +44,7 @@ export async function transactAtomicTranslationOverrides(
   update: (overrides: TranslationOverridesFile) => void | Promise<void>,
 ): Promise<TranslationOverridesFile> {
   await fs.mkdir(directory, { recursive: true });
-  return withFileLock(directory, async () => {
+  return withFileQueue(directory, async () => {
     await recover(directory);
     let duplicates = false;
     const current = await readCurrent(directory, () => {
@@ -56,11 +55,6 @@ export async function transactAtomicTranslationOverrides(
     const normalized = parseTranslationOverridesFile(draft);
     if (!duplicates && stableJson(normalized) === stableJson(current))
       return normalized;
-    await writeFile(journalPath(directory), stableJson(normalized), {
-      encoding: 'utf8',
-      chown: false,
-      mode: false,
-    });
     await commit(directory, normalized);
     return normalized;
   });

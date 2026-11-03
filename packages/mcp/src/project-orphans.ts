@@ -53,6 +53,8 @@ export async function listOrphanMessages(
 export async function deleteOrphanMessages(
   input: DeleteOrphanMessagesInput,
 ): Promise<DeleteResult> {
+  if (input.config_file && !path.isAbsolute(input.config_file))
+    fail('CONFIG_FILE_NOT_ABSOLUTE');
   if (input.app_directory && !path.isAbsolute(input.app_directory))
     fail('SQLITE_APP_DIRECTORY_NOT_ABSOLUTE');
   const project = await loadProject(input.i18n_directory);
@@ -83,7 +85,11 @@ export async function deleteOrphanMessages(
       deletedCount += 1;
     }
   });
-  await syncProjectCacheAfterWrite(project.directory, input.app_directory);
+  await syncProjectCacheAfterWrite(
+    project.directory,
+    input.app_directory,
+    input,
+  );
   return {
     deleted_count: deletedCount,
     unchanged_count: unchangedCount,

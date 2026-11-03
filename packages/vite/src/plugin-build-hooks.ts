@@ -1,5 +1,6 @@
 import type { Plugin, ResolvedConfig } from 'vite';
-import { diagnosticMessage } from '@ai-i18n/analyzer';
+import { buildCleanup } from './build-cleanup.js';
+import { assertBuildTranslations } from './build-missing.js';
 import { formatBuildSummary, summarizeProject } from './build-summary.js';
 import { createBuildWatchState } from './build-watch.js';
 import type { DevTimingReporter } from './dev-timing.js';
@@ -64,6 +65,7 @@ export function createPluginBuildHooks(options: BuildDependencies) {
   };
   const hooks: Pick<
     Plugin,
+    | 'options'
     | 'buildStart'
     | 'buildEnd'
     | 'watchChange'
@@ -73,6 +75,21 @@ export function createPluginBuildHooks(options: BuildDependencies) {
     | 'writeBundle'
     | 'closeBundle'
   > = {
+    options(input) {
+      const config = options.config();
+      if (config?.command !== 'build') return;
+      return {
+        ...input,
+        plugins: [
+          input.plugins,
+          buildCleanup(
+            config,
+            () => options.store().cleanupHistory(options.state().snapshot()),
+            options.closeStore,
+          ),
+        ],
+      };
+    },
     async buildStart() {
       if (options.config()?.command !== 'build') return;
       generated = false;
@@ -81,18 +98,31 @@ export function createPluginBuildHooks(options: BuildDependencies) {
         buildWatch.buildStart(this.meta.watchMode),
       );
     },
-    async buildEnd(error) {
-      if (error) generated = false;
-      if (
-        !error &&
-        options.config()?.command === 'build' &&
-        this.environment.name === 'client' &&
-        options.remote
-      ) {
+    buildEnd: {
+      order: 'post',
+      sequential: true,
+      async handler(error) {
+        if (error) {
+          generated = false;
+          return;
+        }
+        if (
+          options.config()?.command !== 'build' ||
+          this.environment.name !== 'client'
+        )
+          return;
         await options.ready();
         options.state().retain(this.getModuleIds());
-        await options.remote.build();
-      }
+        if (options.remote) await options.remote.build();
+        await options.flushProvider();
+        await reconcile(this.getModuleIds(), true);
+        if (options.failOnMissingTranslations)
+          assertBuildTranslations(
+            options.state(),
+            options.store().directory,
+            Boolean(options.remote),
+          );
+      },
     },
     async watchChange(id, change) {
       if (options.config()?.command === 'build' && this.meta.watchMode)
@@ -120,27 +150,6 @@ export function createPluginBuildHooks(options: BuildDependencies) {
       async handler(_outputOptions, bundle) {
         const config = options.config();
         if (config?.command !== 'build') return;
-        if (options.failOnMissingTranslations) await options.flushProvider();
-        await reconcile(this.getModuleIds(), true);
-        if (
-          options.failOnMissingTranslations &&
-          this.environment.name === 'client'
-        ) {
-          const missing = summarizeProject(options.state()).locales.filter(
-            (locale) => locale.missing > 0,
-          );
-          if (missing.length) {
-            const counts = missing
-              .map(({ locale, missing }) => `${locale}: ${missing}`)
-              .join(', ');
-            throw new Error(
-              diagnosticMessage(
-                `[ai-i18n] 构建失败：存在未翻译文案（${counts}）。`,
-                `[ai-i18n] Build failed: missing translations (${counts}).`,
-              ),
-            );
-          }
-        }
         injectBuiltLocaleHints(bundle, config, options.normalized);
         if (options.remoteBuild) {
           for (const item of Object.values(bundle)) {
@@ -170,8 +179,7 @@ export function createPluginBuildHooks(options: BuildDependencies) {
       try {
         await options.dispose(config);
         await options.flushPersistence();
-        if (config?.command !== 'build' || !config.build.watch)
-          await options.closeStore();
+        if (config?.command !== 'build') await options.closeStore();
       } finally {
         await options.performance?.close();
       }

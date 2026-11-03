@@ -8,7 +8,7 @@ description: 观察插件启动、初始化与源码转换耗时，对比启用�
 
 ## 在项目中开启
 
-在已有 `aiI18n()` 配置中增加：
+在 `ai-i18n.config.ts` 中增加：
 
 ```ts
 diagnostics: {
@@ -21,24 +21,18 @@ diagnostics: {
 终端会输出阶段汇总和报告路径。同一次启动持续更新 `logs/performance/<runId>.json`，
 正常关闭服务时刷新最后一份报告，下一次启动生成新文件。
 
-如希望只通过指定启动命令采集，可以在 Vite 配置中根据 mode 开启：
+如希望只通过指定启动命令采集，可以在独立配置中根据 mode 开启：
 
-```ts
-import { defineConfig } from 'vite';
-import { aiI18n } from '@ai-i18n/vite';
+```ts title="ai-i18n.config.ts"
+import { defineConfig } from '@ai-i18n/vite/config';
 
 export default defineConfig(({ mode }) => ({
-  plugins: [
-    // 保留项目已有的 Vue / React 等插件。
-    aiI18n({
-      sourceLang: 'zh-CN',
-      locales: [
-        { value: 'zh-CN', label: '中文' },
-        { value: 'en-US', label: 'English' },
-      ],
-      diagnostics: { performance: mode === 'performance' },
-    }),
+  sourceLang: 'zh-CN',
+  locales: [
+    { value: 'zh-CN', label: '中文' },
+    { value: 'en-US', label: 'English' },
   ],
+  diagnostics: { performance: mode === 'performance' },
 }));
 ```
 
@@ -139,7 +133,7 @@ diagnostics: {
 },
 ```
 
-目录相对 Vite root，不能包含 `..`、不能是绝对路径或位于 i18n 数据目录内，并应加入 `.gitignore`。
+目录相对独立配置文件所在目录，不能包含 `..`、不能是绝对路径或位于 i18n 数据目录内，并应加入 `.gitignore`。
 `maxSamples` 为 1–10000 的整数。详见
 [AiI18nPerformanceDiagnosticsOptions](/api/vite/interfaces/ai-i18n-performance-diagnostics-options)。
 

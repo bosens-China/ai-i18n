@@ -9,11 +9,13 @@ ai-i18n 的可选个人 Translation Memory 候选缓存。项目自动译文始�
 pnpm add -D @ai-i18n/sqlite@^1.0.0
 ```
 
+以下配置放在 `ai-i18n.config.ts`；Vite 中使用 `aiI18n()` 注册。
+
 ```ts
-import { aiI18n } from '@ai-i18n/vite';
+import { defineConfig } from '@ai-i18n/vite/config';
 import { sqlite } from '@ai-i18n/sqlite';
 
-aiI18n({
+export default defineConfig({
   sourceLang: 'zh-CN',
   locales,
   translationMemory: {

@@ -54,7 +54,7 @@ codex plugin add ai-i18n@ai-i18n
 插件不会升级业务应用里的 npm 依赖。
 
 在 Monorepo 中，请从目标应用目录启动 Codex；如果需要从仓库根目录启动，先设置
-`AI_I18N_APP_ROOT` 为目标应用的绝对路径。需要非默认 Vite 配置或运行模式时，可同时设置
+`AI_I18N_APP_ROOT` 为目标独立配置所在目录的绝对路径。自定义独立配置文件时使用 `AI_I18N_CONFIG_FILE`。需要非默认 Vite 配置或运行模式时，可同时设置
 `AI_I18N_CONFIG`、`AI_I18N_MODE`。应用指定配置加载器时，通过 `AI_I18N_CONFIG_LOADER`
 沿用 `bundle`、`runner` 或 `native`；不设置时保留 Vite 默认值。插件不会自动选择子应用。
 
@@ -110,7 +110,7 @@ npx skills add bosens-China/ai-i18n --skill use-ai-i18n-mcp integrate-ai-i18n -y
 普通补译只需要 Skill。请使用项目现有的包管理器，将 `@ai-i18n/mcp@^1.0.0`
 安装为目标 Vite 应用的开发依赖。Agent 会在进程内复用 MCP 的读写能力，无需在编码工具中注册服务器。
 
-如果需要人工覆盖、清空译文，或在构建前审查并选择性清理孤立译文，再按下文注册 MCP 服务器。普通 Build 默认清理孤立自动译文；先审查时请设置 `cleanup.orphanMessages: false`。
+如果需要人工覆盖、清空译文，或在构建前审查并选择性清理孤立译文，再按下文注册 MCP 服务器。普通 Build 成功写出后默认清理孤立自动译文；先审查时请设置 `cleanup.orphanMessages: false`。
 
 ### 注册 MCP 服务器
 
@@ -180,3 +180,9 @@ claude mcp add --transport stdio --scope local ai-i18n -- npx -y @ai-i18n/mcp@^1
 
 生成文件与提交规则见 [生成文件与 Git](/guide/basic/directory)，
 人工译文优先级见 [补齐和确认译文](/guide/basic/translations)。
+
+缺译构建会在渲染前报告全部缺失源文案、源码位置及对应 JSON 路径（远程译文会单独说明来源），并留下完整清单供 MCP 查询。Dev 的部分清单缺失数为 0 不代表全应用已翻译；补译前仍需完成入口扫描。避免同时启动多个写入同一翻译目录的进程。
+
+## 选择工作区中的应用
+
+每个应用通过 `ai-i18n.config.ts` 声明自己的配置。工具先在指定工作区发现配置文件，选定应用后才加载配置并定位翻译目录；不会为了列出应用执行所有配置。多个应用分别扫描、补译和验证，不共享翻译目录。迁移与路径规则见[独立配置与多应用](/guide/basic/configuration)。

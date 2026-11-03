@@ -33,14 +33,18 @@ import { aiI18n } from '@ai-i18n/vite';
 import { defineConfig } from 'vite';
 
 export default defineConfig({
-  plugins: [
-    aiI18n({
-      sourceLang: 'zh-CN',
-      locales: [
-        { value: 'zh-CN', label: '中文' },
-        { value: 'en-US', label: 'English' },
-      ],
-    }),
+  plugins: [aiI18n()],
+});
+```
+
+```ts title="ai-i18n.config.ts"
+import { defineConfig } from '@ai-i18n/vite/config';
+
+export default defineConfig({
+  sourceLang: 'zh-CN',
+  locales: [
+    { value: 'zh-CN', label: '中文' },
+    { value: 'en-US', label: 'English' },
   ],
 });
 ```

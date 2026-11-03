@@ -1,5 +1,5 @@
 export interface AiI18nPerformanceDiagnosticsOptions {
-  /** 相对 Vite root 的报告目录；默认 logs/performance，不接受绝对路径或上级目录。 */
+  /** 相对独立配置文件的报告目录；默认 logs/performance，不接受绝对路径或上级目录。 */
   directory?: string;
   /** 最近完成阶段和单阶段分位数窗口上限；默认 2000，最大 10000。 */
   maxSamples?: number;

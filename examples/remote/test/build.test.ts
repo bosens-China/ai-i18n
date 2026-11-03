@@ -8,7 +8,6 @@ import UnoCSS from 'unocss/vite';
 import { expect, it } from 'vitest';
 import { aiI18n } from '@ai-i18n/vite';
 import { createDemoServer, type Scenario } from '../server/app.js';
-import { createRemote } from '../remote.js';
 
 it.each([
   ['ready', 'replace'],
@@ -41,6 +40,16 @@ it.each([
     if (!address || typeof address === 'string')
       throw new Error('Missing address');
     try {
+      await fs.writeFile(
+        path.join(directory, 'package.json'),
+        JSON.stringify({ type: 'module' }),
+      );
+      const configFile = path.join(directory, 'ai-i18n.config.ts');
+      await fs.writeFile(
+        configFile,
+        `import {createRemote} from ${JSON.stringify(path.join(root, 'remote.ts').replaceAll('\\', '/'))};
+export default {root:${JSON.stringify(root)},sourceLang:'zh-CN',defaultLang:'en-US',locales:[{value:'zh-CN',label:'中文'},{value:'en-US',label:'English'}],directory:'i18n',dts:false,failOnMissingTranslations:true,remote:createRemote('http://127.0.0.1:${address.port}', '${mode}')};`,
+      );
       const result = build({
         root,
         configFile: false,
@@ -49,18 +58,7 @@ it.each([
         define: { 'import.meta.env.DEV': false },
         plugins: [
           UnoCSS({ configFile: path.join(root, 'uno.config.ts') }),
-          aiI18n({
-            sourceLang: 'zh-CN',
-            defaultLang: 'en-US',
-            locales: [
-              { value: 'zh-CN', label: '中文' },
-              { value: 'en-US', label: 'English' },
-            ],
-            directory: path.join(directory, 'i18n'),
-            dts: false,
-            failOnMissingTranslations: true,
-            remote: createRemote(`http://127.0.0.1:${address.port}`, mode),
-          }),
+          aiI18n({ configFile }),
         ],
         build: { outDir: path.join(directory, 'dist'), write: false },
       });

@@ -29,6 +29,8 @@ test('registers focused tools without legacy mode or output schemas', async () =
   try {
     const tools = await client.listTools();
     expect(tools.tools.map((tool) => tool.name)).toEqual([
+      'ai_i18n_discover_projects',
+      'ai_i18n_resolve_project',
       'ai_i18n_list_translations',
       'ai_i18n_list_cache_candidates',
       'ai_i18n_list_cache_projects',

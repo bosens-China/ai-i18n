@@ -4,7 +4,8 @@ import path from 'node:path';
 import { runtimeMessageId, type Translator } from '@ai-i18n/core';
 import { afterEach, describe, expect, it } from 'vitest';
 import { build, createServer, type UserConfig } from 'vite';
-import { aiI18n, type AiI18nOptions } from '../src';
+import { aiI18n } from '../src/plugin';
+import { type AiI18nOptions } from '../src';
 import { buildOutputItems } from './build-output';
 import { removeTempDir } from './temp-dir';
 
