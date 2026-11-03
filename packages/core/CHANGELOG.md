@@ -1,5 +1,16 @@
 # @ai-i18n/core
 
+## [2.0.0](https://github.com/bosens-China/ai-i18n/compare/core-v1.0.0...core-v2.0.0) (2026-11-03)
+
+
+### ⚠ BREAKING CHANGES
+
+* 引入独立配置并调整翻译持久化与构建诊断
+
+### Features
+
+* 引入独立配置并调整翻译持久化与构建诊断 ([cb8ea57](https://github.com/bosens-China/ai-i18n/commit/cb8ea57dd631d2fba3ad755c895c91931acc83a2))
+
 ## [1.0.0](https://github.com/bosens-China/ai-i18n/compare/core-v1.0.0-alpha.20...core-v1.0.0) (2026-10-10)
 
 
