@@ -121,7 +121,11 @@ describe('Git push comparison', () => {
   });
 
   it('supports deletion and filenames containing spaces or newlines', () => {
-    const file = 'apps/docs/docs/old page\nname.md';
+    // Windows 文件名不能包含换行；该平台仍验证空格和删除，POSIX 保留换行覆盖。
+    const file =
+      process.platform === 'win32'
+        ? 'apps/docs/docs/old page name.md'
+        : 'apps/docs/docs/old page\nname.md';
     write(file, 'docs');
     const before = commit('docs: add page');
     rmSync(path.join(root, file));
