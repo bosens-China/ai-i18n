@@ -1,5 +1,31 @@
 # @ai-i18n/vite
 
+## [2.0.0](https://github.com/bosens-China/ai-i18n/compare/vite-v1.1.0...vite-v2.0.0) (2026-11-03)
+
+
+### ⚠ BREAKING CHANGES
+
+* 引入独立配置并调整翻译持久化与构建诊断
+
+### Features
+
+* 引入独立配置并调整翻译持久化与构建诊断 ([cb8ea57](https://github.com/bosens-China/ai-i18n/commit/cb8ea57dd631d2fba3ad755c895c91931acc83a2))
+
+
+### Bug Fixes
+
+* **vite:** 统一项目与翻译校对图标 ([b96eaa4](https://github.com/bosens-China/ai-i18n/commit/b96eaa4fe43231baed94a848c5f9f1edfeac8769))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @ai-i18n/analyzer bumped to 1.0.1
+    * @ai-i18n/core bumped to 2.0.0
+  * devDependencies
+    * @ai-i18n/sqlite bumped to 2.0.0
+
 ## [1.1.0](https://github.com/bosens-China/ai-i18n/compare/vite-v1.0.0...vite-v1.1.0) (2026-10-30)
 
 

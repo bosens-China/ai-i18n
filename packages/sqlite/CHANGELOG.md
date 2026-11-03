@@ -1,5 +1,23 @@
 # Changelog
 
+## [2.0.0](https://github.com/bosens-China/ai-i18n/compare/sqlite-v1.0.0...sqlite-v2.0.0) (2026-11-03)
+
+
+### ⚠ BREAKING CHANGES
+
+* 引入独立配置并调整翻译持久化与构建诊断
+
+### Features
+
+* 引入独立配置并调整翻译持久化与构建诊断 ([cb8ea57](https://github.com/bosens-China/ai-i18n/commit/cb8ea57dd631d2fba3ad755c895c91931acc83a2))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @ai-i18n/core bumped to 2.0.0
+
 ## [1.0.0](https://github.com/bosens-China/ai-i18n/compare/sqlite-v1.0.0-alpha.9...sqlite-v1.0.0) (2026-10-10)
 
 
