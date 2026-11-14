@@ -13,7 +13,7 @@ import {
   sourceRegistration,
   transformDefineI18nMessages,
 } from './source-registration.js';
-import { runtimeCode } from './virtual-modules.js';
+import type { NormalizedAiI18nOptions } from './project-state.js';
 import {
   AI_I18N_VIRTUAL_MODULE_ID,
   analyzeModule,
@@ -48,12 +48,7 @@ export function aiI18nVitest(options: AiI18nVitestOptions): Plugin {
     },
     load(id) {
       if (id !== TEST_RUNTIME_ID) return;
-      return runtimeCode(
-        normalized,
-        'ai-i18n:vitest-translation-update',
-        'ai-i18n:vitest-locale-update',
-        framework,
-      );
+      return vitestRuntimeCode(normalized, framework);
     },
     async transform(code, id) {
       if (!SOURCE_RE.test(id) || shouldIgnoreSource(id)) return null;
@@ -116,4 +111,34 @@ export function aiI18nVitest(options: AiI18nVitestOptions): Plugin {
       });
     },
   };
+}
+
+function vitestRuntimeCode(
+  options: NormalizedAiI18nOptions,
+  framework: AiI18nFramework,
+): string {
+  const adapter =
+    framework === 'vue'
+      ? `import { createVueI18nAdapter } from '@ai-i18n/vite/vue';`
+      : framework === 'react'
+        ? `import { createReactI18n } from '@ai-i18n/vite/react';`
+        : '';
+  const publicApi =
+    framework === 'vue'
+      ? `export const { t, useI18n, tRef, i18nComputed, tComputed } = createVueI18nAdapter(runtime);`
+      : framework === 'react'
+        ? `export const t = runtime.t;
+export const useI18n = createReactI18n(runtime);`
+        : `export const t = runtime.t;`;
+  return `
+import { createI18nRuntime } from '@ai-i18n/vite/runtime';
+${adapter}
+const runtime = createI18nRuntime(${JSON.stringify(options)});
+${publicApi}
+export const setLang = runtime.setLang;
+export const getLang = runtime.getLang;
+export const getLangs = runtime.getLangs;
+export const getLangLoadState = runtime.getLangLoadState;
+export const subscribe = runtime.subscribe;
+`;
 }

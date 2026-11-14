@@ -25,112 +25,42 @@ export function errorPayload(error: unknown): McpErrorDetails {
       first: error.first,
       duplicate: error.duplicate,
       next_action:
-        'Conflicting values share one JSON key. Ask the user which value to keep at the reported file and positions, resolve the duplicate, then retry. Do not choose by key order or run Build to overwrite it.',
+        'Resolve the conflicting JSON values at the reported positions, then retry.',
     };
   }
   if (!(error instanceof McpToolError)) {
     return {
       error_code: 'UNEXPECTED_ERROR',
+      message: error instanceof Error ? error.message : String(error),
       next_action:
-        'Retry the tool once. If it fails again, report the tool name and this error code to the user.',
+        'Retry once. If it fails again, report the tool name and error to the user.',
     };
   }
   return {
     error_code: error.code,
     ...error.details,
-    next_action: nextAction(error.code),
+    next_action:
+      ERROR_NEXT_ACTIONS[error.code] ??
+      'Inspect the returned details, resolve the issue, then retry.',
   };
 }
 
-function nextAction(code: string): string {
-  return (
-    ERROR_NEXT_ACTIONS[code] ??
-    'Retry the tool once. If it fails again, report this error code and the returned details to the user.'
-  );
-}
-
 const ERROR_NEXT_ACTIONS: Record<string, string> = {
-  WORKSPACE_NOT_FOUND:
-    'Check the selected workspace exists and is readable, then discover again.',
-  CONFIG_NOT_FOUND:
-    'Discover projects again or provide an existing absolute config_file.',
-  CONFIG_LOADER_UNAVAILABLE:
-    'Install a compatible @ai-i18n/vite version in the selected app with the /config export. Do not patch node_modules or resolve a different app.',
-  CONFIG_INVALID:
-    'Inspect the selected config and its imports, or run its Vite command for detailed diagnostics. Fix it before retrying; do not switch to another app.',
-  WORKSPACE_DIRECTORY_NOT_ABSOLUTE:
-    'Pass the absolute workspace directory to discover projects.',
+  WORKSPACE_DIRECTORY_NOT_ABSOLUTE: 'Pass an absolute workspace_directory.',
+  WORKSPACE_NOT_FOUND: 'Choose an existing readable workspace directory.',
   CONFIG_FILE_NOT_ABSOLUTE:
-    'Pass the absolute config_file returned by project discovery.',
-  SQLITE_PROJECT_REQUIRED:
-    'List cache projects and pass the exact absolute project_directory for project or orphan cleanup.',
-  SQLITE_INVALID_CLEANUP_SCOPE:
-    'Omit project_directory for all-cache cleanup; use project scope to clean only one project.',
-  SQLITE_CLEANUP_FAILED:
-    'Preview cleanup again without preview_token. Check cache availability and obtain authorization for the current preview before executing.',
-  SQLITE_DIRECTORY_NOT_ABSOLUTE:
-    'Pass absolute i18n_directory, app_directory and data_directory paths.',
-  I18N_DIRECTORY_NOT_ABSOLUTE:
-    'Resolve the target Vite root and aiI18n.directory, then retry with the resulting absolute i18n_directory.',
-  I18N_DIRECTORY_NOT_FOUND:
-    'Confirm the target Vite app, refresh extraction with the use-ai-i18n-mcp Skill entry scan or a full Vite Build, then retry with its absolute i18n_directory.',
-  I18N_DIRECTORY_NOT_DIRECTORY:
-    'Resolve i18n_directory to the ai-i18n directory instead of a file, then retry.',
-  REQUIRED_PROTOCOL_FILE_MISSING:
-    'Refresh extraction with the use-ai-i18n-mcp Skill entry scan or a full Vite Build for the target app, then retry the same MCP call once.',
-  REQUIRED_PROTOCOL_DIRECTORY_MISSING:
-    'Refresh extraction with the use-ai-i18n-mcp Skill entry scan or a full Vite Build for the target app, then retry the same MCP call once.',
-  INVALID_PROTOCOL_JSON:
-    'Restore or repair the named JSON file, refresh extraction with the use-ai-i18n-mcp Skill entry scan or a full Vite Build, then retry.',
-  INVALID_PROTOCOL_FILE:
-    'Restore or repair the named protocol file, refresh extraction with the use-ai-i18n-mcp Skill entry scan or a full Vite Build, then retry.',
-  PROTOCOL_PATH_NOT_DIRECTORY:
-    'Restore the named protocol path as a directory, refresh extraction with the use-ai-i18n-mcp Skill entry scan or a full Vite Build, then retry.',
-  DUPLICATE_EXTRACTED_SOURCE:
-    'Refresh extraction with the use-ai-i18n-mcp Skill entry scan or a full Vite Build for the target app to migrate legacy extracted filenames, then retry. If it persists, report conflicting_files.',
-  MESSAGE_ID_SOURCE_CONFLICT:
-    'Refresh extraction with the use-ai-i18n-mcp Skill entry scan or a full Vite Build with a clean extracted directory, then retry. Report the conflicting sources if it persists.',
-  MESSAGE_MISSING_FROM_TRANSLATIONS:
-    'Refresh extraction with the use-ai-i18n-mcp Skill entry scan or a full Vite Build for the target app, then list translations again.',
-  MESSAGE_METADATA_MISMATCH:
-    'Refresh extraction with the use-ai-i18n-mcp Skill entry scan or a full Vite Build for the target app, then list translations again.',
-  SOURCE_FILE_NOT_FOUND:
-    'Call ai_i18n_list_translations with view summary and without source_files, then copy an exact returned source_file before retrying.',
-  MESSAGE_NOT_FOUND:
-    'Use a returned suggestion only when its full source and comment match the intended message. Otherwise call ai_i18n_list_translations again and copy the exact returned message object.',
-  MESSAGE_NOT_FOUND_IN_SOURCE_FILE:
-    'Call ai_i18n_list_translations with include_source_files true, then choose only exact source_file values that contain this message.',
-  MESSAGE_NOT_FOUND_AT_SOURCE_LOCATION:
-    'Call ai_i18n_list_translations with include_occurrences true, copy one current exact source_file, line, and column, then obtain approval before retrying the moved target.',
-  INVALID_OVERRIDE_SCOPE:
-    'Choose exactly one override scope: omit both files and occurrences for global, provide files only, or provide occurrences only.',
-  INVALID_BATCH_LOCALE:
-    'Either provide default_locale once and omit every item locale, or omit default_locale and provide locale in every item.',
-  INVALID_TRANSLATION_FILTER:
-    'Use source_contains or translation_contains only with the missing or all translation view.',
-  UNKNOWN_LOCALE:
-    'Choose one of available_locales and retry; do not use a display label as the locale value.',
-  DUPLICATE_TARGET_CONFLICT:
-    'Keep one value for the returned message and locale, remove the conflicting duplicate, then retry the batch.',
-  DUPLICATE_TARGET: 'Remove repeated targets from the request, then retry.',
+    'Pass the absolute config_file returned by discovery.',
+  CONFIG_NOT_FOUND:
+    'Discover projects again or select an existing config file.',
+  CONFIG_LOADER_UNAVAILABLE:
+    'Install a compatible @ai-i18n/vite in the selected app.',
+  CONFIG_INVALID: 'Fix the selected configuration and its imports, then retry.',
+  INVALID_LOCALE_JSON:
+    'Repair the named manual locale JSON file without losing reviewed values.',
+  UNKNOWN_LOCALE: 'Select a configured target locale.',
+  UNKNOWN_MESSAGE_KEY:
+    'Scan and list translations, then copy an exact returned key.',
+  TEMPLATE_TOKEN_MISMATCH: 'Keep the same template placeholders as the source.',
   TRANSLATION_CONFLICT:
-    'List current translations again. Use overwrite_existing only after the user explicitly approves replacing them.',
-  TEMPLATE_TOKEN_MISMATCH:
-    'Add every entry from missing_tokens, remove every entry from unexpected_tokens, then retry with the corrected value.',
-  INVALID_CURSOR:
-    'Restart the same list call without cursor, then continue with the new next_cursor values.',
-  INVALID_OVERRIDE_ID:
-    'Call ai_i18n_list_overrides again and copy the returned override_id exactly before retrying.',
-  INVALID_ORPHAN_ID:
-    'Run one full Vite Build, call ai_i18n_list_orphan_messages again, and copy the returned orphan_id exactly.',
-  SQLITE_ADAPTER_NOT_FOUND:
-    'Install @ai-i18n/sqlite in the selected Vite app, or omit the optional cache candidate lookup. Ordinary MCP translation tools do not require SQLite.',
-  SQLITE_DATA_DIRECTORY_NOT_ABSOLUTE:
-    'Pass an absolute data_directory matching sqlite({ dataDirectory }), or omit it to use AI_I18N_DATA_DIR or the platform default.',
-  SQLITE_APP_DIRECTORY_NOT_ABSOLUTE:
-    'Pass the absolute Vite app directory as app_directory, or omit it when i18n_directory is inside the app.',
-  ORPHAN_MESSAGE_REACTIVATED:
-    'Do not delete the returned orphan_ids. Run one full Vite Build, list orphan messages again, show the refreshed result to the user, and request deletion approval again.',
-  ORPHAN_ID_CONFLICT:
-    'Stop orphan cleanup and report this error code and orphan_id to the user; do not retry deletion.',
+    'List current manual values and request explicit overwrite authorization.',
 };

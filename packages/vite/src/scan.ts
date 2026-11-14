@@ -28,7 +28,7 @@ export async function scanProject(
         config: {
           order: 'post',
           async handler(config) {
-            // config hooks 先于全部 configResolved；必须在初始化 Provider/存储前切换。
+            // config hooks 先于全部 configResolved；必须在初始化存储前切换扫描模式。
             const plugins = await flattenPlugins(config.plugins ?? []);
             for (const plugin of plugins) {
               const api = aiI18nPluginApi(plugin);
@@ -135,8 +135,6 @@ async function flattenPlugins(
   }
   return result;
 }
-
-export { syncProjectCache } from './cache-sync.js';
 
 export async function scanConfiguredProject(
   configFile: string,

@@ -5,21 +5,26 @@ import {
   type TranslationAutoImports,
 } from '@ai-i18n/analyzer';
 import { normalizePath } from 'vite';
-import type {
-  AiI18nLocaleLoadingOptions,
-  AiI18nTranslationMemoryCapacityOptions,
-  AiI18nTranslationMemoryOptions,
-} from './options.js';
-import type { TranslationMemoryCandidateCacheAdapter } from '@ai-i18n/core/translation-memory';
+import type { AiI18nLocaleLoadingOptions } from './options.js';
 import type { NormalizedAiI18nOptions } from './project-state.js';
 import type { SourceExtraction, TranslationHookBinding } from './extractor.js';
 
 export function rejectRemovedOptions(options: object): void {
+  for (const name of ['provider', 'remote', 'translationMemory', 'cleanup']) {
+    if (name in options) {
+      throw new TypeError(
+        diagnosticMessage(
+          `[ai-i18n] ${name} 已移除，请使用一次性 adapter 与 locales/*.manual.json。`,
+          `[ai-i18n] ${name} has been removed. Use the one-shot adapter and locales/*.manual.json.`,
+        ),
+      );
+    }
+  }
   if ('cache' in options) {
     throw new TypeError(
       diagnosticMessage(
-        '[ai-i18n] 顶层 cache 已移除，请改用 translationMemory.capacity。',
-        '[ai-i18n] Top-level cache has been removed; use translationMemory.capacity instead.',
+        '[ai-i18n] 顶层 cache 已移除；人工译文请写入 locales/*.manual.json，外部翻译请使用 adapter。',
+        '[ai-i18n] Top-level cache has been removed. Write manual translations to locales/*.manual.json or use an adapter for external translations.',
       ),
     );
   }
@@ -34,6 +39,7 @@ export function rejectRemovedOptions(options: object): void {
 }
 
 export function normalizeOptions(options: {
+  repository?: boolean;
   sourceLang: string;
   defaultLang?: string;
   locales: readonly LangOption[];
@@ -76,78 +82,23 @@ export function normalizeOptions(options: {
     );
   }
   const persist = normalizePersist(options.persist);
-  const loading = options.loading
-    ? normalizeLoading(
-        options.loading === true ? {} : options.loading,
-        values,
-        options.sourceLang,
-        defaultLang,
-      )
-    : undefined;
+  const loading =
+    options.loading || options.repository
+      ? normalizeLoading(
+          options.loading === true || !options.loading ? {} : options.loading,
+          values,
+          options.sourceLang,
+          defaultLang,
+        )
+      : undefined;
   return {
+    ...(options.repository ? { repository: true } : {}),
     sourceLang: options.sourceLang,
     defaultLang,
     locales,
     ...(persist ? { persist } : {}),
     ...(loading ? { loading } : {}),
   };
-}
-
-export function normalizeTranslationMemory(
-  options: AiI18nTranslationMemoryOptions | undefined,
-): {
-  cache?: TranslationMemoryCandidateCacheAdapter;
-  capacity?: AiI18nTranslationMemoryCapacityOptions;
-} {
-  const cache: unknown = options?.cache;
-  if (
-    cache !== undefined &&
-    (!cache ||
-      typeof cache !== 'object' ||
-      !('cache' in cache) ||
-      cache.cache !== 'sqlite' ||
-      !('open' in cache) ||
-      typeof cache.open !== 'function' ||
-      !('list' in cache) ||
-      typeof cache.list !== 'function')
-  ) {
-    throw new Error(
-      diagnosticMessage(
-        '[ai-i18n] translationMemory.cache 必须是合法的候选缓存适配器。',
-        '[ai-i18n] translationMemory.cache must be a valid candidate cache adapter.',
-      ),
-    );
-  }
-  const capacity = options?.capacity;
-  validatePositiveInteger(
-    'translationMemory.capacity.maxMessages',
-    capacity?.maxMessages,
-  );
-  validatePositiveInteger(
-    'translationMemory.capacity.maxBytes',
-    capacity?.maxBytes,
-  );
-  return {
-    ...(cache
-      ? { cache: cache as TranslationMemoryCandidateCacheAdapter }
-      : {}),
-    ...(capacity ? { capacity } : {}),
-  };
-}
-
-export function normalizeProviderCache(
-  cache: 'reuse' | 'fresh' | undefined,
-): 'reuse' | 'fresh' {
-  const normalized = cache ?? 'reuse';
-  if (normalized !== 'reuse' && normalized !== 'fresh') {
-    throw new Error(
-      diagnosticMessage(
-        '[ai-i18n] provider.cache 必须是“reuse”或“fresh”。',
-        '[ai-i18n] provider.cache must be "reuse" or "fresh".',
-      ),
-    );
-  }
-  return normalized;
 }
 
 function normalizePersist(
@@ -165,17 +116,6 @@ function normalizePersist(
     );
   }
   return { key };
-}
-
-function validatePositiveInteger(name: string, value: number | undefined) {
-  if (value !== undefined && (!Number.isSafeInteger(value) || value <= 0)) {
-    throw new Error(
-      diagnosticMessage(
-        `[ai-i18n] ${name} 必须是正整数。`,
-        `[ai-i18n] ${name} must be a positive integer.`,
-      ),
-    );
-  }
 }
 
 function normalizeLoading(

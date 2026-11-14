@@ -18,8 +18,7 @@
 
 ## 版本策略
 
-七个 npm 包（Analyzer、Core、ESLint、MCP、OpenAI、SQLite、Vite）首次正式版统一以
-`1.0.0` 为目标，之后独立按 SemVer 升版；一次 Release PR 汇总本批需要发布的包。
+五个 npm 包（Analyzer、Core、ESLint、MCP、Vite）独立按 SemVer 升版；一次 Release PR 汇总本批需要发布的包。
 不使用 `linked-versions`，也不要求无改动、无依赖影响的包陪同发布。
 
 - 自身修复或功能按 `fix` / `feat` 生成版本；不兼容变更必须使用 `!` 或 `BREAKING CHANGE`
@@ -33,33 +32,6 @@
   发布后由新稳定版本更新 `latest`。
 
 本次 Vite 接入也属于不兼容变更：业务配置移入 `ai-i18n.config.ts`，`aiI18n()` 仅接受 `configFile`；相对目录基准改为独立配置所在目录。发布时明确要求迁移并保留原翻译路径，不能仅以 patch 发布。
-
-## 首次 1.0.0 准备
-
-1. 合并最新 `main` 与本地功能提交，保留已发布版本的 package.json、manifest 和 Changelog。
-2. 发布配置使用 `versioning: default`、`prerelease: false`，各包不再设置 `prerelease-type`。
-   不提前手改七包版本或把 `.release-please-manifest.json` 当成目标版本文件。
-3. 提交准备改动后，再单独创建一个不含文件改动的提交：
-
-   ```sh
-   git commit --allow-empty -m "feat: 发布首个正式版本" -m "Release-As: 1.0.0"
-   ```
-
-   空提交会进入所有配置包的提交范围，`Release-As` 指定本次目标版本；不要把 footer 放在
-   仅修改根配置的普通提交里，也不要在配置中留下长期固定的 `release-as`。
-
-4. 将准备提交和空提交一起推送到 `main`，由配置路径变化触发 Release workflow。
-   若准备提交已推送、随后才推送空提交，路径过滤可能不会启动工作流；此时手动运行
-   `Release`，选择 `main`，`publish_paths` 留空。
-5. 验收 Release PR：七个包均为 `1.0.0`，manifest 与 package.json 一致，内部依赖打包为精确
-   版本，Changelog 正确，检查和候选 tarball 安装验证通过后再合并。
-6. 合并后按下文正常发布。检查七包 npm 版本、`latest` 和插件市场，而不是只看 GitHub tag。
-   本次固定版本 footer 属于历史提交；后续无需重复，按各包 Conventional Commits 升版。
-
-用户安装说明在 npm 上架前必须保留发布状态检查。正式版示例使用 `@^1.0.0`，未发布时会明确
-失败，不能删掉选择器后误装历史 `latest`。主动提前试用才选 `@alpha`；用户行为见
-[版本选择与升级](../apps/docs/docs/guide/getting-started/versions.md)。
-上述一次性升版方式见 [Release Please 官方说明](https://github.com/googleapis/release-please#how-do-i-change-the-version-number)。
 
 ## 发版流程
 
@@ -145,8 +117,6 @@ PAT 或 GitHub App，也不向版本提交添加 `[skip ci]`；若将来需要�
   "packages/core",
   "packages/eslint",
   "packages/mcp",
-  "packages/openai",
-  "packages/sqlite",
   "packages/vite"
 ]
 ```
@@ -160,7 +130,7 @@ PAT 或 GitHub App，也不向版本提交添加 `[skip ci]`；若将来需要�
 
 ## 约定
 
-- 七个 npm 包的 Trusted Publisher workflow 文件名保持为 `release.yml`。
+- 五个 npm 包的 Trusted Publisher workflow 文件名保持为 `release.yml`。
 - 发布校验脚本使用根 workspace 锁定的 `tsx` 执行，并纳入根 `tsc` 检查。CI 必须先完成
   `pnpm install --frozen-lockfile`，再通过 `pnpm exec tsx` 调用，不使用临时下载的 runner。
 - 发布包之间统一使用 `workspace:*`，`pnpm pack` 后必须是当前 workspace 版本的

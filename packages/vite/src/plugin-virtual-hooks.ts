@@ -19,8 +19,8 @@ import {
   scopedRuntimeCode,
 } from './virtual-modules.js';
 import { AI_I18N_VIRTUAL_MODULE_ID } from './yuku-analyzer.js';
-import type { RemoteBuildValues } from './remote-build.js';
-import type { TranslationMeta } from './runtime.js';
+import path from 'node:path';
+import { fileId } from './repository-paths.js';
 
 const RESOLVED_RUNTIME_ID = `\0${AI_I18N_VIRTUAL_MODULE_ID}`;
 const RESOLVED_SCOPED_RUNTIME_PREFIX = `${RESOLVED_RUNTIME_ID}?module=`;
@@ -33,8 +33,6 @@ const RESOLVED_VIRTUAL_RE =
   /^\0virtual:ai-i18n(?:\?module=.+|\/register\?module=.+|\/locale\/[^?]+)?$/;
 
 interface CreateVirtualModuleHooksOptions {
-  remoteBuild?: RemoteBuildValues;
-  translationMeta?(): TranslationMeta | undefined;
   normalized: NormalizedAiI18nOptions;
   config(): ResolvedConfig | undefined;
   framework(): AiI18nFramework;
@@ -45,8 +43,6 @@ interface CreateVirtualModuleHooksOptions {
   reconcile(moduleIds: Iterable<string>, complete?: boolean): Promise<void>;
   runStateTask: DevStateTaskRunner;
   warnSsrOnce(warn: () => void): void;
-  translationUpdateEvent: string;
-  localeUpdateEvent: string;
 }
 
 export function createVirtualModuleHooks(
@@ -100,26 +96,34 @@ export function createVirtualModuleHooks(
             : 'export {};';
         }
         if (id === RESOLVED_RUNTIME_ID) {
-          const meta = JSON.stringify(options.translationMeta?.());
           return runtimeCode(
             options.normalized,
-            options.translationUpdateEvent,
-            options.localeUpdateEvent,
             framework,
             config?.command === 'build',
             config?.base,
-            config?.command === 'build' && options.remoteBuild
-              ? options.remoteBuild.meta
-              : meta === undefined
-                ? 'undefined'
-                : `JSON.parse(${JSON.stringify(meta)})`,
-            Boolean(options.remoteBuild),
           );
         }
         if (id.startsWith(RESOLVED_SCOPED_RUNTIME_PREFIX)) {
+          const moduleId = decodeURIComponent(
+            id.slice(RESOLVED_SCOPED_RUNTIME_PREFIX.length),
+          );
           return scopedRuntimeCode(
-            decodeURIComponent(id.slice(RESOLVED_SCOPED_RUNTIME_PREFIX.length)),
+            moduleId,
             framework,
+            options.normalized.repository && config
+              ? {
+                  fileId: fileId(
+                    config.root,
+                    path.resolve(config.root, moduleId),
+                  ),
+                  loadFile:
+                    options
+                      .state()
+                      .modules.get(moduleId)
+                      ?.messages.some((message) => message.scope === 'file') ??
+                    true,
+                }
+              : undefined,
           );
         }
         await options.ready();
@@ -137,16 +141,6 @@ export function createVirtualModuleHooks(
           id.slice(RESOLVED_REGISTER_PREFIX.length),
         );
         return loadRegistration(this, {
-          ...(config?.command === 'build' && options.remoteBuild
-            ? {
-                deferredRegistration: options.remoteBuild.registration(
-                  moduleId,
-                  options.normalized.loading
-                    ? options.normalized.sourceLang
-                    : undefined,
-                ),
-              }
-            : {}),
           moduleId,
           build: config?.command === 'build',
           project: options.state(),

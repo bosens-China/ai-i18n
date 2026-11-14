@@ -27,9 +27,8 @@ interface AiI18nLocaleLoadingOptions {
 
 ## 行为
 
-顶层 `loading` 接受布尔值或本配置对象。省略或 `false` 保持全语言注册；`true` 使用默认
-分包策略，对象可定制资源提示。开启后每个目标 locale 生成独立 Vite chunk，未提前加载的语言
-在首次 `setLang()` 时加载。空对象同样使用默认分包策略。
+顶层 `loading` 接受布尔值或本配置对象。每个目标 locale 始终生成独立 Vite chunk，未提前加载的语言
+在首次 `setLang()` 时加载。省略、`false`、`true` 或空对象均使用默认按需策略；对象可定制资源提示。
 
 列表必须满足以下约束：
 

@@ -24,6 +24,7 @@ export function createTranslate(
     messageId: string,
     sourceFallback: string,
     occurrence?: string,
+    options?: TranslationOptions,
   ) => string,
 ): Translate {
   const scoped = new Map<string, Translate>();
@@ -32,7 +33,7 @@ export function createTranslate(
     const translateSource = (source: string, options?: TranslationOptions) => {
       const message = escapeTemplateLiteral(source);
       return formatTemplateMessage(
-        lookup(createMessageId(message, options), message, occurrence),
+        lookup(createMessageId(message, options), message, occurrence, options),
         [],
       );
     };

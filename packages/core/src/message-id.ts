@@ -1,5 +1,6 @@
 export interface TranslationOptions {
   comment?: string;
+  scope?: 'file';
 }
 
 function escapeMessageIdPart(value: string): string {

@@ -1,5 +1,9 @@
 [
-  { "type": "file", "name": "remote-translations", "label": "远程文案与译文" },
+  {
+    "type": "file",
+    "name": "remote-translations",
+    "label": "接入外部翻译服务"
+  },
   {
     "type": "file",
     "name": "performance",

@@ -285,6 +285,26 @@ t('保存', { comment: '工具栏按钮' })`,
     });
   });
 
+  it('keeps global and explicit file identities distinct', () => {
+    const module = analyzeModule(
+      `import { t } from 'virtual:ai-i18n'
+t('保存')
+t('保存', { scope: 'file' })
+t('保存', { comment: '按钮', scope: 'file' })
+t('保存', { scope: 'global' })`,
+      'View.tsx',
+    );
+
+    expect(extractMessages(module)).toMatchObject({
+      messages: [
+        { id: '保存', source: '保存' },
+        { id: '保存', source: '保存', scope: 'file' },
+        { id: '保存#按钮', source: '保存', comment: '按钮', scope: 'file' },
+      ],
+      warnings: [{ code: 'dynamic-argument' }],
+    });
+  });
+
   it('preserves static undefined comment branches', () => {
     const module = analyzeModule(
       `import { t } from 'virtual:ai-i18n'

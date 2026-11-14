@@ -16,6 +16,10 @@ describe('ai-i18n/t-static-args', () => {
         filename: path.join(sourceRoot, 'literal.ts'),
       },
       {
+        code: "import { t } from 'virtual:ai-i18n'; t('保存', { comment: '按钮', scope: 'file' })",
+        filename: path.join(sourceRoot, 'file-scope.ts'),
+      },
+      {
         code: "import { t as tr } from 'virtual:ai-i18n'; const label = ok ? '是' : '否'; tr(label)",
         filename: path.join(sourceRoot, 'alias.ts'),
       },

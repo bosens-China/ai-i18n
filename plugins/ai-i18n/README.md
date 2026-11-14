@@ -16,7 +16,7 @@ codex plugin add ai-i18n@ai-i18n
 `codex plugin marketplace upgrade ai-i18n`，再运行 `codex plugin add ai-i18n@ai-i18n`
 更新安装副本；如 Hook 有变更则重新信任，并开始新任务。
 应用开发者安装步骤见
-[AI Agent 接入](https://bosens-china.github.io/ai-i18n/guide/ai/ai-tools#安装-codex-插件)。
+[AI Agent 接入](https://bosens-china.github.io/ai-i18n/ai/ai-tools#安装-codex-插件)。
 
 项目必须安装支持 `@ai-i18n/vite/internal/scan` 的版本；仅使用 Skill 补译时，还需要匹配的
 `@ai-i18n/mcp/internal/agent`。MCP 启动配置固定为打包时的 `@ai-i18n/mcp` 版本；
@@ -39,13 +39,10 @@ codex plugin add ai-i18n@ai-i18n
 检查本身不调用翻译模型、不保存人工覆盖、不清理历史；中止、错误结束和自动继续后的第二次检查不阻塞结束。
 扫描失败不是“零缺译”。需要覆盖既有译文、改变人工校对或删除历史时，继续遵守 Skill 的授权边界。
 
-远程译文模式的扫描结果会标明来源。扫描不调用远程接口，结束检查也不会把本地缺译统计当作
-远程缺译并要求自动补写；overlay 的本地统计也不代表最终合并覆盖率。源码扫描失败仍会反馈，
-最终覆盖率由实际远程构建验证。
-
-无活动 Dev 时扫描建立临时 Vite 转换实例；已有活动 Dev 时请求该进程扫描，避免争写同一目录。
-扫描会更新提取清单和缺译槽位，因此首次启用 Hook 时应信任当前工作区及其 Vite 配置。
-缓存位于 Vite `cacheDir`，删除后自动重建。自定义转换插件等无法证明输入稳定的情形保守重扫。
+扫描会调用当前配置的可选适配器，并重建本地 SQLite 提取索引和最终资源。
+结束检查使用本轮人工译文与适配器结果统计缺译；适配器缺项不会沿用上轮值。
+源码扫描失败仍会反馈。首次启用 Hook 时应信任当前工作区及其 Vite 配置。
+无活动 Dev 时扫描建立临时 Vite 转换实例；已有活动 Dev 时请求该进程扫描。
 
 已于 2026-09-17 核对 [Codex 插件文档](https://developers.openai.com/plugins/build/plugins)
 和 [Hook 文档](https://learn.chatgpt.com/docs/hooks)。产物结构和脚本已通过自动化测试，

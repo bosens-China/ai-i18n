@@ -10,8 +10,6 @@
     "packages/core": {},
     "packages/eslint": {},
     "packages/mcp": {},
-    "packages/openai": {},
-    "packages/sqlite": {},
     "packages/vite": {}
   }
 }

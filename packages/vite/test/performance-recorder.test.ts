@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest';
 import { PerformanceRecorder } from '../src/performance-recorder';
 import { createDevTimingReporter } from '../src/dev-timing';
 import { createDevStateQueue } from '../src/dev-state-queue';
-import { ProviderCoordinator } from '../src/provider-coordinator';
 
 describe('performance recorder', () => {
   it('aggregates fast, slow and failed samples while bounding details and quantiles', async () => {
@@ -170,35 +169,5 @@ describe('performance recorder', () => {
     expect(
       spans.filter((s) => s.stage === 'state-execute').map((s) => s.durationMs),
     ).toEqual([20, 3]);
-  });
-
-  it('links provider queue, call and validation with the actual batch id', async () => {
-    const recorder = new PerformanceRecorder(30);
-    const coordinator = new ProviderCoordinator(async () => [{ en: 'Hello' }], {
-      performance: recorder,
-      onWarning: () => {},
-    });
-    const pending = coordinator.request({
-      messageId: 'message',
-      source: '你好',
-      locales: ['en'],
-    });
-    await coordinator.flush();
-    await pending;
-    const spans = recorder.snapshot().spans;
-    const batch = spans.find((s) => s.stage === 'provider-batch')!;
-    expect(batch.status).toBe('ok');
-    for (const stage of [
-      'provider-queue-wait',
-      'provider-call',
-      'provider-validation',
-      'provider-results',
-    ]) {
-      expect(spans.find((s) => s.stage === stage)?.details.batchId).toBe(
-        batch.details.batchId,
-      );
-    }
-    expect(JSON.stringify(spans)).not.toContain('你好');
-    expect(JSON.stringify(spans)).not.toContain('Hello');
   });
 });

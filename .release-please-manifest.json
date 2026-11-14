@@ -3,7 +3,5 @@
   "packages/core": "2.0.0",
   "packages/eslint": "2.0.0",
   "packages/mcp": "2.0.0",
-  "packages/openai": "2.0.0",
-  "packages/sqlite": "2.0.0",
   "packages/vite": "2.0.0"
 }

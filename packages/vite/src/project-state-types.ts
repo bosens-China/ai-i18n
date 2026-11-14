@@ -4,6 +4,7 @@ import type { AnalysisLanguage, TranslationHookBinding } from './extractor.js';
 import type { ExtractResult } from './yuku-analyzer.js';
 
 export interface NormalizedAiI18nOptions {
+  repository?: boolean;
   sourceLang: string;
   defaultLang: string;
   locales: readonly LangOption[];

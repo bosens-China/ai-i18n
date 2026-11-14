@@ -18,10 +18,5 @@
     "type": "dir",
     "name": "runtime",
     "label": "virtual:ai-i18n"
-  },
-  {
-    "type": "dir",
-    "name": "openai",
-    "label": "@ai-i18n/openai"
   }
 ]

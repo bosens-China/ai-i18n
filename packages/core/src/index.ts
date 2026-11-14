@@ -84,6 +84,7 @@ export type {
 } from './schema.js';
 export {
   createI18nRuntime,
+  createRepositoryScopedTranslate,
   createScopedTranslate,
   runtimeMessageId,
 } from './runtime.js';

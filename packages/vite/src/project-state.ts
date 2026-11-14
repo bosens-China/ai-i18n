@@ -26,8 +26,7 @@ import {
   effectiveModuleSignatures,
   remoteTranslationValue,
 } from './translation-overrides.js';
-import type { ProviderResult } from './provider-coordinator.js';
-import type { ProviderRequest } from './provider-coordinator.js';
+import type { ProviderResult, ProviderRequest } from './provider-types.js';
 import {
   findMissingTranslations,
   ProviderTranslationState,
@@ -76,6 +75,10 @@ export class ProjectState {
     TranslationAutoImports
   >();
   private readonly providerTranslations = new ProviderTranslationState();
+  private readonly repositoryLocales = new Map<
+    string,
+    Record<string, string>
+  >();
 
   constructor(
     readonly root: string,
@@ -234,6 +237,11 @@ export class ProjectState {
     this.translationHooks.clear();
     this.autoImportRuntime.clear();
     this.providerTranslations.reset();
+    this.repositoryLocales.clear();
+  }
+
+  setRepositoryLocale(locale: string, messages: Record<string, string>): void {
+    this.repositoryLocales.set(locale, { ...messages });
   }
 
   hydrateCache(cache: TranslationMemoryFile): string[] {
@@ -331,6 +339,8 @@ export class ProjectState {
   }
 
   localeMessages(locale: string): Record<string, TranslationValue> {
+    if (this.options.repository)
+      return this.repositoryLocales.get(locale) ?? {};
     return localeRegistration(
       this.modules,
       locale,

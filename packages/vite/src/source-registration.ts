@@ -17,6 +17,8 @@ interface SourceRegistrationOptions {
   code: string;
   id: string;
   moduleId: string;
+  runtimeId?: string;
+  loadFile?: boolean;
   registerPrefix: string;
   module: Module;
   registration?: RegistrationInsertion;
@@ -99,10 +101,11 @@ export function sourceRegistration(options: SourceRegistrationOptions) {
             : []),
           ...sharedRuntimeLines(
             preservePrimaryImports ? [] : primarySpecifiers,
-            options.moduleId,
+            options.runtimeId ?? options.moduleId,
             options.registrationMessages,
             options.code,
             'Primary',
+            options.loadFile,
           ),
         ]
       : [
@@ -128,7 +131,7 @@ export function sourceRegistration(options: SourceRegistrationOptions) {
                 ),
                 ...runtimeImportSpecifiers(setupRuntimeImports),
               ],
-              options.moduleId,
+              options.runtimeId ?? options.moduleId,
               undefined,
               options.code,
               'Template',
@@ -192,6 +195,7 @@ function sharedRuntimeLines(
   messages: ModuleMessages | undefined,
   code: string,
   label: string,
+  loadFile = false,
 ): string[] {
   if (!specifiers.length && !messages) return [];
   const runtimeName = uniqueName(code, `__aiI18n${label}Runtime`);
@@ -205,6 +209,7 @@ function sharedRuntimeLines(
     `import * as ${runtimeName} from ${JSON.stringify(`${AI_I18N_VIRTUAL_MODULE_ID}/internal`)};`,
     `const ${moduleName} = ${JSON.stringify(moduleId)};`,
   ];
+  if (loadFile) lines.push(`await ${runtimeName}.__loadFile(${moduleName});`);
   if (messages) {
     lines.push(
       `${runtimeName}.__registerModule(${moduleName}, ${JSON.stringify(messages)});`,

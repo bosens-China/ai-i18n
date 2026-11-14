@@ -13,6 +13,9 @@
     "ai"
   ],
   "type": "module",
+  "engines": {
+    "node": ">=22.13.0"
+  },
   "packageManager": "pnpm@11.15.1",
   "license": "MIT",
   "author": "yliu",
@@ -30,10 +33,10 @@
     "examples:dev": "pnpm build && turbo run dev --filter=\"@ai-i18n/example-*\"",
     "examples:build": "pnpm build && turbo run build --filter=\"@ai-i18n/example-*\"",
     "examples:preview": "turbo run preview --filter=\"@ai-i18n/example-*\"",
-    "docs:dev": "pnpm build && turbo run dev --filter=\"@ai-i18n/docs\" --filter=\"@ai-i18n/example-*\" --filter=\"!@ai-i18n/example-remote\"",
-    "docs:build": "pnpm build && turbo run build --filter=\"@ai-i18n/example-*\" --filter=\"!@ai-i18n/example-remote\" && pnpm --filter @ai-i18n/docs build",
-    "check": "pnpm build && tsc -p tsconfig.json && eslint \"*.config.{js,ts}\" scripts && turbo run check --filter=./packages/* --filter=@ai-i18n/example-remote",
-    "test": "turbo run test --filter=./packages/* && vitest run scripts/test examples/remote/test --config vitest.config.ts",
+    "docs:dev": "pnpm build && turbo run dev --filter=\"@ai-i18n/docs\" --filter=\"@ai-i18n/example-*\"",
+    "docs:build": "pnpm build && turbo run build --filter=\"@ai-i18n/example-*\" && pnpm --filter @ai-i18n/docs build",
+    "check": "pnpm build && tsc -p tsconfig.json && eslint \"*.config.{js,ts}\" scripts && turbo run check --filter=./packages/*",
+    "test": "turbo run test --filter=./packages/* && vitest run scripts/test --config vitest.config.ts",
     "release:verify": "pnpm build && tsx scripts/release-packages.ts verify",
     "perf:examples": "pnpm build && tsx scripts/performance/run.ts",
     "examples:perf": "pnpm build && pnpm --parallel --filter \"@ai-i18n/example-*\" dev:perf",

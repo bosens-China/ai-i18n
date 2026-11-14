@@ -2,6 +2,7 @@ import { afterEach, describe, expect, expectTypeOf, it, vi } from 'vitest';
 import {
   TranslationConflictError,
   createI18nRuntime,
+  createRepositoryScopedTranslate,
   createScopedTranslate,
   runtimeMessageId,
 } from '../src/index';
@@ -42,6 +43,29 @@ describe('@ai-i18n/core runtime', () => {
 
     expect(runtime.t('提交', { comment: '结算按钮' })).toBe('Place order');
     expect(runtime.t('保存', { comment: '按钮' })).toBe('Save');
+  });
+
+  it('uses global identities by default and file identities only when requested', () => {
+    const runtime = createI18nRuntime({
+      sourceLang: 'zh-CN',
+      defaultLang: 'en-US',
+      locales,
+    });
+    runtime.registerModule('src/app.ts', {
+      'zh-CN': { 保存: '保存', '保存#按钮': '保存', 'f:abc:保存': '保存' },
+      'en-US': { 保存: 'Save', 'f:abc:保存': 'Save this file' },
+    });
+    const t = createRepositoryScopedTranslate(runtime, 'abc');
+    expect(t('保存')).toBe('Save');
+    expect(t('保存', { scope: 'file' })).toBe('Save this file');
+    expect(t('保存', { comment: '按钮' })).toBe('保存');
+    expect(t('保存', { comment: '按钮', scope: 'file' })).toBe('保存');
+    runtime.replaceModule('src/app.ts', {
+      'zh-CN': { 保存: '保存', '保存#按钮': '保存' },
+      'en-US': { 保存: 'Save', '保存#按钮': 'Save button' },
+    });
+    expect(t('保存', { scope: 'file' })).toBe('Save');
+    expect(t('保存', { comment: '按钮', scope: 'file' })).toBe('Save button');
   });
 
   it('keeps identical semantic messages isolated by runtime module', () => {

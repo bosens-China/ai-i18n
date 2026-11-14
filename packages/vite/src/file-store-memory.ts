@@ -25,7 +25,7 @@ import {
 } from './file-store-merge.js';
 import type { FileStoreOptions } from './file-store-types.js';
 import type { ProjectSnapshot } from './project-snapshot.js';
-import type { ProviderResult } from './provider-coordinator.js';
+import type { ProviderResult } from './provider-types.js';
 
 export class FileStoreMemory {
   private remoteCache: TranslationMemoryFile = {

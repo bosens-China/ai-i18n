@@ -25,6 +25,9 @@
     "url": "https://github.com/bosens-China/ai-i18n/issues"
   },
   "type": "module",
+  "engines": {
+    "node": ">=22.13.0"
+  },
   "sideEffects": false,
   "files": [
     "dist"

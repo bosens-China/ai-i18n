@@ -44,7 +44,7 @@ it('discovers multiple apps without executing configs or traversing generated di
     code: 'WORKSPACE_DIRECTORY_NOT_ABSOLUTE',
   });
 });
-it('resolves only the selected config without loading Vite config or calling Provider', async () => {
+it('resolves only the selected config without loading Vite config', async () => {
   // 使用同卷临时目录，避免 Windows 跨盘 junction 不可解析。
   const root = await fs.mkdtemp(
     path.resolve('packages/mcp/node_modules/.config-test-'),
@@ -64,11 +64,9 @@ it('resolves only the selected config without loading Vite config or calling Pro
   const file = path.join(root, 'ai-i18n.config.ts');
   await fs.writeFile(
     file,
-    `export default ({mode}) => ({root:'app', directory:mode==='internal'?'translations-internal':'i18n', sourceLang:'zh',locales:[{value:'zh',label:'中文'},{value:'en',label:'English'}],provider:{translator(){throw new Error('Provider must not run');}}});`,
+    `export default ({mode}) => ({root:'app', directory:mode==='internal'?'translations-internal':'i18n', sourceLang:'zh',locales:[{value:'zh',label:'中文'},{value:'en',label:'English'}]});`,
   );
   const result = await resolveProject(file, 'build', 'internal');
   expect(result.vite_root).toBe(path.join(root, 'app'));
   expect(result.i18n_directory).toBe(path.join(root, 'translations-internal'));
-  expect(result.translation_source).toBe('local');
-  expect(JSON.stringify(result)).not.toContain('translator');
 });

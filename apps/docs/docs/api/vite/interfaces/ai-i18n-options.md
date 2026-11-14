@@ -1,141 +1,37 @@
 ---
 title: AiI18nOptions
-description: aiI18n() 的顶层配置接口
+description: ai-i18n.config.ts 的配置字段
 ---
-
-从 `@ai-i18n/vite` 导入：
 
 ```ts
 import type { AiI18nOptions } from '@ai-i18n/vite';
-```
 
-## 最小配置
-
-通常只需提供源语言与语言列表。框架自动检测，类型声明和 HTML 显式翻译表达式提取默认开启，
-成功 Build 会输出覆盖率；自动导入、持久化、语言分包和 Provider 调用均需按需启用。
-
-```ts title="ai-i18n.config.ts"
-import { defineConfig } from '@ai-i18n/vite/config';
-
-export default defineConfig({
-  sourceLang: 'zh-CN',
-  locales: [
-    { value: 'zh-CN', label: '中文' },
-    { value: 'en-US', label: 'English' },
-  ],
-});
-```
-
-这些业务字段用于 `ai-i18n.config.ts`，不再作为 `aiI18n()` 的内联参数。`AiI18nConfig` 在这些字段之上增加可选的 `root`，见[独立配置与多应用](/guide/basic/configuration)。
-
-## 定义
-
-```ts
 interface AiI18nOptions {
-  framework?: AiI18nFramework;
+  sourceLang: string;
+  locales: readonly { value: string; label: string }[];
+  defaultLang?: string;
+  adapter?: TranslationAdapter;
+  framework?: 'vanilla' | 'vue' | 'react';
   autoImport?: boolean;
   dts?: string | false;
-  sourceLang: string;
-  defaultLang?: string;
-  locales: readonly LangOption[];
-  persist?: boolean | AiI18nPersistOptions;
-  loading?: boolean | AiI18nLocaleLoadingOptions;
-  translationMemory?: AiI18nTranslationMemoryOptions;
-  provider?: AiI18nProviderOptions;
-  remote?: RemoteAdapter;
+  persist?: boolean | { key: string };
+  loading?:
+    boolean | { preload?: readonly string[]; prefetch?: readonly string[] };
   failOnMissingTranslations?: boolean;
   directory?: string;
-  cleanup?: AiI18nCleanupOptions;
   diagnostics?: AiI18nDiagnosticsOptions;
   html?: boolean | HtmlExtractorOptions;
 }
 ```
 
-## 常用配置
+`sourceLang` 与 `defaultLang` 必须出现在 `locales` 中，语言值不能重复。默认语言是 `sourceLang`；若配置 `persist`，已有的有效浏览器偏好优先。
 
-| 字段          | 类型                                                                                           | 必填 | 默认值              | 作用                                 |
-| ------------- | ---------------------------------------------------------------------------------------------- | ---- | ------------------- | ------------------------------------ |
-| `sourceLang`  | `string`                                                                                       | 是   | 无                  | 源码文案所属语言。                   |
-| `locales`     | [`readonly LangOption[]`](/api/vite/interfaces/lang-option)                                    | 是   | 无                  | 项目支持的语言列表。                 |
-| `defaultLang` | `string`                                                                                       | 否   | `sourceLang`        | 没有有效持久化值时使用的初始语言。   |
-| `autoImport`  | `boolean`                                                                                      | 否   | `false`             | 自动注入当前框架模式的 Runtime API。 |
-| `persist`     | `boolean` 或 [`AiI18nPersistOptions`](/api/vite/interfaces/ai-i18n-persist-options)            | 否   | `false`             | 使用 localStorage 保存语言偏好。     |
-| `loading`     | [`boolean \| AiI18nLocaleLoadingOptions`](/api/vite/interfaces/ai-i18n-locale-loading-options) | 否   | `false`，全语言注册 | 按 locale 拆分语言资产。             |
-| `provider`    | [`AiI18nProviderOptions`](/api/vite/type-aliases/ai-i18n-provider-options)                     | 否   | 不调用模型          | 配置自动翻译函数、缓存与调度策略。   |
+`adapter` 接收完整目录并返回一次性的 `locale → key → string | null` 对象，详见[异步翻译适配器](/ai/ai-translation)。人工 `*.manual.json` 值始终优先。
 
-## 高级配置
+`framework` 默认由 Vite 插件推断。`autoImport` 默认关闭。`dts` 默认生成 `src/ai-i18n.d.ts`。`directory` 默认配置文件旁的 `i18n/`。`loading` 可控制全局语言资源预加载和预获取；文件范围资源按模块按需加载。
 
-可选 `remote` 接受 [`RemoteAdapter`](/api/vite/interfaces/remote-adapter)。只提供 `publish` 时增强
-现有流程；提供 `load` 时使用远程译文并与 Provider 互斥。其 `mode` 默认为 replace，
-显式选择 overlay 可将服务器的部分译文以最高优先级叠加到本地结果。示例见
-[远程文案与译文](/guide/advanced/remote-translations)。
+`failOnMissingTranslations` 默认关闭；开启后完整 Build 若有目标语言缺译则失败。`diagnostics.buildSummary` 默认输出覆盖率。`html: false` 可关闭 HTML 显式表达式提取。
 
-以下选项通常无需修改；仅在文件布局、发布检查、历史清理或排障时调整。
+`provider`、`remote`、`translationMemory` 和 `cleanup` 已移除。旧配置会在启动时报迁移错误。
 
-| 字段                        | 类型                                                                                        | 必填 | 默认值               | 作用                                           |
-| --------------------------- | ------------------------------------------------------------------------------------------- | ---- | -------------------- | ---------------------------------------------- |
-| `framework`                 | [`AiI18nFramework`](/api/vite/type-aliases/ai-i18n-framework)                               | 否   | 自动检测             | 指定 Vanilla、Vue 或 React 模式。              |
-| `dts`                       | `string \| false`                                                                           | 否   | `'src/ai-i18n.d.ts'` | 设置声明文件路径，或关闭生成。                 |
-| `directory`                 | `string`                                                                                    | 否   | `'i18n'`             | 设置协议目录；相对路径基于 Vite `root`。       |
-| `html`                      | [`boolean \| HtmlExtractorOptions`](/api/vite/interfaces/html-extractor-options)            | 否   | `true`               | 默认提取 HTML 显式翻译表达式。                 |
-| `failOnMissingTranslations` | `boolean`                                                                                   | 否   | `false`              | 构建时若目标语言仍有缺译，则构建失败。         |
-| `translationMemory`         | [`AiI18nTranslationMemoryOptions`](/api/vite/interfaces/ai-i18n-translation-memory-options) | 否   | 分片 JSON            | 配置可选个人候选缓存，并按需限制历史译文容量。 |
-| `cleanup`                   | [`AiI18nCleanupOptions`](/api/vite/interfaces/ai-i18n-cleanup-options)                      | 否   | 保留默认清理策略     | 控制失效提取文件和孤立消息的清理。             |
-| `diagnostics`               | [`AiI18nDiagnosticsOptions`](/api/vite/interfaces/ai-i18n-diagnostics-options)              | 否   | 构建汇总开，其余关闭 | 配置构建汇总、Dev 慢日志和性能报告。           |
-
-## 语言约束
-
-`locales` 至少包含一项，且每一项的 `value` 必须唯一。`sourceLang` 与 `defaultLang` 必须匹配
-某个 `value`。
-
-目标语言缺译或值为 `null` 时，Runtime 返回 source 文案。插件不会为 `sourceLang` 生成重复的
-目标语言文件。
-
-开启 `failOnMissingTranslations` 后，Build 会等待本轮自动翻译并检查入口可达文案。任一目标语言
-仍缺译时，构建报错并显示各语言缺译数量、全部缺失文案及源码位置、消息 ID、提取 JSON 和本地翻译 JSON 的绝对路径（远程模式说明来源）；不配置 Provider 也可使用。Dev 不受影响，
-`diagnostics.buildSummary: false` 也不会关闭检查。空字符串和有效人工覆盖均视为已翻译。
-
-初始语言按以下顺序选择：
-
-1. localStorage 中有效的持久化值；
-2. `defaultLang`；
-3. 省略 `defaultLang` 时使用 `sourceLang`。
-
-## 框架与自动导入
-
-省略 `framework` 时，插件读取 Vite 最终插件列表：
-
-| 检测结果                          | 模式      |
-| --------------------------------- | --------- |
-| 存在 `vite:vue` 或 `vite:vue-jsx` | `vue`     |
-| 存在 `vite:react*`                | `react`   |
-| 都不存在                          | `vanilla` |
-
-同一个 build 同时出现 Vue 与 React 插件时会报错。显式设置 `framework` 不会绕过这项检查。
-显式值只能是 `'vanilla'`、`'vue'` 或 `'react'`；JavaScript 配置中的其他值也会在启动时被拒绝。
-
-`autoImport: true` 注入的 API 取决于最终模式。三种模式都有 `t`、`setLang`、`getLang`、
-`getLangs`、`getLangLoadState` 与 `subscribe`；Vue 额外注入 `useI18n`、`tRef`、
-`i18nComputed`、`tComputed`，React 额外注入 `useI18n`。
-
-完整接入方法见[自动导入](/guide/basic/auto-import)。
-
-## 路径
-
-`directory` 与 `dts` 的相对路径都基于 Vite `root` 解析；传入绝对路径时直接使用该路径。
-
-## 翻译校对
-
-翻译校对不属于 `AiI18nOptions`。需要时从 `@ai-i18n/vite/review` 导入并在 Vite `plugins` 中注册
-`aiI18nReview()`；省略该插件时不提供校对入口或独立校对页。详见[翻译校对](/guide/basic/translation-review)。
-
-## 相关内容
-
-- [`aiI18n()`](/api/vite/functions/ai-i18n)
-- [`AiI18nDiagnosticsOptions`](/api/vite/interfaces/ai-i18n-diagnostics-options)
-- [翻译校对](/guide/basic/translation-review)
-- [语言分包与按需加载](/guide/basic/locale-loading)
-- [生成文件与 Git](/guide/basic/directory)
-- [TypeScript 与生成声明](/guide/quality/typescript)
-- [Translation Memory](/ai/translation-memory)
-- [ESLint](/guide/quality/eslint)
+配置写在 `ai-i18n.config.ts` 中，Vite 配置仅注册 `aiI18n()`。路径规则见[独立配置与多应用](/guide/basic/configuration)。

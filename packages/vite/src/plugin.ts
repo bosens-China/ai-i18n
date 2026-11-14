@@ -1,13 +1,6 @@
-import {
-  type NormalizedHotChannel,
-  type Plugin,
-  type ResolvedConfig,
-  type ViteDevServer,
-} from 'vite';
-import type { TranslationMemoryFile } from '@ai-i18n/core';
+import { type Plugin, type ResolvedConfig, type ViteDevServer } from 'vite';
 import { createPluginBuildHooks } from './plugin-build-hooks.js';
 import { optimizeDevRuntimeDependencies } from './dev-optimize-deps.js';
-import { createDevUpdateSender } from './dev-updates.js';
 import {
   createDevStateQueue,
   type DevStateTaskRunner,
@@ -17,7 +10,6 @@ import { createPerformanceDiagnostics } from './performance-diagnostics.js';
 import {
   initializeProject,
   initializeDevServer,
-  createPluginPersistence,
 } from './plugin-initialization.js';
 import type { FileStore } from './file-store.js';
 import {
@@ -29,10 +21,8 @@ import { html as createHtmlExtractor } from './html.js';
 import { createHtmlTransformHandler } from './html-transform.js';
 import { createHotUpdateHandler, wrapHotUpdate } from './hot-update.js';
 import type { ProjectState } from './project-state.js';
-import type { ProviderCoordinator } from './provider-coordinator.js';
 import { normalizeProjectId } from './project-paths.js';
 import type { AiI18nOptions } from './options.js';
-import { createPluginProvider } from './plugin-provider.js';
 import {
   AI_I18N_PLUGIN_API,
   createPluginApi,
@@ -44,17 +34,9 @@ import {
   createVirtualModuleHooks,
   REGISTER_PREFIX,
 } from './plugin-virtual-hooks.js';
-import {
-  normalizeOptions,
-  normalizeProviderCache,
-  normalizeTranslationMemory,
-  rejectRemovedOptions,
-} from './plugin-utils.js';
+import { normalizeOptions, rejectRemovedOptions } from './plugin-utils.js';
 import { createSourceTransformHandler } from './source-transform.js';
-import { formatTerminalDiagnostic } from './terminal-format.js';
-import { validateRemote } from './remote-validation.js';
-import { createPluginRemote } from './plugin-remote.js';
-import { sendRemoteUpdate } from './remote-updates.js';
+import { createDevUpdateSender } from './dev-updates.js';
 const TRANSLATION_UPDATE_EVENT = 'ai-i18n:update';
 const LOCALE_UPDATE_EVENT = 'ai-i18n:locale-update';
 
@@ -63,12 +45,10 @@ export function aiI18n(
   configDirectory?: string,
 ): Plugin {
   rejectRemovedOptions(options);
-  validateRemote(options.remote, options.provider);
-  const normalized = normalizeOptions(options);
-  const translationMemory = normalizeTranslationMemory(
-    options.translationMemory,
-  );
-  const providerCache = normalizeProviderCache(options.provider?.cache);
+  const normalized = normalizeOptions({
+    ...options,
+    repository: true,
+  });
   const htmlExtractor =
     options.html === false
       ? undefined
@@ -80,9 +60,6 @@ export function aiI18n(
   let state: ProjectState | undefined;
   let store: FileStore | undefined;
   let ready: Promise<void> = Promise.resolve();
-  let reviewCache: TranslationMemoryFile | undefined;
-  let coordinator: ProviderCoordinator | undefined;
-  let devHot: NormalizedHotChannel | undefined;
   let devServer: ViteDevServer | undefined;
   let warnedSsr = false;
   const warnSsrOnce = (warn: () => void) => {
@@ -90,9 +67,7 @@ export function aiI18n(
     warnedSsr = true;
     warn();
   };
-  const setDevHot = (hot: NormalizedHotChannel) => {
-    devHot = hot;
-  };
+  const setDevHot = () => {};
   const transforms = trackPluginTransforms();
   const closeScanBridges = new Map<ResolvedConfig, () => Promise<void>>();
   const { currentState, currentStore } = createPluginStateAccessors(
@@ -119,83 +94,26 @@ export function aiI18n(
       !api.scanMode && !api.scanning && config?.command === 'serve',
     log: (message) => config?.logger.info(message),
   });
-  const devPersistence = createPluginPersistence(
-    () => config,
-    currentStore,
-    currentState,
-    devTiming,
-  );
-
   const runStateTask: DevStateTaskRunner = (task) =>
     config?.command === 'build'
       ? Promise.resolve().then(task)
       : queueDevStateTask(task);
 
-  const {
-    sendTranslationUpdates,
-    sendLocaleUpdates,
-    requestMissingTranslations: requestDevTranslations,
-    dispose: disposeDevUpdates,
-  } = createDevUpdateSender({
+  const { sendTranslationUpdates, sendLocaleUpdates } = createDevUpdateSender({
     options: normalized,
     state: currentState,
-    hot: () => devHot,
+    hot: () => devServer?.environments.client?.hot,
     moduleGraph: () => devServer?.environments.client?.moduleGraph,
-    coordinator: () => coordinator,
-    providerCache,
-    reportMissingTranslations(message) {
-      if (config?.command === 'serve') {
-        config.logger?.info(formatTerminalDiagnostic(message, 'info'));
-      }
-    },
     translationEvent: TRANSLATION_UPDATE_EVENT,
     localeEvent: LOCALE_UPDATE_EVENT,
   });
-  const requestMissingTranslations = async (moduleIds: readonly string[]) => {
-    if (api.scanMode || api.scanning) return;
-    if (config?.command === 'serve') remote?.schedule();
-    if (options.remote?.load) return;
-    if (translationMemory.cache && providerCache !== 'fresh') {
-      const project = currentState();
-      const affected = project.hydrateCache(
-        await currentStore().syncMemory(project.snapshot()),
-      );
-      if (affected.length) {
-        sendTranslationUpdates(affected);
-        sendLocaleUpdates(normalized.locales.map((locale) => locale.value));
-      }
-    }
-    requestDevTranslations(moduleIds);
-  };
-  const persist = (moduleId: string) => {
-    if (!api.scanMode && !api.scanning) devPersistence.schedule(moduleId);
-  };
-  const remote = options.remote
-    ? createPluginRemote({
-        adapter: options.remote,
-        config: () => config,
-        state: currentState,
-        store: currentStore,
-        runStateTask,
-        flushPersistence: () => devPersistence.flush(),
-        notify: (affected, meta) =>
-          sendRemoteUpdate(
-            currentState(),
-            affected,
-            meta,
-            devServer?.environments.client?.moduleGraph,
-            devHot,
-          ),
-      })
-    : undefined;
-  const flushProvider = () =>
-    devTiming.measure(
-      'provider-flush',
-      '<project>',
-      () => coordinator?.flush() ?? Promise.resolve(),
-    );
+  const requestMissingTranslations = () => {};
+  const persist = () => {};
+  const flushProvider = () => Promise.resolve();
+  const flushPersistence = () => Promise.resolve();
 
   const { hooks: buildHooks, reconcile } = createPluginBuildHooks({
+    adapter: options.adapter,
     config: () => config,
     ready: () => ready,
     state: currentState,
@@ -205,16 +123,11 @@ export function aiI18n(
     failOnMissingTranslations: options.failOnMissingTranslations ?? false,
     timing: devTiming,
     performance: performanceDiagnostics,
-    remote,
-    remoteBuild: remote?.buildValues,
     closeStore: () => store?.close(),
     requestMissingTranslations,
     flushProvider,
-    flushPersistence: () => devPersistence.flush(),
+    flushPersistence,
     async dispose(closedConfig) {
-      disposeDevUpdates();
-      if (closedConfig.command !== 'build' || !closedConfig.build.watch)
-        await remote?.close();
       const close = closeScanBridges.get(closedConfig);
       closeScanBridges.delete(closedConfig);
       return close?.();
@@ -233,7 +146,7 @@ export function aiI18n(
     sendTranslationUpdates,
     sendLocaleUpdates,
     requestMissingTranslations,
-    flushPersistence: () => devPersistence.flush(),
+    flushPersistence,
     runStateTask,
   });
 
@@ -261,7 +174,6 @@ export function aiI18n(
     persist,
   });
   const transformIndexHtml = createHtmlTransformHandler({
-    remoteBuild: remote?.buildValues,
     ...(htmlExtractor ? { extractor: htmlExtractor } : {}),
     options: normalized,
     config: () => config,
@@ -276,8 +188,6 @@ export function aiI18n(
   });
 
   const virtualModuleHooks = createVirtualModuleHooks({
-    remoteBuild: remote?.buildValues,
-    translationMeta: () => remote?.meta(),
     normalized,
     config: () => config,
     framework: () => framework,
@@ -288,8 +198,6 @@ export function aiI18n(
     reconcile,
     runStateTask,
     warnSsrOnce,
-    translationUpdateEvent: TRANSLATION_UPDATE_EVENT,
-    localeUpdateEvent: LOCALE_UPDATE_EVENT,
   });
 
   const api = createPluginApi(options, normalized, {
@@ -299,15 +207,12 @@ export function aiI18n(
     replaceState(next) {
       state = next;
     },
-    async flushProvider() {
-      await flushProvider();
-      await remote?.settle();
-    },
+    flushProvider,
     settleTransforms: transforms.settle,
     store: currentStore,
-    persistedCache: () => reviewCache,
+    persistedCache: () => undefined,
     runStateTask,
-    flushPersistence: () => devPersistence.flush(),
+    flushPersistence,
     notify(affectedModuleIds, locale) {
       if (normalized.loading) sendLocaleUpdates([locale]);
       else sendTranslationUpdates(affectedModuleIds);
@@ -321,7 +226,6 @@ export function aiI18n(
       measureSetup('config', () => optimizeDevRuntimeDependencies(environment)),
 
     configResolved(resolved) {
-      if (api.cacheMode) return;
       return measureSetup('config-resolved', () => {
         config = resolved;
         if (!api.scanMode) performanceDiagnostics?.validateDirectory();
@@ -331,39 +235,20 @@ export function aiI18n(
           normalized,
           api,
           devTiming,
-          translationMemory,
-          () => coordinator,
         );
         framework = initialized.framework;
         translationHooks = frameworkTranslationHooks(framework, autoImport);
         state = initialized.state;
         store = initialized.store;
-        ready = initialized.ready.then((cache) => {
-          reviewCache = cache;
-        });
+        ready = initialized.ready.then(() => undefined);
         void ready.catch(() => undefined);
-        if (options.provider && !api.scanMode) {
-          coordinator = createPluginProvider({
-            provider: options.provider,
-            providerCache,
-            config: resolved,
-            state: currentState,
-            store: currentStore,
-            runStateTask,
-            flushPersistence: () => devPersistence.flush(),
-            localeLoading: normalized.loading !== undefined,
-            sendTranslationUpdates,
-            sendLocaleUpdates,
-            performance: performanceDiagnostics?.recorder,
-          });
-        }
       });
     },
 
     async configureServer(server) {
       devServer = server;
       const close = await measureSetup('configure-server', () =>
-        initializeDevServer(server, api, currentStore(), ready, remote),
+        initializeDevServer(server, api, currentStore(), ready),
       );
       if (close) closeScanBridges.set(server.config, close);
     },

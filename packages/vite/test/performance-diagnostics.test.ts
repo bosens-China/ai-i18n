@@ -185,10 +185,7 @@ describe('performance reports', () => {
         aiI18n({
           ...options,
           diagnostics: { performance: true },
-          provider: {
-            translator: async (batch) =>
-              batch.messages.map(() => ({ 'en-US': 'Hello' })),
-          },
+          adapter: async () => ({ 'en-US': { 你好: 'Hello' } }),
         }),
       ],
       resolve: {
@@ -199,11 +196,6 @@ describe('performance reports', () => {
     });
     const result = await report(directory);
     expect(result.command).toBe('build');
-    const batch = result.spans.find((s) => s.stage === 'provider-batch')!;
-    expect(batch).toBeDefined();
-    expect(result.spans.some((s) => s.stage === 'provider-persisted')).toBe(
-      false,
-    );
     expect(result.summaries.map((s) => s.stage)).toEqual(
       expect.arrayContaining([
         'build-start',

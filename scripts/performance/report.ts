@@ -137,8 +137,8 @@ export async function writeComparison(
       cpu: os.cpus()[0]?.model,
     },
     methodology: diagnosticMessage(
-      '各样本使用独立进程和临时副本，操作系统文件缓存已预热，复用现有 TM。统一关闭 Provider、Review、依赖预构建及自动预转换，按相同顺序请求 src 源码。三组保留相同配置依赖导入，仅改变插件注册与采集。关闭插件的基线只提供虚拟模块解析占位，不执行浏览器代码。数据为服务端墙钟耗时，不能等同页面渲染时间。后台写入正常执行但不单独统计，结束时等待其完成仅用于清理。各组取中位数，单次差异不构成性能变化的因果证据。',
-      'Fresh processes and fixture copies; OS cache warmed; existing TM; no Provider, Review, dependency optimization or pretransform; all local src modules requested sequentially. Same config dependency imports in all modes; plugin registration differs. Baseline only resolves virtual imports; no browser execution. Quantities are server-side wall time, not page render time. Persistence runs normally but is not measured separately; final draining is cleanup only. Report uses median per mode; differences are not causal proof from a single run.',
+      '各样本使用独立进程和临时副本，操作系统文件缓存已预热。统一关闭 Review、依赖预构建及自动预转换，按相同顺序请求 src 源码。Dev 不调用翻译适配器或写入翻译资源。三组保留相同配置依赖导入，仅改变插件注册与采集。关闭插件的基线只提供虚拟模块解析占位，不执行浏览器代码。数据为服务端墙钟耗时，不能等同页面渲染时间。各组取中位数，单次差异不构成性能变化的因果证据。',
+      'Fresh processes and fixture copies; OS cache warmed; no Review, dependency optimization or pretransform; all local src modules requested sequentially. Dev does not call the translation adapter or write translation resources. Same config dependency imports in all modes; plugin registration differs. Baseline only resolves virtual imports; no browser execution. Quantities are server-side wall time, not page render time. Report uses median per mode; differences are not causal proof from a single run.',
     ),
     summary,
     stages,

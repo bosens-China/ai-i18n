@@ -1,22 +1,10 @@
-import type { LangOption, Translator } from '@ai-i18n/core';
+import type { LangOption } from '@ai-i18n/core';
 import type { TranslationMemoryCandidateCacheAdapter } from '@ai-i18n/core/translation-memory';
 import type { AiI18nFramework } from './framework.js';
 import type { HtmlExtractorOptions } from './html.js';
-import type { ProviderCoordinatorOptions } from './provider-coordinator.js';
 import type { AiI18nPerformanceDiagnosticsOptions } from './performance-types.js';
-import type { RemoteAdapter } from './remote.js';
+import type { TranslationAdapter } from './translation-adapter.js';
 export type { AiI18nPerformanceDiagnosticsOptions } from './performance-types.js';
-
-export type AiI18nProviderOptions = Pick<
-  ProviderCoordinatorOptions,
-  'debounceMs' | 'batchLength' | 'maxConcurrency' | 'strict'
-> & {
-  translator: Translator;
-  /** 是否在当前 Vite 进程中刷新一次 Provider 自动翻译；默认 reuse。 */
-  cache?: 'reuse' | 'fresh';
-  /** false/省略关闭，true 使用配置目录下的 logs，字符串表示相对配置目录或绝对日志目录。 */
-  logging?: boolean | string;
-};
 
 export interface AiI18nLocaleLoadingOptions {
   preload?: readonly string[];
@@ -60,6 +48,7 @@ export interface AiI18nDiagnosticsOptions {
 }
 
 export interface AiI18nOptions {
+  adapter?: TranslationAdapter;
   framework?: AiI18nFramework;
   /** 启用当前框架模式的自动导入；默认关闭。 */
   autoImport?: boolean;
@@ -72,16 +61,11 @@ export interface AiI18nOptions {
   locales: readonly LangOption[];
   /** 持久化用户语言偏好；true 使用默认 key。 */
   persist?: boolean | AiI18nPersistOptions;
-  /** 默认不分包；true 使用默认分包策略，对象可配置 preload/prefetch。 */
+  /** 目标语言始终按需分包；对象可配置 preload/prefetch 提示。 */
   loading?: boolean | AiI18nLocaleLoadingOptions;
-  translationMemory?: AiI18nTranslationMemoryOptions;
-  provider?: AiI18nProviderOptions;
-  /** 可选提交与获取适配器；load 与 provider 互斥。 */
-  remote?: RemoteAdapter;
   /** Build 中存在目标语言缺译时失败；默认关闭。 */
   failOnMissingTranslations?: boolean;
   directory?: string;
-  cleanup?: AiI18nCleanupOptions;
   diagnostics?: AiI18nDiagnosticsOptions;
   /** 默认提取 HTML 中显式的翻译表达式；false 关闭。 */
   html?: boolean | HtmlExtractorOptions;

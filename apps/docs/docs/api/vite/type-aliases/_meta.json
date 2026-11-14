@@ -1,11 +1,6 @@
 [
   {
     "type": "file",
-    "name": "ai-i18n-provider-options",
-    "label": "AiI18nProviderOptions"
-  },
-  {
-    "type": "file",
     "name": "ai-i18n-framework",
     "label": "AiI18nFramework"
   },
@@ -23,25 +18,5 @@
     "type": "file",
     "name": "translated-message-tree",
     "label": "TranslatedMessageTree"
-  },
-  {
-    "type": "file",
-    "name": "translator",
-    "label": "Translator"
-  },
-  {
-    "type": "file",
-    "name": "translation-result",
-    "label": "TranslationResult"
-  },
-  {
-    "type": "file",
-    "name": "translation-batch-stage",
-    "label": "TranslationBatchStage"
-  },
-  {
-    "type": "file",
-    "name": "translation-logging",
-    "label": "TranslationLogging"
   }
 ]

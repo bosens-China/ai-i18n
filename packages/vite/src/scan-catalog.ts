@@ -6,7 +6,6 @@ import { withFileQueue } from '@ai-i18n/core/translation-memory';
 import { ProjectState } from './project-state.js';
 import type { AiI18nPluginApi } from './plugin-api.js';
 import { scanEntries, walkScanGraph } from './scan-graph.js';
-import { summarizeProject } from './build-summary.js';
 import {
   canReuseScan,
   digest,
@@ -14,6 +13,8 @@ import {
   scanFile,
   scanInputs,
 } from './scan-cache.js';
+import { buildFileGroups } from './file-groups.js';
+import { summarizeRepository } from './repository-coverage.js';
 
 export type ScanResult = Awaited<ReturnType<typeof scanCatalog>>;
 
@@ -79,6 +80,8 @@ async function scanCatalog(
     canReuseScan(server) &&
     cached?.key === key &&
     cached.output === output();
+  if (store.repository) reused = false;
+  let repositorySummary: ReturnType<typeof summarizeRepository> | undefined;
   // 活动 Dev 首次必须建自己的模块图，不能只把磁盘结果塞进缺少依赖关系的 Analyzer。
   if (!api.scanMode && !api.scanned) reused = false;
   if (!reused) {
@@ -96,8 +99,6 @@ async function scanCatalog(
       );
       api.state().hydrateCache(await store.load());
       api.state().hydrateOverrides(await store.loadOverrides());
-      const overlay = previous.snapshot().remoteOverlay;
-      if (overlay) api.state().hydrateRemoteOverlay(overlay);
       server.environments.client!.moduleGraph.invalidateAll();
       const consumed = new Map<string, string | undefined>();
       const trackFile = async (file: string) => {
@@ -143,6 +144,21 @@ async function scanCatalog(
         );
       await api.runStateTask(async () => {
         api.state().retain(ids);
+        if (store.repository) {
+          const files = Object.values(api.state().snapshot().extracted);
+          const prepared = await store.repository.prepare(
+            files,
+            api.options.sourceLang,
+            api.options.locales.map((locale) => locale.value),
+            api.adapter,
+          );
+          await store.repository.commit(
+            prepared,
+            buildFileGroups(server.config.root, files, {}),
+            false,
+          );
+          repositorySummary = summarizeRepository(server.config.root, prepared);
+        }
         api.state().hydrateCache(
           await store.sync(api.state().snapshot(), {
             complete: true,
@@ -164,19 +180,12 @@ async function scanCatalog(
         await fs.mkdir(path.dirname(filename), { recursive: true });
         await fs.writeFile(filename, JSON.stringify({ key, output: output() }));
       }
-      // 转换只用于提取；真实页面请求仍需走 Dev 的注册和 Provider 流程。
+      // 转换只用于提取；真实页面请求仍走 Dev 的运行时路径。
       server.environments.client!.moduleGraph.invalidateAll();
       api.scanned = true;
-      for (const locale of api.options.locales)
-        api.notify(
-          [
-            ...new Set([
-              ...previous.modules.keys(),
-              ...api.state().modules.keys(),
-            ]),
-          ],
-          locale.value,
-        );
+      // 运行时会缓存文件包与 manifest；完整刷新才能读取本轮扫描的新分组。
+      if (!api.scanMode)
+        server.environments.client?.hot.send({ type: 'full-reload' });
     } catch (cause) {
       await api.settleTransforms(() => api.replaceState(previous));
       server.environments.client!.moduleGraph.invalidateAll();
@@ -185,26 +194,22 @@ async function scanCatalog(
       api.scanning = false;
     }
   }
-  const state = new ProjectState(server.config.root, api.options);
-  for (const file of extracted)
-    state.updateExtracted(
-      '',
-      path.resolve(server.config.root, file.source),
-      file.messages,
+  if (!repositorySummary)
+    throw new Error(
+      diagnosticMessage(
+        '[ai-i18n] 扫描未生成仓库资源摘要。',
+        '[ai-i18n] Scan did not produce a repository resource summary.',
+      ),
     );
-  state.hydrateCache(await store.load());
-  state.hydrateOverrides(await store.loadOverrides());
-  const overlay = api.state().snapshot().remoteOverlay;
-  if (overlay) state.hydrateRemoteOverlay(overlay);
+  await store.repository?.cleanupLegacy();
   return {
     root: server.config.root,
     i18n_directory: store.directory,
-    translation_source: api.translationSource ?? 'local',
     mode: server.config.mode,
     entries: entryFiles.map((file) =>
       path.relative(server.config.root, file).replaceAll('\\', '/'),
     ),
     reused,
-    ...summarizeProject(state),
+    ...repositorySummary,
   };
 }

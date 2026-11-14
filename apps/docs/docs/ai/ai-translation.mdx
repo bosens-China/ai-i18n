@@ -1,133 +1,30 @@
 ---
-title: AI 翻译
-description: 使用 OpenAI-compatible Provider 自动补齐缺失译文
+title: 异步翻译适配器
+description: 在完整构建或显式扫描时接入自己的翻译服务
 ---
 
-import { PackageManagerTabs } from '@rspress/core/theme';
+在 `ai-i18n.config.ts` 配置可选的 `adapter`。插件把本轮完整活动文案目录交给它；你可以请求翻译 API、读取外部资源，或者返回 `null` 不处理。
 
-ai-i18n 提供两种补译方式：
-
-| 方式                        | 适用场景                                         |
-| --------------------------- | ------------------------------------------------ |
-| OpenAI Provider             | 希望在 Vite 开发或构建时自动补齐缺失译文。       |
-| [Agent + MCP](/ai/ai-tools) | 希望由 AI 编码工具在明确指令下检查、补译和校对。 |
-
-本页介绍 OpenAI-compatible Provider。未配置 Provider 时，ai-i18n 仍会提取文案和生成语言包。
-缺失译文会显示源码文案。
-
-未配置 Provider 时，开发服务器控制台会按目标语言提示当前已发现的未翻译数量。
-同一文案及语境在多个位置出现时只计一次。
-只要任一已发现位置没有适用的人工译文，且自动译文缺失，就仍计为未翻译。
-这个数量不包含尚未发现的模块，也不等于全项目总量。它更不等于校对页的“待确认”数量。
-如需完整检查，请运行一次 `vite build`。
-
-## 安装
-
-<PackageManagerTabs command="add @ai-i18n/openai@^1.0.0" />
-
-:::tip 版本选择
-安装前请按[版本选择与升级](/guide/getting-started/versions)确认正式版已上架；提前试用需显式选择 `@alpha`。
-:::
-
-## 最小配置
-
-Provider 在 Vite 的 Node.js 进程中运行。请将密钥保留在服务端配置中，不要设置 `VITE_` 前缀，也不要
-在浏览器业务代码中导入 Provider。
-
-```ts title="ai-i18n.config.ts"
-// ai-i18n.config.ts
-import { openAI } from '@ai-i18n/openai';
+```ts
 import { defineConfig } from '@ai-i18n/vite/config';
-import { loadEnv } from 'vite';
-import { fileURLToPath } from 'node:url';
 
-function required(value: string | undefined, name: string): string {
-  if (!value) throw new Error(`Missing ${name}`);
-  return value;
-}
-
-export default defineConfig(({ mode }) => {
-  const env = loadEnv(
-    mode,
-    fileURLToPath(new URL('.', import.meta.url)),
-    'AI_',
-  );
-
-  return {
-    sourceLang: 'zh-CN',
-    locales: [
-      { value: 'zh-CN', label: '中文' },
-      { value: 'en-US', label: 'English' },
-    ],
-    provider: {
-      translator: openAI({
-        baseURL: required(env.AI_BASE_URL, 'AI_BASE_URL'),
-        model: required(env.AI_MODEL, 'AI_MODEL'),
-        apiKey: env.AI_API_KEY,
-        style: `
-- 面向开发者的 Web 产品界面。
-- 使用自然、简洁的目标语言，按钮优先使用动词。
-- 保留 ai-i18n、Vite、Vue、React、代码、URL、变量名和占位符。
-            `.trim(),
-      }),
-    },
-  };
+export default defineConfig({
+  sourceLang: 'zh-CN',
+  locales: [
+    { value: 'zh-CN', label: '中文' },
+    { value: 'en-US', label: 'English' },
+  ],
+  async adapter(catalog) {
+    const translated = await yourTranslationService(catalog.messages);
+    return {
+      'en-US': Object.fromEntries(
+        catalog.messages.map(({ key }) => [key, translated[key] ?? null]),
+      ),
+    };
+  },
 });
 ```
 
-`.env.local` 示例：
+目录项包含 `key`、`source`、可选 `comment`、`scope`，文件范围还包含短标识与路径。返回值按目标语言与目录 key 索引，值为字符串或 `null`。省略的 key 或 `null` 表示缺译；空字符串是有效译文。未知语言、未知 key、非法值或模板占位符不一致会使本轮失败。
 
-```dotenv
-AI_BASE_URL=https://example.com/v1
-AI_MODEL=model-name
-AI_API_KEY=replace-me
-```
-
-本地无认证模型可以省略 `AI_API_KEY`。
-
-需要审查模型请求或排查翻译失败，请配置 `provider.logging`，再查看
-[LLM 日志与排障](/ai/llm-logs)。
-
-## 编写翻译风格
-
-`style` 只需说明产品语境、语气和固定术语。推荐使用短规则：
-
-- 说明产品面向谁，例如开发者工具、消费应用或后台系统；
-- 规定按钮、错误提示和帮助文案的语言风格；
-- 列出必须保持不变的品牌名、代码、URL 和占位符；
-- 列出团队已确认的术语；
-- 要求优先参考 `comment` 消除歧义。
-
-不要在 `style` 中写入 API 密钥、内部地址或频繁变化的业务信息。
-也不要重复 JSON 字段、数组长度、目标语言或占位符协议等 prompt 工程学负担。
-文案本身的具体语境应写在 `t(source, { comment })` 中。
-
-Provider 会固定维护翻译职责、`comment` 用法、不可改内容、占位符、输入输出行对应关系和严格 JSON
-结构。旧版 `systemPrompt` 已移除，不能再整体覆盖这些约束。
-
-## 验证结果与失败处理
-
-Provider 只补齐缺失译文。翻译失败时，页面继续显示源码文案，不会阻塞本地开发。
-提交前运行一次完整构建，并检查关键页面和固定术语。
-
-想让 CI 在翻译请求失败或返回 `null` 时停止构建，可以设置 `provider.strict: true`。
-若要检查最终译文覆盖率，包括没有配置 Provider 的情况，可另设
-`failOnMissingTranslations: true`；它会在任一目标语言仍有缺译时阻止打包。
-批次大小、并发、日志和刷新策略见
-[`AiI18nProviderOptions`](/api/vite/type-aliases/ai-i18n-provider-options)。
-重试与超时由具体 Translator 或 Provider SDK 配置；OpenAI-compatible Provider 的字段见
-[`OpenAIOptions`](/api/openai/interfaces/open-ai-options)。
-
-Provider 的模型、`baseURL`、温度或 `style` 变化时，插件默认继续复用历史自动译文。
-它不会尝试分析 Translator 内部配置。需要让新配置刷新一次时，使用
-`provider.cache: 'fresh'`。本进程生成的新结果仍会立即缓存，因此开发服务器/HMR 不会重复请求。
-该选项只影响 Provider，不影响 MCP 或 AI Agent。完整配置见
-[翻译记忆](/ai/translation-memory)。
-
-## 使用其他模型服务
-
-只要服务兼容 OpenAI API，就可以修改 `baseURL` 和 `model` 使用它。若需要接入其他 SDK，请实现
-[`Translator`](/api/vite/type-aliases/translator)。该 API 说明了输入、输出和错误处理约束。
-
-人工确认译文、处理同一句话的不同语境，以及提交规则见
-[补齐和确认译文](/guide/basic/translations)。
+适配器只在 Build 和显式 MCP 扫描中调用，不在 Dev 自动运行。返回值不会被插件持久化为下一轮输入；如需复用外部结果，请自行存入你的服务。人工 `*.manual.json` 值始终优先。线上修改外部资源后需重新构建和部署；浏览器运行时不会自动从服务端覆盖资源。

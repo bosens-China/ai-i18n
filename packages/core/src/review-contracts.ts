@@ -6,6 +6,7 @@ export interface ReviewMessageReference {
 export interface ReviewOccurrence {
   sourceFile: string;
   locations: ReviewSourceLocation[];
+  fileScoped?: boolean;
 }
 
 export interface ReviewSourceLocation {
@@ -53,6 +54,7 @@ export interface ReviewMessage {
   cacheCandidatesEnabled?: boolean;
   message: ReviewMessageReference;
   translations: Record<string, string | null>;
+  fileTranslations?: Record<string, Record<string, string | null>>;
   overrides: ReviewOverride[];
   occurrences: ReviewOccurrence[];
 }

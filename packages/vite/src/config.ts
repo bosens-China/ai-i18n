@@ -4,7 +4,6 @@ import { loadConfigFromFile, type ConfigEnv } from 'vite';
 import { diagnosticMessage } from '@ai-i18n/core/diagnostics';
 import type { AiI18nOptions } from './options.js';
 import { normalizeOptions, rejectRemovedOptions } from './plugin-utils.js';
-import { validateRemote } from './remote-validation.js';
 
 export interface AiI18nConfig extends AiI18nOptions {
   /** 应用的 Vite root，相对于本配置文件；默认当前目录。 */
@@ -16,7 +15,7 @@ export function defineConfig(config: AiI18nConfigExport): AiI18nConfigExport {
   return config;
 }
 
-/** 只加载明确选定的配置，不执行 vite.config，也不启动 Provider。 */
+/** 只加载明确选定的配置，不执行 vite.config。 */
 export async function loadAiI18nConfig(
   configFile: string,
   env: ConfigEnv = { command: 'serve', mode: 'development' },
@@ -66,7 +65,6 @@ export async function loadAiI18nConfig(
     );
   rejectRemovedOptions(value);
   normalizeOptions(value);
-  validateRemote(value.remote, value.provider);
   const root = await fs.realpath(path.resolve(base, value.root ?? '.'));
   const options: AiI18nOptions = {
     ...value,
@@ -75,23 +73,6 @@ export async function loadAiI18nConfig(
       value.dts === false
         ? false
         : path.resolve(base, value.dts ?? 'src/ai-i18n.d.ts'),
-    ...(value.provider
-      ? {
-          provider: {
-            ...value.provider,
-            ...(value.provider.logging
-              ? {
-                  logging: path.resolve(
-                    base,
-                    typeof value.provider.logging === 'string'
-                      ? value.provider.logging
-                      : 'logs',
-                  ),
-                }
-              : {}),
-          },
-        }
-      : {}),
   };
   return {
     configFile: file,

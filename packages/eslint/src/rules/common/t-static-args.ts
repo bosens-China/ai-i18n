@@ -79,8 +79,8 @@ export const tStaticArgs: Rule.RuleModule = {
                 : invalidUsage
                   ? warning.message
                   : diagnosticMessage(
-                      '翻译调用的参数无法静态提取。source 请使用静态字符串，options 请使用只包含 comment 的静态对象。',
-                      'The translation-call arguments cannot be statically extracted. Use a static string for source and a static object containing only comment for options.',
+                      '翻译调用的参数无法静态提取。source 请使用静态字符串，options 只能包含静态 comment 和 scope: "file"。',
+                      'The translation-call arguments cannot be statically extracted. Use a static string for source; options may contain only static comment and scope: "file".',
                     ),
             },
           });

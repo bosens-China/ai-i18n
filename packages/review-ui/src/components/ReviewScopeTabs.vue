@@ -2,7 +2,11 @@
 import { computed } from 'vue';
 import type { ReviewMessage } from '@ai-i18n/core';
 import type { ReviewCopy } from '@ai-i18n/core/review-i18n';
-import type { ReviewOccurrenceTarget, ReviewScope } from '../review-state';
+import {
+  supportsFileScope,
+  type ReviewOccurrenceTarget,
+  type ReviewScope,
+} from '../review-state';
 
 const props = defineProps<{
   copy: ReviewCopy;
@@ -12,8 +16,10 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{ updateScope: [scope: ReviewScope] }>();
-const currentFile = computed(() => props.currentOccurrence?.file ?? '');
-const isOccurrence = computed(() => Boolean(props.scope.location));
+const currentFile = computed(() => {
+  const file = props.currentOccurrence?.file;
+  return file && supportsFileScope(props.message, file) ? file : '';
+});
 </script>
 
 <template>
@@ -29,16 +35,6 @@ const isOccurrence = computed(() => Boolean(props.scope.location));
       role="group"
       :aria-label="copy.scope"
     >
-      <button
-        v-if="currentOccurrence"
-        class="scope-segment"
-        type="button"
-        :aria-pressed="isOccurrence"
-        :title="`${currentOccurrence.file}:${currentOccurrence.location.line}:${currentOccurrence.location.column + 1}`"
-        @click="emit('updateScope', currentOccurrence)"
-      >
-        {{ copy.currentOccurrence }}
-      </button>
       <button
         v-if="currentFile"
         class="scope-segment"

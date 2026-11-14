@@ -54,8 +54,6 @@ const SMOKE_IMPORTS: Readonly<Record<string, readonly string[]>> = {
   ],
   '@ai-i18n/eslint-plugin': ['@ai-i18n/eslint-plugin'],
   '@ai-i18n/mcp': ['@ai-i18n/mcp'],
-  '@ai-i18n/openai': ['@ai-i18n/openai'],
-  '@ai-i18n/sqlite': ['@ai-i18n/sqlite'],
   '@ai-i18n/vite': [
     '@ai-i18n/vite',
     '@ai-i18n/vite/review',

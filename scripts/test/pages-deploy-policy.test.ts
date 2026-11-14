@@ -24,7 +24,7 @@ describe('standalone Pages change policy', () => {
     ['.github/workflows/pages.yml'],
     ['examples/shared/base.css'],
     ['examples/react/src/App.tsx'],
-    ['examples/vue/i18n/translations/en-US/0.json'],
+    ['examples/vue/i18n/locales/en-US.manual.json'],
     ['examples/vanilla/public/favicon.png'],
   ])('deploys published site input %s', (file) => {
     expect(shouldDeployStandalonePages([file])).toBe(true);
@@ -36,7 +36,6 @@ describe('standalone Pages change policy', () => {
     ['apps/docs/README.md'],
     ['examples/react/README.md'],
     ['examples/vue/test/app.test.ts'],
-    ['examples/remote/src/main.ts'],
     ['packages/core/README.md'],
     ['packages/core/test/runtime.test.ts'],
     ['.agents/skills/integrate-ai-i18n/SKILL.md'],

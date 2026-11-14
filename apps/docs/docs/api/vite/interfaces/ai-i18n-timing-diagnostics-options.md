@@ -26,11 +26,10 @@ interface AiI18nTimingDiagnosticsOptions {
 值必须是大于或等于 0 的有限数字。输出包含两个总阶段：
 
 - `source-transform`：单个源码模块的完整转换。
-- `file-sync`：一批 Dev 变化的后台协议持久化。
+- `hot-update`：Dev 处理源码变化并使相关模块失效。
 
 为进一步定位瓶颈，还会输出 `plugin-ready-wait`、`source-analysis`、
-`source-registration`、`dependency-resolution`、`state-transaction`、`snapshot-build`、
-`extracted-scan`、`translation-memory-sync`、`extracted-write` 和 `locale-write` 子阶段。
+`source-registration`、`dependency-resolution`、`state-transaction` 和 `snapshot-build` 子阶段。
 总阶段与子阶段可能互相包含，不能把日志中的所有耗时直接相加。
 
 `dependency-resolution` 会调用 Vite 的模块解析，并在依赖尚未分析时等待当前 Dev Environment

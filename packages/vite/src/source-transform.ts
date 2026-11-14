@@ -15,6 +15,8 @@ import {
   type AiI18nFramework,
 } from './framework.js';
 import { shouldIgnoreSource, sourceUpdateOptions } from './plugin-utils.js';
+import path from 'node:path';
+import { fileId } from './repository-paths.js';
 import type { ProjectState } from './project-state.js';
 import { ssrWarningMessage } from './ssr-warning.js';
 import {
@@ -247,6 +249,17 @@ export function createSourceTransformHandler(
               code,
               id,
               moduleId,
+              ...(config?.command === 'serve' && project.options.repository
+                ? {
+                    runtimeId: fileId(
+                      project.root,
+                      path.resolve(project.root, moduleId),
+                    ),
+                    loadFile: result.messages.some(
+                      (message) => message.scope === 'file',
+                    ),
+                  }
+                : {}),
               registerPrefix: dependencies.registerPrefix,
               module: currentModule,
               ...(extraction?.registration

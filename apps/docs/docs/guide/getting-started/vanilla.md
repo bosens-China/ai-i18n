@@ -5,8 +5,7 @@ description: 在 Vite Vanilla TypeScript 项目中安装 ai-i18n 并完成首次
 
 ## 开始前
 
-ai-i18n 要求 Vite 8 或更高版本，并且当前只支持浏览器端应用。需要 SSR、按请求选择语言或避免首屏
-源码回退的项目，暂不适合接入当前版本。
+ai-i18n 要求 Vite 8 或更高版本、Node.js 22.13.0 或更高版本，当前只支持浏览器端应用。需要 SSR 或按请求选择语言的项目暂不适合接入当前版本。
 
 ## 创建项目
 
@@ -16,12 +15,12 @@ ai-i18n 要求 Vite 8 或更高版本，并且当前只支持浏览器端应用�
 pnpm create vite ai-i18n-vanilla --template vanilla-ts
 cd ai-i18n-vanilla
 pnpm install
-pnpm add @ai-i18n/vite@^1.0.0
+pnpm add @ai-i18n/vite@^2.0.0
 ```
 
 安装前请按[版本选择与升级](/guide/getting-started/versions)确认 npm 发布状态；尚无正式版时显式选择 `@alpha`。
 
-已有 Vite 项目可以跳过创建步骤，直接安装 `@ai-i18n/vite@^1.0.0`。
+已有 Vite 项目可以跳过创建步骤，直接安装 `@ai-i18n/vite@^2.0.0`。
 
 ## 配置 Vite
 
@@ -76,8 +75,7 @@ pnpm dev
 pnpm build
 ```
 
-开发服务器只提取浏览器实际请求过的模块。首次接入后应执行一次完整构建，确认入口可达源码均已
-提取。生成文件及 Git 提交规则见[生成文件与 Git](/guide/basic/directory)。
+Dev 只加载现有资源，不自动翻译或写入提取索引。首次接入后执行完整构建，确认入口可达源码均已提取。生成文件及 Git 提交规则见[生成文件与 Git](/guide/basic/directory)。
 
 ## 下一步
 

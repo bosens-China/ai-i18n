@@ -77,6 +77,7 @@ export function createProjectSnapshot(
         id: message.id,
         source: message.source,
         ...(message.comment ? { comment: message.comment } : {}),
+        ...(message.scope === 'file' ? { scope: 'file' as const } : {}),
         locations: message.locations.map((location) => ({ ...location })),
       };
     });

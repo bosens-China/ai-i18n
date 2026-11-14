@@ -5,10 +5,7 @@ import {
   type TranslationOverridesFile,
   type TranslationValue,
 } from '@ai-i18n/core';
-import type {
-  ProviderRequest,
-  ProviderResult,
-} from './provider-coordinator.js';
+import type { ProviderRequest, ProviderResult } from './provider-types.js';
 import {
   translationAttemptFieldKey,
   translationAttemptKey,

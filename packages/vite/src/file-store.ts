@@ -38,9 +38,11 @@ import type {
   FileStoreOptions,
 } from './file-store-types.js';
 import type { ProjectSnapshot } from './project-state.js';
-import type { ProviderResult } from './provider-coordinator.js';
+import type { ProviderResult } from './provider-types.js';
 import type { DevTimingStage } from './dev-timing.js';
 import { readJson, readText } from './json-files.js';
+import { RepositoryStore } from './repository-store.js';
+import { diagnosticMessage } from '@ai-i18n/core/diagnostics';
 
 export type {
   FileStoreLoadOptions,
@@ -52,12 +54,15 @@ export class FileStore {
   private queue = Promise.resolve();
   private readonly lastWritten = new Map<string, string>();
   private readonly memory: FileStoreMemory;
+  readonly repository?: RepositoryStore;
   private readonly pendingProviderBatches = new Set<string>();
   private readonly translationManagedFiles = new Set<string>();
   private readonly overrideManagedFiles = new Set<string>();
 
   constructor(private readonly options: FileStoreOptions) {
     this.directory = path.resolve(options.root, options.directory ?? 'i18n');
+    if (options.repository)
+      this.repository = new RepositoryStore(options.root, options.directory);
     this.memory = new FileStoreMemory(this.directory, options, (files) => {
       this.translationManagedFiles.clear();
       for (const file of files) this.translationManagedFiles.add(file);
@@ -65,14 +70,17 @@ export class FileStore {
   }
 
   async load(): Promise<TranslationMemoryFile> {
+    if (this.repository) return { version: 1, revision: 0, messages: {} };
     return this.memory.update();
   }
 
   cleanupHistory(snapshot: ProjectSnapshot) {
+    if (this.repository) return this.load();
     return this.memory.update(undefined, Object.keys(snapshot.cache.messages));
   }
 
   syncMemory(snapshot: ProjectSnapshot) {
+    if (this.repository) return this.load();
     return this.memory.update(snapshot);
   }
 
@@ -87,10 +95,33 @@ export class FileStore {
   }
 
   loadExtracted(): Promise<ExtractedFile[]> {
+    if (this.repository)
+      return Promise.resolve(this.repository.loadExtracted());
     return this.readExtractedFiles();
   }
 
+  async loadGeneratedLocale(locale: string): Promise<Record<string, string>> {
+    const file = localePath(this.directory, locale);
+    const value = await readJson(file);
+    if (value === undefined) return {};
+    if (
+      typeof value !== 'object' ||
+      value === null ||
+      Array.isArray(value) ||
+      Object.values(value).some((item) => typeof item !== 'string')
+    ) {
+      throw new TypeError(
+        diagnosticMessage(
+          `[ai-i18n] 生成资源“${file}”必须是 key→value 对象。`,
+          `[ai-i18n] Generated locale "${file}" must be a key-value object.`,
+        ),
+      );
+    }
+    return value as Record<string, string>;
+  }
+
   async loadOverrides(): Promise<TranslationOverridesFile> {
+    if (this.repository) return { version: 2, rules: [] };
     const directory = translationOverridesPath(this.directory);
     const overrides = await readTranslationOverrides(directory);
     this.updateOverrideManagedFiles(await translationOverrideFiles(directory));
@@ -110,6 +141,7 @@ export class FileStore {
     snapshot: ProjectSnapshot,
     options: FileStoreLoadOptions = {},
   ): Promise<TranslationMemoryFile> {
+    if (this.repository) return this.load();
     const batchIds = [...this.pendingProviderBatches];
     for (const batchId of batchIds) this.pendingProviderBatches.delete(batchId);
     // 每次任务都从最新磁盘状态开始；失败不会阻塞后续写入任务。

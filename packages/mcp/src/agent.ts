@@ -8,8 +8,10 @@ const Request = z
     name: z.enum([
       'ai_i18n_discover_projects',
       'ai_i18n_resolve_project',
+      'ai_i18n_scan_project',
       'ai_i18n_list_translations',
       'ai_i18n_set_translations',
+      'ai_i18n_clear_translations',
     ]),
     arguments: z.record(z.string(), z.unknown()),
   })

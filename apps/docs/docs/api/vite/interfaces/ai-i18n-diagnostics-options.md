@@ -39,8 +39,8 @@ interface AiI18nDiagnosticsOptions {
 
 ## 构建文案汇总
 
-默认在成功 Build 结束后输出一次，等待本轮 Provider 工作与持久化完成；Build Watch 每轮刷新。
-未配置 Provider 或 Provider 未能补齐时，仍会如实显示未翻译数量，汇总本身不会触发翻译。
+默认在成功 Build 结束后输出一次，统计人工输入与本轮适配器结果；Build Watch 每轮刷新。
+未配置适配器或适配器未补齐时，仍会如实显示未翻译数量，汇总本身不会触发翻译。
 关闭汇总不影响独立的 `failOnMissingTranslations` 构建门禁。
 
 文案按原文与 `comment` 的身份去重，文件数只包含有文案的文件。每个目标语言分别统计，

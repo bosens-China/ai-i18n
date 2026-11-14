@@ -227,7 +227,6 @@ function frameworkTypes(
 
   const virtualModule = `declare module 'virtual:ai-i18n' {
   import type { I18nRuntime } from '@ai-i18n/vite';
-  export function getTranslationMeta(): import('@ai-i18n/vite/runtime').TranslationMeta | undefined;
 
 ${RUNTIME_API_NAMES.map((name) =>
   documentedDeclaration(

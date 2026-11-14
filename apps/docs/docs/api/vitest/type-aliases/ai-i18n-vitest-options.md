@@ -34,6 +34,6 @@ type AiI18nVitestOptions = Pick<
 | `persist`     | 否   | 测试 Runtime 的 localStorage 语言偏好配置。  |
 | `autoImport`  | 否   | 注入与生产框架模式相同的未绑定 Runtime API。 |
 
-`html`、`loading`、`cache`、`provider`、`directory`、`dts` 等构建期字段不属于该类型。
+`html`、`loading`、`adapter`、`directory`、`dts` 等构建期字段不属于该类型。
 
 完整字段契约见 [`AiI18nOptions`](/api/vite/interfaces/ai-i18n-options)。

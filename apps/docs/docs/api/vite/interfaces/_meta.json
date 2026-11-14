@@ -1,5 +1,4 @@
 [
-  { "type": "file", "name": "remote-adapter", "label": "RemoteAdapter" },
   {
     "type": "file",
     "name": "ai-i18n-options",
@@ -14,16 +13,6 @@
     "type": "file",
     "name": "ai-i18n-locale-loading-options",
     "label": "AiI18nLocaleLoadingOptions"
-  },
-  {
-    "type": "file",
-    "name": "ai-i18n-translation-memory-capacity-options",
-    "label": "AiI18nTranslationMemoryCapacityOptions"
-  },
-  {
-    "type": "file",
-    "name": "ai-i18n-cleanup-options",
-    "label": "AiI18nCleanupOptions"
   },
   {
     "type": "file",
@@ -42,11 +31,6 @@
   },
   {
     "type": "file",
-    "name": "ai-i18n-translation-memory-options",
-    "label": "AiI18nTranslationMemoryOptions"
-  },
-  {
-    "type": "file",
     "name": "html-extractor-options",
     "label": "HtmlExtractorOptions"
   },
@@ -62,17 +46,7 @@
   },
   {
     "type": "file",
-    "name": "translation-message",
-    "label": "TranslationMessage"
-  },
-  {
-    "type": "file",
-    "name": "translation-batch",
-    "label": "TranslationBatch"
-  },
-  {
-    "type": "file",
-    "name": "translation-batch-event",
-    "label": "TranslationBatchEvent"
+    "name": "translation-adapter",
+    "label": "TranslationAdapter"
   }
 ]

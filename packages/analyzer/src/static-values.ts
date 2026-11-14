@@ -166,29 +166,48 @@ export function evaluateTranslationOptions(
   for (const value of values) {
     if (
       value.kind !== 'object' ||
-      [...value.properties.keys()].some((key) => key !== 'comment')
+      [...value.properties.keys()].some(
+        (key) => key !== 'comment' && key !== 'scope',
+      )
     ) {
       continue;
     }
     const comments = optionalStrings(value, 'comment');
     if (comments === undefined) return undefined;
     if (!comments) continue;
+    const scopes = optionalStrings(value, 'scope');
+    if (scopes === undefined) return undefined;
     if (
-      comments.length > maxCandidates ||
-      options.length + comments.length > maxCandidates
+      !scopes ||
+      scopes.some((scope) => scope !== undefined && scope !== 'file')
+    )
+      continue;
+    if (
+      comments.length * scopes.length > maxCandidates ||
+      options.length + comments.length * scopes.length > maxCandidates
     ) {
       onLimitExceeded();
       return null;
     }
     for (const comment of comments) {
-      options.push({
-        ...(comment === undefined ? {} : { comment }),
-      });
+      for (const scope of scopes) {
+        options.push({
+          ...(comment === undefined ? {} : { comment }),
+          ...(scope === undefined ? {} : { scope: 'file' }),
+        });
+      }
     }
   }
 
   return options.length
-    ? [...new Map(options.map((option) => [option.comment, option])).values()]
+    ? [
+        ...new Map(
+          options.map((option) => [
+            `${option.comment ?? ''}\0${option.scope ?? ''}`,
+            option,
+          ]),
+        ).values(),
+      ]
     : null;
 }
 
@@ -236,8 +255,8 @@ export function argumentWarning(
     file: module.path,
     ...sourceLocation(module.source, offset),
     message: diagnosticMessage(
-      '翻译参数必须是可静态提取的字符串或纯文案树；字符串 options 必须是仅包含 comment 的静态对象。',
-      'Translation input must be a statically extractable string or message-only tree; string options must be a static object containing only comment.',
+      '翻译参数必须是可静态提取的字符串或纯文案树；字符串 options 只能包含静态 comment 和 scope: "file"。',
+      'Translation input must be a statically extractable string or message-only tree; string options may contain only static comment and scope: "file".',
     ),
   };
 }

@@ -45,7 +45,6 @@ export async function check(input) {
     });
     const result = JSON.parse(stdout.trim().split('\n').at(-1));
     if (!Array.isArray(result.locales)) throw new Error('Invalid scan result');
-    if (['remote', 'overlay'].includes(result.translation_source)) return {};
     const missing = result.locales.filter((locale) => locale.missing > 0);
     if (!missing.length) return {};
     reason = `ai-i18n: ${JSON.stringify(result.i18n_directory)} 缺少译文 / has missing translations: ${missing.map((locale) => `${locale.locale}=${locale.missing}`).join(', ')}. `;
@@ -56,7 +55,7 @@ export async function check(input) {
     decision: 'block',
     reason:
       reason +
-      'Follow the bundled use-ai-i18n-mcp Skill. If the current task authorizes translation, use connected MCP or the Skill-only helper to fill missing values, then verify. Do not overwrite existing translations, approve human overrides, delete history, or run Build without the relevant authorization. If blocked or outside task scope, report the outstanding work. This check permits only one automatic continuation.',
+      'Follow the bundled use-ai-i18n-mcp Skill. If the current task authorizes translation, use connected MCP or the Skill helper to fill missing manual values, then scan and verify. Do not overwrite existing manual translations or clear them without authorization. If outside task scope, report the outstanding work. This check permits only one automatic continuation.',
   };
 }
 

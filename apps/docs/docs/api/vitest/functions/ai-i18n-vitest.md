@@ -26,7 +26,7 @@ Runtime。
 - `autoImport: true` 时注入与生产框架模式相同的 Runtime API；
 - 消除 `defineI18nMessages()` 编译宏；
 - 不提取翻译；
-- 不调用 Provider；
+- 不调用构建适配器；
 - 不读取或写入 `i18n/` 协议文件。
 
 测试 Runtime 没有目标语言译文，因此 `t()` 始终返回 source 文案。

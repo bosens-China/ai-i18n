@@ -54,7 +54,7 @@ import { setLang, t } from 'virtual:ai-i18n';
 
 ## 返回值
 
-返回 Vite 的 `Plugin` 对象。插件负责静态提取、协议文件同步、可选 Provider 调度、虚拟
+返回 Vite 的 `Plugin` 对象。插件负责静态提取、构建资源、可选异步适配器、虚拟
 Runtime 和声明文件生成。
 
 ## 相关内容

@@ -41,6 +41,7 @@ import {
 } from './review-mode';
 import {
   messageKey,
+  supportsFileScope,
   type ReviewOccurrenceTarget,
   type ReviewScope,
 } from './review-state';
@@ -174,7 +175,6 @@ function applyHostSelection(data: ReviewWorkbenchSelection): void {
     candidateKeys.value = null;
     scopes.set(data.exact.key, {
       file: data.exact.file,
-      location: { ...data.exact.location },
     });
     selection.selectKey(data.exact.key);
     return;
@@ -195,7 +195,7 @@ function selectLocateResult(
   message: ReviewMessage,
   target: ReviewOccurrenceTarget,
 ): void {
-  scopes.set(messageKey(message.message), target);
+  scopes.set(messageKey(message.message), { file: target.file });
   selection.select(message);
 }
 function selectMessage(message: ReviewMessage): void {
@@ -204,7 +204,10 @@ function selectMessage(message: ReviewMessage): void {
   if (pageKeys.value.has(key)) props.onLocateMessage?.(key);
 }
 function scopeFor(message: ReviewMessage): ReviewScope {
-  return scopes.get(messageKey(message.message)) ?? {};
+  const scope = scopes.get(messageKey(message.message));
+  return scope?.file && supportsFileScope(message, scope.file)
+    ? { file: scope.file }
+    : {};
 }
 function updateScope(message: ReviewMessage, scope: ReviewScope): void {
   scopes.set(messageKey(message.message), scope);

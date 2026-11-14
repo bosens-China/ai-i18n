@@ -2,24 +2,10 @@ import { configDefaults, defineConfig } from 'vitest/config';
 
 const viteIntegrationTests = [
   'packages/vite/test/config-file.test.ts',
-  'packages/vite/test/persistence-lifecycle.test.ts',
-  'packages/vite/test/cache-reuse.test.ts',
-  'packages/vite/test/scan.test.ts',
-  'packages/vite/test/scan-review.test.ts',
-  'packages/vite/test/scan-compatibility.test.ts',
-  'packages/vite/test/build-summary.test.ts',
-  'packages/vite/test/build-watch.test.ts',
-  'packages/vite/test/dev-translation-updates.test.ts',
-  'packages/vite/test/html-integration.test.ts',
-  'packages/vite/test/integration.test.ts',
-  'packages/vite/test/locale-lazy.test.ts',
-  'packages/vite/test/provider-build.test.ts',
   'packages/vite/test/react-compiler.test.ts',
-  'packages/vite/test/react-integration.test.ts',
-  'packages/vite/test/remote-integration.test.ts',
-  'packages/vite/test/remote-types.test.ts',
-  'packages/vite/test/review-server.test.ts',
-  'packages/vite/test/vue-integration.test.ts',
+  'packages/vite/test/repository-build.test.ts',
+  'packages/vite/test/repository-dev.test.ts',
+  'packages/vite/test/repository-scan.test.ts',
 ];
 
 export default defineConfig({
@@ -37,7 +23,6 @@ export default defineConfig({
           include: [
             'packages/**/test/**/*.test.ts',
             'scripts/test/**/*.test.ts',
-            'examples/remote/test/**/*.test.ts',
           ],
           // 保留 node_modules 等默认排除项，避免 pnpm workspace 软链接重复收集测试。
           exclude: [...configDefaults.exclude, ...viteIntegrationTests],

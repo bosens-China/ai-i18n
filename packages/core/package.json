@@ -1,7 +1,7 @@
 {
   "name": "@ai-i18n/core",
   "version": "2.0.0",
-  "description": "Framework-agnostic i18n runtime, translation storage, and provider contracts for ai-i18n.",
+  "description": "Framework-agnostic i18n runtime and message contracts for ai-i18n.",
   "keywords": [
     "ai-i18n",
     "i18n",
@@ -22,6 +22,9 @@
     "url": "https://github.com/bosens-China/ai-i18n/issues"
   },
   "type": "module",
+  "engines": {
+    "node": ">=22.13.0"
+  },
   "sideEffects": false,
   "files": [
     "dist"

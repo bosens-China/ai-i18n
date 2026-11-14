@@ -77,8 +77,20 @@ export function reviewBaseline(
 ): string {
   return (
     activeOverride(message, locale, scope)?.value ??
+    (scope.file
+      ? message.fileTranslations?.[scope.file]?.[locale]
+      : undefined) ??
     message.translations[locale] ??
     message.message.source
+  );
+}
+
+export function supportsFileScope(
+  message: ReviewMessage,
+  file: string,
+): boolean {
+  return message.occurrences.some(
+    (occurrence) => occurrence.sourceFile === file && occurrence.fileScoped,
   );
 }
 

@@ -101,7 +101,7 @@ export default defineConfig({
 });
 ```
 
-`html`、`loading`、`cache`、`provider`、`directory`、`dts` 等构建期字段不属于
+`html`、`loading`、`adapter`、`directory`、`dts` 等构建期字段不属于
 `AiI18nVitestOptions`；直接把完整的 `aiI18n()` 配置对象传给 `aiI18nVitest()` 会被 TypeScript
 拒绝多余字段，按需只挑测试需要的子集传入即可。
 
@@ -117,7 +117,7 @@ export default defineConfig({
 | `tComputed()`              | 仅 Vue 模式可用；返回 source fallback 的 Options computed getter。                 |
 | 自动导入                   | 仅在 `autoImport: true` 时注入，API 集合与同一框架模式的生产插件一致。             |
 | 翻译文件与自动翻译         | 不会读取、修改或调用。                                                             |
-| Provider / AI 自动翻译     | 不会调用；`provider` 不属于 `AiI18nVitestOptions`。                                |
+| 异步翻译适配器             | 不会调用；`adapter` 不属于 `AiI18nVitestOptions`。                                 |
 
 由于没有加载任何目标语言译文，`t('保存')` 始终返回 `"保存"`，即使调用过
 `await setLang('en-US')` 之后也是如此。可以把这类测试理解为契约测试——只断言组件确实调用了

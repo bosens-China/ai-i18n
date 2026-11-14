@@ -41,6 +41,7 @@ export interface ExtractedMessage {
   id: string;
   source: string;
   comment?: string;
+  scope?: 'file';
   locations: Array<{ line: number; column: number }>;
 }
 
@@ -299,10 +300,12 @@ export function parseExtractedFile(value: unknown): ExtractedFile {
   root.messages.forEach((message, index) => {
     const path = `extracted.messages.${index}`;
     const entry = record(message, path);
-    exactKeys(entry, ['id', 'source', 'comment', 'locations'], path);
+    exactKeys(entry, ['id', 'source', 'comment', 'scope', 'locations'], path);
     string(entry.id, `${path}.id`);
     string(entry.source, `${path}.source`);
     if (entry.comment !== undefined) string(entry.comment, `${path}.comment`);
+    if (entry.scope !== undefined && entry.scope !== 'file')
+      fail(`${path}.scope`, 'file');
     if (!Array.isArray(entry.locations)) fail(`${path}.locations`, 'an array');
     entry.locations.forEach((location, locationIndex) => {
       const locationPath = `${path}.locations.${locationIndex}`;

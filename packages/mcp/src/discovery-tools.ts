@@ -2,6 +2,7 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 import { z } from 'zod';
 import { discoverProjects, resolveProject } from './project-discovery.js';
+import { scanSelectedProject } from './scan-selected-project.js';
 
 export function registerDiscoveryTools(
   server: McpServer,
@@ -45,5 +46,30 @@ export function registerDiscoveryTools(
     },
     (input) =>
       call(() => resolveProject(input.config_file, input.command, input.mode)),
+  );
+  server.registerTool(
+    'ai_i18n_scan_project',
+    {
+      title: 'Scan and build translation resources',
+      description:
+        'Run a complete source scan for the selected trusted ai-i18n config, refresh the local SQLite extraction index, call the optional adapter once, and write final locale JSON. Does not run a Vite Build.',
+      inputSchema: z
+        .object({
+          config_file: z.string().min(1).max(4096),
+          entries: z
+            .array(z.string().min(1).max(4096))
+            .min(1)
+            .max(100)
+            .optional(),
+        })
+        .strict(),
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: false,
+        openWorldHint: true,
+      },
+    },
+    (input) =>
+      call(() => scanSelectedProject(input.config_file, input.entries)),
   );
 }

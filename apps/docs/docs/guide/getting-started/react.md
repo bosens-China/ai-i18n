@@ -16,12 +16,12 @@ ai-i18n 要求 Vite 8 或更高版本，并且当前只支持浏览器端应用�
 pnpm create vite ai-i18n-react --template react-ts
 cd ai-i18n-react
 pnpm install
-pnpm add @ai-i18n/vite@^1.0.0
+pnpm add @ai-i18n/vite@^2.0.0
 ```
 
 安装前请按[版本选择与升级](/guide/getting-started/versions)确认 npm 发布状态；尚无正式版时显式选择 `@alpha`。
 
-已有 Vite + React 项目可以跳过创建步骤，直接安装 `@ai-i18n/vite@^1.0.0`。请保留现有的
+已有 Vite + React 项目可以跳过创建步骤，直接安装 `@ai-i18n/vite@^2.0.0`。请保留现有的
 React Vite 插件，无需安装额外的 ai-i18n React 适配包。
 
 ## 配置 Vite
@@ -104,14 +104,12 @@ pnpm build
 
 ```text
 src/ai-i18n.d.ts
-i18n/translations/
-i18n/overrides/
-i18n/extracted/
-i18n/locales/
+i18n/locales/en-US.manual.json
+i18n/locales/en-US.json
+i18n/locales/files/
 ```
 
-应提交声明、项目自动译文和人工译文。忽略可重新生成的 `extracted/` 与 `locales/`；个人 SQLite
-候选缓存位于用户数据目录，不属于项目文件。
+应提交声明和人工 `*.manual.json`；最终 `locales/` 也可以提交。仓库本地 SQLite 提取索引位于 `node_modules/.cache/ai-i18n/`，不属于项目译文。
 完整规则见 [生成文件与 Git](/guide/basic/directory)。
 
 ## 接入 UI 组件库

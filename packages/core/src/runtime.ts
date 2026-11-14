@@ -12,6 +12,7 @@ import { diagnosticMessage } from './diagnostics.js';
 import { TranslationConflictError } from './schema.js';
 import { hasSameTemplateTokens } from './template.js';
 import { createTranslate, type Translate } from './translate.js';
+import type { TranslationOptions } from './message-id.js';
 
 export type ModuleMessages = Record<string, Record<string, TranslationValue>>;
 
@@ -32,8 +33,13 @@ export interface I18nRuntimeOptions {
 }
 
 export interface I18nRuntime {
+  readonly ready: Promise<void>;
   t: Translate;
-  translate(messageId: string, sourceFallback: string): string;
+  translate(
+    messageId: string,
+    sourceFallback: string,
+    fallbackMessageId?: string,
+  ): string;
   setLang(value: string): Promise<void>;
   getLang(): string;
   getLangs(): readonly LangOption[];
@@ -62,6 +68,22 @@ export function createScopedTranslate(
       runtimeMessageId(moduleId, messageId, occurrence),
       sourceFallback,
     ),
+  );
+}
+
+export function createRepositoryScopedTranslate(
+  runtime: Pick<I18nRuntime, 'translate'>,
+  fileId: string,
+): Translate {
+  return createTranslate(
+    (messageId, sourceFallback, _occurrence, options?: TranslationOptions) =>
+      options?.scope === 'file'
+        ? runtime.translate(
+            `f:${fileId}:${messageId}`,
+            sourceFallback,
+            messageId,
+          )
+        : runtime.translate(messageId, sourceFallback),
   );
 }
 
@@ -107,6 +129,7 @@ export function createI18nRuntime(options: I18nRuntimeOptions): I18nRuntime {
   let currentLang = lazy ? options.sourceLang : initialLang;
   let langLoadState: LangLoadState = idleLangLoadState;
   let languageRequest = 0;
+  let ready: Promise<void> = Promise.resolve();
 
   if (localeLoaders) {
     for (const locale of locales) {
@@ -200,8 +223,17 @@ export function createI18nRuntime(options: I18nRuntimeOptions): I18nRuntime {
     return true;
   }
 
-  function translate(messageId: string, sourceFallback: string) {
-    const value = catalog.get(currentLang)?.get(messageId);
+  function translate(
+    messageId: string,
+    sourceFallback: string,
+    fallbackMessageId?: string,
+  ) {
+    const messages = catalog.get(currentLang);
+    let value = messages?.get(messageId);
+    if ((value === null || value === undefined) && fallbackMessageId) {
+      messageId = fallbackMessageId;
+      value = messages?.get(messageId);
+    }
     if (value !== null && value !== undefined) {
       if (!hasSameTemplateTokens(sourceFallback, value)) {
         const warningKey = `${currentLang}\0${messageId}\0${value}`;
@@ -296,6 +328,9 @@ export function createI18nRuntime(options: I18nRuntimeOptions): I18nRuntime {
   const t = createTranslate(translate);
 
   const runtime: I18nRuntime = {
+    get ready() {
+      return ready;
+    },
     t,
     translate,
     setLang(value) {
@@ -347,7 +382,7 @@ export function createI18nRuntime(options: I18nRuntimeOptions): I18nRuntime {
 
   if (lazy && initialLang !== options.sourceLang) {
     // 默认目标语言异步加载；失败时保持同步可用的 source fallback。
-    void changeLang(initialLang, false).catch((error: unknown) => {
+    ready = changeLang(initialLang, false).catch((error: unknown) => {
       const state = runtime.getLangLoadState();
       if (
         state.status !== 'error' ||

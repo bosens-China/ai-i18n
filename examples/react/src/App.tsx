@@ -41,7 +41,8 @@ function App() {
               {t('在忙碌与安静之间，记录那些值得慢下来想一想的事。')}
             </p>
             <a className="demo-button mt-5" href="#stories">
-              {t('开始阅读')} <span aria-hidden="true">↗</span>
+              {t('开始阅读', { comment: '首页主按钮' })}{' '}
+              <span aria-hidden="true">↗</span>
             </a>
           </div>
           <div className="hero-art" aria-hidden="true">
@@ -76,7 +77,9 @@ function App() {
               </h3>
               <p className="demo-intro">{t(DEMO_MESSAGES.excerpt)}</p>
               <details>
-                <summary className="demo-link">{t('阅读全文')}</summary>
+                <summary className="demo-link">
+                  {t('阅读全文', { scope: 'file' })}
+                </summary>
                 <p>
                   {t(
                     '试着在一天里留下一段不被安排的时间。散步、发呆，或者只是看一会儿窗外，灵感常常就在这些空隙里出现。',

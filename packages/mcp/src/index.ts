@@ -1,25 +1,5 @@
 export { createAiI18nMcpServer } from './server.js';
-export type {
-  ClearResult,
-  ClearTranslationsInput,
-  DeleteOrphanMessagesInput,
-  DeleteOverridesInput,
-  DeleteResult,
-  ListOrphanMessagesInput,
-  ListOverridesInput,
-  ListTranslationsInput,
-  OrphanMessageItem,
-  OrphanMessageListResult,
-  OverrideItem,
-  OverrideListResult,
-  OverrideScope,
-  SetOverridesInput,
-  SetResult,
-  SetTranslationsInput,
-  TranslationFileItem,
-  TranslationItem,
-  TranslationListResult,
-  TranslationTarget,
-  TranslationUpdate,
-  TranslationView,
-} from './project.js';
+export {
+  listRepositoryTranslations,
+  editRepositoryTranslations,
+} from './repository-project.js';

@@ -105,7 +105,8 @@ function handleTabKeydown(event: KeyboardEvent, currentIndex: number): void {
             {{ t('记录那些值得停下来感受的小事，让灵感在日常里慢慢生长。') }}
           </p>
           <a class="demo-button mt-7" href="#stories"
-            >{{ t('阅读文章') }} <span aria-hidden="true">↗</span></a
+            >{{ t('阅读文章', { comment: '首页主按钮' }) }}
+            <span aria-hidden="true">↗</span></a
           >
         </div>
         <div class="hero-art" aria-hidden="true">
@@ -132,7 +133,9 @@ function handleTabKeydown(event: KeyboardEvent, currentIndex: number): void {
               {{ t('不必填满每一分钟，留一点时间给偶然的发现。') }}
             </p>
             <details>
-              <summary class="demo-link">{{ t('阅读文章') }}</summary>
+              <summary class="demo-link">
+                {{ t('阅读文章', { scope: 'file' }) }}
+              </summary>
               <p class="text-sm">
                 {{
                   t(

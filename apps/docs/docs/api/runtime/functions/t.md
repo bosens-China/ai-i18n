@@ -19,10 +19,10 @@ function t<T extends MessageTree>(messages: T): TranslatedMessageTree<T>;
 
 ## 参数
 
-| 参数      | 类型                                                             | 必填 | 作用                          |
-| --------- | ---------------------------------------------------------------- | ---- | ----------------------------- |
-| `source`  | `string`                                                         | 是   | 源文案，也是缺译时的回退值。  |
-| `options` | [`TranslationOptions`](/api/vite/interfaces/translation-options) | 否   | 通过 `comment` 补充翻译语境。 |
+| 参数      | 类型                                                             | 必填 | 作用                         |
+| --------- | ---------------------------------------------------------------- | ---- | ---------------------------- |
+| `source`  | `string`                                                         | 是   | 源文案，也是缺译时的回退值。 |
+| `options` | [`TranslationOptions`](/api/vite/interfaces/translation-options) | 否   | 指定翻译身份与文件范围。     |
 
 source 与 options 必须能在构建期静态求值。
 
@@ -30,6 +30,8 @@ source 与 options 必须能在构建期静态求值。
 t('保存');
 t('保存', { comment: '按钮' });
 t('提交', { comment: '创建 Git 提交' });
+t('保存', { scope: 'file' });
+t('保存', { scope: 'file', comment: '按钮' });
 ```
 
 ## 文案树
@@ -64,7 +66,7 @@ getter 或其他运行时结果。
 需要成员级语境或动态索引时，改用
 [`defineI18nMessages()`](/api/runtime/macros/define-i18n-messages) 后逐项调用 `t()`。
 
-相同原文搭配不同的 `comment` 会作为不同语境分别翻译。没有 `comment` 时，同一原文默认共享译文。
+相同原文搭配不同的 `comment` 会作为不同身份分别翻译，缺译不会借用无 comment 的译文。默认作用范围是全局；显式文件范围缺译时回退到相同身份的全局译文。
 
 ## Tagged template
 

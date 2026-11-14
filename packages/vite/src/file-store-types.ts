@@ -4,6 +4,7 @@ import type { AiI18nTranslationMemoryCapacityOptions } from './options.js';
 import type { DevTimingReporter } from './dev-timing.js';
 
 export interface FileStoreOptions {
+  repository?: boolean;
   /** 远程快照只在内存与派生产物中使用，不访问本地自动译文或 SQLite。 */
   remote?: boolean;
   root: string;

@@ -16,17 +16,18 @@ export {
   type AiI18nConfigExport,
 } from './config.js';
 export type {
-  AiI18nCleanupOptions,
   AiI18nDiagnosticsOptions,
   AiI18nPerformanceDiagnosticsOptions,
-  AiI18nTranslationMemoryCapacityOptions,
   AiI18nLocaleLoadingOptions,
   AiI18nOptions,
   AiI18nPersistOptions,
-  AiI18nProviderOptions,
   AiI18nTimingDiagnosticsOptions,
-  AiI18nTranslationMemoryOptions,
 } from './options.js';
+export type {
+  TranslationAdapter,
+  TranslationCatalog,
+  TranslationSnapshot,
+} from './translation-adapter.js';
 export type { AiI18nFramework } from './framework.js';
 export type { HtmlExtractorOptions } from './html.js';
 export type {
@@ -36,12 +37,5 @@ export type {
   MessageTree,
   MessageTreeValue,
   TranslatedMessageTree,
-  TranslationBatch,
-  TranslationBatchEvent,
-  TranslationBatchStage,
-  TranslationLogging,
-  TranslationMessage,
   TranslationOptions,
-  TranslationResult,
-  Translator,
 } from '@ai-i18n/core';

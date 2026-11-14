@@ -31,7 +31,7 @@ export default defineConfig({ plugins: [aiI18n()] });
 - `aiI18n()` 默认读取 Vite root 下的 `ai-i18n.config.ts`；找不到时明确报错，不回退为空配置。
 - 可通过 `aiI18n({ configFile: '../ai-i18n.config.ts' })` 指定文件，此路径相对于 Vite root，绝对路径保持不变。
 - 独立配置中的 `root` 默认是配置文件所在目录。Vite 使用其他 root 时，显式设置该字段，两边最终必须指向同一目录。
-- `directory` 默认是配置旁的 `i18n/`；`dts` 默认是配置旁的 `src/ai-i18n.d.ts`。Provider 日志与性能报告目录也以配置目录为基准。
+- `directory` 默认是配置旁的 `i18n/`；`dts` 默认是配置旁的 `src/ai-i18n.d.ts`。性能报告目录以配置目录为基准。
 - `root`、`directory`、`dts` 和日志路径不会随着命令的工作目录改变。源码引用位置仍然相对于 Vite root。
 - 通过普通 TS import 复用语言列表或适配器。不存在父目录配置自动继承或多份配置自动合并。
 
@@ -74,6 +74,6 @@ apps/
 
 ## 从内联配置迁移
 
-将 `aiI18n({ ... })` 中的业务配置移入 `ai-i18n.config.ts` 的 `defineConfig({ ... })`，原位置改为 `aiI18n()`。Provider、SQLite 和远程适配器的相关 import 一并移动，Review 仍在 Vite 中单独注册。
+将 `aiI18n({ ... })` 中的业务配置移入 `ai-i18n.config.ts` 的 `defineConfig({ ... })`，原位置改为 `aiI18n()`。旧 Provider、远程模式与翻译结果 SQLite 包不再接入；需要外部服务时改用一次性 `adapter`。Review 仍在 Vite 中单独注册。
 
-这是不兼容变更，不合并新旧配置。配置放在原 Vite root 时，默认翻译目录保持原位置；放在其他位置时，先显式设置 `directory` 指向现有目录，避免误建一套空译文。无需转换 `translations` 或 `overrides` 文件格式。
+这是不兼容变更，不合并新旧配置。配置放在原 Vite root 时，默认翻译目录保持原位置；放在其他位置时，先显式设置 `directory` 指向现有目录。旧人工 `overrides/` 会在完整扫描或构建时校验并迁移；旧自动 `translations/` 不再作为输入。

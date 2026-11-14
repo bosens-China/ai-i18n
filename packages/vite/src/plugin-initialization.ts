@@ -1,7 +1,6 @@
 import { createDevPersistenceScheduler } from './dev-persistence.js';
 import type { ResolvedConfig, ViteDevServer } from 'vite';
 import { diagnosticMessage } from '@ai-i18n/analyzer';
-import type { ProviderCoordinator } from './provider-coordinator.js';
 import { FileStore } from './file-store.js';
 import type { FileStoreOptions } from './file-store-types.js';
 import { formatTerminalDiagnostic } from './terminal-format.js';
@@ -17,7 +16,7 @@ import {
 } from './framework.js';
 import path from 'node:path';
 import { startScanBridge } from './scan-bridge.js';
-import type { createPluginRemote } from './plugin-remote.js';
+import { serveRepositoryFiles } from './repository-dev-files.js';
 
 export function initializeProject(
   config: ResolvedConfig,
@@ -25,10 +24,6 @@ export function initializeProject(
   normalized: NormalizedAiI18nOptions,
   api: AiI18nPluginApi,
   timing: DevTimingReporter,
-  translationMemory: NonNullable<FileStoreOptions['translationMemory']> & {
-    capacity?: FileStoreOptions['capacity'];
-  },
-  coordinator: () => ProviderCoordinator | undefined,
 ) {
   const framework = resolveFramework(config.plugins, options.framework);
   api.scanIgnored = [
@@ -38,32 +33,14 @@ export function initializeProject(
     ),
   ];
   const state = new ProjectState(normalizeRoot(config.root), normalized);
-  const store = createPluginStore(
-    config,
-    options,
-    {
-      root: state.root,
-      sourceLang: normalized.sourceLang,
-      locales: normalized.locales,
-      ...(options.directory ? { directory: options.directory } : {}),
-      cleanupMissingSourceFiles: options.cleanup?.missingSourceFiles ?? true,
-      cleanupOrphanMessages:
-        !api.scanMode &&
-        config.command === 'build' &&
-        (options.cleanup?.orphanMessages ?? true),
-      translationMemory: api.scanMode ? {} : translationMemory,
-      remote: Boolean(
-        options.remote?.load && options.remote.mode !== 'overlay',
-      ),
-      timing,
-      ...(!api.scanMode &&
-      config.command === 'build' &&
-      translationMemory.capacity
-        ? { capacity: translationMemory.capacity }
-        : {}),
-    },
-    coordinator,
-  );
+  const store = createPluginStore(config, {
+    root: state.root,
+    repository: normalized.repository,
+    sourceLang: normalized.sourceLang,
+    locales: normalized.locales,
+    ...(options.directory ? { directory: options.directory } : {}),
+    timing,
+  });
   const ready = initializePlugin(
     config,
     framework,
@@ -82,9 +59,8 @@ export async function initializeDevServer(
   api: AiI18nPluginApi,
   store: FileStore,
   ready: Promise<void>,
-  remote?: ReturnType<typeof createPluginRemote>,
 ) {
-  if (!api.scanMode) remote?.connect(server.environments.client.hot);
+  if (store.repository) serveRepositoryFiles(server, store.repository);
   const close = api.scanMode ? undefined : await startScanBridge(server, api);
   server.watcher.add(store.directory);
   void ready
@@ -95,18 +71,8 @@ export async function initializeDevServer(
 
 export function createPluginStore(
   config: ResolvedConfig,
-  options: AiI18nOptions,
   storeOptions: FileStoreOptions,
-  coordinator: () => ProviderCoordinator | undefined,
 ): FileStore {
-  if (options.provider && typeof options.provider.translator !== 'function') {
-    throw new TypeError(
-      diagnosticMessage(
-        '[ai-i18n] provider.translator 必须是函数。',
-        '[ai-i18n] provider.translator must be a function.',
-      ),
-    );
-  }
   if (config.command === 'build' && config.build.watch) {
     config.logger.info(
       formatTerminalDiagnostic(
@@ -124,11 +90,6 @@ export function createPluginStore(
       config.logger.warn(
         formatTerminalDiagnostic(`[ai-i18n] ${message}`, 'warning'),
       ),
-    onSynced(batchIds) {
-      for (const batchId of batchIds) {
-        coordinator()?.reportBatchEvent({ batchId, stage: 'persisted' });
-      }
-    },
   });
 }
 

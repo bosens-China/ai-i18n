@@ -1,76 +1,42 @@
-<p align="center">
-  <img src="./apps/docs/docs/public/logo.svg" alt="ai-i18n logo" height="160" />
-</p>
+<p align="center"><img src="./apps/docs/docs/public/logo.svg" alt="ai-i18n logo" height="160" /></p>
 
 <h1 align="center">ai-i18n</h1>
 
-<p align="center">
-  AI-powered internationalization for Vite applications.
-</p>
+<p align="center">Source-text localization for Vite 8 browser applications.</p>
 
-<p align="center">
-  <a href="./README.zh-CN.md">简体中文</a> ·
-  <a href="https://bosens-china.github.io/ai-i18n/">Documentation</a> ·
-  <a href="https://bosens-china.github.io/ai-i18n/demo/">Demo</a> ·
-  <a href="./LICENSE">MIT License</a>
-</p>
+<p align="center"><a href="./README.zh-CN.md">简体中文</a> · <a href="https://bosens-china.github.io/ai-i18n/">Documentation</a> · <a href="./LICENSE">MIT License</a></p>
 
-Write source copy where it is used. ai-i18n extracts supported `t()` calls, manages
-translations and locale bundles, and provides a browser runtime for Vanilla, Vue, and React.
-Use an OpenAI-compatible provider for automated translation or the MCP server for agent-assisted
-translation and human review.
+ai-i18n extracts explicit `t()` calls during a full Build or MCP scan and generates compact locale JSON. It supports Vanilla, Vue, and React. Node.js **22.13.0+** is required because the local extraction index uses built-in `node:sqlite`.
 
-## Why ai-i18n
+```ts
+// ai-i18n.config.ts
+import { defineConfig } from '@ai-i18n/vite/config';
 
-- No translation-key maintenance for supported static copy.
-- Build-time extraction, typed runtime APIs, and optional lazy locale loading.
-- Git-friendly translation memory with separate human overrides.
-- Companion packages for ESLint, OpenAI-compatible translation, and MCP workflows.
-
-## Quick start
-
-The first stable release is being prepared. Check [version selection](https://bosens-china.github.io/ai-i18n/guide/getting-started/versions) before installing;
-if 1.0.0 is not on npm yet, explicitly choose `@alpha` for prerelease use. The stable install is:
-
-```bash
-pnpm add @ai-i18n/vite@^1.0.0
+export default defineConfig({
+  sourceLang: 'zh-CN',
+  locales: [
+    { value: 'zh-CN', label: '中文' },
+    { value: 'en-US', label: 'English' },
+  ],
+});
 ```
-
-Packages version independently after the initial 1.0.0 release. Update the direct packages you need;
-do not force all package versions to match.
-
-Configure the plugin:
 
 ```ts
 // vite.config.ts
 import { defineConfig } from 'vite';
 import { aiI18n } from '@ai-i18n/vite';
 
-export default defineConfig({
-  plugins: [
-    aiI18n({
-      sourceLang: 'zh-CN',
-      locales: [
-        { value: 'zh-CN', label: '简体中文' },
-        { value: 'en-US', label: 'English' },
-      ],
-    }),
-  ],
-});
+export default defineConfig({ plugins: [aiI18n()] });
 ```
-
-Use `t()` directly in your application code:
 
 ```ts
 import { t } from 'virtual:ai-i18n';
 
-console.log(t('你好，世界！'));
-console.log(t`你好，${user.name}！`);
+t('保存'); // shared globally
+t('保存', { comment: 'button' }); // separate global identity
+t('保存', { scope: 'file' }); // this file, then global fallback
 ```
 
-See the [documentation](https://bosens-china.github.io/ai-i18n/) for framework setup,
-translation providers, MCP integration, and API references.
+Manual translations live in `i18n/locales/*.manual.json`. Generated `i18n/locales/*.json` files contain only key-value pairs and can be committed. An optional async adapter can fetch or translate the complete catalog once per Build or explicit scan; its results are not cached by the plugin. Dev loads existing resources and does not invoke the adapter.
 
-The Agent plugin supports **Codex only**, bundling integration/translation Skills, MCP configuration,
-and bounded end checks. Cursor, Claude Code, and Antigravity can use standalone Skills and MCP;
-the plugin does not support those hosts. See [plugin setup and updates](plugins/ai-i18n/README.md).
+Use `@ai-i18n/mcp` to scan, list missing translations, and write manual values. See the [getting started guide](https://bosens-china.github.io/ai-i18n/guide/getting-started/vanilla) and [file layout](https://bosens-china.github.io/ai-i18n/guide/basic/directory).

@@ -14,21 +14,22 @@ import type { TranslationOptions } from '@ai-i18n/vite';
 ```ts
 interface TranslationOptions {
   comment?: string;
+  scope?: 'file';
 }
 ```
 
 ## 字段
 
-| 字段      | 类型     | 必填 | 作用                         |
-| --------- | -------- | ---- | ---------------------------- |
-| `comment` | `string` | 否   | 向翻译器说明文案的业务语境。 |
+| 字段      | 类型     | 必填 | 作用                                   |
+| --------- | -------- | ---- | -------------------------------------- |
+| `comment` | `string` | 否   | 区分文案的翻译身份。                   |
+| `scope`   | `'file'` | 否   | 显式指定当前文件范围；省略时全局共享。 |
 
-`comment` 必须能在构建期确定。插件会去除首尾空白；非空 `comment` 会参与消息身份与 Translation
-Memory。相同原文使用不同的 `comment` 时属于不同翻译单元，不会共享译文。
+`comment` 与 `scope` 必须能在构建期确定。相同原文使用不同 `comment` 时属于不同翻译单元；带 comment 的文案不会回退到不带 comment 的译文。
 
 ```ts
 t('保存', { comment: '按钮' });
 t('保存', { comment: '文件状态' });
 ```
 
-模型只翻译 source，comment 只用于理解语境，不会进入最终译文。
+`scope: 'file'` 先查当前文件，再查相同 comment 的全局译文。`comment` 本身只影响翻译身份，不影响范围或运行时参数。

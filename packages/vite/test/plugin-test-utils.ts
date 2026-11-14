@@ -46,10 +46,6 @@ export function setupPlugin(
     ...pluginOptions,
     dts: false,
     directory,
-    cleanup: {
-      ...pluginOptions.cleanup,
-      missingSourceFiles: false,
-    },
   });
   const config = {
     root,

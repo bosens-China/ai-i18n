@@ -76,6 +76,7 @@ export interface ExtractedMessage {
   id: string;
   source: string;
   comment?: string;
+  scope?: 'file';
   locations: SourceLocation[];
 }
 
@@ -158,15 +159,17 @@ export function extractMessages(
     const location = sourceLocation(module.source, offset);
     const comment = translationComment(options);
     const id = createMessageId(source, options);
-    const previous = messages.get(id);
+    const identity = `${id}\0${options?.scope ?? 'global'}`;
+    const previous = messages.get(identity);
     if (previous) {
       previous.locations.push(location);
       return;
     }
-    messages.set(id, {
+    messages.set(identity, {
       id,
       source,
       ...(comment ? { comment } : {}),
+      ...(options?.scope === 'file' ? { scope: 'file' as const } : {}),
       locations: [location],
     });
   };

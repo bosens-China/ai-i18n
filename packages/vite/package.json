@@ -37,6 +37,10 @@
       "types": "./dist/scan.d.ts",
       "default": "./dist/scan.js"
     },
+    "./internal/repository": {
+      "types": "./dist/repository.d.ts",
+      "default": "./dist/repository.js"
+    },
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
@@ -56,10 +60,6 @@
     "./runtime": {
       "types": "./dist/runtime.d.ts",
       "import": "./dist/runtime.js"
-    },
-    "./remote": {
-      "types": "./dist/remote.d.ts",
-      "import": "./dist/remote.js"
     },
     "./vue": {
       "types": "./dist/vue.d.ts",
@@ -110,10 +110,9 @@
     }
   },
   "engines": {
-    "node": "^20.19.0 || >=22.12.0"
+    "node": ">=22.13.0"
   },
   "devDependencies": {
-    "@ai-i18n/sqlite": "workspace:*",
     "@ai-i18n/review-ui": "workspace:*",
     "@babel/core": "^7.29.7",
     "@rolldown/plugin-babel": "^0.2.3",

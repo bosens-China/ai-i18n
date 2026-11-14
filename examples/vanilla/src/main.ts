@@ -31,12 +31,12 @@ function render() {
       </header>
       <main id="top">
         <section class="grid gap-10 py-16 md:grid-cols-2 md:items-center md:py-24">
-          <div><p class="demo-kicker">${escapeHtml(t('一份关于日常的记录'))}</p><h1 class="demo-heading">${escapeHtml(t('把想法，写成日常。'))}</h1><p class="demo-intro mt-6">${escapeHtml(t('在忙碌与安静之间，记录那些值得慢下来想一想的事。'))}</p><a class="demo-button mt-5" href="#stories">${escapeHtml(t('开始阅读'))} <span aria-hidden="true">↗</span></a></div>
+          <div><p class="demo-kicker">${escapeHtml(t('一份关于日常的记录'))}</p><h1 class="demo-heading">${escapeHtml(t('把想法，写成日常。'))}</h1><p class="demo-intro mt-6">${escapeHtml(t('在忙碌与安静之间，记录那些值得慢下来想一想的事。'))}</p><a class="demo-button mt-5" href="#stories">${escapeHtml(t('开始阅读', { comment: '首页主按钮' }))} <span aria-hidden="true">↗</span></a></div>
           <div class="hero-art" aria-hidden="true"><div class="hero-art-page"><span>FIELD<br />NOTES</span><i></i><i></i><i></i><b>✳</b></div></div>
         </section>
         <section id="stories" class="border-t border-line pt-10">
           <div class="mb-6 flex flex-wrap items-end justify-between gap-3"><div><p class="demo-kicker">${escapeHtml(t('慢慢读'))}</p><h2 class="demo-section-heading">${escapeHtml(t('精选文章'))}</h2></div><span class="text-sm text-muted">${escapeHtml(t('关于生活、观察与创作'))}</span></div>
-          <article class="demo-card featured"><div><span class="demo-tag">${escapeHtml(t('生活随笔'))}</span><h3 class="mt-6 text-2xl font-semibold">${escapeHtml(t('给生活留一点空白'))}</h3><p class="demo-intro">${escapeHtml(t('不必把每一刻都填满。留白让我们重新听见自己的想法。'))}</p><details><summary class="demo-link">${escapeHtml(t('阅读全文'))}</summary><p>${escapeHtml(t('试着在一天里留下一段不被安排的时间。散步、发呆，或者只是看一会儿窗外，灵感常常就在这些空隙里出现。'))}</p></details></div><div class="featured-art" aria-hidden="true"><span>✳</span></div></article>
+          <article class="demo-card featured"><div><span class="demo-tag">${escapeHtml(t('生活随笔'))}</span><h3 class="mt-6 text-2xl font-semibold">${escapeHtml(t('给生活留一点空白'))}</h3><p class="demo-intro">${escapeHtml(t('不必把每一刻都填满。留白让我们重新听见自己的想法。'))}</p><details><summary class="demo-link">${escapeHtml(t('阅读全文', { scope: 'file' }))}</summary><p>${escapeHtml(t('试着在一天里留下一段不被安排的时间。散步、发呆，或者只是看一会儿窗外，灵感常常就在这些空隙里出现。'))}</p></details></div><div class="featured-art" aria-hidden="true"><span>✳</span></div></article>
           <div class="demo-grid mt-5">
             <article class="demo-card"><span class="demo-tag">${escapeHtml(t('观察'))}</span><h3>${escapeHtml(t('熟悉街道的新风景'))}</h3><p>${escapeHtml(t('换一条路回家，也许会发现被忽略的美好。'))}</p></article>
             <article class="demo-card"><span class="demo-tag">${escapeHtml(t('创作'))}</span><h3>${escapeHtml(t('从一个小念头开始'))}</h3><p>${escapeHtml(t('不用等到准备完美，先把第一句话写下来。'))}</p></article>

@@ -1,12 +1,13 @@
-# Independent configuration
+# Configuration and migration
 
-- Create one ai-i18n.config.ts per app, exporting defineConfig from @ai-i18n/vite/config. Preserve ESM setup (package.json type: module), language values, Provider/remote/cache adapters, and all existing options.
-- Leave aiI18n() in vite.config; only configFile is accepted there. Move adapter imports with their options. Keep aiI18nReview in Vite.
-- Default lookup is exactly Vite root/ai-i18n.config.ts. Explicit plugin configFile is resolved against Vite root. Do not search ancestors or merge workspace configs for the plugin.
-- The independent config's root defaults to its own directory and must match resolved Vite root. All ai-i18n relative directory/dts/log paths use the config directory; source file identity still uses Vite root.
-- For a custom Vite root, set config.root and explicit plugin configFile. When moving existing options, resolve directory back to the existing translation directory before editing; never copy or reset translation shards to accommodate config discovery.
-- Shared settings use ordinary TS imports. Do not add inheritance or override precedence rules. Configuration factories receive command/mode; preserve the app's chosen environment and explicit loadEnv calls, using a config-relative env directory.
-- Verify a public-entry build and scan, and change one locally imported config value to verify Dev restart. Build validation can perform the configured successful-build history cleanup; use an isolated copy when validating against user-owned translation data.
-- Core discovery lists config file paths without executing them; app selection and MCP contracts belong to use-ai-i18n-mcp. Pure source workspace packages do not get independent configuration.
+Read the target app's installed `@ai-i18n/vite` types and the public [configuration guide](https://bosens-china.github.io/ai-i18n/guide/basic/configuration) before editing. Retain framework mode, locales, default language, `autoImport`, `loading`, and declaration preferences unless asked to change them. Ensure `aiI18n()` is present once and the app's Vite config loader works for explicit scanning.
 
-- When the missing-translation build gate fails, use its source locations, message IDs, and exact JSON paths to confirm the selected app. Remote diagnostics do not imply local translation shards exist; use the remote workflow.
+Target locales are always split into async resources; `loading` only configures `preload` and `prefetch` hints. Do not promise eager bundling when `loading` is omitted or false.
+
+The minimum runtime is Node.js 22.13.0 because extraction uses `node:sqlite`. Vite 8 alone starts at Node.js 22.12.0. The SQLite file is worktree-local under `node_modules/.cache/ai-i18n/`; never commit or share it. A Build or `ai_i18n_scan_project` recreates it from reachable source.
+
+Persistent manual files are `i18n/locales/<locale>.manual.json` for global keys and `i18n/locales/files/<locale>.manual.json` for file keys. Both contain key→string. Generated `i18n/locales/<locale>.json` and `i18n/locales/files/<locale>/*.json` are final key→string resources; do not edit them to create durable translations. Copy file keys from MCP results.
+
+On migration, preserve legacy `overrides/` until a successful full scan. Automatic migration accepts only rules that map without ambiguity. Old file rules require calls marked `{ scope: 'file' }`; occurrence rules require full coverage. Resolve reported conflicts manually. Old automatic `translations/` are removed by the new Build; if their values must become durable, first copy approved values into manual files. The adapter may return service translations during Build, but ai-i18n does not persist its raw response.
+
+Do not restore browser-side remote overrides. A server translation source belongs inside the Build adapter and its key mapping is the caller's responsibility. Check output with both a normal build and an adapter returning `null`; a prior adapter result must not silently survive the latter.

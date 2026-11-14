@@ -29,7 +29,7 @@ features:
     details: 接入 TypeScript 生成声明，使用 ESLint 静态检查，并用 Vitest 测试。
     link: /guide/quality/typescript
   - title: AI 接入
-    details: 选择应用内 Provider 或外部 Agent 补齐译文。通过翻译校对固定关键措辞。
+    details: 用构建适配器或 MCP 扫描补齐译文，通过翻译校对固定关键措辞。
     link: /ai/ai-translation
   - title: 排查问题
     details: 按通用、Vue 和 React 场景定位接入与运行问题。

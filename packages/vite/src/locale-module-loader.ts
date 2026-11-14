@@ -36,6 +36,11 @@ export async function loadLocaleModule(
   if (!locale) return;
   const { project, store } = options;
   if (options.build) return localeModulePlaceholderCode(locale);
+  if (store.repository) {
+    const messages = await store.loadGeneratedLocale(locale);
+    project.setRepositoryLocale(locale, messages);
+    return localeModuleCode(messages);
+  }
   return options.runStateTask(() => {
     addLocaleWatchFiles(context, project, store);
     return localeModuleCode(project.localeMessages(locale));

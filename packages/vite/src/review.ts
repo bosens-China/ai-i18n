@@ -12,6 +12,7 @@ import {
 } from './review-page.js';
 import { configureReviewServer } from './review-server.js';
 import { createReviewService } from './review-service.js';
+import { createRepositoryReviewService } from './repository-review-service.js';
 
 const RESOLVED_REVIEW_CLIENT_ID = `\0${REVIEW_CLIENT_VIRTUAL_ID}`;
 
@@ -65,7 +66,9 @@ export function aiI18nReview(options: AiI18nReviewOptions = {}): Plugin {
       if (api.scanMode) return;
       return configureReviewServer(
         server,
-        createReviewService({
+        (api.store().repository
+          ? createRepositoryReviewService
+          : createReviewService)({
           sourceLang: api.options.sourceLang,
           locales: api.options.locales,
           ready: api.ready,

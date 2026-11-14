@@ -1,5 +1,5 @@
-import { overlayMarkup } from './review-client-markup.js';
-export { REVIEW_CLIENT_FONT_STACK } from './review-client-markup.js';
+import { REVIEW_CLIENT_FONT_STACK } from './review-client-markup.js';
+export { REVIEW_CLIENT_FONT_STACK };
 import {
   REVIEW_UI_LANGUAGE_CHANGE_EVENT,
   REVIEW_UI_THEME_CHANGE_EVENT,

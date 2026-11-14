@@ -45,6 +45,22 @@ jobs:
           BEFORE_SHA: ${{ github.event.before }}
         run: pnpm exec tsx scripts/pages-deploy-policy.ts "$BEFORE_SHA" "$GITHUB_SHA" >> "$GITHUB_OUTPUT"
 
+  minimum-node:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22.13.0
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      - run: pnpm --filter @ai-i18n/example-vanilla build
+      - run: pnpm --filter @ai-i18n/example-vue build
+      - run: pnpm --filter @ai-i18n/example-react build
+
   pages:
     needs: check
     if: >-

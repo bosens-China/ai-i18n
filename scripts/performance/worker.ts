@@ -43,14 +43,9 @@ try {
   await fs.cp(original, temporary, {
     recursive: true,
     filter: (file) =>
-      ![
-        'node_modules',
-        'dist',
-        'logs',
-        '.turbo',
-        'extracted',
-        'locales',
-      ].includes(path.basename(file)),
+      !['node_modules', 'dist', 'logs', '.turbo', 'extracted'].includes(
+        path.basename(file),
+      ),
   });
   await fs.symlink(
     path.join(original, 'node_modules'),

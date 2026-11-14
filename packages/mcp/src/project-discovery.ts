@@ -77,7 +77,6 @@ export async function resolveProject(
         directory: string;
         sourceLang: string;
         locales: { value: string; label: string }[];
-        remote?: { load?: unknown; mode?: string };
       };
     }>;
   };
@@ -94,10 +93,5 @@ export async function resolveProject(
     locales: options.locales.map(({ value, label }) => ({ value, label })),
     command,
     mode,
-    translation_source: options.remote?.load
-      ? options.remote.mode === 'overlay'
-        ? 'overlay'
-        : 'remote'
-      : 'local',
   };
 }
