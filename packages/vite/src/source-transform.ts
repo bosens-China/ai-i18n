@@ -1,9 +1,4 @@
-import type {
-  HookHandler,
-  NormalizedHotChannel,
-  Plugin,
-  ResolvedConfig,
-} from 'vite';
+import type { HookHandler, Plugin, ResolvedConfig } from 'vite';
 import { resolveAnalysisDependencies } from './analysis-dependencies.js';
 import type { DevStateTaskRunner } from './dev-state-queue.js';
 import type { DevTimingReporter } from './dev-timing.js';
@@ -43,12 +38,7 @@ interface SourceTransformDependencies {
   framework(): AiI18nFramework;
   autoImport(): boolean;
   translationHooks(): readonly TranslationHookBinding[];
-  requestMissingTranslations(
-    moduleIds: readonly string[],
-  ): void | Promise<void>;
   runStateTask: DevStateTaskRunner;
-  persist(moduleId: string): void;
-  setDevHot(hot: NormalizedHotChannel): void;
   warnSsrOnce(warn: () => void): void;
 }
 
@@ -88,9 +78,6 @@ export function createSourceTransformHandler(
       return transformDefineI18nMessages(code, id, macroCalls);
     }
     const config = dependencies.config();
-    if (config?.command === 'serve' && 'hot' in this.environment) {
-      dependencies.setDevHot(this.environment.hot as NormalizedHotChannel);
-    }
     await dependencies.timing.measure(
       'plugin-ready-wait',
       normalizedId,
@@ -165,14 +152,6 @@ export function createSourceTransformHandler(
             loc: { line: warning.line, column: warning.column },
           });
         }
-        if (config?.command !== 'build') {
-          dependencies.persist(moduleId);
-        }
-        // 扫描只提取不请求翻译；首次真实访问即使命中分析缓存，也必须检查本模块缺译。
-        await dependencies.requestMissingTranslations([
-          moduleId,
-          ...update.affectedModuleIds,
-        ]);
         // 只注入没有本地 symbol 的值引用，避免覆盖用户自己的同名函数或变量。
         const autoImportModule =
           !autoImport || extraction?.autoImportCode === undefined

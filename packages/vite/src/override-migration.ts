@@ -77,14 +77,21 @@ export function planOverrideMigration(
         const dictionary = ((source === undefined
           ? result.global
           : result.files)[locale] ??= {});
-        const previous = dictionary[key];
+        const previous = Object.hasOwn(dictionary, key)
+          ? dictionary[key]
+          : undefined;
         if (previous !== undefined && previous !== value) {
           errors.push(
             `${source ?? '<global>'}: ${messageId} (${locale}, conflict)`,
           );
           continue;
         }
-        dictionary[key] = value;
+        Object.defineProperty(dictionary, key, {
+          value,
+          enumerable: true,
+          configurable: true,
+          writable: true,
+        });
       }
     }
   }

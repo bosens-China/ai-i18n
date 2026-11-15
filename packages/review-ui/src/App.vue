@@ -382,7 +382,7 @@ async function mutate(
         :draft-for="drafts.draftFor"
         :locale="review.locale.value"
         :message="selection.selectedMessage.value"
-        :require-occurrence="candidateMode"
+        :locating="candidateMode"
         :scope-for="scopeFor"
         @mutate="mutate"
         @update-draft="

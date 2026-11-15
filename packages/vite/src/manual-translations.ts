@@ -2,7 +2,7 @@ import path from 'node:path';
 import fs from 'node:fs/promises';
 import { randomUUID } from 'node:crypto';
 import { diagnosticMessage } from '@ai-i18n/core/diagnostics';
-import { withFileQueue } from '@ai-i18n/core/translation-memory';
+import { withFileQueue } from '@ai-i18n/core/internal/files';
 import { readJson } from './json-files.js';
 
 export type ManualMessages = Record<string, string>;
@@ -33,7 +33,7 @@ export async function readManualLocale(
 ): Promise<ManualMessages> {
   const file = manualLocalePath(directory, locale, scope);
   const value = await readJson(file);
-  if (value === undefined) return {};
+  if (value === undefined) return Object.create(null) as ManualMessages;
   if (typeof value !== 'object' || value === null || Array.isArray(value)) {
     throw new TypeError(
       diagnosticMessage(
@@ -52,7 +52,7 @@ export async function readManualLocale(
       );
     }
   }
-  return value as ManualMessages;
+  return Object.assign(Object.create(null) as ManualMessages, value);
 }
 
 export async function writeManualLocale(

@@ -1,7 +1,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import type { ExtractedFile } from '@ai-i18n/core';
-import { readTranslationOverrides } from '@ai-i18n/core/translation-memory';
+import { readTranslationOverrides } from '@ai-i18n/core/internal/files';
 import { ExtractionIndex } from './extraction-index.js';
 import { writeLocaleOutput } from './locale-output.js';
 import {

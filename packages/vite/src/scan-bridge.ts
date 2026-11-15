@@ -7,7 +7,7 @@ import { digest } from './scan-cache.js';
 import { createServer } from 'node:http';
 import type { ViteDevServer } from 'vite';
 import { diagnosticMessage } from '@ai-i18n/analyzer';
-import { withFileQueue } from '@ai-i18n/core/translation-memory';
+import { withFileQueue } from '@ai-i18n/core/internal/files';
 import type { AiI18nPluginApi } from './plugin-api.js';
 import { ensureScan, type ScanResult } from './scan-catalog.js';
 

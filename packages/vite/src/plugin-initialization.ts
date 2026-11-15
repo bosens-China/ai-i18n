@@ -1,4 +1,3 @@
-import { createDevPersistenceScheduler } from './dev-persistence.js';
 import type { ResolvedConfig, ViteDevServer } from 'vite';
 import { diagnosticMessage } from '@ai-i18n/analyzer';
 import { FileStore } from './file-store.js';
@@ -35,11 +34,9 @@ export function initializeProject(
   const state = new ProjectState(normalizeRoot(config.root), normalized);
   const store = createPluginStore(config, {
     root: state.root,
-    repository: normalized.repository,
     sourceLang: normalized.sourceLang,
     locales: normalized.locales,
     ...(options.directory ? { directory: options.directory } : {}),
-    timing,
   });
   const ready = initializePlugin(
     config,
@@ -84,79 +81,30 @@ export function createPluginStore(
       ),
     );
   }
-  return new FileStore({
-    ...storeOptions,
-    onWarning: (message) =>
-      config.logger.warn(
-        formatTerminalDiagnostic(`[ai-i18n] ${message}`, 'warning'),
-      ),
-  });
+  return new FileStore(storeOptions);
 }
 
 export function initializePlugin(
   config: ResolvedConfig,
   framework: AiI18nFramework,
   options: AiI18nOptions,
-  store: FileStore,
-  state: ProjectState,
+  _store: FileStore,
+  _state: ProjectState,
   timing: DevTimingReporter,
 ) {
   return timing.measure(
     'initialization',
     '<project>',
     async () => {
-      const [cache, overrides] = await Promise.all([
-        timing.measure('translation-memory-load', '<project>', () =>
-          store.load(),
-        ),
-        timing.measure('overrides-load', '<project>', () =>
-          store.loadOverrides(),
-        ),
-        timing.measure('types-write', '<project>', () =>
-          writeFrameworkTypes(
-            config.root,
-            framework,
-            options.autoImport ?? false,
-            options.dts,
-          ),
-        ),
-      ]);
-      await timing.measure('state-hydrate', '<project>', () => {
-        state.hydrateCache(cache);
-        state.hydrateOverrides(overrides);
-      });
-      return cache;
-    },
-    { localeCount: options.locales.length },
-  );
-}
-
-export function createPluginPersistence(
-  config: () => ResolvedConfig | undefined,
-  currentStore: () => FileStore,
-  currentState: () => ProjectState,
-  timing: DevTimingReporter,
-) {
-  return createDevPersistenceScheduler({
-    snapshot: () => currentState().snapshot(),
-    sync: async (snapshot, context) => {
-      await currentStore().sync(snapshot, {
-        changedSources: context.changedSources,
-        timingModuleId: context.moduleId,
-      });
-    },
-    timing,
-    onError(cause) {
-      const reason = cause instanceof Error ? cause.message : String(cause);
-      config()?.logger.error(
-        formatTerminalDiagnostic(
-          diagnosticMessage(
-            `[ai-i18n] Dev 后台持久化失败：${reason}`,
-            `[ai-i18n] Dev background persistence failed: ${reason}`,
-          ),
-          'error',
+      await timing.measure('types-write', '<project>', () =>
+        writeFrameworkTypes(
+          config.root,
+          framework,
+          options.autoImport ?? false,
+          options.dts,
         ),
       );
     },
-  });
+    { localeCount: options.locales.length },
+  );
 }

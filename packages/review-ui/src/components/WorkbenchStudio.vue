@@ -3,14 +3,12 @@ import { computed, shallowRef, useTemplateRef } from 'vue';
 import type { ReviewMessage, ReviewMutation } from '@ai-i18n/core';
 import type { ReviewCopy } from '@ai-i18n/core/review-i18n';
 import ReviewScopeTabs from './ReviewScopeTabs.vue';
-import ReviewCacheCandidates from './ReviewCacheCandidates.vue';
 import {
   activeOverride as findActiveOverride,
   currentReviewOccurrence,
   mutationScope,
   reviewAction,
   reviewBaseline,
-  reviewEffectiveValue,
   type ReviewScope,
 } from '../review-state';
 import { extractTokens, validateTokens } from '../tokens';
@@ -21,7 +19,6 @@ const props = defineProps<{
   draft: string;
   locale: string;
   message: ReviewMessage;
-  requireOccurrence: boolean;
   scope: ReviewScope;
 }>();
 
@@ -44,9 +41,7 @@ const activeOverride = computed(() =>
   findActiveOverride(props.message, props.locale, props.scope),
 );
 const currentOccurrence = computed(() =>
-  props.requireOccurrence && !props.scope.location
-    ? undefined
-    : currentReviewOccurrence(props.message, props.scope),
+  currentReviewOccurrence(props.message, props.scope),
 );
 const baseline = computed(() =>
   reviewBaseline(props.message, props.locale, props.scope),
@@ -69,7 +64,6 @@ const canSave = computed(
   () =>
     hasDraft.value &&
     !busy.value &&
-    (!props.requireOccurrence || Boolean(props.scope.location)) &&
     action.value !== 'saved' &&
     validTokens.value,
 );
@@ -187,16 +181,6 @@ function insertToken(token: string): void {
         </div>
       </div>
 
-      <ReviewCacheCandidates
-        v-if="message.cacheCandidatesEnabled"
-        :message="message.message"
-        :locale="locale"
-        :current-value="reviewEffectiveValue(message, locale, scope)"
-        :copy="copy"
-        :disabled="busy"
-        @use="emit('updateDraft', $event)"
-      />
-
       <div
         v-if="tokens.length"
         class="grid grid-cols-1 sm:grid-cols-[110px_1fr] gap-3.5 items-center"
@@ -250,14 +234,6 @@ function insertToken(token: string): void {
         :current-occurrence="currentOccurrence"
         @update-scope="emit('updateScope', $event)"
       />
-
-      <p
-        v-if="requireOccurrence && !scope.location"
-        class="m-0 p-2.5 rounded-lg border border-accentSecondary/40 bg-accentSecondary/10 text-accentSecondary text-xs leading-relaxed"
-        role="status"
-      >
-        {{ copy.chooseExactOccurrence }}
-      </p>
 
       <textarea
         ref="editor"

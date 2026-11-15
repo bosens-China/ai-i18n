@@ -1,9 +1,4 @@
-import {
-  type ModuleMessages,
-  type TranslationMemoryFile,
-  type TranslationOverridesFile,
-  type TranslationValue,
-} from '@ai-i18n/core';
+import type { ModuleMessages, TranslationValue } from '@ai-i18n/core';
 import type { TranslationAutoImports } from '@ai-i18n/analyzer';
 import { Analyzer, analyzeModule, extractMessages } from './yuku-analyzer.js';
 import type { ExtractResult, ExtractedMessage } from './yuku-analyzer.js';
@@ -11,7 +6,6 @@ import type { SourceLocation, TranslationHookBinding } from './extractor.js';
 import {
   createProjectSnapshot,
   fingerprint,
-  hydrateTranslationCache,
   mapResultLocations,
   type ProjectSnapshot,
 } from './project-snapshot.js';
@@ -20,22 +14,9 @@ import type {
   ProjectUpdate,
   ProjectStateUpdateOptions,
 } from './project-state-types.js';
-import {
-  changedEffectiveModules,
-  resolveEffectiveTranslation,
-  effectiveModuleSignatures,
-  remoteTranslationValue,
-} from './translation-overrides.js';
-import type { ProviderResult, ProviderRequest } from './provider-types.js';
-import {
-  findMissingTranslations,
-  ProviderTranslationState,
-} from './provider-translation-state.js';
 import { normalizeProjectId, resolutionKey } from './project-paths.js';
-import {
-  localeRegistration,
-  moduleRegistration,
-} from './occurrence-registration.js';
+import { fileId, fileMessageKey } from './repository-paths.js';
+import path from 'node:path';
 import {
   registrationLoadFiles,
   registrationWatchFiles,
@@ -52,15 +33,6 @@ export class ProjectState {
   readonly modules = new Map<string, ExtractResult>();
   readonly seen = new Set<string>();
   private readonly resolutions = new Map<string, string>();
-  private readonly translations = new Map<
-    string,
-    Map<string, TranslationValue>
-  >();
-  private overrides: TranslationOverridesFile = {
-    version: 2,
-    rules: [],
-  };
-  private remoteOverlay?: TranslationMemoryFile;
   private readonly fingerprints = new Map<string, string>();
   private readonly locationMappers = new Map<
     string,
@@ -74,7 +46,6 @@ export class ProjectState {
     string,
     TranslationAutoImports
   >();
-  private readonly providerTranslations = new ProviderTranslationState();
   private readonly repositoryLocales = new Map<
     string,
     Record<string, string>
@@ -229,14 +200,10 @@ export class ProjectState {
     this.modules.clear();
     this.seen.clear();
     this.resolutions.clear();
-    this.translations.clear();
-    this.remoteOverlay = undefined;
-    this.overrides = { version: 2, rules: [] };
     this.fingerprints.clear();
     this.locationMappers.clear();
     this.translationHooks.clear();
     this.autoImportRuntime.clear();
-    this.providerTranslations.reset();
     this.repositoryLocales.clear();
   }
 
@@ -244,132 +211,48 @@ export class ProjectState {
     this.repositoryLocales.set(locale, { ...messages });
   }
 
-  hydrateCache(cache: TranslationMemoryFile): string[] {
-    const previous = effectiveModuleSignatures(this);
-    hydrateTranslationCache(this.translations, cache);
-    return changedEffectiveModules(previous, effectiveModuleSignatures(this));
-  }
-
-  hydrateOverrides(overrides: TranslationOverridesFile): string[] {
-    const previous = effectiveModuleSignatures(this);
-    this.overrides = structuredClone(overrides);
-    return changedEffectiveModules(previous, effectiveModuleSignatures(this));
-  }
-
-  hydrateRemoteOverlay(cache: TranslationMemoryFile): string[] {
-    const previous = effectiveModuleSignatures(this);
-    this.remoteOverlay = structuredClone(cache);
-    return changedEffectiveModules(previous, effectiveModuleSignatures(this));
-  }
-
-  missingTranslations(
-    moduleId: string,
-    options: { refreshCached?: boolean } = {},
-  ): ProviderRequest[] {
-    const result = this.modules.get(moduleId);
-    if (!result) return [];
-    return findMissingTranslations({
-      messages: result.messages,
-      sourceFile: moduleId,
-      locales: this.options.locales,
-      sourceLang: this.options.sourceLang,
-      overrides: this.overrides,
-      refreshCached: options.refreshCached ?? false,
-      cachedTranslation: (messageId, locale) =>
-        remoteTranslationValue(this.remoteOverlay, messageId, locale) ??
-        this.cachedTranslation(messageId, locale),
-    });
-  }
-
-  requestTranslations(
-    moduleId: string,
-    options: { refreshCached?: boolean } = {},
-  ): ProviderRequest[] {
-    return this.providerTranslations.requests(
-      this.missingTranslations(moduleId, options),
-      (messageId, locale) => this.cachedTranslation(messageId, locale),
-    );
-  }
-
-  applyTranslations(
-    results: readonly ProviderResult[],
-    options: { replaceCached?: boolean } = {},
-  ): string[] {
-    const previous = effectiveModuleSignatures(this);
-    for (const result of results) {
-      const translations = this.translations.get(result.locale) ?? new Map();
-      const current = translations.get(result.messageId) ?? null;
-      if (
-        !this.providerTranslations.shouldApply(
-          result,
-          current,
-          options.replaceCached ?? false,
-        )
-      ) {
-        continue;
-      }
-      translations.set(result.messageId, result.value);
-      this.translations.set(result.locale, translations);
-    }
-    return changedEffectiveModules(previous, effectiveModuleSignatures(this));
-  }
-
   snapshot(): ProjectSnapshot {
-    return {
-      ...createProjectSnapshot(
-        this.modules,
-        this.translations,
-        this.seen,
-        this.options,
-      ),
-      ...(this.remoteOverlay ? { remoteOverlay: this.remoteOverlay } : {}),
-    };
+    return createProjectSnapshot(this.modules, this.seen);
   }
 
   registration(moduleId: string, localeValue?: string): ModuleMessages | null {
-    return moduleRegistration(
-      this.modules.get(moduleId),
-      moduleId,
-      this.options.locales,
-      this.options.sourceLang,
-      (message, locale, file, occurrence) =>
-        this.translation(message, locale, file, occurrence),
-      localeValue,
+    const result = this.modules.get(moduleId);
+    if (!result?.messages.length) return null;
+    const id = fileId(this.root, path.resolve(this.root, moduleId));
+    return Object.fromEntries(
+      this.options.locales
+        .filter((locale) => !localeValue || locale.value === localeValue)
+        .map((locale) => {
+          const catalog = this.repositoryLocales.get(locale.value) ?? {};
+          return [
+            locale.value,
+            Object.fromEntries(
+              result.messages.map((message) => {
+                const key =
+                  message.scope === 'file'
+                    ? fileMessageKey(id, message.id)
+                    : message.id;
+                const ownValue = Object.hasOwn(catalog, key)
+                  ? catalog[key]
+                  : undefined;
+                const globalValue =
+                  message.scope === 'file' && Object.hasOwn(catalog, message.id)
+                    ? catalog[message.id]
+                    : undefined;
+                const value =
+                  locale.value === this.options.sourceLang
+                    ? message.source
+                    : (ownValue ?? globalValue ?? null);
+                return [key, value];
+              }),
+            ),
+          ];
+        }),
     );
   }
 
   localeMessages(locale: string): Record<string, TranslationValue> {
-    if (this.options.repository)
-      return this.repositoryLocales.get(locale) ?? {};
-    return localeRegistration(
-      this.modules,
-      locale,
-      this.options.locales,
-      this.options.sourceLang,
-      (message, value, file, occurrence) =>
-        this.translation(message, value, file, occurrence),
-    );
-  }
-
-  private translation(
-    message: Pick<ExtractedMessage, 'id' | 'source' | 'comment'>,
-    locale: string,
-    sourceFile: string,
-    occurrence?: SourceLocation,
-  ): TranslationValue {
-    return resolveEffectiveTranslation(
-      message,
-      locale,
-      this.overrides,
-      this.cachedTranslation(message.id, locale),
-      sourceFile,
-      occurrence,
-      this.remoteOverlay,
-    );
-  }
-
-  private cachedTranslation(messageId: string, locale: string) {
-    return this.translations.get(locale)?.get(messageId) ?? null;
+    return this.repositoryLocales.get(locale) ?? {};
   }
 
   /** 扫描收齐入口依赖后一次关联、提取；完成后恢复 Dev 的即时更新。 */

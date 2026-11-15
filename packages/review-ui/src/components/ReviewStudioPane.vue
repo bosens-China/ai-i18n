@@ -14,7 +14,7 @@ defineProps<{
     scope: ReviewScope,
   ) => string;
   locale: string;
-  requireOccurrence: boolean;
+  locating: boolean;
   scopeFor: (message: ReviewMessage) => ReviewScope;
 }>();
 const emit = defineEmits<{
@@ -39,7 +39,6 @@ const emit = defineEmits<{
       :draft="draftFor(message, locale, scopeFor(message))"
       :locale="locale"
       :message="message"
-      :require-occurrence="requireOccurrence"
       :scope="scopeFor(message)"
       @mutate="
         (mutation, advance, done) => emit('mutate', mutation, advance, done)
@@ -51,7 +50,7 @@ const emit = defineEmits<{
       v-else
       class="h-full grid place-items-center p-12 text-center text-muted text-sm leading-relaxed"
     >
-      {{ requireOccurrence ? copy.chooseExactOccurrence : copy.selectMessage }}
+      {{ locating ? copy.chooseExactOccurrence : copy.selectMessage }}
     </div>
   </section>
 </template>

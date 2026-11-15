@@ -15,7 +15,6 @@ interface RegistrationLoadOptions {
   build: boolean;
   project: ProjectState;
   store: FileStore;
-  flush: () => Promise<void>;
   runStateTask?: DevStateTaskRunner;
   locale?: string;
   watchFileExists?: (file: string) => Promise<boolean>;
@@ -52,7 +51,7 @@ export async function loadRegistration(
         return false;
       }
     });
-  const storeFiles = store.watchFiles(moduleId);
+  const storeFiles = store.watchFiles();
   const existingStoreFiles = options.build
     ? storeFiles
     : await Promise.all(
@@ -63,10 +62,6 @@ export async function loadRegistration(
   for (const file of existingStoreFiles) {
     // 后台增量写入尚未创建 generated file 时不能把不存在的路径挂到虚拟模块图。
     if (file) context.addWatchFile(file);
-  }
-  if (options.build) {
-    await options.flush();
-    project.hydrateOverrides(await store.loadOverrides());
   }
   const messages = await runStateTask(() =>
     project.registration(moduleId, options.locale),

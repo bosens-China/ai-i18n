@@ -16,7 +16,6 @@ export interface ReviewOccurrenceTarget {
 
 export interface ReviewScope {
   file?: string;
-  location?: ReviewSourceLocation;
 }
 
 export function reviewOccurrenceTargets(
@@ -35,11 +34,6 @@ export function currentReviewOccurrence(
   scope: ReviewScope,
 ): ReviewOccurrenceTarget | undefined {
   const targets = reviewOccurrenceTargets(message);
-  if (scope.file && scope.location) {
-    const exactScope = { file: scope.file, location: scope.location };
-    const exact = targets.find((target) => sameOccurrence(target, exactScope));
-    if (exact) return exact;
-  }
   return targets.find((target) => !scope.file || target.file === scope.file);
 }
 
@@ -95,42 +89,20 @@ export function supportsFileScope(
 }
 
 export function mutationScope(
-  scope: Pick<ReviewScope, 'file' | 'location'>,
-): Pick<ReviewOverride, 'file' | 'location'> {
-  return {
-    ...(scope.file ? { file: scope.file } : {}),
-    ...(scope.location ? { location: { ...scope.location } } : {}),
-  };
+  scope: ReviewScope,
+): Pick<ReviewOverride, 'file'> {
+  return scope.file ? { file: scope.file } : {};
 }
 
 function sameScope(
-  left: Pick<ReviewOverride, 'file' | 'location'>,
+  left: Pick<ReviewOverride, 'file'>,
   right: ReviewScope,
 ): boolean {
-  return (
-    left.file === right.file &&
-    left.location?.line === right.location?.line &&
-    left.location?.column === right.location?.column
-  );
-}
-
-function sameOccurrence(
-  left: ReviewOccurrenceTarget,
-  right: ReviewOccurrenceTarget,
-): boolean {
-  return (
-    left.file === right.file &&
-    left.location.line === right.location.line &&
-    left.location.column === right.location.column
-  );
+  return left.file === right.file;
 }
 
 function scopeKey(scope: ReviewScope): string {
-  return JSON.stringify([
-    scope.file ?? null,
-    scope.location?.line ?? null,
-    scope.location?.column ?? null,
-  ]);
+  return JSON.stringify([scope.file ?? null]);
 }
 
 export function reviewAction(
@@ -140,28 +112,4 @@ export function reviewAction(
 ): ReviewAction {
   if (!hasOverride) return 'confirm';
   return draft === baseline ? 'saved' : 'save';
-}
-
-/** 当前范围继承更宽的人工覆盖；候选标记不能把自动基线误当成最终展示值。 */
-export function reviewEffectiveValue(
-  message: ReviewMessage,
-  locale: string,
-  scope: ReviewScope,
-): string {
-  const overrides = message.overrides.filter(
-    (item) =>
-      item.locale === locale &&
-      (!item.file || item.file === scope.file) &&
-      (!item.location ||
-        (item.location.line === scope.location?.line &&
-          item.location.column === scope.location?.column)),
-  );
-  const rank = (item: ReviewOverride) =>
-    item.location ? 2 : item.file ? 1 : 0;
-  overrides.sort((a, b) => rank(b) - rank(a));
-  return (
-    overrides[0]?.value ??
-    message.translations[locale] ??
-    message.message.source
-  );
 }

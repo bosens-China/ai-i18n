@@ -138,7 +138,7 @@ describe('performance reports', () => {
       expect((await server.transformRequest('/main.js'))?.code).toContain(
         '你好',
       );
-      await aiI18nPluginApi(plugin)!.flushPersistence();
+      await aiI18nPluginApi(plugin)!.runStateTask(() => undefined);
     } finally {
       await server.close();
     }

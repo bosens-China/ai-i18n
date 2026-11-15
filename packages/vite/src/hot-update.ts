@@ -14,7 +14,6 @@ import {
   type AiI18nFramework,
 } from './framework.js';
 import { sourceUpdateOptions } from './plugin-utils.js';
-import { isNotFound } from './json-files.js';
 import { isInternalStoreFile } from './file-store-paths.js';
 import type { ProjectState } from './project-state.js';
 import { normalizeProjectId } from './project-paths.js';
@@ -30,10 +29,6 @@ interface HotUpdateDependencies {
   localeLoading: boolean;
   sendTranslationUpdates(moduleIds: readonly string[]): void;
   sendLocaleUpdates(locales: readonly string[]): void;
-  requestMissingTranslations(
-    moduleIds: readonly string[],
-  ): void | Promise<void>;
-  flushPersistence(): Promise<void>;
   runStateTask: DevStateTaskRunner;
 }
 
@@ -81,48 +76,13 @@ export function createHotUpdateHandler(dependencies: HotUpdateDependencies) {
     if (isInternalStoreFile(dependencies.store().directory, options.file))
       return [];
     return dependencies.runStateTask(async () => {
-      await dependencies.flushPersistence();
       const project = dependencies.state();
       const fileStore = dependencies.store();
       const localeSnapshot = dependencies.localeLoading
         ? snapshotLocales(project)
         : undefined;
       if (fileStore.manages(options.file)) {
-        // 排队或 flush 期间文件可能已删除；ENOENT 仍按最新磁盘状态同步，不能丢弃事件。
-        if (options.type !== 'delete') {
-          let content: string | undefined;
-          try {
-            content = await options.read();
-          } catch (error) {
-            if (!isNotFound(error)) throw error;
-          }
-          if (
-            content !== undefined &&
-            fileStore.isOwnWrite(options.file, content)
-          )
-            return [];
-        }
-        const loadOptions = await fileStore.loadOptions([options.file]);
-        const affected = project.hydrateCache(await fileStore.load());
-        affected.push(
-          ...project.hydrateOverrides(await fileStore.loadOverrides()),
-        );
-        const reconciled = await fileStore.sync(
-          project.snapshot(),
-          loadOptions,
-        );
-        const updated = [...affected, ...project.hydrateCache(reconciled)];
-        updated.push(
-          ...project.hydrateOverrides(await fileStore.loadOverrides()),
-        );
-        if (localeSnapshot) {
-          dependencies.sendLocaleUpdates(
-            changedLocales(project, localeSnapshot),
-          );
-        } else {
-          dependencies.sendTranslationUpdates(updated);
-        }
-        await dependencies.requestMissingTranslations(updated);
+        // 仓库资源由显式扫描或 Build 更新，Dev 不把旧缓存写回磁盘。
         return [];
       }
       if (!dependencies.sourcePattern.test(options.file)) return;
@@ -157,10 +117,6 @@ export function createHotUpdateHandler(dependencies: HotUpdateDependencies) {
                 translationAutoImports,
               ),
             )?.affectedModuleIds ?? []);
-      const cache = await fileStore.sync(project.snapshot());
-      project.hydrateCache(cache);
-      project.hydrateOverrides(await fileStore.loadOverrides());
-      await dependencies.requestMissingTranslations(affected);
       if (localeSnapshot) {
         dependencies.sendLocaleUpdates(changedLocales(project, localeSnapshot));
       } else {

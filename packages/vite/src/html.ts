@@ -43,6 +43,7 @@ export interface HtmlBinding {
   messageId: string;
   source: string;
   comment?: string;
+  scope?: 'file';
   occurrence: string;
   marker: string;
   attribute?: string;
@@ -131,6 +132,7 @@ export function transformHtml(
           messageId: message.id,
           source: message.source,
           ...(message.comment ? { comment: message.comment } : {}),
+          ...(message.scope === 'file' ? { scope: 'file' as const } : {}),
           occurrence,
           marker,
         });
@@ -146,6 +148,7 @@ export function transformHtml(
           messageId: message.id,
           source: message.source,
           ...(message.comment ? { comment: message.comment } : {}),
+          ...(message.scope === 'file' ? { scope: 'file' as const } : {}),
           occurrence,
           marker,
         });
@@ -208,6 +211,7 @@ export function transformHtml(
         messageId: message.id,
         source: message.source,
         ...(message.comment ? { comment: message.comment } : {}),
+        ...(message.scope === 'file' ? { scope: 'file' as const } : {}),
         occurrence,
         marker,
         attribute: attribute.name,
@@ -329,9 +333,10 @@ function addMessage(
   message: ExtractedMessage,
   location: { line: number; column: number },
 ): void {
-  const previous = messages.get(message.id);
+  const key = JSON.stringify([message.id, message.scope ?? 'global']);
+  const previous = messages.get(key);
   if (previous) previous.locations.push(location);
-  else messages.set(message.id, { ...message, locations: [location] });
+  else messages.set(key, { ...message, locations: [location] });
 }
 
 function sourcePosition(source: string, offset: number) {

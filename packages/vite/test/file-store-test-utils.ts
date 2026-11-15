@@ -3,7 +3,6 @@ import os from 'node:os';
 import path from 'node:path';
 import { afterEach } from 'vitest';
 import { FileStore } from '../src/file-store';
-import { readTestTranslationMemory } from './translation-memory-test-utils';
 import {
   ProjectState,
   type NormalizedAiI18nOptions,
@@ -41,11 +40,4 @@ export async function setup() {
       locales: options.locales,
     }),
   };
-}
-
-export async function readJson(file: string): Promise<unknown> {
-  if (path.basename(file) === 'i18n') {
-    return readTestTranslationMemory(file);
-  }
-  return JSON.parse(await fs.readFile(file, 'utf8')) as unknown;
 }

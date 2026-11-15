@@ -3,8 +3,6 @@ import {
   TranslationConflictError,
   createI18nRuntime,
   createRepositoryScopedTranslate,
-  createScopedTranslate,
-  runtimeMessageId,
 } from '../src/index';
 import { locales } from './runtime-test-fixtures';
 
@@ -68,49 +66,28 @@ describe('@ai-i18n/core runtime', () => {
     expect(t('保存', { comment: '按钮', scope: 'file' })).toBe('Save button');
   });
 
-  it('keeps identical semantic messages isolated by runtime module', () => {
+  it('shares global values and isolates explicit file scopes', () => {
     const runtime = createI18nRuntime({
       sourceLang: 'zh-CN',
       defaultLang: 'en-US',
       locales,
     });
-    runtime.registerModule('src/a.ts', {
-      'zh-CN': { [runtimeMessageId('src/a.ts', '保存')]: '保存' },
-      'en-US': { [runtimeMessageId('src/a.ts', '保存')]: 'Save file' },
-    });
-    runtime.registerModule('src/b.ts', {
-      'zh-CN': { [runtimeMessageId('src/b.ts', '保存')]: '保存' },
-      'en-US': { [runtimeMessageId('src/b.ts', '保存')]: 'Keep state' },
-    });
-
-    expect(createScopedTranslate(runtime, 'src/a.ts')('保存')).toBe(
-      'Save file',
-    );
-    expect(createScopedTranslate(runtime, 'src/b.ts')('保存')).toBe(
-      'Keep state',
-    );
-  });
-
-  it('keeps identical messages on the same source line isolated by column', () => {
-    const runtime = createI18nRuntime({
-      sourceLang: 'zh-CN',
-      defaultLang: 'en-US',
-      locales,
-    });
-    runtime.registerModule('src/app.ts', {
-      'zh-CN': {
-        [runtimeMessageId('src/app.ts', '保存', '3:8')]: '保存',
-        [runtimeMessageId('src/app.ts', '保存', '3:25')]: '保存',
-      },
+    runtime.registerModule('catalog', {
+      'zh-CN': { 保存: '保存' },
       'en-US': {
-        [runtimeMessageId('src/app.ts', '保存', '3:8')]: 'Save draft',
-        [runtimeMessageId('src/app.ts', '保存', '3:25')]: 'Save changes',
+        保存: 'Save',
+        'f:aaa:保存': 'Save file',
+        'f:bbb:保存': 'Keep state',
       },
     });
-    const t = createScopedTranslate(runtime, 'src/app.ts');
-
-    expect(t.__aiI18nAt('3:8')('保存')).toBe('Save draft');
-    expect(t.__aiI18nAt('3:25')('保存')).toBe('Save changes');
+    const a = createRepositoryScopedTranslate(runtime, 'aaa');
+    const b = createRepositoryScopedTranslate(runtime, 'bbb');
+    expect(a('保存')).toBe('Save');
+    expect(b('保存')).toBe('Save');
+    expect(a('保存', { scope: 'file' })).toBe('Save file');
+    expect(b('保存', { scope: 'file' })).toBe('Keep state');
+    expect(a.__aiI18nAt('3:8')('保存', { scope: 'file' })).toBe('Save file');
+    expect(a.__aiI18nAt('3:25')('保存', { scope: 'file' })).toBe('Save file');
   });
 
   it('translates tagged templates and lets targets reorder placeholders', () => {

@@ -20,7 +20,6 @@ test('review edits manual global and explicit file values without changing gener
   );
   const store = new FileStore({
     root,
-    repository: true,
     sourceLang: 'zh-CN',
     locales,
   });
@@ -100,6 +99,55 @@ test('review edits manual global and explicit file values without changing gener
     ).toEqual({
       [`f:${id}:保存`]: 'Store here',
     });
+    await expect(
+      service.setOverride({
+        message: { source: '首页' },
+        locale: 'en-US',
+        location: { line: 1, column: 0 },
+        file: source,
+        value: 'Home',
+      }),
+    ).rejects.toMatchObject({ code: 'UNSUPPORTED_SCOPE' });
+    await expect(
+      service.setOverride({
+        message: { source: '首页' },
+        locale: 'fr-FR',
+        value: 'Accueil',
+      }),
+    ).rejects.toMatchObject({ code: 'UNKNOWN_LOCALE' });
+    await expect(
+      service.setOverride({
+        message: { source: '未知' },
+        locale: 'en-US',
+        value: 'Unknown',
+      }),
+    ).rejects.toMatchObject({ code: 'UNKNOWN_MESSAGE' });
+    expect(
+      await service.setOverride({
+        message: { source: '首页' },
+        locale: 'en-US',
+        value: 'Start',
+      }),
+    ).toMatchObject({ changed: true });
+    expect(
+      await service.setOverride({
+        message: { source: '首页' },
+        locale: 'en-US',
+        value: 'Start',
+      }),
+    ).toMatchObject({ changed: false });
+    expect(
+      await service.deleteOverride({
+        message: { source: '首页' },
+        locale: 'en-US',
+      }),
+    ).toMatchObject({ changed: true });
+    expect(
+      await service.deleteOverride({
+        message: { source: '首页' },
+        locale: 'en-US',
+      }),
+    ).toMatchObject({ changed: false });
     expect(
       JSON.parse(
         await fs.readFile(

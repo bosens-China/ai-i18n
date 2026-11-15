@@ -1,12 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import {
-  AiI18nSchemaError,
   createMessageId,
   hasSameTemplateTokens,
   parseExtractedFile,
   parseLocaleFile,
   parseTranslationOverridesFile,
-  parseTranslationMemoryFile,
   templateTokens,
 } from '../src/index';
 import { locales } from './runtime-test-fixtures';
@@ -40,41 +38,7 @@ describe('@ai-i18n/core schemas', () => {
     ).toEqual({ 保存: null, 省略: '' });
   });
 
-  it('reports unsupported schema versions clearly', () => {
-    expect(() =>
-      parseTranslationMemoryFile({
-        version: 2,
-        revision: 0,
-        messages: {},
-      }),
-    ).toThrow(
-      new AiI18nSchemaError(
-        'translation memory schema version must be 1; received 2',
-      ),
-    );
-  });
-
   it.each([
-    {
-      path: 'translation memory.unknown',
-      parse: parseTranslationMemoryFile,
-      value: { version: 1, revision: 0, messages: {}, unknown: true },
-    },
-    {
-      path: 'translation memory.messages.保存.unknown',
-      parse: parseTranslationMemoryFile,
-      value: {
-        version: 1,
-        revision: 0,
-        messages: {
-          保存: {
-            sourceLang: 'zh-CN',
-            translations: {},
-            unknown: true,
-          },
-        },
-      },
-    },
     {
       path: 'extracted.unknown',
       parse: parseExtractedFile,

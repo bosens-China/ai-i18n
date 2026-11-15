@@ -97,7 +97,7 @@ try {
       ai as Plugin & {
         [key: symbol]: {
           ready(): Promise<void>;
-          flushPersistence(): Promise<void>;
+          runStateTask<T>(task: () => T | Promise<T>): Promise<T>;
           state(): { modules: Map<string, unknown> };
         };
       }
@@ -123,7 +123,7 @@ try {
   server.environments.client!.moduleGraph.invalidateAll();
   const invalidatedTransformMs = await transform(false);
   await api?.ready();
-  await api?.flushPersistence();
+  await api?.runStateTask(() => undefined);
   if (api && api.state().modules.size === 0)
     throw new Error(
       diagnosticMessage(

@@ -11,7 +11,6 @@ import {
   REVIEW_WORKBENCH_MODULE_PATH,
 } from './review-page.js';
 import { configureReviewServer } from './review-server.js';
-import { createReviewService } from './review-service.js';
 import { createRepositoryReviewService } from './repository-review-service.js';
 
 const RESOLVED_REVIEW_CLIENT_ID = `\0${REVIEW_CLIENT_VIRTUAL_ID}`;
@@ -66,9 +65,7 @@ export function aiI18nReview(options: AiI18nReviewOptions = {}): Plugin {
       if (api.scanMode) return;
       return configureReviewServer(
         server,
-        (api.store().repository
-          ? createRepositoryReviewService
-          : createReviewService)({
+        createRepositoryReviewService({
           sourceLang: api.options.sourceLang,
           locales: api.options.locales,
           ready: api.ready,
@@ -100,11 +97,7 @@ export function aiI18nReview(options: AiI18nReviewOptions = {}): Plugin {
           },
           state: api.state,
           store: api.store,
-          loadPersistedExtracted: () => api.store().loadExtracted(),
-          persistedCache: api.persistedCache,
           runStateTask: api.runStateTask,
-          flushPersistence: api.flushPersistence,
-          notify: api.notify,
         }),
         { printUrl },
       );

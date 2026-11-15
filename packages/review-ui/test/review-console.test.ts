@@ -55,7 +55,7 @@ describe('review console refresh', () => {
     expect(fetchMock).toHaveBeenCalledOnce();
   });
 
-  it('sends the selected line and column with an occurrence mutation', async () => {
+  it('sends a file-scoped mutation without a source location', async () => {
     const fetchMock = vi
       .fn()
       .mockResolvedValueOnce({ ok: true, json: async () => ({}) })
@@ -71,7 +71,6 @@ describe('review console refresh', () => {
       message: { source: '保存' },
       locale: 'en-US',
       file: 'src/page.ts',
-      location: { line: 8, column: 20 },
       value: 'Save here',
     });
 
@@ -79,7 +78,6 @@ describe('review console refresh', () => {
       message: { source: '保存' },
       locale: 'en-US',
       file: 'src/page.ts',
-      location: { line: 8, column: 20 },
       value: 'Save here',
     });
   });

@@ -39,7 +39,7 @@ const currentFile = computed(() => {
         v-if="currentFile"
         class="scope-segment"
         type="button"
-        :aria-pressed="Boolean(scope.file) && !scope.location"
+        :aria-pressed="Boolean(scope.file)"
         :title="currentFile"
         @click="emit('updateScope', { file: currentFile })"
       >

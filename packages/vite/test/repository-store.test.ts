@@ -3,7 +3,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { expect, test, vi } from 'vitest';
 import type { ExtractedFile } from '@ai-i18n/core';
-import { transactTranslationOverrides } from '@ai-i18n/core/translation-memory';
+import { transactTranslationOverrides } from '@ai-i18n/core/internal/files';
 import { fileId } from '../src/repository-paths.js';
 import { RepositoryStore } from '../src/repository-store.js';
 import type { TranslationCatalog } from '../src/translation-adapter.js';
@@ -129,6 +129,59 @@ test('migration re-reads manual values written after preparation', async () => {
         ),
       ),
     ).toEqual({ 取消: 'Cancel', 保存: 'Save' });
+  } finally {
+    await fs.rm(root, { recursive: true, force: true });
+  }
+});
+
+test('failed ambiguous migration preserves old overrides and existing manual data', async () => {
+  const root = await fs.mkdtemp(
+    path.join(os.tmpdir(), 'ai-i18n-migrate-fail-'),
+  );
+  try {
+    const directory = path.join(root, 'i18n');
+    const legacy = path.join(directory, 'overrides');
+    await transactTranslationOverrides(legacy, (draft) => {
+      draft.rules.push({
+        source: '保存',
+        occurrences: [{ file: 'src/page.ts', line: 1, column: 0 }],
+        translations: { 'en-US': 'Save here' },
+      });
+    });
+    const localesDir = path.join(directory, 'locales');
+    await fs.mkdir(localesDir, { recursive: true });
+    const manualFile = path.join(localesDir, 'en-US.manual.json');
+    const manual = '{"其他":"Existing"}\n';
+    await fs.writeFile(manualFile, manual);
+    const { readTranslationOverrides } =
+      await import('@ai-i18n/core/internal/files');
+    const original = await readTranslationOverrides(legacy);
+    const files: ExtractedFile[] = [
+      {
+        version: 1,
+        source: 'src/page.ts',
+        messages: [
+          {
+            id: '保存',
+            source: '保存',
+            scope: 'file',
+            locations: [
+              { line: 1, column: 0 },
+              { line: 2, column: 0 },
+            ],
+          },
+        ],
+      },
+    ];
+    const store = new RepositoryStore(root);
+    await expect(
+      store.rebuild(files, 'zh-CN', ['zh-CN', 'en-US'], {}),
+    ).rejects.toThrow(/occurrence/);
+    expect(await readTranslationOverrides(legacy)).toEqual(original);
+    expect(await fs.readFile(manualFile, 'utf8')).toBe(manual);
+    await expect(
+      fs.access(path.join(localesDir, 'en-US.json')),
+    ).rejects.toMatchObject({ code: 'ENOENT' });
   } finally {
     await fs.rm(root, { recursive: true, force: true });
   }

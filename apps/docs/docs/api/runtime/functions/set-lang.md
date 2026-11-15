@@ -22,8 +22,8 @@ function setLang(value: string): Promise<void>;
 
 ## 行为
 
-没有启用语言分包时，Runtime 会立即提交切换。启用 `loading` 后，Runtime 先加载目标语言
-chunk，再切换语言并通知订阅者。
+目标语言始终按语言分包。Runtime 先加载目标语言 chunk，再切换语言并通知订阅者；
+`loading` 只配置资源 preload/prefetch 提示。
 
 相同 locale 的并发调用会复用同一次底层语言包加载请求，但不保证各次 `setLang()` 返回的
 Promise 引用相等。不同 locale 的并发切换以最后一次调用为准。

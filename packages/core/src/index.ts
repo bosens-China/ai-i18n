@@ -68,15 +68,12 @@ export {
   parseExtractedFile,
   parseLocaleFile,
   parseTranslationOverridesFile,
-  parseTranslationMemoryFile,
 } from './schema.js';
 export type {
-  CacheMessage,
   ExtractedFile,
   ExtractedMessage,
   LangOption,
   LocaleFileV1,
-  TranslationMemoryFile,
   TranslationOverrideRule,
   TranslationOverrideOccurrence,
   TranslationOverridesFile,
@@ -85,8 +82,6 @@ export type {
 export {
   createI18nRuntime,
   createRepositoryScopedTranslate,
-  createScopedTranslate,
-  runtimeMessageId,
 } from './runtime.js';
 export type {
   I18nRuntime,
@@ -109,17 +104,3 @@ export {
   hasSameTemplateTokens,
   templateTokens,
 } from './template.js';
-export type {
-  TranslationBatch,
-  TranslationBatchEvent,
-  TranslationBatchStage,
-  TranslationLogging,
-  TranslationMessage,
-  TranslationResult,
-  Translator,
-} from './provider.js';
-
-export type {
-  TranslationMemoryCandidatePage,
-  TranslationMemoryCandidateDetails,
-} from './translation-memory-store-types.js';

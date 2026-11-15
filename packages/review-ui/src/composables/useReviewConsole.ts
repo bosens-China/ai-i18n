@@ -139,7 +139,6 @@ export function useReviewConsole(
           message: mutation.message,
           locale: mutation.locale,
           ...(mutation.file ? { file: mutation.file } : {}),
-          ...(mutation.location ? { location: mutation.location } : {}),
           ...(mutation.method === 'POST' ? { value: mutation.value } : {}),
         }),
       });

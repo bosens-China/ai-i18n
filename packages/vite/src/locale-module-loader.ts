@@ -21,7 +21,6 @@ interface LocaleModuleLoadOptions {
   build: boolean;
   project: ProjectState;
   store: FileStore;
-  flush: () => Promise<void>;
   reconcile: (moduleIds: Iterable<string>, complete?: boolean) => Promise<void>;
   runStateTask: DevStateTaskRunner;
 }
@@ -59,7 +58,6 @@ export async function renderLocaleChunk(
   if (!locale) return null;
 
   // Framework 模块可能晚于 locale module load；renderChunk 才拥有完整构建图。
-  await options.flush();
   await options.reconcile(context.getModuleIds(), true);
   addLocaleWatchFiles(context, options.project, options.store);
   return fillLocaleModule(code, locale, options.project.localeMessages(locale));
@@ -74,7 +72,7 @@ function addLocaleWatchFiles(
   for (const [moduleId, result] of project.modules) {
     if (!result.messages.length) continue;
     watched.add(path.resolve(project.root, moduleId));
-    for (const file of store.watchFiles(moduleId)) watched.add(file);
+    for (const file of store.watchFiles()) watched.add(file);
   }
   for (const file of watched) context.addWatchFile(file);
 }

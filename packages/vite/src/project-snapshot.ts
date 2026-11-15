@@ -1,52 +1,21 @@
 import { createHash } from 'node:crypto';
-import type {
-  CacheMessage,
-  ExtractedFile,
-  TranslationMemoryFile,
-  TranslationValue,
-} from '@ai-i18n/core';
+import type { ExtractedFile } from '@ai-i18n/core';
 import { diagnosticMessage } from '@ai-i18n/analyzer';
 import type { ExtractResult } from './yuku-analyzer.js';
 import type { SourceLocation } from './extractor.js';
 import type { NormalizedAiI18nOptions } from './project-state.js';
 
 export interface ProjectSnapshot {
-  cache: TranslationMemoryFile;
-  /** 仅用于计算派生译文，不能合并到本地 Translation Memory。 */
-  remoteOverlay?: TranslationMemoryFile;
   extracted: Record<string, ExtractedFile>;
   seen: string[];
 }
 
-export function hydrateTranslationCache(
-  target: Map<string, Map<string, TranslationValue>>,
-  cache: TranslationMemoryFile,
-): void {
-  const next = new Map<string, Map<string, TranslationValue>>();
-  for (const [messageId, message] of Object.entries(cache.messages)) {
-    for (const [locale, value] of Object.entries(message.translations)) {
-      const translations = next.get(locale) ?? new Map();
-      translations.set(messageId, value);
-      next.set(locale, translations);
-    }
-  }
-  // 完整转换后再替换，避免解析中断留下半份内存译文。
-  target.clear();
-  for (const [locale, translations] of next) target.set(locale, translations);
-}
-
 export function createProjectSnapshot(
   modules: ReadonlyMap<string, ExtractResult>,
-  translations: ReadonlyMap<string, ReadonlyMap<string, TranslationValue>>,
   seen: ReadonlySet<string>,
-  options: NormalizedAiI18nOptions,
 ): ProjectSnapshot {
-  const messages: Record<string, CacheMessage> = Object.create(null);
   const messageSources = new Map<string, string>();
   const extracted: Record<string, ExtractedFile> = {};
-  const targetLocales = options.locales.filter(
-    (locale) => locale.value !== options.sourceLang,
-  );
   for (const [moduleId, result] of modules) {
     if (!result.messages.length) continue;
 
@@ -61,18 +30,6 @@ export function createProjectSnapshot(
         );
       }
       messageSources.set(message.id, message.source);
-      const targetTranslations = Object.fromEntries(
-        targetLocales.map((locale) => [
-          locale.value,
-          translations.get(locale.value)?.get(message.id) ?? null,
-        ]),
-      );
-      messages[message.id] = {
-        source: message.source,
-        sourceLang: options.sourceLang,
-        ...(message.comment ? { comment: message.comment } : {}),
-        translations: targetTranslations,
-      };
       return {
         id: message.id,
         source: message.source,
@@ -89,7 +46,6 @@ export function createProjectSnapshot(
   }
 
   return {
-    cache: { version: 1, revision: 0, messages },
     extracted,
     seen: [...seen].sort(),
   };

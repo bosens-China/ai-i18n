@@ -108,7 +108,9 @@ export function createRepositoryReviewService(options: Options): ReviewService {
       ]);
       const packets = new Map<string, Record<string, string>>();
       for (const [key, item] of messages) {
-        item.translations[locale.value] = global[key] ?? null;
+        item.translations[locale.value] = Object.hasOwn(global, key)
+          ? global[key]!
+          : null;
         if (Object.hasOwn(globalManual, key))
           item.overrides.push({
             locale: locale.value,
@@ -135,7 +137,9 @@ export function createRepositoryReviewService(options: Options): ReviewService {
           }
           (item.fileTranslations ??= {})[occurrence.sourceFile] ??= {};
           item.fileTranslations[occurrence.sourceFile]![locale.value] =
-            packet[fileKey] ?? global[key] ?? null;
+            (Object.hasOwn(packet, fileKey) ? packet[fileKey] : undefined) ??
+            (Object.hasOwn(global, key) ? global[key] : undefined) ??
+            null;
           if (Object.hasOwn(fileManual, fileKey))
             item.overrides.push({
               locale: locale.value,

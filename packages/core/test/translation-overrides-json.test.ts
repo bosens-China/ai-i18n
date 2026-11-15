@@ -7,7 +7,7 @@ import {
   readTranslationOverrides,
   transactTranslationOverrides,
   translationOverrideFiles,
-} from '../src/translation-memory';
+} from '../src/internal-files';
 
 const tempDirectories: string[] = [];
 

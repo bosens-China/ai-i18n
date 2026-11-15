@@ -1,5 +1,4 @@
 import type { LangOption } from '@ai-i18n/core';
-import type { TranslationMemoryCandidateCacheAdapter } from '@ai-i18n/core/translation-memory';
 import type { AiI18nFramework } from './framework.js';
 import type { HtmlExtractorOptions } from './html.js';
 import type { AiI18nPerformanceDiagnosticsOptions } from './performance-types.js';
@@ -11,26 +10,8 @@ export interface AiI18nLocaleLoadingOptions {
   prefetch?: readonly string[];
 }
 
-export interface AiI18nTranslationMemoryCapacityOptions {
-  maxMessages?: number;
-  maxBytes?: number;
-}
-
-export interface AiI18nTranslationMemoryOptions {
-  /** 可选的个人候选缓存；项目译文始终写入可提交的 JSON 分片。 */
-  cache?: TranslationMemoryCandidateCacheAdapter;
-  /** 限制当前项目的历史 Translation Memory 容量。 */
-  capacity?: AiI18nTranslationMemoryCapacityOptions;
-}
-
 export interface AiI18nPersistOptions {
   key: string;
-}
-
-export interface AiI18nCleanupOptions {
-  missingSourceFiles?: boolean;
-  /** 完整 Build 成功写出后默认清理；Dev 不清理，设为 false 可保留历史供审查。 */
-  orphanMessages?: boolean;
 }
 
 export interface AiI18nTimingDiagnosticsOptions {

@@ -5,21 +5,12 @@ import {
   currentReviewOccurrence,
   reviewAction,
   reviewBaseline,
-  reviewEffectiveValue,
 } from '../src/review-state';
 
 const message: ReviewMessage = {
   message: { source: 'Save', comment: 'button' },
   translations: { 'zh-CN': '保存' },
-  overrides: [
-    { locale: 'zh-CN', value: '确认', file: 'src/dialog.ts' },
-    {
-      locale: 'zh-CN',
-      value: '保存按钮',
-      file: 'src/dialog.ts',
-      location: { line: 1, column: 20 },
-    },
-  ],
+  overrides: [{ locale: 'zh-CN', value: '确认', file: 'src/dialog.ts' }],
   occurrences: [
     {
       sourceFile: 'src/dialog.ts',
@@ -38,28 +29,16 @@ describe('review state', () => {
     expect(reviewBaseline(message, 'zh-CN', { file: 'src/dialog.ts' })).toBe(
       '确认',
     );
-    expect(
-      reviewBaseline(message, 'zh-CN', {
-        file: 'src/dialog.ts',
-        location: { line: 1, column: 20 },
-      }),
-    ).toBe('保存按钮');
     expect(reviewBaseline(message, 'ja-JP', {})).toBe('Save');
     expect(
       activeOverride(message, 'zh-CN', { file: 'src/dialog.ts' })?.value,
     ).toBe('确认');
   });
 
-  it('distinguishes same-line occurrences by column', () => {
-    expect(
-      currentReviewOccurrence(message, {
-        file: 'src/dialog.ts',
-        location: { line: 1, column: 20 },
-      }),
-    ).toEqual({
-      file: 'src/dialog.ts',
-      location: { line: 1, column: 20 },
-    });
+  it('keeps source locations available for navigation without using them as translation scope', () => {
+    expect(currentReviewOccurrence(message, { file: 'src/dialog.ts' })).toEqual(
+      { file: 'src/dialog.ts', location: { line: 1, column: 1 } },
+    );
   });
 
   it('distinguishes confirmation, modification, and saved states', () => {
@@ -69,25 +48,4 @@ describe('review state', () => {
     expect(reviewAction(true, '确认', '确认')).toBe('saved');
     expect(reviewAction(true, '确定', '确认')).toBe('save');
   });
-});
-
-it('marks the inherited effective value without replacing the editing baseline', () => {
-  const message = {
-    message: { source: '保存' },
-    translations: { 'en-US': 'Save' },
-    occurrences: [],
-    overrides: [
-      { locale: 'en-US', value: 'Global' },
-      { locale: 'en-US', file: 'src/a.ts', value: '' },
-    ],
-  };
-  expect(
-    reviewEffectiveValue(message, 'en-US', {
-      file: 'src/a.ts',
-      location: { line: 1, column: 0 },
-    }),
-  ).toBe('');
-  expect(reviewEffectiveValue(message, 'en-US', { file: 'src/b.ts' })).toBe(
-    'Global',
-  );
 });

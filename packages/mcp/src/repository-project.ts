@@ -1,7 +1,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { createMessageId, hasSameTemplateTokens } from '@ai-i18n/core';
-import { parseProtocolJson } from '@ai-i18n/core/translation-memory';
+import { parseProtocolJson } from '@ai-i18n/core/internal/files';
 import {
   ExtractionIndex,
   buildTranslationCatalog,

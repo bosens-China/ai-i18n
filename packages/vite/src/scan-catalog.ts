@@ -2,7 +2,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import type { ViteDevServer } from 'vite';
 import { diagnosticMessage } from '@ai-i18n/analyzer';
-import { withFileQueue } from '@ai-i18n/core/translation-memory';
+import { withFileQueue } from '@ai-i18n/core/internal/files';
 import { ProjectState } from './project-state.js';
 import type { AiI18nPluginApi } from './plugin-api.js';
 import { scanEntries, walkScanGraph } from './scan-graph.js';
@@ -55,8 +55,7 @@ async function scanCatalog(
   entries?: readonly string[],
 ) {
   await api.ready();
-  await api.flushProvider();
-  await api.runStateTask(api.flushPersistence);
+  await api.runStateTask(() => undefined);
   const store = api.store();
   const entryFiles = await Promise.all(
     scanEntries(server.config, entries).map((file) => fs.realpath(file)),
@@ -90,15 +89,12 @@ async function scanCatalog(
     api.scanning = true;
     try {
       await api.settleTransforms();
-      await api.flushProvider();
-      await api.runStateTask(api.flushPersistence);
+      await api.runStateTask(() => undefined);
       await api.settleTransforms(() =>
         api.replaceState(
           new ProjectState(server.config.root, api.options, api.scanMode),
         ),
       );
-      api.state().hydrateCache(await store.load());
-      api.state().hydrateOverrides(await store.loadOverrides());
       server.environments.client!.moduleGraph.invalidateAll();
       const consumed = new Map<string, string | undefined>();
       const trackFile = async (file: string) => {
@@ -159,11 +155,6 @@ async function scanCatalog(
           );
           repositorySummary = summarizeRepository(server.config.root, prepared);
         }
-        api.state().hydrateCache(
-          await store.sync(api.state().snapshot(), {
-            complete: true,
-          }),
-        );
       });
       extracted.splice(0, extracted.length, ...(await store.loadExtracted()));
       // 不完整摘要、忽略目录中的消费输入和扫描期间的任何变化都不能成为缓存命中。

@@ -67,7 +67,6 @@ export function aiI18n(
     warnedSsr = true;
     warn();
   };
-  const setDevHot = () => {};
   const transforms = trackPluginTransforms();
   const closeScanBridges = new Map<ResolvedConfig, () => Promise<void>>();
   const { currentState, currentStore } = createPluginStateAccessors(
@@ -107,11 +106,6 @@ export function aiI18n(
     translationEvent: TRANSLATION_UPDATE_EVENT,
     localeEvent: LOCALE_UPDATE_EVENT,
   });
-  const requestMissingTranslations = () => {};
-  const persist = () => {};
-  const flushProvider = () => Promise.resolve();
-  const flushPersistence = () => Promise.resolve();
-
   const { hooks: buildHooks, reconcile } = createPluginBuildHooks({
     adapter: options.adapter,
     config: () => config,
@@ -124,9 +118,6 @@ export function aiI18n(
     timing: devTiming,
     performance: performanceDiagnostics,
     closeStore: () => store?.close(),
-    requestMissingTranslations,
-    flushProvider,
-    flushPersistence,
     async dispose(closedConfig) {
       const close = closeScanBridges.get(closedConfig);
       closeScanBridges.delete(closedConfig);
@@ -145,8 +136,6 @@ export function aiI18n(
     localeLoading: normalized.loading !== undefined,
     sendTranslationUpdates,
     sendLocaleUpdates,
-    requestMissingTranslations,
-    flushPersistence,
     runStateTask,
   });
 
@@ -167,11 +156,8 @@ export function aiI18n(
     framework: () => framework,
     autoImport: () => autoImport,
     translationHooks: () => translationHooks,
-    requestMissingTranslations,
-    setDevHot,
     warnSsrOnce,
     runStateTask,
-    persist,
   });
   const transformIndexHtml = createHtmlTransformHandler({
     ...(htmlExtractor ? { extractor: htmlExtractor } : {}),
@@ -180,10 +166,6 @@ export function aiI18n(
     ready: () => ready,
     state: currentState,
     store: currentStore,
-    requestMissingTranslations,
-    flush: flushProvider,
-    persist,
-    setDevHot,
     runStateTask,
   });
 
@@ -194,7 +176,6 @@ export function aiI18n(
     ready: () => ready,
     state: currentState,
     store: currentStore,
-    flushProvider,
     reconcile,
     runStateTask,
     warnSsrOnce,
@@ -207,12 +188,9 @@ export function aiI18n(
     replaceState(next) {
       state = next;
     },
-    flushProvider,
     settleTransforms: transforms.settle,
     store: currentStore,
-    persistedCache: () => undefined,
     runStateTask,
-    flushPersistence,
     notify(affectedModuleIds, locale) {
       if (normalized.loading) sendLocaleUpdates([locale]);
       else sendTranslationUpdates(affectedModuleIds);

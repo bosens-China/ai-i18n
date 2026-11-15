@@ -11,13 +11,17 @@ export function htmlBridgeCode(
   moduleId: string,
   messages: ModuleMessages | string,
   bindings: readonly HtmlBinding[],
+  fileId: string,
 ): string {
+  const needsFile = bindings.some((binding) => binding.scope === 'file');
   const sources = Object.fromEntries(
     bindings.map((binding) => [binding.messageId, binding.source]),
   );
   return `
-import { subscribe, __registerModule, __unregisterModule, __translate } from ${JSON.stringify(`${AI_I18N_VIRTUAL_MODULE_ID}/internal`)};
+import { subscribe, __registerModule, __unregisterModule, __translate${needsFile ? ', __loadFile' : ''} } from ${JSON.stringify(`${AI_I18N_VIRTUAL_MODULE_ID}/internal`)};
 const moduleId = ${JSON.stringify(moduleId)};
+const fileId = ${JSON.stringify(fileId)};
+${needsFile ? 'await __loadFile(fileId);' : ''}
 const sources = ${JSON.stringify(sources)};
 const bindings = ${JSON.stringify(bindings)};
 const reviewTargetSymbol = Symbol.for('ai-i18n.review.targets');
@@ -38,7 +42,7 @@ const attachReviewTarget = (node, binding) => {
 __registerModule(moduleId, ${JSON.stringify(messages)});
 const apply = () => {
   for (const binding of bindings) {
-    const value = __translate(moduleId, binding.messageId, sources[binding.messageId], binding.occurrence);
+    const value = __translate(moduleId, binding.messageId, sources[binding.messageId], binding.occurrence, fileId, binding.scope);
     if (binding.kind === 'text') {
       document.querySelectorAll('[${TEXT_MARKER}="' + binding.marker + '"]').forEach((node) => { node.textContent = value; attachReviewTarget(node, binding); });
     } else if (binding.kind === 'attribute') {
@@ -51,7 +55,7 @@ const apply = () => {
   while ((comment = walker.nextNode())) {
     const binding = comments.get(comment.data);
     if (binding && comment.nextSibling?.nodeType === Node.TEXT_NODE) {
-      comment.nextSibling.nodeValue = __translate(moduleId, binding.messageId, binding.source, binding.occurrence);
+      comment.nextSibling.nodeValue = __translate(moduleId, binding.messageId, binding.source, binding.occurrence, fileId, binding.scope);
       attachReviewTarget(comment.parentElement ?? comment.nextSibling, binding);
     }
   }

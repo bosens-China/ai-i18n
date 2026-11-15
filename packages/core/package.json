@@ -36,9 +36,9 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
     },
-    "./translation-memory": {
-      "types": "./dist/translation-memory.d.ts",
-      "import": "./dist/translation-memory.js"
+    "./internal/files": {
+      "types": "./dist/internal-files.d.ts",
+      "import": "./dist/internal-files.js"
     },
     "./diagnostics": {
       "types": "./dist/diagnostics.d.ts",

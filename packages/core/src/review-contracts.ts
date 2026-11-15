@@ -47,11 +47,9 @@ export interface ReviewOverride {
   locale: string;
   value: string;
   file?: string;
-  location?: ReviewSourceLocation;
 }
 
 export interface ReviewMessage {
-  cacheCandidatesEnabled?: boolean;
   message: ReviewMessageReference;
   translations: Record<string, string | null>;
   fileTranslations?: Record<string, Record<string, string | null>>;
@@ -75,7 +73,6 @@ export interface ReviewMutation {
   locale: string;
   method: 'POST' | 'DELETE';
   file?: string;
-  location?: ReviewSourceLocation;
   value?: string;
 }
 

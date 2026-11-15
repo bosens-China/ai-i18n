@@ -5,7 +5,7 @@ import {
   stableJson,
   parseProtocolJson,
   DuplicateJsonKeyError,
-} from '@ai-i18n/core/translation-memory';
+} from '@ai-i18n/core/internal/files';
 
 export { stableJson };
 

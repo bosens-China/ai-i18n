@@ -1,4 +1,4 @@
-import type { FileStore, FileStoreLoadOptions } from './file-store.js';
+import type { FileStore } from './file-store.js';
 import type { ProjectState } from './project-state.js';
 import { isInternalStoreFile } from './file-store-paths.js';
 
@@ -7,9 +7,6 @@ interface BuildWatchDependencies {
   ready: () => Promise<void>;
   state: () => ProjectState;
   store: () => FileStore;
-  requestMissingTranslations: (
-    moduleIds: readonly string[],
-  ) => void | Promise<void>;
 }
 
 export function createBuildWatchState(dependencies: BuildWatchDependencies) {
@@ -26,7 +23,6 @@ export function createBuildWatchState(dependencies: BuildWatchDependencies) {
       const store = dependencies.store();
       if (isInternalStoreFile(store.directory, file)) return;
       if (store.manages(file)) {
-        if (event !== 'delete' && (await store.isOwnFile(file))) return;
         managedChanges.add(file);
         return;
       }
@@ -39,15 +35,8 @@ export function createBuildWatchState(dependencies: BuildWatchDependencies) {
       await dependencies.ready();
       fullyReconciled = false;
       const project = dependencies.state();
-      const store = dependencies.store();
       if (!watchMode) {
         project.reset();
-        const [cache, overrides] = await Promise.all([
-          store.load(),
-          store.loadOverrides(),
-        ]);
-        project.hydrateCache(cache);
-        project.hydrateOverrides(overrides);
         return;
       }
 
@@ -57,17 +46,7 @@ export function createBuildWatchState(dependencies: BuildWatchDependencies) {
       managedChanges.clear();
       if (!deleted.length && !changed.length) return;
 
-      const affected = deleted.flatMap((file) => project.remove(file));
-      const loadOptions: FileStoreLoadOptions =
-        await store.loadOptions(changed);
-      if (changed.length) {
-        affected.push(...project.hydrateCache(await store.load()));
-        affected.push(...project.hydrateOverrides(await store.loadOverrides()));
-      }
-      const cache = await store.sync(project.snapshot(), loadOptions);
-      affected.push(...project.hydrateCache(cache));
-      affected.push(...project.hydrateOverrides(await store.loadOverrides()));
-      await dependencies.requestMissingTranslations(affected);
+      for (const file of deleted) project.remove(file);
     },
 
     async reconcile(
@@ -78,11 +57,6 @@ export function createBuildWatchState(dependencies: BuildWatchDependencies) {
       const removed = project.retain(moduleIds);
       if (!removed.length && (!complete || fullyReconciled)) return;
       // Watch 状态可以跨轮次复用，但活动模块必须以当前 Vite 图为准。
-      const cache = await dependencies
-        .store()
-        .sync(project.snapshot(), complete ? { complete: true } : {});
-      project.hydrateCache(cache);
-      project.hydrateOverrides(await dependencies.store().loadOverrides());
       if (complete) fullyReconciled = true;
     },
   };

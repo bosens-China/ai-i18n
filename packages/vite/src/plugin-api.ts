@@ -1,4 +1,3 @@
-import type { TranslationMemoryFile } from '@ai-i18n/core';
 import type { Plugin } from 'vite';
 import type { ScanResult } from './scan-catalog.js';
 import type { DevStateTaskRunner } from './dev-state-queue.js';
@@ -24,12 +23,9 @@ export interface AiI18nPluginApi {
   ready(): Promise<void>;
   state(): ProjectState;
   replaceState(state: ProjectState): void;
-  flushProvider(): Promise<void>;
   settleTransforms(task?: () => void): Promise<void>;
   store(): FileStore;
-  persistedCache(): TranslationMemoryFile | undefined;
   runStateTask: DevStateTaskRunner;
-  flushPersistence(): Promise<void>;
   notify(affectedModuleIds: string[], locale: string): void;
 }
 

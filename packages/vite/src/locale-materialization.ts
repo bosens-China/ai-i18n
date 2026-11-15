@@ -16,8 +16,8 @@ export function materializeLocale(
   fileManual: ManualMessages,
   snapshot: TranslationSnapshot,
 ): MaterializedLocale {
-  const global: Record<string, string> = {};
-  const files: Record<string, Record<string, string>> = {};
+  const global: Record<string, string> = Object.create(null);
+  const files: Record<string, Record<string, string>> = Object.create(null);
   const adapted = snapshot[locale];
   const checked = (value: string, source: string, key: string): string => {
     if (!hasSameTemplateTokens(source, value)) {
@@ -34,7 +34,9 @@ export function materializeLocale(
     if (message.scope === 'global') {
       const value = Object.hasOwn(globalManual, message.key)
         ? globalManual[message.key]
-        : adapted?.[message.key];
+        : adapted && Object.hasOwn(adapted, message.key)
+          ? adapted[message.key]
+          : undefined;
       if (value !== null && value !== undefined)
         global[message.key] = checked(value, message.source, message.key);
       continue;
@@ -49,9 +51,11 @@ export function materializeLocale(
       ? fileManual[message.key]
       : Object.hasOwn(globalManual, globalKey)
         ? undefined
-        : adapted?.[message.key];
+        : adapted && Object.hasOwn(adapted, message.key)
+          ? adapted[message.key]
+          : undefined;
     if (value === null || value === undefined) continue;
-    (files[file.id] ??= {})[message.key] = checked(
+    (files[file.id] ??= Object.create(null))[message.key] = checked(
       value,
       message.source,
       message.key,

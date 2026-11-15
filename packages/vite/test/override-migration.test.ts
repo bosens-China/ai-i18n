@@ -67,3 +67,21 @@ test('rejects unsafe file or partial occurrence rules while preserving old input
     ),
   ).toThrow(/src\/a\.ts: 不存在.*src\/a\.ts: 保存/s);
 });
+
+test.each(['constructor', 'toString', '__proto__'])(
+  'migrates special manual key %s as an own entry',
+  (source) => {
+    const result = planOverrideMigration(
+      'E:/project',
+      [],
+      {
+        version: 2,
+        rules: [{ source, translations: { 'en-US': 'Translated' } }],
+      },
+      ['en-US'],
+    );
+    const values = result.global['en-US']!;
+    expect(Object.hasOwn(values, source)).toBe(true);
+    expect(values[source]).toBe('Translated');
+  },
+);

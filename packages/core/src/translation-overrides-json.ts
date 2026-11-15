@@ -20,7 +20,7 @@ import {
   stableJson,
   syncAtomicJsonFiles,
   withFileQueue,
-} from './translation-memory-files.js';
+} from './storage-files.js';
 
 type OverrideBucketEntry = Omit<AtomicOverride, 'locale'>;
 

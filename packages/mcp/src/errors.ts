@@ -1,4 +1,4 @@
-import { DuplicateJsonKeyError } from '@ai-i18n/core/translation-memory';
+import { DuplicateJsonKeyError } from '@ai-i18n/core/internal/files';
 
 export type McpErrorDetails = Record<string, unknown>;
 

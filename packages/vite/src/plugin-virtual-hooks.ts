@@ -39,7 +39,6 @@ interface CreateVirtualModuleHooksOptions {
   ready(): Promise<void>;
   state(): ProjectState;
   store(): FileStore;
-  flushProvider(): Promise<void>;
   reconcile(moduleIds: Iterable<string>, complete?: boolean): Promise<void>;
   runStateTask: DevStateTaskRunner;
   warnSsrOnce(warn: () => void): void;
@@ -132,7 +131,6 @@ export function createVirtualModuleHooks(
           build: config?.command === 'build',
           project: options.state(),
           store: options.store(),
-          flush: options.flushProvider,
           reconcile: options.reconcile,
           runStateTask: options.runStateTask,
         });
@@ -145,7 +143,6 @@ export function createVirtualModuleHooks(
           build: config?.command === 'build',
           project: options.state(),
           store: options.store(),
-          flush: options.flushProvider,
           ...(options.normalized.loading
             ? { locale: options.normalized.sourceLang }
             : {}),

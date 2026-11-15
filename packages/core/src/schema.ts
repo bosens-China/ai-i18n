@@ -5,19 +5,6 @@ export interface LangOption {
   label: string;
 }
 
-export interface CacheMessage {
-  source: string;
-  sourceLang: string;
-  comment?: string;
-  translations: Record<string, TranslationValue>;
-}
-
-export interface TranslationMemoryFile {
-  version: 1;
-  revision: number;
-  messages: Record<string, CacheMessage>;
-}
-
 export interface TranslationOverrideRule {
   source: string;
   comment?: string;
@@ -74,21 +61,6 @@ export class TranslationConflictError extends Error {
     );
     this.name = 'TranslationConflictError';
   }
-}
-
-export function parseTranslationMemoryFile(
-  value: unknown,
-): TranslationMemoryFile {
-  const root = record(value, 'translation memory');
-  exactKeys(root, ['version', 'revision', 'messages'], 'translation memory');
-  exactVersion(root, 'translation memory', 1);
-  const messages = record(root.messages, 'translation memory.messages');
-
-  for (const [id, message] of Object.entries(messages)) {
-    validateCacheMessage(message, `translation memory.messages.${id}`);
-  }
-  integer(root.revision, 'translation memory.revision', 0);
-  return value as TranslationMemoryFile;
 }
 
 export function parseTranslationOverridesFile(
@@ -328,15 +300,6 @@ export function parseLocaleFile(value: unknown): LocaleFileV1 {
   string(locale.label, 'locale.locale.label');
   translations(root.messages, 'locale.messages');
   return value as LocaleFileV1;
-}
-
-function validateCacheMessage(value: unknown, path: string): void {
-  const message = record(value, path);
-  exactKeys(message, ['source', 'sourceLang', 'comment', 'translations'], path);
-  string(message.source, `${path}.source`);
-  string(message.sourceLang, `${path}.sourceLang`);
-  if (message.comment !== undefined) string(message.comment, `${path}.comment`);
-  translations(message.translations, `${path}.translations`);
 }
 
 function translations(value: unknown, path: string): void {

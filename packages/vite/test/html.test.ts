@@ -1,11 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { createI18nRuntime, runtimeMessageId } from '@ai-i18n/core';
-import {
-  html,
-  htmlBindingKey,
-  htmlBridgeCode,
-  transformHtml,
-} from '../src/html';
+import { createI18nRuntime } from '@ai-i18n/core';
+import { html, htmlBridgeCode, transformHtml } from '../src/html';
 
 describe('HTML extractor', () => {
   it('extracts complete text nodes and whitelisted attributes with escaping', () => {
@@ -60,18 +55,17 @@ describe('HTML extractor', () => {
     expect(result.code).toContain('title="Say &quot;hi&quot;"');
   });
 
-  it('distinguishes identical HTML messages on the same line by column', () => {
+  it('tracks both locations while sharing their global translation', () => {
     const source = `<p>t('保存')</p><p>t('保存')</p>`;
     const extracted = transformHtml(source, '/workspace/index.html', html());
     const [left, right] = extracted.bindings;
     const result = transformHtml(source, '/workspace/index.html', html(), {
-      [htmlBindingKey(left!.messageId, left!.occurrence)]: 'Save left',
-      [htmlBindingKey(right!.messageId, right!.occurrence)]: 'Save right',
+      保存: 'Save',
     });
 
     expect(left!.occurrence).not.toBe(right!.occurrence);
-    expect(result.code).toContain('>Save left</p><p');
-    expect(result.code).toContain('>Save right</p>');
+    expect(result.code).toContain('>Save</p><p');
+    expect(result.code).toContain('>Save</p>');
   });
 
   it('renders placeholder-shaped HTML text literally', () => {
@@ -114,17 +108,18 @@ describe('HTML extractor', () => {
       'index.html',
       {
         'zh-CN': {
-          [runtimeMessageId('index.html', '标题')]: '标题',
-          [runtimeMessageId('index.html', '提示')]: '提示',
-          [runtimeMessageId('index.html', '正文')]: '正文',
+          标题: '标题',
+          提示: '提示',
+          正文: '正文',
         },
         'en-US': {
-          [runtimeMessageId('index.html', '标题')]: 'Title',
-          [runtimeMessageId('index.html', '提示')]: 'Hint',
-          [runtimeMessageId('index.html', '正文')]: 'Body',
+          标题: 'Title',
+          提示: 'Hint',
+          正文: 'Body',
         },
       },
       extracted.bindings,
+      'test-file',
     );
     expect(bridge).toContain('__unregisterModule(moduleId)');
     expect(bridge).toContain("Symbol.for('ai-i18n.review.targets')");
@@ -183,8 +178,8 @@ describe('HTML extractor', () => {
         subscribe: runtime.subscribe,
         __registerModule: runtime.registerModule,
         __unregisterModule: runtime.unregisterModule,
-        __translate: (moduleId: string, messageId: string, source: string) =>
-          runtime.translate(runtimeMessageId(moduleId, messageId), source),
+        __translate: (_moduleId: string, messageId: string, source: string) =>
+          runtime.translate(messageId, source),
       },
       document,
       { SHOW_COMMENT: 128 },
@@ -213,4 +208,70 @@ describe('HTML extractor', () => {
       '正文',
     ]);
   });
+});
+
+it('loads the file packet and keeps global and file-scoped HTML bindings distinct', async () => {
+  const extracted = transformHtml(
+    `<p>t('保存')</p><p>t('保存', { scope: 'file' })</p>`,
+    '/workspace/index.html',
+    html(),
+  );
+  expect(extracted.messages).toHaveLength(2);
+  expect(extracted.bindings.map((binding) => binding.scope)).toEqual([
+    undefined,
+    'file',
+  ]);
+  const nodes = extracted.bindings.map(() => ({ textContent: '' }));
+  const calls: string[] = [];
+  const executable = htmlBridgeCode('index.html', {}, extracted.bindings, 'abc')
+    .replace(
+      /^import \{[^}]+\} from "virtual:ai-i18n\/internal";/m,
+      'const { subscribe, __registerModule, __unregisterModule, __translate, __loadFile } = runtime;',
+    )
+    .replace(/if \(import\.meta\.hot\) \{[\s\S]*\}\s*$/, '');
+  const run = new (Object.getPrototypeOf(async function () {}).constructor)(
+    'runtime',
+    'document',
+    'NodeFilter',
+    'Node',
+    executable,
+  );
+  await run(
+    {
+      subscribe: () => () => {},
+      __registerModule: () => {},
+      __unregisterModule: () => {},
+      __loadFile: async (id: string) => {
+        calls.push(`load:${id}`);
+      },
+      __translate: (
+        _module: string,
+        key: string,
+        _source: string,
+        _occurrence: string,
+        id: string,
+        scope?: string,
+      ) => {
+        calls.push(`translate:${scope ?? 'global'}:${id}:${key}`);
+        return scope === 'file' ? 'Save here' : 'Save';
+      },
+    },
+    {
+      querySelectorAll: (selector: string) => {
+        const index = extracted.bindings.findIndex((binding) =>
+          selector.includes(binding.marker),
+        );
+        return index < 0 ? [] : [nodes[index]];
+      },
+      createTreeWalker: () => ({ nextNode: () => null }),
+    },
+    { SHOW_COMMENT: 128 },
+    { TEXT_NODE: 3 },
+  );
+  expect(nodes.map((node) => node.textContent)).toEqual(['Save', 'Save here']);
+  expect(calls).toEqual([
+    'load:abc',
+    'translate:global:abc:保存',
+    'translate:file:abc:保存',
+  ]);
 });

@@ -5,7 +5,7 @@ import { afterEach, expect, test } from 'vitest';
 import {
   readTranslationOverrides,
   transactTranslationOverrides,
-} from '../src/translation-memory';
+} from '../src/internal-files';
 
 const directories: string[] = [];
 

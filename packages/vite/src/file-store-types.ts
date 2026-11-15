@@ -1,31 +1,8 @@
 import type { LangOption } from '@ai-i18n/core';
-import type { TranslationMemoryCandidateCacheAdapter } from '@ai-i18n/core/translation-memory';
-import type { AiI18nTranslationMemoryCapacityOptions } from './options.js';
-import type { DevTimingReporter } from './dev-timing.js';
 
 export interface FileStoreOptions {
-  repository?: boolean;
-  /** 远程快照只在内存与派生产物中使用，不访问本地自动译文或 SQLite。 */
-  remote?: boolean;
   root: string;
   sourceLang: string;
   locales: readonly LangOption[];
   directory?: string;
-  cleanupMissingSourceFiles?: boolean;
-  cleanupOrphanMessages?: boolean;
-  capacity?: AiI18nTranslationMemoryCapacityOptions;
-  translationMemory?: {
-    cache?: TranslationMemoryCandidateCacheAdapter;
-  };
-  onWarning?: (message: string) => void;
-  timing?: DevTimingReporter;
-  /** 文件与 Translation Memory 全部写入成功后调用。 */
-  onSynced?: (batchIds: readonly string[]) => void | Promise<void>;
-}
-
-export interface FileStoreLoadOptions {
-  preferredSources?: readonly string[];
-  complete?: boolean;
-  changedSources?: readonly string[];
-  timingModuleId?: string;
 }

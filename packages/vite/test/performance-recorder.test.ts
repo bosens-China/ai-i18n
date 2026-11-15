@@ -63,7 +63,7 @@ describe('performance recorder', () => {
     );
     const error = new Error('write failed');
     await expect(
-      timing.measure('file-sync', '<project>', () => {
+      timing.measure('types-write', '<project>', () => {
         throw error;
       }),
     ).rejects.toBe(error);

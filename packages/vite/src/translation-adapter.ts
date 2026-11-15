@@ -111,7 +111,10 @@ export function resolveTranslation(
   const adapterKeys =
     message.scope === 'file' ? [message.key, globalKey] : [globalKey];
   for (const key of adapterKeys) {
-    const value = translations?.[key];
+    const value =
+      translations && Object.hasOwn(translations, key)
+        ? translations[key]
+        : undefined;
     if (value !== null && value !== undefined) return value;
   }
   return message.source;

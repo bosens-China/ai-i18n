@@ -1,20 +1,6 @@
 import type { ReviewCopy } from '../types.js';
 
 export const zhCNReviewCopy = {
-  cacheCandidates: '历史候选',
-  cacheCandidatesHint: '选择后填入草稿，确认后按当前范围保存。',
-  cacheCandidatesEmpty: '暂无精确匹配的历史候选。',
-  cacheCandidatesFailed: '候选加载失败，请重试。',
-  cacheCandidatesLoading: '正在加载候选…',
-  useCandidate: '使用此译文',
-  currentValue: '当前生效',
-  moreCandidates: '更多候选',
-  moreSources: '更多来源',
-  retry: '重试',
-  automaticSource: '自动译文',
-  reviewedSource: '人工校对',
-  emptyTranslation: '（空译文）',
-
   search: '搜索原文、译文、语境或文件…',
   filtersLabel: '筛选文案',
   localesLabel: '目标语言',
@@ -59,7 +45,7 @@ export const zhCNReviewCopy = {
   noMessages: '还没有提取到文案。请先在浏览器中打开需要校对的业务页面。',
   selectMessage: '从左侧选择文案开始校对。',
   pickerNoMatch: '没有找到与该元素对应的已提取文案。',
-  chooseExactOccurrence: '请先在左侧选择准确的文件位置，再保存当前位置译文。',
+  chooseExactOccurrence: '请在左侧选择文件和源码位置，开始校对文案。',
   saved: '人工译文已保存。',
   removed: '人工译文已移除。',
   catalogRefreshing: '正在刷新文案清单…',

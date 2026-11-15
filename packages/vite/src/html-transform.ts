@@ -3,10 +3,10 @@ import type {
   IndexHtmlTransformContext,
   IndexHtmlTransformResult,
   MinimalPluginContextWithoutEnvironment,
-  NormalizedHotChannel,
   ResolvedConfig,
 } from 'vite';
-import { runtimeMessageId } from '@ai-i18n/core';
+import path from 'node:path';
+import { fileId, fileMessageKey } from './repository-paths.js';
 import type { DevStateTaskRunner } from './dev-state-queue.js';
 import type { FileStore } from './file-store.js';
 import {
@@ -26,13 +26,7 @@ interface HtmlTransformDependencies {
   ready(): Promise<void>;
   state(): ProjectState;
   store(): FileStore;
-  requestMissingTranslations(
-    moduleIds: readonly string[],
-  ): void | Promise<void>;
   runStateTask: DevStateTaskRunner;
-  persist(moduleId: string): void;
-  flush(): Promise<void>;
-  setDevHot(hot: NormalizedHotChannel): void;
 }
 
 export function createHtmlTransformHandler(
@@ -55,9 +49,6 @@ export function createHtmlTransformHandler(
     }
 
     await dependencies.ready();
-    if (context.server) {
-      dependencies.setDevHot(context.server.environments.client.hot);
-    }
     let result = transformHtml(source, context.filename, extractor);
     for (const warning of result.warnings) {
       this.warn({
@@ -75,15 +66,6 @@ export function createHtmlTransformHandler(
         result.messages,
       );
       if (!update) return null;
-      if (config?.command !== 'build') {
-        dependencies.persist(update.moduleId);
-      }
-      await dependencies.requestMissingTranslations([update.moduleId]);
-      if (config?.command === 'build') {
-        await dependencies.flush();
-        project.hydrateOverrides(await dependencies.store().loadOverrides());
-      }
-
       const registrationLocale = dependencies.options.loading
         ? dependencies.options.sourceLang
         : undefined;
@@ -106,7 +88,15 @@ export function createHtmlTransformHandler(
             return [
               htmlBindingKey(message.id, occurrence),
               messages[initialLocale]?.[
-                runtimeMessageId(moduleId, message.id, occurrence)
+                message.scope === 'file'
+                  ? fileMessageKey(
+                      fileId(
+                        dependencies.state().root,
+                        path.resolve(dependencies.state().root, moduleId),
+                      ),
+                      message.id,
+                    )
+                  : message.id
               ] ?? null,
             ];
           }),
@@ -127,7 +117,15 @@ export function createHtmlTransformHandler(
         {
           tag: 'script',
           attrs: { type: 'module' },
-          children: htmlBridgeCode(moduleId, messages, result.bindings),
+          children: htmlBridgeCode(
+            moduleId,
+            messages,
+            result.bindings,
+            fileId(
+              dependencies.state().root,
+              path.resolve(dependencies.state().root, moduleId),
+            ),
+          ),
           injectTo: 'body',
         },
       ],

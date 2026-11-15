@@ -2,16 +2,14 @@ import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { afterEach, expect, it, vi } from 'vitest';
-import { JsonTranslationMemoryStore } from '../src/translation-memory-json';
 import {
-  openTranslationMemoryStore,
   readTranslationOverrides,
   transactTranslationOverrides,
   parseProtocolJson,
   DuplicateJsonKeyError,
   stableJson,
-} from '../src/translation-memory';
-import { syncAtomicJsonFiles } from '../src/translation-memory-files';
+} from '../src/internal-files';
+import { syncAtomicJsonFiles } from '../src/storage-files';
 
 const roots: string[] = [];
 afterEach(async () => {
@@ -28,39 +26,20 @@ async function root() {
   roots.push(directory);
   return directory;
 }
-async function fixture(kind: 'translations' | 'overrides') {
+async function fixture() {
   const directory = await root();
-  if (kind === 'translations') {
-    const store = await openTranslationMemoryStore(directory);
-    await store.transact((memory) => {
-      memory.messages.Save = {
-        source: '保存',
-        sourceLang: 'zh-CN',
-        translations: { 'en-US': 'Save' },
-      };
-    });
-  } else {
-    await transactTranslationOverrides(path.join(directory, kind), (draft) => {
-      draft.rules = [{ source: '保存', translations: { 'en-US': 'Save' } }];
-    });
-  }
-  const bucketDirectory = path.join(directory, kind);
+  const bucketDirectory = path.join(directory, 'overrides');
+  await transactTranslationOverrides(bucketDirectory, (draft) => {
+    draft.rules = [{ source: '保存', translations: { 'en-US': 'Save' } }];
+  });
   const filename = (
     await fs.readdir(bucketDirectory, { recursive: true })
   ).find((file) => file.endsWith('.json'))!;
-  const file = path.join(bucketDirectory, filename);
-  const store = new JsonTranslationMemoryStore(bucketDirectory);
   return {
-    file,
+    file: path.join(bucketDirectory, filename),
     directory: bucketDirectory,
-    read: () =>
-      kind === 'translations'
-        ? store.load()
-        : readTranslationOverrides(bucketDirectory),
-    write: () =>
-      kind === 'translations'
-        ? store.transact(() => {})
-        : transactTranslationOverrides(bucketDirectory, () => {}),
+    read: () => readTranslationOverrides(bucketDirectory),
+    write: () => transactTranslationOverrides(bucketDirectory, () => {}),
   };
 }
 async function duplicate(file: string, conflict = false) {
@@ -88,45 +67,34 @@ async function duplicate(file: string, conflict = false) {
   return raw;
 }
 
-it.each(['translations', 'overrides'] as const)(
-  'cleans identical duplicate keys only on %s writes, including no-op transactions',
-  async (kind) => {
-    const target = await fixture(kind);
-    const raw = await duplicate(target.file);
-    await target.read();
-    expect(await fs.readFile(target.file, 'utf8')).toBe(raw);
-    await target.write();
-    expect(
-      parseProtocolJson(await fs.readFile(target.file, 'utf8'), target.file)
-        .duplicateCount,
-    ).toBe(0);
-    const modified = (await fs.stat(target.file, { bigint: true })).mtimeNs;
-    await target.write();
-    expect((await fs.stat(target.file, { bigint: true })).mtimeNs).toBe(
-      modified,
-    );
-  },
-);
+it('cleans identical duplicate keys only on override writes, including no-op transactions', async () => {
+  const target = await fixture();
+  const raw = await duplicate(target.file);
+  await target.read();
+  expect(await fs.readFile(target.file, 'utf8')).toBe(raw);
+  await target.write();
+  expect(
+    parseProtocolJson(await fs.readFile(target.file, 'utf8'), target.file)
+      .duplicateCount,
+  ).toBe(0);
+  const modified = (await fs.stat(target.file, { bigint: true })).mtimeNs;
+  await target.write();
+  expect((await fs.stat(target.file, { bigint: true })).mtimeNs).toBe(modified);
+});
 
-it.each(['translations', 'overrides'] as const)(
-  'keeps conflicting %s bytes and blocks the write callback',
-  async (kind) => {
-    const target = await fixture(kind);
-    const raw = await duplicate(target.file, true);
-    await expect(target.read()).rejects.toBeInstanceOf(DuplicateJsonKeyError);
-    const update = vi.fn();
-    const task =
-      kind === 'translations'
-        ? new JsonTranslationMemoryStore(target.directory).transact(update)
-        : transactTranslationOverrides(target.directory, update);
-    await expect(task).rejects.toBeInstanceOf(DuplicateJsonKeyError);
-    expect(update).not.toHaveBeenCalled();
-    expect(await fs.readFile(target.file, 'utf8')).toBe(raw);
-    await expect(
-      fs.access(path.join(target.directory, '.transaction.json')),
-    ).rejects.toThrow();
-  },
-);
+it('keeps conflicting override bytes and blocks the write callback', async () => {
+  const target = await fixture();
+  const raw = await duplicate(target.file, true);
+  await expect(target.read()).rejects.toBeInstanceOf(DuplicateJsonKeyError);
+  const update = vi.fn();
+  const task = transactTranslationOverrides(target.directory, update);
+  await expect(task).rejects.toBeInstanceOf(DuplicateJsonKeyError);
+  expect(update).not.toHaveBeenCalled();
+  expect(await fs.readFile(target.file, 'utf8')).toBe(raw);
+  await expect(
+    fs.access(path.join(target.directory, '.transaction.json')),
+  ).rejects.toThrow();
+});
 
 it('preflights all existing shards before recovery replaces or deletes any file', async () => {
   const directory = await root();
@@ -145,7 +113,7 @@ it('preflights all existing shards before recovery replaces or deletes any file'
 });
 
 it('rejects a conflicting journal before recovery touches its shards', async () => {
-  const target = await fixture('translations');
+  const target = await fixture();
   const before = await fs.readFile(target.file, 'utf8');
   await fs.writeFile(
     path.join(target.directory, '.transaction.json'),

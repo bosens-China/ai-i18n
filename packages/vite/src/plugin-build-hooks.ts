@@ -1,5 +1,4 @@
 import type { Plugin, ResolvedConfig } from 'vite';
-import { buildCleanup } from './build-cleanup.js';
 import { createBuildWatchState } from './build-watch.js';
 import type { DevTimingReporter } from './dev-timing.js';
 import type { FileStore } from './file-store.js';
@@ -29,11 +28,6 @@ interface BuildDependencies {
   failOnMissingTranslations: boolean;
   timing: DevTimingReporter;
   performance: ReturnType<typeof createPerformanceDiagnostics>;
-  requestMissingTranslations(
-    moduleIds: readonly string[],
-  ): void | Promise<void>;
-  flushProvider(): Promise<void>;
-  flushPersistence(): Promise<void>;
   dispose(config: ResolvedConfig): void | Promise<void>;
   closeStore(): Promise<void> | undefined;
 }
@@ -44,7 +38,6 @@ export function createPluginBuildHooks(options: BuildDependencies) {
     ready: options.ready,
     state: options.state,
     store: options.store,
-    requestMissingTranslations: options.requestMissingTranslations,
   });
   let generated = false;
   let cleanupLegacy = false;
@@ -71,7 +64,6 @@ export function createPluginBuildHooks(options: BuildDependencies) {
   };
   const hooks: Pick<
     Plugin,
-    | 'options'
     | 'buildStart'
     | 'buildEnd'
     | 'watchChange'
@@ -81,21 +73,6 @@ export function createPluginBuildHooks(options: BuildDependencies) {
     | 'writeBundle'
     | 'closeBundle'
   > = {
-    options(input) {
-      const config = options.config();
-      if (config?.command !== 'build') return;
-      return {
-        ...input,
-        plugins: [
-          input.plugins,
-          buildCleanup(
-            config,
-            () => options.store().cleanupHistory(options.state().snapshot()),
-            options.closeStore,
-          ),
-        ],
-      };
-    },
     async buildStart() {
       if (options.config()?.command !== 'build') return;
       generated = false;
@@ -122,7 +99,6 @@ export function createPluginBuildHooks(options: BuildDependencies) {
           return;
         await options.ready();
         options.state().retain(this.getModuleIds());
-        await options.flushProvider();
         await reconcile(this.getModuleIds(), true);
         if (options.store().repository) {
           const state = options.state();
@@ -178,7 +154,6 @@ export function createPluginBuildHooks(options: BuildDependencies) {
           renderLocaleChunk(this, code, chunk.facadeModuleId, {
             project: options.state(),
             store: options.store(),
-            flush: options.flushProvider,
             reconcile,
           }),
       );
@@ -237,8 +212,8 @@ export function createPluginBuildHooks(options: BuildDependencies) {
       const config = this.environment.getTopLevelConfig();
       try {
         await options.dispose(config);
-        await options.flushPersistence();
-        if (config?.command !== 'build') await options.closeStore();
+        if (config?.command !== 'build' || !config.build.watch)
+          await options.closeStore();
       } finally {
         await options.performance?.close();
       }

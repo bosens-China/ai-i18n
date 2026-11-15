@@ -1,7 +1,6 @@
 import {
   createI18nRuntime,
-  createScopedTranslate,
-  runtimeMessageId,
+  createRepositoryScopedTranslate,
 } from '@ai-i18n/core';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createReactI18n } from '../src/react';
@@ -42,7 +41,7 @@ beforeEach(() => {
 });
 
 describe('React runtime adapter', () => {
-  it('keeps occurrence binding through the React callback', async () => {
+  it('keeps repository file scope through the React callback', async () => {
     const runtime = createI18nRuntime({
       sourceLang: 'zh-CN',
       defaultLang: 'en-US',
@@ -54,15 +53,17 @@ describe('React runtime adapter', () => {
     runtime.registerModule('App.tsx', {
       'zh-CN': {},
       'en-US': {
-        [runtimeMessageId('App.tsx', '保存', '1:8')]: 'Save this button',
+        'f:abc:保存': 'Save this button',
       },
     });
     const useI18n = createReactI18n(
       runtime,
-      createScopedTranslate(runtime, 'App.tsx'),
+      createRepositoryScopedTranslate(runtime, 'abc'),
     );
 
-    expect(useI18n().t.__aiI18nAt('1:8')('保存')).toBe('Save this button');
+    expect(useI18n().t.__aiI18nAt('1:8')('保存', { scope: 'file' })).toBe(
+      'Save this button',
+    );
   });
 
   it('subscribes to Core updates and invalidates cached translations', async () => {

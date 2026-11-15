@@ -1,21 +1,6 @@
 import type { ReviewCopy } from '../types.js';
 
 export const enUSReviewCopy = {
-  cacheCandidates: 'Historical suggestions',
-  cacheCandidatesHint:
-    'Choose a suggestion to fill the draft, then save in the selected scope.',
-  cacheCandidatesEmpty: 'No exact historical suggestions.',
-  cacheCandidatesFailed: 'Could not load suggestions. Retry.',
-  cacheCandidatesLoading: 'Loading suggestions…',
-  useCandidate: 'Use translation',
-  currentValue: 'Currently applied',
-  moreCandidates: 'More suggestions',
-  moreSources: 'More sources',
-  retry: 'Retry',
-  automaticSource: 'Automatic',
-  reviewedSource: 'Reviewed',
-  emptyTranslation: '(empty translation)',
-
   search: 'Search source, translation, context, or file…',
   filtersLabel: 'Filter messages',
   localesLabel: 'Target locales',
@@ -65,7 +50,7 @@ export const enUSReviewCopy = {
   selectMessage: 'Select a message from the list to begin reviewing.',
   pickerNoMatch: 'No extracted message matches the picked element.',
   chooseExactOccurrence:
-    'Select the exact file, line, and column from the locate results before saving an occurrence override.',
+    'Select a file and source location from the locate results to review the message.',
   saved: 'Reviewed translation saved.',
   removed: 'Reviewed translation removed.',
   catalogRefreshing: 'Refreshing the message catalog…',

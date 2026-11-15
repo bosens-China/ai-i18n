@@ -14,15 +14,7 @@ test('repository mode does not write extraction or translation data during Dev s
         { value: 'zh-CN', label: '中文' },
         { value: 'en-US', label: 'English' },
       ],
-      repository: true,
     });
-    const snapshot = {
-      cache: { version: 1 as const, revision: 0, messages: {} },
-      extracted: {},
-      seen: [],
-    };
-    await store.sync(snapshot);
-    expect(await store.load()).toEqual(snapshot.cache);
     await expect(fs.access(path.join(root, 'i18n'))).rejects.toMatchObject({
       code: 'ENOENT',
     });

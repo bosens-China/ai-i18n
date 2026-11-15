@@ -12,40 +12,23 @@ import {
 
 const DEFAULT_MIN_DURATION_MS = 50;
 // 写入仍按原策略执行，独立慢日志可排障；性能报告只观察启动与转换链路。
-const WRITE_STAGES = new Set<DevTimingStage>([
-  'types-write',
-  'snapshot-build',
-  'file-sync',
-  'extracted-scan',
-  'translation-memory-sync',
-  'extracted-write',
-  'locale-write',
-]);
+const WRITE_STAGES = new Set<DevTimingStage>(['types-write']);
 
 export type DevTimingStage =
   | 'initialization'
-  | 'translation-memory-load'
-  | 'overrides-load'
   | 'types-write'
-  | 'state-hydrate'
   | 'state-execute'
   | 'html-transform'
   | 'hot-update'
   | 'build-start'
   | 'build-reconcile'
   | 'locale-render'
-  | 'provider-flush'
   | 'plugin-ready-wait'
   | 'source-analysis'
   | 'source-registration'
   | 'dependency-resolution'
   | 'state-transaction'
   | 'source-transform'
-  | 'snapshot-build'
-  | 'file-sync'
-  | 'extracted-scan'
-  | 'translation-memory-sync'
-  | 'extracted-write'
   | 'locale-write';
 
 export interface DevTimingReporter {

@@ -126,7 +126,7 @@ export const __scope = (fileId) => {
   scopedApis.set(fileId, scoped);
   return scoped;
 };
-export const __translate = (_moduleId, messageId, source) => formatTemplateMessage(runtime.translate(messageId, source), []);
+export const __translate = (_moduleId, messageId, source, _occurrence, fileId, scope) => formatTemplateMessage(scope === 'file' ? runtime.translate('f:' + fileId + ':' + messageId, source, messageId) : runtime.translate(messageId, source), []);
 export const __registerModule = () => {};
 export const __unregisterModule = () => {};
 `;

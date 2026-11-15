@@ -20,7 +20,6 @@ const internalFiles = [
 describe('internal storage file watch filtering', () => {
   it('does not enqueue, read, flush or reconcile repeated internal Dev events', async () => {
     const { state, store } = await setup();
-    const flushPersistence = vi.fn(async () => {});
     const runStateTask = vi.fn();
     const getState = vi.fn(() => state);
     const sendTranslationUpdates = vi.fn();
@@ -35,8 +34,6 @@ describe('internal storage file watch filtering', () => {
       localeLoading: false,
       sendTranslationUpdates,
       sendLocaleUpdates: vi.fn(),
-      requestMissingTranslations: vi.fn(),
-      flushPersistence,
       runStateTask: async (task) => {
         runStateTask();
         return task();
@@ -67,22 +64,17 @@ describe('internal storage file watch filtering', () => {
     }
     expect(read).not.toHaveBeenCalled();
     expect(runStateTask).not.toHaveBeenCalled();
-    expect(flushPersistence).not.toHaveBeenCalled();
     expect(getState).not.toHaveBeenCalled();
     expect(sendTranslationUpdates).not.toHaveBeenCalled();
   });
 
   it('does not register internal Build Watch events for reconciliation', async () => {
     const { state, store } = await setup();
-    const read = vi.spyOn(store, 'isOwnFile');
-    const sync = vi.spyOn(store, 'sync');
-    const load = vi.spyOn(store, 'load');
     const watch = createBuildWatchState({
       sourcePattern: /\.ts$/,
       ready: async () => {},
       state: () => state,
       store: () => store,
-      requestMissingTranslations: vi.fn(),
     });
     for (const relative of internalFiles) {
       for (const type of ['create', 'update', 'delete'] as const) {
@@ -90,9 +82,6 @@ describe('internal storage file watch filtering', () => {
       }
     }
     await watch.buildStart(true);
-    expect(read).not.toHaveBeenCalled();
-    expect(sync).not.toHaveBeenCalled();
-    expect(load).not.toHaveBeenCalled();
   });
 
   it('keeps real protocol files and same-named business files outside the filter', async () => {

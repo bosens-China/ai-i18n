@@ -30,11 +30,11 @@ describe('Dev timing diagnostics', () => {
     );
 
     await timing.measure('source-transform', 'src/fast.ts', async () => {});
-    await timing.measure('file-sync', 'src/slow.ts', async () => {});
+    await timing.measure('types-write', 'src/slow.ts', async () => {});
 
     expect(log).toHaveBeenCalledTimes(1);
     expect(stripVTControlCharacters(log.mock.calls[0]?.[0] ?? '')).toMatch(
-      /stage=file-sync durationMs=11\.00 module="src\/slow\.ts"/,
+      /stage=types-write durationMs=11\.00 module="src\/slow\.ts"/,
     );
   });
 
