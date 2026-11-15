@@ -1,5 +1,23 @@
 # @ai-i18n/analyzer
 
+## [2.0.0](https://github.com/bosens-China/ai-i18n/compare/analyzer-v1.0.1...analyzer-v2.0.0) (2026-11-15)
+
+
+### ⚠ BREAKING CHANGES
+
+* 最低 Node.js 升至 22.13.0；t() 默认全局并使用第二参数对象；提取索引改用内置 SQLite；翻译资源改为 manual 与极简 locales；移除内置 Provider、远程覆盖及旧 SQLite 包。
+
+### Features
+
+* 重构仓库级翻译资源与构建扫描 ([c543125](https://github.com/bosens-China/ai-i18n/commit/c5431259c7b4c016ae5ead6ade800363cf222f9d))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @ai-i18n/core bumped to 3.0.0
+
 ## [1.0.1](https://github.com/bosens-China/ai-i18n/compare/analyzer-v1.0.0...analyzer-v1.0.1) (2026-11-03)
 
 

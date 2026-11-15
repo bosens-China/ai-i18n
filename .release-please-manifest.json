@@ -1,7 +1,7 @@
 {
-  "packages/analyzer": "1.0.1",
-  "packages/core": "2.0.0",
-  "packages/eslint": "2.0.0",
-  "packages/mcp": "2.0.0",
-  "packages/vite": "2.0.0"
+  "packages/analyzer": "2.0.0",
+  "packages/core": "3.0.0",
+  "packages/eslint": "3.0.0",
+  "packages/mcp": "3.0.0",
+  "packages/vite": "3.0.0"
 }

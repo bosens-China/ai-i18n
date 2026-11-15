@@ -1,5 +1,31 @@
 # @ai-i18n/vite
 
+## [3.0.0](https://github.com/bosens-China/ai-i18n/compare/vite-v2.0.0...vite-v3.0.0) (2026-11-15)
+
+
+### ⚠ BREAKING CHANGES
+
+* Remove legacy translation memory, provider, occurrence-scoped translation and runtime APIs. Use repository keys, manual locale files and the translation adapter instead.
+* 最低 Node.js 升至 22.13.0；t() 默认全局并使用第二参数对象；提取索引改用内置 SQLite；翻译资源改为 manual 与极简 locales；移除内置 Provider、远程覆盖及旧 SQLite 包。
+
+### Features
+
+* **review-ui:** 建立 CSS Token 分层 ([4104b7c](https://github.com/bosens-China/ai-i18n/commit/4104b7cf05ded8738898b5e81277ee7ad2328fbf))
+* 重构仓库级翻译资源与构建扫描 ([c543125](https://github.com/bosens-China/ai-i18n/commit/c5431259c7b4c016ae5ead6ade800363cf222f9d))
+
+
+### Bug Fixes
+
+* migrate translation APIs to repository model ([c4e4681](https://github.com/bosens-China/ai-i18n/commit/c4e4681bce20f3bfb47701ad447174100394ce34))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @ai-i18n/analyzer bumped to 2.0.0
+    * @ai-i18n/core bumped to 3.0.0
+
 ## [2.0.0](https://github.com/bosens-China/ai-i18n/compare/vite-v1.1.0...vite-v2.0.0) (2026-11-03)
 
 
