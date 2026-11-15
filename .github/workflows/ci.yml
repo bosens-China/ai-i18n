@@ -51,12 +51,21 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v6
+      # tsdown 的构建环境要求高于发布包的运行环境。
       - uses: actions/setup-node@v7
         with:
-          node-version: 22.13.0
+          node-version: 24
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm build
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22.13.0
+      - name: Import built packages on minimum Node
+        run: |
+          for package in @ai-i18n/core @ai-i18n/analyzer @ai-i18n/eslint-plugin @ai-i18n/vite @ai-i18n/mcp; do
+            pnpm --filter "$package" exec node --input-type=module -e 'await import(process.argv[1])' "$package"
+          done
       - run: pnpm --filter @ai-i18n/example-vanilla build
       - run: pnpm --filter @ai-i18n/example-vue build
       - run: pnpm --filter @ai-i18n/example-react build

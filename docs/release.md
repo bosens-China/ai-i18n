@@ -11,6 +11,10 @@
 | `pages.yml`              | CI 确认独立站点改动，或 Release 成功发布 npm 后 | 构建并部署调用方同一提交的 GitHub Pages                                         |
 | `plugin-marketplace.yml` | 插件与两份 Skill 相关路径的 `main` push；可手动 | 发布仅供 Codex 安装的市场分支                                                   |
 
+最低 Node 版本任务先在 Node 24 构建发布包，再切换到声明的 Node 22.13.0，
+导入各包构建产物并构建 Vanilla、Vue 和 React 示例。tsdown 仅是构建工具，
+其 Node 要求不改变发布包的运行时兼容承诺。
+
 日常验证只需 `ci.yml`。Release Please 生成的 `chore: release main` 合并提交由
 `release.yml` 对同一 SHA 执行完整门禁，因此跳过重复的日常 CI。其他 `main` push 仍执行 CI。
 发版与站点部署保留各自的权限与工作流文件；CI 与 Release 通过
